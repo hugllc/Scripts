@@ -36,7 +36,7 @@ define('HUGNET_FS_DIR', dirname(__FILE__));
 
 	require_once(HUGNET_FS_DIR.'/config/config.inc.php');
 //	require_once('lib/MDB_QueryWrapper.inc.php');
-	require_once('lib/adodb/adodb.inc.php');
+	require_once('adodb/adodb.inc.php');
 
 	require_once('lib/functions.inc.php');
 	require_once('lib/plugins.inc.php');
