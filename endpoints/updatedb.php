@@ -183,7 +183,7 @@ class ep_updatedb {
     }
 
     function updatedb() {
-    	$res = $this->plog->getAll();
+    	$res = $this->plog->getAll(50);
 		if ($this->verbose) print "[".$this->uproc->me["PID"]."] Found ".count($res)." Packets\n";
         if (!is_array($res)) return;
 		foreach($res as $packet) {
