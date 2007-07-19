@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: poll.php 52 2006-05-14 20:51:23Z prices $
+	$Id$
 	@file scripts/endpoints/poll.php
 	@brief Polls endpoints for data periodically.
 	
@@ -54,7 +54,7 @@
     define("EPTEST_VERSION", "0.0.5");
     define("EPTEST_PARTNUMBER", "0039260450");  //0039-26-04-P
 
-	print '$Id: poll.php 52 2006-05-14 20:51:23Z prices $'."\n";
+	print '$Id$'."\n";
     print 'eptest.php Version '.EPTEST_VERSION."\n";
 	print "Starting...\n";
 

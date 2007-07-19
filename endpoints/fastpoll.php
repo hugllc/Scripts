@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: fastpoll.php 52 2006-05-14 20:51:23Z prices $
+	$Id$
 	file scripts/endpoints/fastpoll.php
 	@brief Polls endpoints for data periodically.
 	
@@ -68,7 +68,7 @@
 	$dfportal_no_session = TRUE;
 	include_once("blankhead.inc.php");
 
-	print '$Id: fastpoll.php 52 2006-05-14 20:51:23Z prices $'."\n";
+	print '$Id$'."\n";
 	print "Starting...\n";
 	$GatewayKey = FALSE;
 	

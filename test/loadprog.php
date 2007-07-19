@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: loadprog.php 673 2007-03-01 02:59:11Z prices $
+	$Id$
 	@file scripts/test/loadprog.php
 	@brief Loads a program into a 0039-21 controller board remotely.
 	

@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: poll.php 706 2007-05-18 16:52:17Z prices $
+	$Id$
 	@file scripts/endpoints/poll.php
 	@brief Polls endpoints for data periodically.
 	
@@ -29,7 +29,7 @@
 
     define("POLL_VERSION", "0.2.10");
     define("POLL_PARTNUMBER", "0039260150");  //0039-26-01-P
-    define("POLL_SVN", '$Id: poll.php 706 2007-05-18 16:52:17Z prices $');
+    define("POLL_SVN", '$Id$');
 
 
 
@@ -40,7 +40,7 @@
     require_once(HUGNET_INCLUDE_PATH.'/plog.inc.php');
     require_once(HUGNET_INCLUDE_PATH.'/process.inc.php');
 
-    print 'poll.php Version '.POLL_VERSION.'  $Id: poll.php 706 2007-05-18 16:52:17Z prices $'."\n";
+    print 'poll.php Version '.POLL_VERSION.'  $Id$'."\n";
 	print "Starting...\n";
 
     define("CONTROLLER_CHECK", 10);

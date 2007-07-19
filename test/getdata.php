@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: getdata.php 52 2006-05-14 20:51:23Z prices $
+	$Id$
 	@file scripts/test/getdata.php
 	@brief Script for testing the periodic ping stat.
 	

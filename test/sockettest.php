@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: sockettest.php 52 2006-05-14 20:51:23Z prices $
+	$Id$
 	@file scripts/test/sockettest.php
 	@brief Tests the socket interface.
 	

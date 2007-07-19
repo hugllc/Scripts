@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: updatedb.php 656 2007-02-21 23:02:24Z prices $
+	$Id$
 	@file scripts/endpoints/updatedb.php
 	@brief Pushes data from the polling machine to the database.
 	
@@ -8,12 +8,12 @@
 /**
  * @cond	SCRIPT
 */
-    define("UPDATEDB_VERSION", "0.2.4");
+    define("UPDATEDB_VERSION", "0.2.5");
     define("UPDATEDB_PARTNUMBER", "0039260250");  //0039-26-01-P
-    define("UPDATEDB_SVN", '$Id: updatedb.php 656 2007-02-21 23:02:24Z prices $');
+    define("UPDATEDB_SVN", '$Id$');
 
 
-	print '$Id: updatedb.php 656 2007-02-21 23:02:24Z prices $'."\n";
+	print '$Id$'."\n";
     print 'updatedb.php Version '.UPDATEDB_VERSION."\n";
 	print "Starting...\n";
 	

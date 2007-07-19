@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: getSensors.php 221 2006-08-19 02:11:47Z prices $
+	$Id$
 	@file scripts/test/sendpacket.php
 	@brief generic script for sending packets to an endpoint
 	

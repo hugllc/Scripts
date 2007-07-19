@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: savefirmware.php 143 2006-07-17 15:23:48Z prices $
+	$Id$
 	@file scripts/misc/savefirmware.php
 	@brief Loads a program into a 0039-21 controller board remotely.
 	

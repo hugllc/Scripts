@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: checkInterp.php 699 2007-05-01 01:10:17Z prices $
+	$Id$
 	@file scripts/test/sendpacket.php
 	@brief generic script for sending packets to an endpoint
 	

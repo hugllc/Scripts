@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: analysis.php 680 2007-03-23 21:40:02Z prices $
+	$Id$
 	@file scripts/endpoints/analysis/analysis.php
 	@brief Stript to check data
 	
@@ -14,7 +14,7 @@
     define("ANALYSIS_VERSION", "0.2.1");
     define("ANALYSIS_PARTNUMBER", "0039260350");  //0039-26-01-P
 
-    print '$Id: analysis.php 680 2007-03-23 21:40:02Z prices $'."\n";
+    print '$Id$'."\n";
     print 'analysis.php Version '.ANALYSIS_VERSION."\n";
     print "Starting...\n";
 

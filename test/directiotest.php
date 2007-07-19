@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: directiotest.php 52 2006-05-14 20:51:23Z prices $
+	$Id$
 	@file scripts/test/directiotest.php
 	@brief Tests the directio functions in include/directio.php
 	

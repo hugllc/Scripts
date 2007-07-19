@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: alarm.php 52 2006-05-14 20:51:23Z prices $
+	$Id$
 	@file scripts/endpoints/alarm.php
 	@brief Stript to check for alarms.
 	

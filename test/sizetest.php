@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: sizetest.php 52 2006-05-14 20:51:23Z prices $
+	$Id$
 	
 	$Log: sizetest.php,v $
 	Revision 1.1  2005/06/01 15:03:28  prices

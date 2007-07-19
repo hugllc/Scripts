@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: getConfig.php 673 2007-03-01 02:59:11Z prices $
+	$Id$
 	@file scripts/test/sendpacket.php
 	@brief generic script for sending packets to an endpoint
 	

@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: monitor.php 221 2006-08-19 02:11:47Z prices $
+	$Id$
 	@file scripts/endpoints/unsolicited.php
 	@brief Sits and waits for unsolicited packets to come in.
 		
@@ -44,7 +44,7 @@
 /**
  * @cond SCRIPT	
 */
-	print '$Id: monitor.php 221 2006-08-19 02:11:47Z prices $'."\n";
+	print '$Id$'."\n";
 	print "Starting...\n";
 
 

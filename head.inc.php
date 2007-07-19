@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: head.inc.php 232 2006-08-31 21:25:14Z prices $
+	$Id$
 	@file head.inc.php
 	
 	

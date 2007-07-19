@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: sendpacket.php 668 2007-02-27 04:07:05Z prices $
+	$Id$
 	@file scripts/test/sendpacket.php
 	@brief generic script for sending packets to an endpoint
 	

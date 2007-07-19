@@ -1,6 +1,6 @@
 <?php
 /**
-	$Id: programEP.php 337 2006-11-16 18:18:23Z prices $
+	$Id$
 	@file scripts/misc/programEP.php
 	@brief Sets up and runs UISP to program a device.
 	
