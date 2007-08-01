@@ -653,6 +653,7 @@ class ep_poll {
         $maxPriority = 0;
         foreach($this->otherGW as $key => $gw) {
             if ($this->otherGW[$key]['failedCheckGW'] != date("i")) {
+                $expired = FALSE;
                 if ($gw['RemoveTime'] < time()) {
                     unset($this->otherGW[$key]);
                     print "Removed ".$gw['DeviceID'];
@@ -676,23 +677,24 @@ class ep_poll {
         
                     } else {
                         print " Failed ";
-           				    $this->otherGW[$key]['failedCheckGW'] = date("i");
+           				$this->otherGW[$key]['failedCheckGW'] = date("i");
                         if ($gw['ConfigExpire'] < time()) {
                             $this->otherGW[$key]['doPoll'] = FALSE;
                             $this->otherGW[$key]['doConfig'] = FALSE;
                             $this->otherGW[$key]['doCCheck'] = FALSE;
                             $this->otherGW[$key]['doUnsolicited'] = FALSE;
+                            $expired = TRUE;
                             print " Expired ";
                         } else {
                             print date("Y-m-d H:i:s", $gw['ConfigExpire']);
                         }
         
                     }
-                    print "P:".$this->otherGW[$key]['Priority'];
+                    print " P:".$this->otherGW[$key]['Priority'];
                     if ($this->otherGW[$key]['Priority'] == $this->Priority) {
                         $this->setPriority();
                     }
-                    if ($maxPriority < $this->otherGW[$key]['Priority']) {
+                    if (($maxPriority < $this->otherGW[$key]['Priority']) && !$expired)  {
                         $maxPriority = $this->otherGW[$key]['Priority'];
                     }
 
