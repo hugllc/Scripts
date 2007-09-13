@@ -39,9 +39,10 @@
 
 	$query = "SELECT * FROM ".$endpoint->raw_history_table." WHERE ";
 	$query .= " DeviceKey=".$Info["DeviceKey"];
+	if (!is_null($pktCommand)) $query .= " AND sendCommand='".$pktCommand."' ";
 	$query .= " ORDER BY Date DESC ";
 	$query .= " LIMIT 0, 1 ";
-print $query;
+//print $query;
 	$rHist = $endpoint->db->getArray($query);
 
 print $endpoint->db->MetaErrorMsg;
