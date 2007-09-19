@@ -40,16 +40,18 @@
 	$query = "SELECT * FROM ".$endpoint->raw_history_table." WHERE ";
 	$query .= " DeviceKey=".$Info["DeviceKey"];
 	if (!is_null($pktCommand)) $query .= " AND sendCommand='".$pktCommand."' ";
+	$query .= " AND Status='GOOD' ";
 	$query .= " ORDER BY Date DESC ";
-	$query .= " LIMIT 0, 1 ";
+	$query .= " LIMIT 0, 2 ";
 //print $query;
 	$rHist = $endpoint->db->getArray($query);
 
 print $endpoint->db->MetaErrorMsg;
+	$packet = $endpoint->InterpSensors($Info, $rHist);
+var_dump($packet);
+//	foreach($rHist as $hist) {
+//		$packet = $endpoint->InterpSensors($Info, array($hist));
 
-	foreach($rHist as $hist) {
-		$packet = $endpoint->InterpSensors($Info, array($hist));
-
-		print get_stuff($packet);
-	}
+		var_dump($packet);
+//	}
 ?>

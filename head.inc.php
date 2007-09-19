@@ -121,7 +121,6 @@ define('HUGNET_FS_DIR', dirname(__FILE__));
                 break;
         }
     }
-
     $endpoint = new driver($db, $conf['hugnetDb']);
     $endpoint->packet->verbose = $verbose;
 ?>

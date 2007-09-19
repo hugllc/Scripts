@@ -7,42 +7,6 @@
 	$Log: poll.php,v $
 	Revision 1.30  2006/03/09 17:20:19  prices
 	Updated the version
-	
-	Revision 1.29  2006/03/09 17:14:40  prices
-	It now sets the LastPoll date correctly.
-	
-	Revision 1.28  2006/03/09 16:50:04  prices
-	Fixed an error.
-	
-	Revision 1.27  2006/03/09 16:29:35  prices
-	Updated the version.
-	
-	Revision 1.26  2006/03/09 16:24:20  prices
-	It now randomizes the endpoints without killing the array keys.
-	
-	Revision 1.25  2006/03/08 15:47:26  prices
-	It now inserts new records into the devices table
-	
-	Revision 1.24  2006/02/28 21:30:17  prices
-	Fixed a bug where it wouldn't talk with other gateways if it wasn't
-	polling.
-	
-	Revision 1.23  2006/02/28 20:14:07  prices
-	Fixed a problem with getting the configuration for other gateways that are running.
-	
-	Revision 1.22  2006/02/28 15:52:56  prices
-	Fixed it so that a slave gateway can be used instead of the master only.
-	
-	Revision 1.21  2006/02/27 17:50:42  prices
-	Periodic checkin
-	
-	Revision 1.20  2006/02/14 15:49:54  prices
-	Periodic commit.
-	
-	Revision 1.19  2005/11/12 03:11:53  prices
-	Fixed a couple of things.
-	
-	
 
 */
 
@@ -51,7 +15,7 @@
 */
 
     $GatewayKey=3;
-    define("EPTEST_VERSION", "0.0.5");
+    define("EPTEST_VERSION", "0.0.6");
     define("EPTEST_PARTNUMBER", "0039260450");  //0039-26-04-P
 
 	print '$Id$'."\n";
@@ -60,7 +24,16 @@
 
 	require_once(dirname(__FILE__).'/../head.inc.php');
     require_once(HUGNET_INCLUDE_PATH.'/plog.inc.php');
-
+    for ($i = 0; $i < count($newArgv); $i++) {
+        switch($newArgv[$i]) {
+            // Gateway IP address
+            case "-P":
+                print "Programming Only\n";
+                $programOnly = TRUE;
+                break;
+            // Packet Command
+        }
+    }
 
 //    $endpoint->packet->_getAll = TRUE;
     $endpoint->packet->SNCheck(FALSE);
@@ -134,25 +107,29 @@
         $startSN = hexdec(fgets(STDIN));
     }
     $SN = $startSN;
-    $pInfo = array(
-        'GatewayIP' => $GatewayIP,
-        'GatewayPort' => $GatewayPort,
-        'GatewayKey' => $GatewayKey,
-    );
 
-    print "Setting up the packet interface...";
-    $endpoint->packet->connect($pInfo);
-    print " Done \n";
-    print "Checking the Controller(s)... ";
-
-    $cont = getControllers();
-    if (count($cont) > 0) {
-        print implode(" ", array_keys($cont));
+    if ($programOnly !== TRUE) {
+        $pInfo = array(
+            'GatewayIP' => $GatewayIP,
+            'GatewayPort' => $GatewayPort,
+            'GatewayKey' => $GatewayKey,
+        );
+    
+        print "Setting up the packet interface...";
+        $endpoint->packet->connect($pInfo);
+        print " Done \n";
+        print "Checking the Controller(s)... ";
+    
+        $cont = getControllers();
+        if (count($cont) > 0) {
+            print implode(" ", array_keys($cont));
+        }
+        print " Done \n";
     }
-    print " Done \n";
 	while (1) {
-      	$Prog = 'uisp -dprog=dapa -v=0 -dpart='.$hwPart['Param']['cpu'].' -dlpt=/dev/parport0';
-
+//      	$Prog = 'uisp -dprog=dapa -v=0 -dpart='.$hwPart['Param']['cpu'].' -dlpt=/dev/parport0';
+        $Prog = 'avrdude -p '.$hwPart['Param']['cpu'].' -c avrisp2 -P usb ';
+        
         // Start the device Info array
         $DeviceID = strtoupper(dechex($SN));
         $DeviceID = str_pad($DeviceID, 6, '0', STR_PAD_LEFT);
@@ -173,24 +150,24 @@
         
         // SET the fuses
         print "Setting Fuses...";
-    	$fuse = ' --wr_fuse_h='.$hwPart['Param']['fusehigh'];
+    	$fuse = ' -U hfuse:w:'.$hwPart['Param']['fusehigh'].':m';
     	if ($verbose) print "\nUsing: ".$Prog.$fuse."\n";
     	exec($Prog.$fuse, $out, $pass['FuseHigh']);
         print " Low ";
 
-    	$fuse = ' --wr_fuse_l='.$hwPart['Param']['fuselow'];
+    	$fuse = ' -U lfuse:w:'.$hwPart['Param']['fuselow'].':m';
     	if ($verbose) print "\nUsing: ".$Prog.$fuse."\n";
     	exec($Prog.$fuse, $out, $pass['FuseLow']);
         print " High ";
 
         if (isset($hwPart['Param']['fuseextended'])) {
-        	$fuse = ' --wr_fuse_e='.$hwPart['Param']['fuseextended'];
+        	$fuse = ' -U hfuse:w:'.$hwPart['Param']['fuseextended'].':m';
         	if ($verbose) print "\nUsing: ".$Prog.$fuse."\n";
         	exec($Prog.$fuse, $out, $pass['FuseExtended']);
             print " Extended ";
         }
         if (isset($hwPart['Param']['lockbits'])) {
-        	$fuse = ' --wr_lock='.$hwPart['Param']['lockbits'];
+        	$fuse = ' -U lock:w:'.$hwPart['Param']['lockbits'].':m';
         	if ($verbose) print "\nUsing: ".$Prog.$fuse."\n";
         	exec($Prog.$fuse, $out, $pass['FuseExtended']);
             print " Lock Bits ";
@@ -198,25 +175,14 @@
         print " Done \n";
 
 
-        // Write the serial Number
-        print "Writing Serial Number 0x".$DeviceID."...";
-        $tempname = writeSREC($SN, $hwPart['HWPartNum']);
-    	
-    	$eeprom = ' --segment=eeprom --upload --verify if='.$tempname;
-    
-    	if ($verbose) print "\nUsing: ".$Prog.$eeprom."\n";
-    	exec($Prog.$eeprom, $out, $pass['Serialnum']);
-        print " Done \n";
-        print "Writing Firmware Program... ";
-
     	// Program the flash
     	$tempname = tempnam("/tmp", "uisp");
     	
     	$fp = fopen($tempname, "w");
     	fwrite($fp, $fwPart['FirmwareCode']);
     	fclose($fp);
-    	$flash = ' --segment=flash --erase --upload --verify if='.$tempname;
-    
+        $flash = ' -U flash:w:'.$tempname;
+
     	if ($verbose) print "\nUsing: ".$Prog.$flash."\n";
     	exec($Prog.$flash, $out, $pass['Program']);
     	unlink($tempname);
@@ -229,7 +195,7 @@
     	$fp = fopen($tempname, "w");
     	fwrite($fp, $fwPart['FirmwareData']);
     	fclose($fp);
-    	$eeprom = ' --segment=eeprom --upload --verify if='.$tempname;
+        $eeprom = ' -D -U eeprom:w:'.$tempname;
     
     	if ($verbose) print "\nUsing: ".$Prog.$eeprom."\n";
     	exec($Prog.$eeprom, $out, $pass['Data']);
@@ -238,75 +204,85 @@
 
         sleep(2);
 
+        // Write the serial Number
+        print "Writing Serial Number 0x".$DeviceID."...";
+        $tempname = writeSREC($SN, $hwPart['HWPartNum']);
+    	
+        $eeprom = ' -U eeprom:w:'.$tempname;
+    	if ($verbose) print "\nUsing: ".$Prog.$eeprom."\n";
+    	exec($Prog.$eeprom, $out, $pass['Serialnum']);
+        print " Done \n";
+        print "Writing Firmware Program... ";
+
+
         // Get the configuration
-        $pass['Configuration'] = -1;
-
-		print "Pinging ".$dev["DeviceID"]." ";
-		$pkt = $endpoint->packet->ping($dev, TRUE);
-		print "Done \r\n";
-		
-		print "Checking the configuration of ".$dev["DeviceID"]." ";
-		$pkt = $endpoint->ReadConfig($dev);
-		if ($pkt !== FALSE) {
-			foreach($pkt as $p) {
-				if ($p !== FALSE) {
-				    if ($p["Reply"]) {
-				        if ($p['sendCommand'] == "5C") {
-                            $pass['Configuration'] = 0;
-                            $newConfig = $endpoint->InterpConfig(array($p));
-                            $newConfig = $newConfig[0];
-                            $dev = array_merge($dev, $newConfig);
-                            $configPkt = $p;
-                        }
+        if ($programOnly !== TRUE) {
+    
+            $pass['Configuration'] = -1;
+    
+    		print "Pinging ".$dev["DeviceID"]." ";
+    		$pkt = $endpoint->packet->ping($dev, TRUE);
+    		print "Done \r\n";
+    		
+    		print "Checking the configuration of ".$dev["DeviceID"]." ";
+    		$pkt = $endpoint->ReadConfig($dev);
+    		if ($pkt !== FALSE) {
+    			foreach($pkt as $p) {
+    				if ($p !== FALSE) {
+    				    if ($p["Reply"]) {
+    				        if ($p['sendCommand'] == "5C") {
+                                $pass['Configuration'] = 0;
+                                $newConfig = $endpoint->InterpConfig(array($p));
+                                $newConfig = $newConfig[0];
+                                $dev = array_merge($dev, $newConfig);
+                                $configPkt = $p;
+                            }
+        				}
     				}
-				}
-			}
+    			}
+    
+    		} else {
+                $pass['Configuration'] = 2;
+    		}
+            print "Done \r\n";
+            if (method_exists($endpoint->drivers[$dev['Driver']], "loadProgram")) {
+                print "Loading program...\n";
+                $pass['Load Program'] = !(bool)($endpoint->drivers[$dev['Driver']]->loadProgram($dev, $dev, $fwPart['FirmwareKey']));
+        		print "Done\r\n";
+    	    }
 
-		} else {
-            $pass['Configuration'] = 2;
-		}
-        print "Done \r\n";
-
-        if (method_exists($endpoint->drivers[$dev['Driver']], "loadProgram")) {
-            print "Loading program...\n";
-            $pass['Load Program'] = !(bool)($endpoint->drivers[$dev['Driver']]->loadProgram($dev, $dev, $fwPart['FirmwareKey']));
-    		print "Done\r\n";
-	    }
-
-
-
-
-        // Print the results
-        $results = "Results:\n";
-        $failed = FALSE;
-        foreach($pass as $name => $p) {
-            $results .= $name.": ";
-            if ($p == 0) {
-                $results .= "Pass";
-            } else {
-                $results .= "Failed";
-                $failed = TRUE;
+            // Print the results
+            $results = "Results:\n";
+            $failed = FALSE;
+            foreach($pass as $name => $p) {
+                $results .= $name.": ";
+                if ($p == 0) {
+                    $results .= "Pass";
+                } else {
+                    $results .= "Failed";
+                    $failed = TRUE;
+                }
+                $results .= "\n";
+            }        
+    
+            print "Saving Test Log...";
+            $log = array(
+                'HWPartNum' => $hwPart['HWPartNum'],
+                'LogDate' => date("Y-m-d H:i:s"),
+                'Log' => $results,
+                'PassedTest' => !$failed,
+                'Tester' => $tester,
+                'testVersion' => EPTEST_VERSION,
+            );
+            if ($failed == FALSE) {
+                $log['Log'] .= "SN: ".$dev['DeviceID']."\n";
             }
-            $results .= "\n";
-        }        
-
-        print "Saving Test Log...";
-        $log = array(
-            'HWPartNum' => $hwPart['HWPartNum'],
-            'LogDate' => date("Y-m-d H:i:s"),
-            'Log' => $results,
-            'PassedTest' => !$failed,
-            'Tester' => $tester,
-            'testVersion' => EPTEST_VERSION,
-        );
-        if ($failed == FALSE) {
-            $log['Log'] .= "SN: ".$dev['DeviceID']."\n";
+            $log['Log'] .= "Time: ".(time() - $testStart)."\n";
+    	    $return = $endpoint->db->AutoExecute('testLog', $log, 'INSERT');
+    
+    
+            print "\n".$results;
         }
-        $log['Log'] .= "Time: ".(time() - $testStart)."\n";
-	    $return = $endpoint->db->AutoExecute('testLog', $log, 'INSERT');
-
-
-        print "\n".$results;
 
         
 
