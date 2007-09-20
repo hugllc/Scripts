@@ -32,6 +32,9 @@
     $updatedb->uproc->register();
     
 	while(1) {
+        if (!$endpoint->db->IsConnected()) {
+            $endpoint->db->Connect($dbserver["Host"],$dbserver["User"],$dbserver["Password"],HUGNET_DATABASE);
+        }
 
         $updatedb->getAllDevices();
 
@@ -57,8 +60,6 @@
 
 	print "[".$this->uproc->me["PID"]."] Finished\n";
 
-	//$this->uproc->Unregister();
-//	$this->uproc->CheckUnregistered(TRUE);
 /**
  * @endcond
  */

@@ -51,6 +51,7 @@ define('HUGNET_FS_DIR', dirname(__FILE__));
 //var_dump($dsn);
         $db = &ADONewConnection($serv["Type"]);
         $db->Connect($serv["Host"],$serv["User"],$serv["Password"],HUGNET_DATABASE);
+        $dbserver = $serv;
         if ($db->IsConnected()) break;
     }
     
