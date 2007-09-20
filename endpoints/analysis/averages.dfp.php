@@ -47,7 +47,7 @@
 			}
 		}
 
-
+        $fifteenTotal = $fifteen;
 
 		$hourly = array();
 		foreach($fifteen as $min => $row) {
@@ -58,11 +58,16 @@
 			$hourly[$hour]["Date"] = $hour;
 			$hourly[$hour]["Type"] = "HOURLY";
 			foreach($fifteen[$min]["Data"] as $key => $val) {
-				$fifteen[$min]["Data".$key] = $val/$row["Count"];
+				if ($device['doTotal'][$key]) {
+				    $fifteen[$min]["Data".$key] = $val;
+				} else {
+				    $fifteen[$min]["Data".$key] = $val/$row["Count"];
+				}
 				$hourly[$hour]["Data"][$key] += $val;
 			}
 		}
 
+        $hourlyTotal = $hourly;
 
 		$daily = array();
 		$daily["Data"] = array();
@@ -74,22 +79,28 @@
 			$daily["Date"] = $day;
 			$daily["Type"] = "DAILY";
 			foreach($hourly[$hour]["Data"] as $key => $val) {
-				$hourly[$hour]["Data".$key] = $val / $row["Count"];
+				if ($device['doTotal'][$key]) {
+				    $hourly[$hour]["Data".$key] = $val;
+				} else {
+				    $hourly[$hour]["Data".$key] = $val / $row["Count"];
+                }
 				$daily["Data"][$key] += $val;
 			}
 		}
+        $dailyTotal = $daily;
 
 		if ($verbose) print " Saving Averages: ";
 
 		if ($device["MinAverage"] == "15MIN") {
 			$lasterror = "";
 			foreach($fifteen as $min => $row) {
+                // Average
 			    $where = "Date=".$endpoint->db->qstr($row['Date'])." AND Type=".$endpoint->db->qstr("15MIN");
                 $endpoint->db->Execute($deletequery." AND ".$where);
                 $ret  = $endpoint->db->AutoExecute($average_table, $row, 'INSERT');
 				if ($ret == FALSE) {
 				    if ($verbose) print "Insert Failed";
-//					$lasterror = " Error (".$average->wdb->Errno."): ".$average->wdb->Error." ";
+					$lasterror = " Error (".$endpoint->db->MetaError()."): ".$average->db->MetaErrorMsg($endpoint->db->MetaError())." ";
 				}
 			}
 			if ($verbose) print $lasterror." 15Min ";
@@ -101,11 +112,13 @@
 			{
 			$lasterror = "";
 			foreach($hourly as $hour => $row) {
+                // Average
 			    $where = "Date=".$endpoint->db->qstr($row['Date'])." AND Type=".$endpoint->db->qstr("HOURLY");
                 $endpoint->db->Execute($deletequery." AND ".$where);
                 $ret  = $endpoint->db->AutoExecute($average_table, $row, 'INSERT');
 				if ($ret == FALSE) {
-				    if ($verbose) print "Insert Failed";
+				    if ($verbose) print " Insert Failed ";
+					$lasterror = " Error (".$endpoint->db->MetaError()."): ".$average->db->MetaErrorMsg($endpoint->db->MetaError())." ";
 				}
 			}
 			if ($verbose) print $lasterror." Hourly ";
@@ -119,20 +132,23 @@
 			|| ($device["MinAverage"] == "HOURLY")
 			|| ($device["MinAverage"] == "DAILY"))
 			{
+			// Average
 			$lasterrror = "";
 			foreach($daily["Data"] as $key => $val) {
-				$daily["Data".$key] = $val / $daily["Count"];
+				if ($device['doTotal'][$key]) {
+				    $daily["Data".$key] = $val;				
+				} else {
+				    $daily["Data".$key] = $val / $daily["Count"];
+				}
 			}
 		    $where = "Date=".$endpoint->db->qstr($daily['Date'])." AND Type=".$endpoint->db->qstr("DAILY");
             $endpoint->db->Execute($deletequery." AND ".$where);
             $ret  = $endpoint->db->AutoExecute($average_table, $daily, 'INSERT');
 			if ($ret == FALSE) {
-			    if ($verbose) print "Insert Failed";
+			    if ($verbose) print " Insert Failed ";
+			    $lasterror = " Error (".$endpoint->db->MetaError()."): ".$average->db->MetaErrorMsg($endpoint->db->MetaError())." ";
 			}
-
-//			if (!$average->Replace($daily)) {
-//				$lasterror = " Error (".$average->wdb->Errno."): ".$average->wdb->Error." ";
-//			}
+            
 			if ($verbose) print $lasterror." Daily ";
 		}
 /*

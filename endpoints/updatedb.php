@@ -108,6 +108,7 @@ class ep_updatedb {
                 $this->ep = array();
         		foreach($res as $key => $val) {
                     $dev = $this->endpoint->DriverInfo($val);
+                    $dev['params'] = device::decodeParams($dev['params']);
 //                    if (isset($this->oldep[$key])) $dev = array_merge($this->oldep[$key], $dev);
                     $val['DeviceID'] = trim(strtoupper($val['DeviceID']));
         			$this->ep[$val['DeviceID']] = $dev;				

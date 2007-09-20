@@ -24,6 +24,7 @@
 	require_once dirname(__FILE__).'/../head.inc.php';
 	require_once 'analysis.inc.php';
 
+    if ($testMode) $endpoint->db->debug = TRUE;
     for ($i = 0; $i < count($newArgv); $i++) {
         switch($newArgv[$i]) {
             // Gateway IP address
@@ -38,12 +39,6 @@
 	$uproc = new process();
 	$uproc->Register();
 	$uproc->CheckRegistered(TRUE);
-
-//	$endpoint = new driver($prefs['servers'], HUGNET_DATABASE, array('dbWrite' => TRUE));
-//	$analysis = new analysis($prefs['servers'], HUGNET_DATABASE, array('dbWrite' => TRUE));
-//	$rhistory = new history_raw($prefs['servers'], HUGNET_DATABASE);
-//	$rwhistory = new history_raw($prefs['servers'], HUGNET_DATABASE, array('dbWrite' => TRUE));
-
 
 	$plugins = new plugins(dirname(__FILE__)."/analysis/", "dfp.php", dirname(__FILE__)."/plugins");
 
@@ -91,16 +86,9 @@
 
 	foreach($devices as $key => $dev) {
 		$devices[$key] = $endpoint->DriverInfo($dev);
-/*
-		if (!empty($argv[2])) {
-			$devices[$key]["LastAnalysis"] = $argv[2];
-		}
-*/
 	}
 	$processed = 0;
 	foreach($devices as $dev) {
-//		$uproc->Checkin();
-//		$rhistory->reset();
 
 		$temp = $plugins->run_filter($temp, "preAnalysis", $dev);
 
@@ -137,6 +125,7 @@
 		$start = 0;
         $dev['date'] = $res;
         $lastpoll = strtotime($dev['LastPoll']);
+
 		for($day = 0; ($dev['date'] < time()) && ($dev['date'] < $lastpoll); $day++) {
             $dev['date'] = mktime(0, 0, 0, $startdate['m'], $startdate['d']+$day, $startdate['Y']);
             $dev['daystart'] = date("Y-m-d 00:00:00", $dev['date']);
