@@ -43,15 +43,11 @@
 	$query .= " AND Status='GOOD' ";
 	$query .= " ORDER BY Date DESC ";
 	$query .= " LIMIT 0, 2 ";
-//print $query;
+
 	$rHist = $endpoint->db->getArray($query);
+    $rHist = array_reverse($rHist);
 
-print $endpoint->db->MetaErrorMsg;
 	$packet = $endpoint->InterpSensors($Info, $rHist);
-var_dump($packet);
-//	foreach($rHist as $hist) {
-//		$packet = $endpoint->InterpSensors($Info, array($hist));
-
-		var_dump($packet);
-//	}
+	$endpoint->modifyUnits($packet, $Info, $dPlaces, $Info['params']['dType'], $Info['params']['Units']);
+	var_dump($packet);
 ?>
