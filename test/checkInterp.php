@@ -45,9 +45,9 @@
 	$query .= " LIMIT 0, 2 ";
 
 	$rHist = $endpoint->db->getArray($query);
-    $rHist = array_reverse($rHist);
+        $rHist = array_reverse($rHist);
 
 	$packet = $endpoint->InterpSensors($Info, $rHist);
-	$endpoint->modifyUnits($packet, $Info, $dPlaces, $Info['params']['dType'], $Info['params']['Units']);
+	$endpoint->modifyUnits($packet, $Info, 2, $Info['params']['dType'], $Info['params']['Units']);
 	var_dump($packet);
 ?>
