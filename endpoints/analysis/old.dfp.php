@@ -5,7 +5,8 @@
         the system down.  If they have not reported in in a significant period
         of time we just remove them from the gateway by setting the GatewayKey = 0
     */
-	function analysis_unassigned($stuff, &$dev) {
+	function analysis_unassigned(&$stuff, &$dev) {
+        $sTime = microtime(TRUE);
         global $verbose, $endpoint;
 
 		if ($verbose > 1) print "analysis_unassigned start\r\n";
@@ -29,9 +30,8 @@
                 print "Moved to unassigned devices\n";
             }
     	}	
-   		if ($verbose > 1) print "analysis_unassigned end\r\n";
-
-		return($stuff);
+        $dTime = microtime(TRUE) - $sTime;
+   		if ($verbose > 1) print "analysis_unassigned end (".$dTime."s )\r\n";
 	}
 
 

@@ -1,6 +1,7 @@
 <?php
 
-	function analysis_polling($here, $device) {
+	function analysis_polling(&$here, &$device) {
+        $sTime = microtime(TRUE);
         global $verbose;
 
 		if ($verbose > 1) print "analysis_polling start\r\n";
@@ -31,9 +32,9 @@
 		if ($stuff['Replies'] > 0) {
 		    $stuff['AverageReplyTime'] /= $stuff['Replies'];
 		}
-		if ($verbose > 1) print "analysis_polling end\r\n";
+        $dTime = microtime(TRUE) - $sTime;
+		if ($verbose > 1) print "analysis_polling end (".$dTime."s) \r\n";
 
-		return($stuff);
 	}
 
 

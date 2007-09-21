@@ -1,6 +1,7 @@
 <?php
 
-	function analysis_unsolicited($stuff, &$dev) {
+	function analysis_unsolicited(&$stuff, &$dev) {
+        $sTime = microtime(TRUE);
         global $verbose;
 
 		if ($verbose > 1) print "analysis_unsolicited start\r\n";
@@ -42,9 +43,9 @@
     		}
         }		
 		
-		if ($verbose > 1) print "analysis_unsolicited end\r\n";
+        $dTime = microtime(TRUE) - $sTime;
+		if ($verbose > 1) print "analysis_unsolicited end (".$dTime."s)\r\n";
 
-		return($stuff);
 	}
 
 

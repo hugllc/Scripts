@@ -150,11 +150,11 @@
 				$filterout = array();
                 if ($verbose) print "\r\n"; 
 				for($i = 0; $i < 10; $i++) {
-					$filterout = $plugins->run_filter($filterout, "Analysis".$i, $dev);
+					$plugins->run_filter($filterout, "Analysis".$i, $dev);
 				}
-				$filterout = $plugins->run_filter($filterout, "Analysis", $dev);
+				$plugins->run_filter($filterout, "Analysis", $dev);
 				for($i = 10; $i < 20; $i++) {
-					$filterout = $plugins->run_filter($filterout, "Analysis".$i, $dev);
+					$plugins->run_filter($filterout, "Analysis".$i, $dev);
 				}
 				$processed += $count;
                             

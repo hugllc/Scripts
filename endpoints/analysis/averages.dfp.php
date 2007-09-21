@@ -1,7 +1,7 @@
 <?php
 
-	function analysis_averages($stuff, &$device) {
-
+	function analysis_averages(&$stuff, &$device) {
+        $sTime = microtime(TRUE);
         global $verbose;
 		global $endpoint;
 
@@ -18,8 +18,10 @@
 		}
 
 		$average_table = $endpoint->getAverageTable($device);
-
-        $deletequery = "DELETE FROM ".$average_table." WHERE DeviceKey=".$device['DeviceKey'];
+        $deletequery = "DELETE FROM ".$average_table
+                      ." WHERE DeviceKey=".$device['DeviceKey']
+                      ." AND Date=? AND Type=?";
+        $dquery = $endpoint->db->Prepare($deletequery);
 
 		$fifteen = array();
 		foreach($data as $row) {
@@ -46,7 +48,6 @@
 				}
 			}
 		}
-
         $fifteenTotal = $fifteen;
 
 		$hourly = array();
@@ -58,10 +59,8 @@
 			$hourly[$hour]["Date"] = $hour;
 			$hourly[$hour]["Type"] = "HOURLY";
 			foreach($fifteen[$min]["Data"] as $key => $val) {
-				if ($device['doTotal'][$key]) {
-				    $fifteen[$min]["Data".$key] = $val;
-				} else {
-				    $fifteen[$min]["Data".$key] = $val/$row["Count"];
+				if (!$device['doTotal'][$key]) {
+				    $fifteen[$min]["Data"][$key] = $val/$row["Count"];
 				}
 				$hourly[$hour]["Data"][$key] += $val;
 			}
@@ -78,30 +77,37 @@
 			$daily["DeviceKey"] = $device["DeviceKey"];
 			$daily["Date"] = $day;
 			$daily["Type"] = "DAILY";
+            $colCnt = 0;
 			foreach($hourly[$hour]["Data"] as $key => $val) {
-				if ($device['doTotal'][$key]) {
-				    $hourly[$hour]["Data".$key] = $val;
-				} else {
-				    $hourly[$hour]["Data".$key] = $val / $row["Count"];
+				if (!$device['doTotal'][$key]) {
+				    $hourly[$hour]["Data"][$key] = $val / $row["Count"];
                 }
 				$daily["Data"][$key] += $val;
 			}
 		}
-        $dailyTotal = $daily;
+
+        // Set up most of the SQL query...
+        $basequery = "REPLACE INTO ".$average_table." (DeviceKey,Date,Type";
+        for($i = 0; $i < $device['NumSensors']; $i++) {
+            $basequery .= ",Data".$i."";
+        }
+        $basequery .= ") VALUES (".$device['DeviceKey'].",?,?";
+        for($i = 0; $i < $device['NumSensors']; $i++) {
+            $basequery .= ",?";
+        }
+        $basequery .= ")";
+        $query = $endpoint->db->Prepare($basequery);
 
 		if ($verbose) print " Saving Averages: ";
 
+        // Now get the data for the query;
+        $hist = array();
+        $del = array();
 		if ($device["MinAverage"] == "15MIN") {
 			$lasterror = "";
 			foreach($fifteen as $min => $row) {
-                // Average
-			    $where = "Date=".$endpoint->db->qstr($row['Date'])." AND Type=".$endpoint->db->qstr("15MIN");
-                $endpoint->db->Execute($deletequery." AND ".$where);
-                $ret  = $endpoint->db->AutoExecute($average_table, $row, 'INSERT');
-				if ($ret == FALSE) {
-				    if ($verbose) print "Insert Failed";
-					$lasterror = " Error (".$endpoint->db->MetaError()."): ".$average->db->MetaErrorMsg($endpoint->db->MetaError())." ";
-				}
+			    $del[] = array($row['Date'], $row['Type']);
+                $hist[] = analysis_averages_insert($row, $device['NumSensors']);
 			}
 			if ($verbose) print $lasterror." 15Min ";
 		}
@@ -112,14 +118,8 @@
 			{
 			$lasterror = "";
 			foreach($hourly as $hour => $row) {
-                // Average
-			    $where = "Date=".$endpoint->db->qstr($row['Date'])." AND Type=".$endpoint->db->qstr("HOURLY");
-                $endpoint->db->Execute($deletequery." AND ".$where);
-                $ret  = $endpoint->db->AutoExecute($average_table, $row, 'INSERT');
-				if ($ret == FALSE) {
-				    if ($verbose) print " Insert Failed ";
-					$lasterror = " Error (".$endpoint->db->MetaError()."): ".$average->db->MetaErrorMsg($endpoint->db->MetaError())." ";
-				}
+			    $del[] = array($row['Date'], $row['Type']);
+                $hist[] = analysis_averages_insert($row, $device['NumSensors']);
 			}
 			if ($verbose) print $lasterror." Hourly ";
 
@@ -135,107 +135,43 @@
 			// Average
 			$lasterrror = "";
 			foreach($daily["Data"] as $key => $val) {
-				if ($device['doTotal'][$key]) {
-				    $daily["Data".$key] = $val;				
-				} else {
-				    $daily["Data".$key] = $val / $daily["Count"];
+				if (!$device['doTotal'][$key]) {
+				    $daily["Data"][$key] = $val / $daily["Count"];
 				}
 			}
-		    $where = "Date=".$endpoint->db->qstr($daily['Date'])." AND Type=".$endpoint->db->qstr("DAILY");
-            $endpoint->db->Execute($deletequery." AND ".$where);
-            $ret  = $endpoint->db->AutoExecute($average_table, $daily, 'INSERT');
-			if ($ret == FALSE) {
-			    if ($verbose) print " Insert Failed ";
-			    $lasterror = " Error (".$endpoint->db->MetaError()."): ".$average->db->MetaErrorMsg($endpoint->db->MetaError())." ";
-			}
-            
 			if ($verbose) print $lasterror." Daily ";
+
+			$del[] = array($daily['Date'], $daily['Type']);
+            $hist[] = analysis_averages_insert($daily, $device['NumSensors']);
+//            $ret = $endpoint->db->Execute($dquery, $del);
+            if ($verbose) print " Saving... ";
+            $qtime = microtime(TRUE);
+            $ret = $endpoint->db->Execute($query, $hist);
+            if ($verbose) print " Done (".(microtime(TRUE) - $qtime)."s)";
+        	if ($ret == FALSE) {
+        	    if ($verbose) print "Insert Failed";
+        		$lasterror = " Error (".$endpoint->db->MetaError()."): ".$endpoint->db->MetaErrorMsg($endpoint->db->MetaError())." ";
+        	}
+            
 		}
-/*
-	// Do this stuff only once a day.
-	if ($stuff["Date"] != date("Y-m-d")) {
-
-		if (is_object($endpoint->drivers[$device["Driver"]]->history)) {
-			$hist = $endpoint->drivers[$device["Driver"]]->history;
-			$OldSelect = $hist->Select;
-			$hist->SelectAverages();
-			$date = strtotime($stuff["Date"]);
-			$date += 5*60*60;  // Put the time in the middle of the day at 5am.
 
 
-			$yearstart = date("Y-1-1 00:00:00", $date);
-			$yearend = date("Y-12-31 23:59:59", $date);
-			$hist->SetRange("Date", $yearstart, $yearend);
-			$hist->lookup($device["DeviceKey"], "DeviceKey");
-
-			if (is_array($hist->lookup[0])) {
-				$info = $hist->lookup[0];
-
-				$info["Type"] = "YEARLY";
-				$info["Date"] = date("Y-1-1 05:00:00", $date);
-				$lasterrror = "";
-				if (!$average->Replace($info)) {
-					$lasterror = " Error (".$average->wdb->Errno."): ".$average->wdb->Error." ";
-				}
-				if ($verbose) print $lasterror." Yearly ";
-				$hist->lookup = array();
-			}
-
-
-
-
-			$monthstart = date("Y-m-1 00:00:00", $date);
-			$monthend = date("Y-m-d H:i:s", mktime(23, 59, 59, (date("m", $date)+1), 0, date("Y", $date)));			
-			$hist->SetRange("Date", $monthstart, $monthend);
-			$hist->lookup($device["DeviceKey"], "DeviceKey");
-			if (is_array($hist->lookup[0])) {
-				$info = $hist->lookup[0];
-				$info["Type"] = "MONTHLY";
-				$info["Date"] = date("Y-m-1 05:00:00", $date);
-				$lasterrror = "";
-				if (!$average->Replace($info)) {
-					$lasterror = " Error (".$average->wdb->Errno."): ".$average->wdb->Error." ";
-				}
-				if ($verbose) print $lasterror." Monthly ";
-//print $hist->LastLookupQuery;
-//print get_stuff($info, "monthly");
-				$hist->lookup = array();
-				$info = array();
-			}
-
-			$week = $date - (date("w", $date)*86400);
-			$weekstart = date("Y-m-d 00:00:00", $week);
-			$weekend = date("Y-m-d 23:59:59", ($week+(6*86400)));
-			$hist->SetRange("Date", $weekstart, $weekend);
-			$hist->lookup($device["DeviceKey"], "DeviceKey");
-			if (is_array($hist->lookup[0])) {
-				$info = $hist->lookup[0];
-				$info["Type"] = "WEEKLY";
-				$info["Date"] = date("Y-m-d 05:00:00", $week);
-	
-				$lasterrror = "";
-				if (!$average->Replace($info)) {
-					$lasterror = " Error (".$average->wdb->Errno."): ".$average->wdb->Error." ";
-				}
-				if ($verbose) print $lasterror." Weekly ";
-//print $hist->LastLookupQuery;
-//print get_stuff($info, "weekly");
-				$hist->lookup = array();
-				$info = array();
-			}
-
-			$hist->Select = $OldSelect;
-			$hist->SetRange("Date", FALSE, FALSE);
-		}
-	}
-	*/
         if ($verbose) print "\r\n";
 
-		if ($verbose > 1) print "analysis_history_check end\r\n";
-		
-		return($stuff);
-	}
+        $dTime = microtime(TRUE) - $sTime;
+		if ($verbose > 1) print "analysis_history_check end (".$dTime."s) \r\n";
+    }
 
 	$this->register_function("analysis_averages", "Analysis");
+
+function analysis_averages_insert($row, $count) {
+
+    $ret[] = $row["Date"];
+    $ret[] = $row["Type"];
+    for($i = 0; $i < $count; $i++) {
+        $ret[] = $row['Data'][$i];
+    }
+    return $ret;
+}
 
 ?>

@@ -1,6 +1,7 @@
 <?php
 
-	function analysis_history_check($stuff) {
+	function analysis_history_check(&$stuff) {
+        $sTime = microtime(TRUE);
 
 		global $endpoint;
 		global $rwhistory;
@@ -147,8 +148,10 @@
 		if ($verbose) print "Found ".$_SESSION['dup']." Duplicates, ".$_SESSION['bad']." Bad and updated ".$_SESSION['update']." Records\r\n";
 		if ($verbose) print "Keys from ".$firstKey." to ".$lastKey."\r\n";
 
-		if ($verbose > 1) print "analysis_history_check end\r\n";
-		return($stuff);
+        $dTime = microtime(TRUE) - $sTime;
+		if ($verbose > 1) print "analysis_history_check end (".$dTime."s)\r\n";
+
+
 	}
 
 
