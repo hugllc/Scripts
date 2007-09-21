@@ -20,6 +20,7 @@
 	require_once(dirname(__FILE__).'/../head.inc.php');
     require_once(HUGNET_INCLUDE_PATH.'/plog.inc.php');
     require_once(HUGNET_INCLUDE_PATH.'/process.inc.php');
+    if ($testMode) $endpoint->db->debug = TRUE;
 
 //	$mhistory = new history_raw($db, $conf['hugnetDb']);
 
