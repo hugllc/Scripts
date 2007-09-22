@@ -91,9 +91,9 @@
         for($i = 0; $i < $device['NumSensors']; $i++) {
             $basequery .= ",Data".$i."";
         }
-        $basequery .= ") VALUES (".$device['DeviceKey'].",?,?";
+        $basequery .= ") VALUES (".$device['DeviceKey'].",".$endpoint->db->Param("date").",".$endpoint->db->Param("type");
         for($i = 0; $i < $device['NumSensors']; $i++) {
-            $basequery .= ",?";
+            $basequery .= ",".$endpoint->db->Param("a".$i);
         }
         $basequery .= ")";
         $query = $endpoint->db->Prepare($basequery);
