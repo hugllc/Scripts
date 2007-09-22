@@ -7,18 +7,17 @@
 		global $rwhistory;
 		global $prefs;
         global $verbose;
+        $device = &$_SESSION['devInfo'];
+
 		if ($verbose > 1) print "analysis_history_check start\r\n";
 		if ($verbose) print "Crunching the packets...  ";
         $history = &$_SESSION['rawHistoryCache'];
 		$history = $endpoint->InterpSensors($_SESSION['devInfo'], $history);
 		if ($verbose) print "Done!\r\n";
 
-//		$history =& $endpoint->getHistoryObj($_SESSION['devInfo']);
-//		if (!$history->isWritable()) {
-//			$history->makeWritable();
-//		}
         $history_table = $endpoint->getHistoryTable($_SESSION['devInfo']);
 
+        $device = &$_SESSION['devInfo'];
 		
 		$last = FALSE;
 		$dup = 0;
@@ -27,7 +26,8 @@
         $forceUpdate = FALSE;
         if ($_SESSION['Deep']) $forceUpdate = TRUE;
 
-		
+
+        $chHistt = array();		
 		if (is_array($history)) {
 			$firstKey=NULL;
 			foreach($history as $key => $rec) {
@@ -42,7 +42,7 @@
 //								$rec['StatusOld'] = $rec['Status'];
 								$dup++;
 							}
-							$rec['Status'] = 'DUPLICATE';
+							$history[$key]['Status'] = 'DUPLICATE';
 						} else {
 							$last = $rec;						
 						}
@@ -88,6 +88,8 @@
 				if (($rec['Status'] != $rec['StatusOld']) || $forceUpdate) {
                     if ($verbose) print $rec['HistoryRawKey']." from ".$rec['Date']." ";
 					if ($rec['Status'] == 'GOOD') {
+                        $chHist[] = history_check_insert($rec, $device['NumSensors']);
+/*
                         $ret  = $endpoint->db->AutoExecute($history_table, $rec, 'INSERT');
 //var_dump($ret);
                         if ($ret == FALSE) {
@@ -101,13 +103,12 @@
     				    } else {
    							if ($verbose) print "Added the History\r\n";    				    
     				    }
-
+*/
 					} else {
 						$info = array(
 							'DeviceKey' => $rec['DeviceKey'],
 							'Date' => $rec['Date'],
 						);
-//						$ret = $history->remove($info);
 						$ret = $endpoint->db->Execute("DELETE FROM ".$history_table." WHERE ".
 						                              " DeviceKey = ".$rec['DeviceKey'].
 						                              " AND ".
@@ -121,22 +122,15 @@
 					}
 				}
 				if ($_SESSION['Deep'] && ($rec['Status'] != 'BAD')) {
-/*
-					$history->reset();
-					$history->addWhere('DeviceKey='.$rec['DeviceKey']);
-					$history->addWhere("Date='".$rec['Date']."'");
-//print get_stuff($rec);
-					$ret = $history->update($rec);
-*/
-                    $ret  = $endpoint->db->AutoExecute($history_table, $rec, 'UPDATE', 'DeviceKey='.$rec['DeviceKey']." AND Date='".$rec['Date']."'");
+                    $chHist[] = history_check_insert($rec, $device['NumSensors']);
+/*                    $ret  = $endpoint->db->AutoExecute($history_table, $rec, 'UPDATE', 'DeviceKey='.$rec['DeviceKey']." AND Date='".$rec['Date']."'");
 
 					if ($ret === FALSE) {
 						if ($verbose) print " Update Failed ";
-//print get_stuff($history);
 					} else {
                         if ($verbose > 3) print " Updated ";
-//						print "Updated the History for ".$rec['HistoryRawKey']."\r\n";
 					}							
+*/
 				}
                 if ($verbose > 3) print "\r\n";
 
@@ -148,6 +142,24 @@
 		if ($verbose) print "Found ".$_SESSION['dup']." Duplicates, ".$_SESSION['bad']." Bad and updated ".$_SESSION['update']." Records\r\n";
 		if ($verbose) print "Keys from ".$firstKey." to ".$lastKey."\r\n";
 
+        if ($_SESSION['Deep']) {
+            $_SESSION['historyCache'] = $history;
+        }
+        // Set up most of the SQL query...
+        $basequery = "REPLACE INTO ".$history_table." (DeviceKey,Date,deltaT";
+        for($i = 0; $i < $device['NumSensors']; $i++) {
+            $basequery .= ",Data".$i."";
+        }
+        $basequery .= ") VALUES (".$device['DeviceKey'].",".$endpoint->db->Param("date").",".$endpoint->db->Param("deltaT");
+        for($i = 0; $i < $device['NumSensors']; $i++) {
+            $basequery .= ",".$endpoint->db->Param("a".$i);
+        }
+        $basequery .= ")";
+        $basequery = $endpoint->db->Prepare($basequery);
+            
+        $ret = $endpoint->db->Execute($basequery, $chHist);
+
+
         $dTime = microtime(TRUE) - $sTime;
 		if ($verbose > 1) print "analysis_history_check end (".$dTime."s)\r\n";
 
@@ -156,5 +168,15 @@
 
 
 	$this->register_function("analysis_history_check", "Analysis0");
+
+function history_check_insert($row, $count) {
+
+    $ret[] = $row["Date"];
+    $ret[] = $row["deltaT"];
+    for($i = 0; $i < $count; $i++) {
+        $ret[] = $row['Data'.$i];
+    }
+    return $ret;
+}
 
 ?>

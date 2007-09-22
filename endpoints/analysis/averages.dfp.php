@@ -43,9 +43,12 @@
 			$fifteen[$hour]["Input"] = $key;
 			
 			foreach($row as $key => $val) {
-				if (strtolower(substr($key, 0, 4)) == "data") {
-					$fifteen[$hour]["Data"][substr($key, 4)] += $val;
-				}
+			    if (!is_array($val)) {
+    				if (strtolower(substr($key, 0, 4)) == "data") {
+    				    $tKey = (int) substr($key, 4);
+    					$fifteen[$hour]["Data"][$tKey] += $val;
+    				}
+    		    }
 			}
 		}
         $fifteenTotal = $fifteen;
