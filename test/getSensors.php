@@ -32,6 +32,7 @@
  * @cond	SCRIPT
 */
 	require_once(dirname(__FILE__).'/../head.inc.php');
+        $endpoint->packet->SNCheck(FALSE);
 
 	
 	if (empty($DeviceID)) {
