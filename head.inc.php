@@ -45,16 +45,17 @@ define('HUGNET_FS_DIR', dirname(__FILE__));
 	require_once(HUGNET_INCLUDE_PATH."/process.inc.php");
 
 	require_once('adodb/adodb.inc.php');
-	
-    foreach($prefs['servers'] as $serv) {
-//        $dsn = $serv['Type']."://".$serv["User"].":".rawurlencode($serv["Password"])."@".$serv["Host"]."/".HUGNET_DATABASE;
-//var_dump($dsn);
-        $db = &ADONewConnection($serv["Type"]);
-        $db->Connect($serv["Host"],$serv["User"],$serv["Password"],HUGNET_DATABASE);
-        $dbserver = $serv;
-        if ($db->IsConnected()) break;
-    }
-    
+
+    if (is_null($db)) {	
+        foreach($prefs['servers'] as $serv) {
+    //        $dsn = $serv['Type']."://".$serv["User"].":".rawurlencode($serv["Password"])."@".$serv["Host"]."/".HUGNET_DATABASE;
+    //var_dump($dsn);
+            $db = &ADONewConnection($serv["Type"]);
+            $db->Connect($serv["Host"],$serv["User"],$serv["Password"],HUGNET_DATABASE);
+            $dbserver = $serv;
+            if ($db->IsConnected()) break;
+        }
+    }    
     if (!$db->IsConnected()) die("Database Connection Failed\n");
 
     if (!isset($GatewayIP)) $GatewayIP = "127.0.0.1";

@@ -31,8 +31,6 @@
     define("POLL_PARTNUMBER", "0039260150");  //0039-26-01-P
     define("POLL_SVN", '$Id$');
 
-
-
 	$GatewayKey = FALSE;
     $testMode = FALSE;
 
@@ -399,7 +397,7 @@ class ep_poll {
                 $this->uproc->incStat("To Me");
                 switch(trim(strtoupper($pkt['sendCommand']))) {
                     case PACKET_COMMAND_GETSETUP:
-                        $this->interpConfig($pkt);
+                        $this->interpConfig(array($pkt));
                         break;
                     default:    // We didn't send a packet out.
                         switch(trim(strtoupper($pkt['Command']))) {
@@ -594,10 +592,10 @@ class ep_poll {
             if ($gotConfig) {
     			// If it is a controller board check the program
                 $this->uproc->incStat("Device Checked Success");
-    			if (method_exists($this->endpoint->drivers[$dev['Driver']], "checkProgram")) {
+    			if (method_exists($this->endpoint->drivers[$newConfig['Driver']], "checkProgram")) {
                     $this->uproc->incStat("Check Program");
     			    print " Checking Program ";
-                    $ret = $this->endpoint->drivers[$dev['Driver']]->checkProgram($dev, $pkt);
+                    $ret = $this->endpoint->drivers[$dev['Driver']]->checkProgram($newConfig, $pkt, TRUE);
                     if ($ret) {
                         $this->uproc->incStat("Check Program Success");
                         print " Done ";
@@ -770,7 +768,7 @@ class ep_poll {
     function interpConfig($pkt) {
         if (!is_array($pkt)) return;
 
-        $newConfig = $this->endpoint->InterpConfig(array($pkt));
+        $newConfig = $this->endpoint->InterpConfig($pkt);
 
         if ($pkt['isGateway']) {
 
@@ -825,7 +823,7 @@ class ep_poll {
             $this->_devInfo[$devKey]['GetConfig'] = FALSE;
         }
         
-
+        return $newConfig;
     }
     
     function criticalFailure($reason) {
