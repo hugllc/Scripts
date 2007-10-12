@@ -156,7 +156,7 @@ class ep_poll {
         if ($this->test) {
             $this->Priority = 0xFF;
         } else {
-            $this->Priority = mt_rand(0, 0xFF);
+            $this->Priority = mt_rand(1, 0xFF);
         }
     }
 
