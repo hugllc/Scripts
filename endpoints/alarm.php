@@ -1,27 +1,32 @@
 <?php
 /**
-	$Id$
-	@file scripts/endpoints/alarm.php
-	@brief Stript to check for alarms.
-	
-	$Log: alarm.php,v $
-	Revision 1.2  2005/06/01 20:44:52  prices
-	Updated them to work with the new setup.
-	
-	Revision 1.1  2005/06/01 15:03:28  prices
-	Moving from the 08/scripts directory.  This is the new home.
-	
-	Revision 1.11  2005/05/10 13:39:31  prices
-	Periodic Checkin
-	
-	Revision 1.10  2005/04/05 13:37:27  prices
-	Added lots of documentation.
-	
-	
-*/
-/**
- * @cond	SCRIPT
-*/
+ *   <pre>
+ *   HUGnetLib is a library of HUGnet code
+ *   Copyright (C) 2007 Hunt Utilities Group, LLC
+ *   
+ *   This program is free software; you can redistribute it and/or
+ *   modify it under the terms of the GNU General Public License
+ *   as published by the Free Software Foundation; either version 3
+ *   of the License, or (at your option) any later version.
+ *   
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *   
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *   </pre>
+ *
+ *   @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ *   @package Scripts
+ *   @subpackage Alarm
+ *   @copyright 2007 Hunt Utilities Group, LLC
+ *   @author Scott Price <prices@hugllc.com>
+ *   @version $Id$    
+ *
+ */
 	require_once dirname(__FILE__).'/../head.inc.php';
 
 	$uproc = new process($prefs['servers'], HUGNET_DATABASE, "NORMAL", basename(__FILE__));

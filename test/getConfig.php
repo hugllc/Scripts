@@ -1,36 +1,32 @@
 <?php
 /**
-	$Id$
-	@file scripts/test/sendpacket.php
-	@brief generic script for sending packets to an endpoint
-	
-	$Log: getConfig.php,v $
-	Revision 1.1  2005/06/03 17:12:55  prices
-	More stuff is being offloaded from the driver class into the specific or eDEFAULT drivers.
-	This makes more sense.
-	
-	Revision 1.2  2005/06/01 20:44:52  prices
-	Updated them to work with the new setup.
-	
-	Revision 1.1  2005/06/01 15:03:28  prices
-	Moving from the 08/scripts directory.  This is the new home.
-	
-	Revision 1.4  2005/05/10 13:39:31  prices
-	Periodic Checkin
-	
-	Revision 1.3  2005/04/05 13:37:27  prices
-	Added lots of documentation.
-	
-	Revision 1.2  2005/02/18 16:48:54  prices
-	Many changes to accomodate the new controller boards, plus to move from hugnetd to seriald.
-	
-	Revision 1.1  2005/02/17 02:24:49  prices
-	Periodic Checkin
-	
-*/ 
-/**
- * @cond	SCRIPT
-*/
+ *   <pre>
+ *   HUGnetLib is a library of HUGnet code
+ *   Copyright (C) 2007 Hunt Utilities Group, LLC
+ *   
+ *   This program is free software; you can redistribute it and/or
+ *   modify it under the terms of the GNU General Public License
+ *   as published by the Free Software Foundation; either version 3
+ *   of the License, or (at your option) any later version.
+ *   
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *   
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *   </pre>
+ *
+ *   @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ *   @package Scripts
+ *   @subpackage Test
+ *   @copyright 2007 Hunt Utilities Group, LLC
+ *   @author Scott Price <prices@hugllc.com>
+ *   @version $Id$    
+ *
+ */
 	require_once(dirname(__FILE__).'/../head.inc.php');
         $endpoint->packet->SNCheck(FALSE);
 

@@ -1,26 +1,31 @@
 <?php
 /**
-	$Id$
-	@file scripts/misc/programEP.php
-	@brief Sets up and runs UISP to program a device.
-	
-	$Log: programEP.php,v $
-	Revision 1.3  2006/02/14 15:49:54  prices
-	Periodic commit.
-	
-	Revision 1.2  2005/06/01 20:44:52  prices
-	Updated them to work with the new setup.
-	
-	Revision 1.1  2005/06/01 18:30:34  prices
-	Inception
-	
-	Revision 1.1  2005/05/10 20:20:10  prices
-	Programs an endpoint and caches the data so that it can program others without a network connection.
-	
-	
-*/
-/**
- * @cond SCRIPT
+ *   <pre>
+ *   HUGnetLib is a library of HUGnet code
+ *   Copyright (C) 2007 Hunt Utilities Group, LLC
+ *   
+ *   This program is free software; you can redistribute it and/or
+ *   modify it under the terms of the GNU General Public License
+ *   as published by the Free Software Foundation; either version 3
+ *   of the License, or (at your option) any later version.
+ *   
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *   
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *   </pre>
+ *
+ *   @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ *   @package Scripts
+ *   @subpackage Misc
+ *   @copyright 2007 Hunt Utilities Group, LLC
+ *   @author Scott Price <prices@hugllc.com>
+ *   @version $Id$    
+ *
  */
 	require_once(dirname(__FILE__).'/../head.inc.php');
 

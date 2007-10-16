@@ -1,69 +1,32 @@
 <?php
 /**
-	$Id$
-	file scripts/endpoints/fastpoll.php
-	@brief Polls endpoints for data periodically.
-	
-	$Log: fastpoll.php,v $
-	Revision 1.1  2005/06/01 15:03:28  prices
-	Moving from the 08/scripts directory.  This is the new home.
-	
-	Revision 1.35  2004/12/09 00:12:16  prices
-	Changed the check record function in e00391200 so that it no longer writes over RawData.
-	
-	Revision 1.34  2004/12/08 22:36:29  prices
-	Changed DeviceName over to DeviceID.
-	
-	Revision 1.33  2004/12/07 22:47:24  prices
-	Many fixes and it now does hourly and daily averages.
-	
-	Revision 1.32  2004/12/07 16:20:39  prices
-	It now records a record as bad instead of not showing it.
-	
-	Revision 1.31  2004/12/07 15:49:42  prices
-	Many changes in how things work and a lot of bug fixes.
-	
-	Revision 1.30  2004/12/04 18:34:11  prices
-	Lots of fixes
-	
-	Revision 1.29  2004/11/29 20:03:46  prices
-	Periodic checkin.
-	
-	Revision 1.28  2004/11/20 04:35:19  prices
-	A multitude of changes.  This is a periodic checkin.
-	
-	Revision 1.27  2004/10/11 20:55:38  prices
-	Fixed a lot of stuff.
-	
-	Revision 1.26  2004/08/11 14:12:15  prices
-	It should track failures now.
-	
-	Revision 1.25  2004/08/11 13:46:08  prices
-	Periodic checkin
-	
-	Revision 1.24  2004/07/17 12:44:54  prices
-	Fixed host for database.  I also set it so that it will only process 4 powerup packets, then go on.  It
-	also ignores powerup packets from FFFFFF.
-	
-	Revision 1.23  2004/07/13 13:34:31  prices
-	It now randomizes the array when it first loads it from the database.
-	
-	Revision 1.22  2004/07/13 00:20:05  prices
-	Major changes.  It now really calculates the time an endpoint should be polled instead of just
-	taking the mod of the minutes.  It also stops trying to check endpoints that powered up after
-	3 failed attempts.
-	
-	Revision 1.21  2004/03/24 17:37:06  prices
-	*** empty log message ***
-	
-	Revision 1.20  2004/03/24 17:12:42  prices
-	Straightened out the printing of the Id string.
-	
-	Revision 1.18  2004/03/24 17:09:04  prices
-	Added the header.
-	
-
-*/
+ *   <pre>
+ *   HUGnetLib is a library of HUGnet code
+ *   Copyright (C) 2007 Hunt Utilities Group, LLC
+ *   
+ *   This program is free software; you can redistribute it and/or
+ *   modify it under the terms of the GNU General Public License
+ *   as published by the Free Software Foundation; either version 3
+ *   of the License, or (at your option) any later version.
+ *   
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *   
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *   </pre>
+ *
+ *   @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ *   @package Scripts
+ *   @subpackage Poll
+ *   @copyright 2007 Hunt Utilities Group, LLC
+ *   @author Scott Price <prices@hugllc.com>
+ *   @version $Id$    
+ *
+ */
 
 	$dfportal_no_session = TRUE;
 	include_once("blankhead.inc.php");

@@ -1,44 +1,32 @@
 <?php
 /**
-	$Id$
-	@file scripts/test/loadprog.php
-	@brief Loads a program into a 0039-21 controller board remotely.
-	
-	$Log: loadprog.php,v $
-	Revision 1.1  2005/06/01 15:03:28  prices
-	Moving from the 08/scripts directory.  This is the new home.
-	
-	Revision 1.7  2005/05/10 13:39:31  prices
-	Periodic Checkin
-	
-	Revision 1.6  2005/04/12 13:57:08  prices
-	The polling now accounts for the fact that controller boards might lose the location of endpoints.
-	
-	Revision 1.5  2005/04/12 02:00:44  prices
-	Removed the locking to see if it still worked.  It still seems to.
-	
-	Revision 1.4  2005/04/05 13:37:27  prices
-	Added lots of documentation.
-	
-	Revision 1.3  2005/03/25 20:19:59  prices
-	It now loads a program correctly.
-	
-	Revision 1.2  2005/03/19 02:17:00  prices
-	Fixed a bug that didn't check to see if we were running the bootloader before it went on.
-	
-	Revision 1.1  2005/03/19 00:35:07  prices
-	Loads a program into a board.
-	
-	Revision 1.2  2005/02/18 16:48:54  prices
-	Many changes to accomodate the new controller boards, plus to move from hugnetd to seriald.
-	
-	Revision 1.1  2005/02/17 02:24:49  prices
-	Periodic Checkin
-	
-*/
-/**
- * @cond	SCRIPT
-*/
+ *   <pre>
+ *   HUGnetLib is a library of HUGnet code
+ *   Copyright (C) 2007 Hunt Utilities Group, LLC
+ *   
+ *   This program is free software; you can redistribute it and/or
+ *   modify it under the terms of the GNU General Public License
+ *   as published by the Free Software Foundation; either version 3
+ *   of the License, or (at your option) any later version.
+ *   
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *   
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *   </pre>
+ *
+ *   @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ *   @package Scripts
+ *   @subpackage Test
+ *   @copyright 2007 Hunt Utilities Group, LLC
+ *   @author Scott Price <prices@hugllc.com>
+ *   @version $Id$    
+ *
+ */
 
  	require_once(dirname(__FILE__).'/../head.inc.php');
     for ($i = 0; $i < count($newArgv); $i++) {
