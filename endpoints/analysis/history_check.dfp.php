@@ -54,8 +54,7 @@
         $forceUpdate = FALSE;
         if ($_SESSION['Deep']) $forceUpdate = TRUE;
 
-
-        $chHistt = array();		
+        $chHist = array();		
 		if (is_array($history)) {
 			$firstKey=NULL;
 			foreach($history as $key => $rec) {
@@ -187,7 +186,6 @@
             
         $ret = $endpoint->db->Execute($basequery, $chHist);
 
-
         $dTime = microtime(TRUE) - $sTime;
 		if ($verbose > 1) print "analysis_history_check end (".$dTime."s)\r\n";
 
@@ -200,7 +198,7 @@
 function history_check_insert($row, $count) {
 
     $ret[] = $row["Date"];
-    $ret[] = $row["deltaT"];
+    $ret[] = is_null($row["deltaT"]) ? 0 : $row["deltaT"];
     for($i = 0; $i < $count; $i++) {
         $ret[] = $row['Data'.$i];
     }
