@@ -29,7 +29,7 @@
  */
 
     $GatewayKey=3;
-    define("EPTEST_VERSION", "0.0.6");
+    define("EPTEST_VERSION", "0.0.7");
     define("EPTEST_PARTNUMBER", "0039260450");  //0039-26-04-P
 
 	print '$Id$'."\n";
@@ -175,17 +175,19 @@
         print " High ";
 
         if (isset($hwPart['Param']['fuseextended'])) {
-        	$fuse = ' -U hfuse:w:'.$hwPart['Param']['fuseextended'].':m';
+        	$fuse = ' -U efuse:w:'.$hwPart['Param']['fuseextended'].':m';
         	if ($verbose) print "\nUsing: ".$Prog.$fuse."\n";
         	exec($Prog.$fuse, $out, $pass['FuseExtended']);
             print " Extended ";
         }
+/*        
         if (isset($hwPart['Param']['lockbits'])) {
         	$fuse = ' -U lock:w:'.$hwPart['Param']['lockbits'].':m';
         	if ($verbose) print "\nUsing: ".$Prog.$fuse."\n";
-        	exec($Prog.$fuse, $out, $pass['FuseExtended']);
+        	exec($Prog.$fuse, $out, $pass['LockBits']);
             print " Lock Bits ";
         }
+*/
         print " Done \n";
 
 
@@ -226,8 +228,7 @@
     	if ($verbose) print "\nUsing: ".$Prog.$eeprom."\n";
     	exec($Prog.$eeprom, $out, $pass['Serialnum']);
         print " Done \n";
-        print "Writing Firmware Program... ";
-
+//        print "Writing Firmware Program... ";
 
         // Get the configuration
         if ($programOnly !== TRUE) {
@@ -241,20 +242,11 @@
     		print "Checking the configuration of ".$dev["DeviceID"]." ";
     		$pkt = $endpoint->ReadConfig($dev);
     		if ($pkt !== FALSE) {
-    			foreach($pkt as $p) {
-    				if ($p !== FALSE) {
-    				    if ($p["Reply"]) {
-    				        if ($p['sendCommand'] == "5C") {
-                                $pass['Configuration'] = 0;
-                                $newConfig = $endpoint->InterpConfig(array($p));
-                                $newConfig = $newConfig[0];
-                                $dev = array_merge($dev, $newConfig);
-                                $configPkt = $p;
-                            }
-        				}
-    				}
-    			}
-    
+                $newConfig = $endpoint->InterpConfig($pkt);
+                if (is_array($newConfig)) { 
+                    $dev = array_merge($dev, $newConfig);    
+                    $pass['Configuration'] = 0;
+                }
     		} else {
                 $pass['Configuration'] = 2;
     		}
