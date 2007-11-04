@@ -36,7 +36,7 @@ define('HUGNET_FS_DIR', dirname(__FILE__));
 	require_once('lib/plugins.inc.php');
 	$prefs = &$conf;
 	require_once("hugnet.inc.php");
-	require_once(HUGNET_INCLUDE_PATH."/process.inc.php");
+	require_once(HUGNET_INCLUDE_PATH."/process.php");
 
 	require_once('adodb/adodb.inc.php');
 

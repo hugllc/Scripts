@@ -40,7 +40,7 @@
 		if ($verbose > 1) print "analysis_history_check start\r\n";
 		if ($verbose) print "Crunching the packets...  ";
         $history = &$_SESSION['rawHistoryCache'];
-		$history = $endpoint->InterpSensors($_SESSION['devInfo'], $history);
+		$history = $endpoint->InterpSensors($_SESSION['devInfo'], $history, "GOOD");
 		if ($verbose) print "Done!\r\n";
 
         $history_table = $endpoint->getHistoryTable($_SESSION['devInfo']);
