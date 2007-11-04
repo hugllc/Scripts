@@ -26,7 +26,7 @@
  *   @version $Id$    
  *
  */
-define('HUGNET_FS_DIR', dirname(__FILE__));
+	define('HUGNET_FS_DIR', dirname(__FILE__));
 
 	require_once(HUGNET_FS_DIR.'/config/config.inc.php');
 //	require_once('lib/MDB_QueryWrapper.inc.php');
@@ -37,7 +37,6 @@ define('HUGNET_FS_DIR', dirname(__FILE__));
 	$prefs = &$conf;
 	require_once("hugnet.inc.php");
 	require_once(HUGNET_INCLUDE_PATH."/process.php");
-
 	require_once('adodb/adodb.inc.php');
 
     if (is_null($db)) {	
@@ -102,7 +101,7 @@ define('HUGNET_FS_DIR', dirname(__FILE__));
             // Packet Serial Number to use
             case "-t":
                 $testMode = TRUE;
-        		print "Test Mode Enabled\n";
+        	print "Test Mode Enabled\n";
                 break;
 
             // Packet Serial Number to use
@@ -117,6 +116,10 @@ define('HUGNET_FS_DIR', dirname(__FILE__));
                 break;
         }
     }
+	if ($phpunit) {
+	    print "PHPUnit installed and ready.\n";
+	}
+
     $endpoint = new driver($db, $conf['hugnetDb']);
     $endpoint->packet->verbose = $verbose;
 ?>

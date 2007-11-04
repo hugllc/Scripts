@@ -36,8 +36,8 @@
     $testMode = FALSE;
 
 	require_once(dirname(__FILE__).'/../head.inc.php');
-    require_once(HUGNET_INCLUDE_PATH.'/plog.inc.php');
-    require_once(HUGNET_INCLUDE_PATH.'/process.inc.php');
+    require_once(HUGNET_INCLUDE_PATH.'/plog.php');
+    require_once(HUGNET_INCLUDE_PATH.'/process.php');
 
     print 'poll.php Version '.POLL_VERSION.'  $Id$'."\n";
 	print "Starting...\n";
@@ -60,7 +60,7 @@
 	$endpoint->socket->PacketTimeout = 6;
 
 
-    $poll = new ep_poll($endpoint, $testMode);
+    $poll = new epPoll($endpoint, $testMode);
     $poll->uproc->register();
 
 //    $poll->test = $testMode;
@@ -107,7 +107,7 @@
  *	@endcond
  */
 
-class ep_poll {
+class epPoll {
 
     var $ep = array();
     var $lastminute = 0;
@@ -131,7 +131,7 @@ class ep_poll {
     var $lastContactAttempt = 0; //!< Last time an endpoint was contacted.
     var $critTime = 60;
     
-    function ep_poll(&$endpoint, $test=FALSE) {
+    function epPoll(&$endpoint, $test=FALSE) {
         $this->test = (bool) $test;
     	$this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
         $this->endpoint = &$endpoint;
@@ -842,8 +842,5 @@ class ep_poll {
     }
 
 }
-
-?>
-
 
 ?>
