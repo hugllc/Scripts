@@ -28,7 +28,6 @@
  *
  */
 
-    require_once(dirname(__FILE__).'/../head.inc.php');
     require_once(HUGNET_INCLUDE_PATH.'/plog.php');
     require_once(HUGNET_INCLUDE_PATH.'/process.php');
 
