@@ -49,6 +49,8 @@
             if ($db->IsConnected()) break;
         }
     }    
+    if (!is_object($db)) die("Database connection not available.\n");
+
     if (!$db->IsConnected()) die("Database Connection Failed\n");
 
     if (!isset($GatewayIP)) $GatewayIP = "127.0.0.1";
