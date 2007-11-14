@@ -7,6 +7,7 @@ if (!defined('PHPUnit_MAIN_METHOD')) {
 require_once 'PHPUnit/Framework.php';
 
 require_once dirname(__FILE__).'/../../endpoints/epPoll.php';
+require_once dirname(__FILE__).'/../../../HUGnetLib/hugnet.inc.php';
 
 /**
  * Test class for epPoll.
@@ -48,6 +49,8 @@ class epPollTest extends PHPUnit_Framework_TestCase {
      * @todo Implement testSetPriority().
      */
     public function testSetPriority() {
+	$d = new driver();
+	$o = new epPoll($d);
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
           'This test has not been implemented yet.'
