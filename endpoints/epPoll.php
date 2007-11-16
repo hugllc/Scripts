@@ -626,6 +626,8 @@ class epPoll {
         
                     }
                     print " P:".$this->otherGW[$key]['Priority'];
+                    print " IP:".$this->otherGW[$key]['NodeIP'];
+                    print " Name:".$this->otherGW[$key]['NodeName'];
                     if ($this->otherGW[$key]['Priority'] == $this->Priority) {
                         $this->setPriority();
                     }
@@ -676,7 +678,6 @@ class epPoll {
     }
 
     function getMyConfig() {
-
         $string = $this->packet->hexify($this->packet->SN, 10);
 
         $string .= POLL_PARTNUMBER . POLL_PARTNUMBER;
@@ -692,10 +693,12 @@ class epPoll {
         $string .= $this->packet->hexify($this->Priority, 2);
         $string .= $this->packet->hexify($stuff, 2);
         $string .= $this->packet->hexify($this->gw[0]['GatewayKey'], 4);
-        $string .= $this->packet->hexifyStr(trim($_SERVER['HOST']), 60);
-//        $myIP =`/sbin/ifconfig|grep Bcast|/bin/cut -f2 -d:|/bin/cut -f1 -d' '`;
-//        $myIP =`/sbin/ifconfig|grep Bcast`;
-//        $myIP = gethostbyname(trim(`hostname -f`));
+
+        $uname = posix_uname();        
+        $myName = trim($uname['nodename']).".".trim($uname['domainname']);
+        $string .= $this->packet->hexifyStr($myName, 60);
+ 
+        // I know this works on Linux
         $Info =`/sbin/ifconfig|grep Bcast`;
         $Info = explode("  ", $Info);
         foreach($Info as $key => $val) {
@@ -705,9 +708,10 @@ class epPoll {
             }
         }
         $myIP = explode(".", $netInfo["inet addr"]);
+
         for($i = 0; $i < 4; $i++) {
             $string .= $this->packet->hexify($myIP[$i], 2);
-        }
+        }        
         return $string;
     }
 
@@ -715,28 +719,7 @@ class epPoll {
         if (!is_array($pkt)) return;
 
         $newConfig = $this->endpoint->InterpConfig($pkt);
-
-        if ($pkt['isGateway']) {
-
-			$newConfig["FWVersion"] = 	trim(strtoupper(hexdec(substr($pkt["RawData"], ENDPOINT_FWV_START, 2)).".".
-													hexdec(substr($pkt["RawData"], ENDPOINT_FWV_START+2, 2)).".".
-													hexdec(substr($pkt["RawData"], ENDPOINT_FWV_START+4, 2))));
-
-
-            $newConfig["Priority"] = 	hexdec(trim(strtoupper(substr($pkt["RawData"], ENDPOINT_BOREDOM, 2))));
-            $newConfig["Jobs"] = 	hexdec(trim(strtoupper(substr($pkt["RawData"], ENDPOINT_BOREDOM+2, 2))));
-            $newConfig["myGatewayKey"] = 	hexdec(trim(strtoupper(substr($pkt["RawData"], ENDPOINT_BOREDOM+4, 4))));
-            $newConfig["NodeName"] = 	$this->packet->deHexify(trim(strtoupper(substr($pkt["RawData"], ENDPOINT_BOREDOM+8, 60))));
-			$newConfig["NodeIP"] = 	trim(strtoupper(hexdec(substr($pkt["RawData"], ENDPOINT_BOREDOM+68, 2)).".".
-													hexdec(substr($pkt["RawData"], ENDPOINT_BOREDOM+70, 2)).".".
-													hexdec(substr($pkt["RawData"], ENDPOINT_BOREDOM+72, 2)).".".
-													hexdec(substr($pkt["RawData"], ENDPOINT_BOREDOM+74, 2))));
-
-            
-            $newConfig['doPoll'] = (bool) ($newConfig['Jobs'] & 0x01);
-            $newConfig['doConfig'] = (bool) ($newConfig['Jobs'] & 0x02);
-            $newConfig['doCCheck'] = (bool) ($newConfig['Jobs'] & 0x04);
-            $newConfig['doUnsolicited'] = (bool) ($newConfig['Jobs'] & 0x08);
+        if ($newConfig['isGateway']) {
 
             $newConfig['RemoveTime'] = time() + $this->gwRemove;
             $newConfig['ConfigExpire'] = $this->randomizegwTimeout();
@@ -755,6 +738,7 @@ class epPoll {
             } else {
                 $this->otherGW[$pkt['From']] = array_merge($this->otherGW[$pkt['From']], $newConfig);
             }
+
         } else if ($newConfig['sendCommand'] == PACKET_COMMAND_GETSETUP) {
             if (!is_null($newConfig['DeviceKey'])) {
                 $devKey = $newConfig['DeviceKey'];
