@@ -57,21 +57,29 @@ class epPoll {
     var $critTime = 60;
     
     function epPoll(&$endpoint, $test=FALSE) {
-        $this->test = (bool) $test;
-    	$this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
-        $this->endpoint = &$endpoint;
-        $this->plog = new plog();
-        $this->plog->createPacketLog();
-        $this->psend = new plog("PacketSend");
-        $this->packet = &$this->endpoint->packet;
-//        $this->getGateways($GatewayKey);
-//        $this->randomizegwTimeout();
-        $this->setPriority();
         $this->uproc = new process();
         $this->uproc->clearStats();        
         $this->uproc->setStat('start', time());
         $this->uproc->setStat('PID', $this->uproc->me['PID']);
         $this->uproc->setStat('Priority', $this->Priority);
+        $this->test = (bool) $test;
+    	$this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
+        $this->endpoint = &$endpoint;
+        do {
+            $this->plog = new plog();
+            if ($this->plog->criticalError !== FALSE) {
+                $this->criticalFailure($this->plog->criticalError);
+                print "Local Database not available.  Waiting 5 minutes\n";
+                sleep(300);
+            }
+        } while ($this->plog->criticalError !== FALSE);
+        
+//        $this->plog->createPacketLog();
+        $this->psend = new plog("PacketSend");
+        $this->packet = &$this->endpoint->packet;
+//        $this->getGateways($GatewayKey);
+//        $this->randomizegwTimeout();
+        $this->setPriority();
         $this->devices = new deviceCache();
         $this->lastContactTime = time();
         $this->lastContactAttempt = time();
@@ -385,11 +393,14 @@ class epPoll {
                             if ($sensors['Reply'] == TRUE) {
 								$gotReply = TRUE;
     							if (is_array($sensors) && (count($sensors) > 0) && isset($sensors['RawData'])) {
-    								$sensors['DeviceKey'] == $dev['DeviceKey'];
+    								$sensors['DeviceKey'] = $dev['DeviceKey'];
     								$this->_devInfo[$key]["failures"] = 0;
     								if (!isset($sensors['DataIndex']) || ($this->_devInfo[$key]['DataIndex'] != $sensors["DataIndex"])) {
+
     									$sensors = $this->endpoint->PacketLog($sensors, $dev, "POLL");
-    									if ($this->plog->add($sensors)) {
+
+    									$ret = $this->plog->add($sensors);
+    									if ($ret) {
     										print " Success (".number_format($sensors["ReplyTime"], 2).")";
     										$this->_devInfo[$key]['DataIndex'] = $sensors["DataIndex"];
     										$this->ep[$key]['LastPoll'] = $sensors['Date'];
@@ -400,7 +411,7 @@ class epPoll {
     										$DevCount++;
     										print " Failed to store data \r\n"; //(".$history->Errno."): ".$history->Error;
                                             $this->uproc->incStat("Poll Store Failed");
-    										//print strip_tags(get_stuff($history));							
+    										//print strip_tags(get_stuff($history));
     									}
     								} else {
                                         $this->uproc->incStat("Poll Data Index Ident");
@@ -682,9 +693,18 @@ class epPoll {
         $string .= $this->packet->hexify($stuff, 2);
         $string .= $this->packet->hexify($this->gw[0]['GatewayKey'], 4);
         $string .= $this->packet->hexifyStr(trim($_SERVER['HOST']), 60);
-        $myIP =`/sbin/ifconfig|grep Bcast|/bin/cut -f2 -d:|/bin/cut -f1 -d' '`;
-
-        $myIP = explode(".", $myIP);
+//        $myIP =`/sbin/ifconfig|grep Bcast|/bin/cut -f2 -d:|/bin/cut -f1 -d' '`;
+//        $myIP =`/sbin/ifconfig|grep Bcast`;
+//        $myIP = gethostbyname(trim(`hostname -f`));
+        $Info =`/sbin/ifconfig|grep Bcast`;
+        $Info = explode("  ", $Info);
+        foreach($Info as $key => $val) {
+            if (!empty($val)) {
+                $t = explode(":", $val);
+                $netInfo[trim($t[0])] = trim($t[1]);
+            }
+        }
+        $myIP = explode(".", $netInfo["inet addr"]);
         for($i = 0; $i < 4; $i++) {
             $string .= $this->packet->hexify($myIP[$i], 2);
         }
@@ -755,12 +775,17 @@ class epPoll {
     function criticalFailure($reason) {
         $last = (int) $this->uproc->getStat("LastCriticalError", $this->uproc->me['Program']);
         
+        if (is_null($last)) {
+            $last = $this->last;
+        }
         if ((time() - $last) > ($this->critTime * 60)) { 
             $to = "hugnet@hugllc.com";
             $from = "".$this->uproc->me['Host']."<noreply@hugllc.com>";
             $subject = "HUGnet Critical Failure!";
             $message = $reason;
             mail ($to, $subject, $message);
+            $this->last = time();
+
         }
         $this->uproc->setStat("LastCriticalError", time());
 

@@ -72,11 +72,12 @@
 
         // Check the PHP log to make sure it isn't too big.
         clearstatcache();
-        if (filesize("/var/log/php.log") > (1024*1024)) {
-            $fd = fopen("/var/log/php.log","w");
-            @fclose($fd);
+        if (file_exists("/var/log/php.log")) {
+            if (filesize("/var/log/php.log") > (1024*1024)) {
+                $fd = fopen("/var/log/php.log","w");
+                @fclose($fd);
+            }
         }
-
 	}
     $updatedb->uproc->unregister();
 

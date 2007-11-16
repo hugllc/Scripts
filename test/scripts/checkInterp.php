@@ -27,7 +27,7 @@
  *   @version $Id$    
  *
  */
-        require_once(dirname(__FILE__).'/../head.inc.php');
+        require_once(dirname(__FILE__).'/../../head.inc.php');
 	
 	if (empty($argv[1])) {
 		die("DeviceID must be specified!\r\n");	

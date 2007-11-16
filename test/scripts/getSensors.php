@@ -27,7 +27,7 @@
  *   @version $Id$    
  *
  */
-	require_once(dirname(__FILE__).'/../head.inc.php');
+	require_once(dirname(__FILE__).'/../../head.inc.php');
         $endpoint->packet->SNCheck(FALSE);
 
 	
