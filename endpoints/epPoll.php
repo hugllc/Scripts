@@ -61,7 +61,7 @@ class epPoll {
         $this->uproc->clearStats();        
         $this->uproc->setStat('start', time());
         $this->uproc->setStat('PID', $this->uproc->me['PID']);
-        $this->uproc->setStat('Priority', $this->Priority);
+        $this->uproc->setStat('Priority', $this->myInfo['Priority']);
         $this->test = (bool) $test;
     	$this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
         $this->endpoint = &$endpoint;
@@ -84,13 +84,14 @@ class epPoll {
         $this->lastContactTime = time();
         $this->lastContactAttempt = time();
 
+        $this->setupMyInfo();
      }
     
     function setPriority() {
         if ($this->test) {
-            $this->Priority = 0xFF;
+            $this->myInfo['Priority'] = 0xFF;
         } else {
-            $this->Priority = mt_rand(1, 0xFF);
+            $this->myInfo['Priority'] = mt_rand(1, 0xFF);
         }
     }
 
@@ -226,7 +227,7 @@ class epPoll {
     
 
     function controllerCheck() {
-        if (!$this->doCCheck) return;
+        if (!$this->myInfo['doCCheck']) return;
 
         print "Checking Controllers...\n";
         foreach ($this->ep as $key => $dev)
@@ -241,10 +242,10 @@ class epPoll {
     }
     
     function wait() {
-        $this->uproc->setStat("doPoll", $this->doPoll);
-        $this->uproc->setStat("doCCheck", $this->doCCheck);
-        $this->uproc->setStat("doConfig", $this->doConfig);
-        $this->uproc->setStat("doUnsolicited", $this->doUnsolicited);
+        $this->uproc->setStat("doPoll", $this->myInfo['doPoll']);
+        $this->uproc->setStat("doCCheck", $this->myInfo['doCCheck']);
+        $this->uproc->setStat("doConfig", $this->myInfo['doConfig']);
+        $this->uproc->setStat("doUnsolicited", $this->myInfo['doUnsolicited']);
         $this->uproc->setStat("Gateways", base64_encode(serialize($this->otherGW)));
         $this->uproc->setStat("PacketSN", substr($this->packet->SN, 0, 6));
 
@@ -294,7 +295,7 @@ class epPoll {
     function checkPacket($pkt, $Type = "UNKNOWN") {
         if (is_array($pkt)) {
             if ($pkt['Unsolicited']) {
-                if ($this->doUnsolicited) {
+                if ($this->myInfo['doUnsolicited']) {
                     $this->uproc->incStat("Unsolicited");
                     $Type = "UNSOLICITED";
                     switch(trim(strtoupper($pkt['Command']))) {
@@ -336,7 +337,7 @@ class epPoll {
                     default:    // We didn't send a packet out.
                         switch(trim(strtoupper($pkt['Command']))) {
                             case PACKET_COMMAND_GETSETUP:
-                                $ret = $this->packet->sendReply($pkt, $pkt['From'], $this->getMyConfig());
+                                $ret = $this->packet->sendReply($pkt, $pkt['From'], e00392601::getConfigStr($this->myInfo));
                                 break;
                             default:
                                 break;
@@ -362,7 +363,7 @@ class epPoll {
     }
 
     function poll() {
-        if ($this->doPoll !== TRUE) {
+        if ($this->myInfo['doPoll'] !== TRUE) {
             print "Skipping the poll.\r\n";
             return;
         }
@@ -559,7 +560,7 @@ class epPoll {
     }
 
     function getConfig() {
-        if ($this->doConfig !== TRUE) return;
+        if ($this->myInfo['doConfig'] !== TRUE) return;
         
         foreach($this->ep as $key => $dev) {
             if (empty($dev['DeviceID'])) {
@@ -628,7 +629,7 @@ class epPoll {
                     print " P:".$this->otherGW[$key]['Priority'];
                     print " IP:".$this->otherGW[$key]['NodeIP'];
                     print " Name:".$this->otherGW[$key]['NodeName'];
-                    if ($this->otherGW[$key]['Priority'] == $this->Priority) {
+                    if ($this->otherGW[$key]['Priority'] == $this->myInfo['Priority']) {
                         $this->setPriority();
                     }
                     if (($maxPriority < $this->otherGW[$key]['Priority']) && !$expired)  {
@@ -656,7 +657,7 @@ class epPoll {
                 print "\r\n";
             }
         }
-        if ($maxPriority < $this->Priority) {
+        if ($maxPriority < $this->myInfo['Priority']) {
             $doPoll = TRUE;
             $doConfig = TRUE;
             $doCCheck = TRUE;
@@ -667,36 +668,63 @@ class epPoll {
             $doCCheck = FALSE;
             $doUnsolicited = FALSE;        
         }
-        $this->doPoll = $doPoll;
-        $this->doConfig = $doConfig;
-        $this->doCCheck = $doCCheck;
-        $this->doUnsolicited = $doUnsolicited;
+        $this->myInfo['doPoll'] = $doPoll;
+        $this->myInfo['doConfig'] = $doConfig;
+        $this->myInfo['doCCheck'] = $doCCheck;
+        $this->myInfo['doUnsolicited'] = $doUnsolicited;
     }
 
     function randomizegwTimeout() {
         return (time() + mt_rand(120, 420));
     }
 
+    function setupMyInfo() {
+        $this->myInfo['DeviceID'] = $string = EPacket::hexify($this->packet->SN, 6);
+        $this->myInfo['SerialNum'] = $this->packet->SN;
+        $this->myInfo['HWPartNum'] = POLL_PARTNUMBER;
+        $this->myInfo['FWPartNum'] = POLL_PARTNUMBER;
+        $this->myInfo['FWVersion'] = POLL_VERSION;    
+
+        // I know this works on Linux
+        $Info =`/sbin/ifconfig|grep Bcast`;
+        $Info = explode("  ", $Info);
+        foreach($Info as $key => $val) {
+            if (!empty($val)) {
+                $t = explode(":", $val);
+                $netInfo[trim($t[0])] = trim($t[1]);
+            }
+        }
+        $this->myInfo['IP'] = $netInfo["inet addr"];
+
+        $uname = posix_uname();        
+        $this->myInfo['Name'] = trim($uname['nodename']);
+        if (!empty($uname['domainname'])) $this->myInfo['Name'] .= ".".trim($uname['domainname']);
+
+
+    }
+
     function getMyConfig() {
-        $string = $this->packet->hexify($this->packet->SN, 10);
+
+/*
+        $string = EPacket::hexify($this->packet->SN, 10);
 
         $string .= POLL_PARTNUMBER . POLL_PARTNUMBER;
         $ver = explode(".", POLL_VERSION);
-        for($i = 0; $i < 3; $i++) $string .= $this->packet->hexify($ver[$i], 2);
+        for($i = 0; $i < 3; $i++) $string .= EPacket::hexify($ver[$i], 2);
         $string .= "FFFFFF";
 
         $stuff = 0;
-        if ($this->doPoll) $stuff |= 0x01;
-        if ($this->doConfig) $stuff |= 0x02;
-        if ($this->doCCheck) $stuff |= 0x04;
-        if ($this->doUnsolicited) $stuff |= 0x08;
-        $string .= $this->packet->hexify($this->Priority, 2);
-        $string .= $this->packet->hexify($stuff, 2);
-        $string .= $this->packet->hexify($this->gw[0]['GatewayKey'], 4);
+        if ($this->myInfo['doPoll']) $stuff |= 0x01;
+        if ($this->myInfo['doConfig']) $stuff |= 0x02;
+        if ($this->myInfo['doCCheck']) $stuff |= 0x04;
+        if ($this->myInfo['doUnsolicited']) $stuff |= 0x08;
+        $string .= EPacket::hexify($this->myInfo['Priority'], 2);
+        $string .= EPacket::hexify($stuff, 2);
+        $string .= EPacket::hexify($this->gw[0]['GatewayKey'], 4);
 
         $uname = posix_uname();        
         $myName = trim($uname['nodename']).".".trim($uname['domainname']);
-        $string .= $this->packet->hexifyStr($myName, 60);
+        $string .= EPacket::hexifyStr($myName, 60);
  
         // I know this works on Linux
         $Info =`/sbin/ifconfig|grep Bcast`;
@@ -710,9 +738,10 @@ class epPoll {
         $myIP = explode(".", $netInfo["inet addr"]);
 
         for($i = 0; $i < 4; $i++) {
-            $string .= $this->packet->hexify($myIP[$i], 2);
+            $string .= EPacket::hexify($myIP[$i], 2);
         }        
         return $string;
+*/
     }
 
     function interpConfig($pkt) {
