@@ -33,19 +33,15 @@
         global $verbose;
 		global $endpoint;
 
+        $day = 7 * (int)date("w");
+        $unixTime = mktime(6, 0, 0, (int)date(M), $day, (int)date("Y"));
+
    		if ($verbose > 1) print "analysis_averages start\r\n";
 
         $data = &$_SESSION['historyCache'];
-		if ((($device["MinAverage"] != "15MIN") 
-			&& ($device["MinAverage"] != "HOURLY")
-			&& ($device["MinAverage"] != "DAILY"))
-	 		|| (!is_object($endpoint->drivers[$device["Driver"]])))
-			{
-				//Nothing to do.  None of these averages will be saved
-					return($stuff);
-		}
 
 		$average_table = $endpoint->getAverageTable($device);
+		$history_table = $endpoint->getHistoryTable($device);
         $deletequery = "DELETE FROM ".$average_table
                       ." WHERE DeviceKey=".$device['DeviceKey']
                       ." AND Date=? AND Type=?";
@@ -127,7 +123,7 @@
             $basequery .= ",".$endpoint->db->Param("a".$i);
         }
         $basequery .= ")";
-        $query = $endpoint->db->Prepare($basequery);
+        $avgquery = $endpoint->db->Prepare($basequery);
 
 		if ($verbose) print " Saving Averages: ";
 
@@ -172,25 +168,122 @@
 			}
 			if ($verbose) print $lasterror." Daily ";
 
+
 			$del[] = array($daily['Date'], $daily['Type']);
             $hist[] = analysis_averages_insert($daily, $device['NumSensors']);
 //            $ret = $endpoint->db->Execute($dquery, $del);
-            if ($verbose) print " Saving... ";
-            $qtime = microtime(TRUE);
-            $ret = $endpoint->db->Execute($query, $hist);
-            if ($verbose) print " Done (".(microtime(TRUE) - $qtime)."s)";
-        	if ($ret == FALSE) {
-        	    if ($verbose) print "Insert Failed";
-        		$lasterror = " Error (".$endpoint->db->MetaError()."): ".$endpoint->db->MetaErrorMsg($endpoint->db->MetaError())." ";
-        	}
-            
-		}
+
+        }
+
+        // Get my fields for all of these queries.
+        for($i = 0; $i < $device['NumSensors']; $i++) {
+            $field[$i] = ($device['doTotal'][$i]) ? " SUM(Data".$i.") " : " AVG(Data".$i.") ";
+            $field[$i] .= " as Data".$i." ";
+        }
+
+        $useDate = strtotime($daily['Date']);
+    
+		if (($device["MinAverage"] == "15MIN") 
+			|| ($device["MinAverage"] == "HOURLY")
+			|| ($device["MinAverage"] == "DAILY")
+			|| ($device["MinAverage"] == "WEEKLY"))
+			{
+
+            $bquery = " FROM ".$history_table;
+            $bquery .= " WHERE DeviceKey=".$device["DeviceKey"]." ";
+            $d = (int)date("d", $useDate) - (int)date("w", $useDate);
+            $m = (int)date("m", $useDate);
+            $y = (int)date("Y", $useDate);
+            $wstart = mktime(0, 0, 0, $m, $d, $y);
+            $wend = mktime(23, 59, 59, $m+1, $d+7, $y);
+            $bquery .= " AND (Date >= '".date("Y-m-d H:i:s", $wstart)."' ";
+            $bquery .= " AND Date <= '".date("Y-m-d H:i:s", $wend)."' )";
+    
+            // Weekly
+            $weekly = array('Date' => date("Y-m-d", $wstart), 'Type' => "WEEKLY");
+            foreach($field as $k => $f) {
+                $query = "SELECT ".$f.$bquery." AND Data".$k." IS NOT NULL ";
+                $ret = $endpoint->db->getArray($query);
+                $weekly["Data"][$k] = $ret[0]["Data".$k];
+            }
+            $hist[] = analysis_averages_insert($weekly, $device['NumSensors']);
+			if ($verbose) print $lasterror." Weekly ";
+        }    
+
+        
+		if (($device["MinAverage"] == "15MIN") 
+			|| ($device["MinAverage"] == "HOURLY")
+			|| ($device["MinAverage"] == "DAILY")
+			|| ($device["MinAverage"] == "WEEKLY")
+			|| ($device["MinAverage"] == "MONTHLY"))
+			{
+
+            $bquery = " FROM ".$history_table;
+            $bquery .= " WHERE DeviceKey=".$device["DeviceKey"]." ";
+            $m = (int)date("m", $useDate);
+            $y = (int)date("Y", $useDate);
+            $mstart = mktime(0, 0, 0, $m, 1, $y);
+            $mend = mktime(23, 59, 59, $m+1, 0, $y);
+            $bquery .= " AND (Date >= '".date("Y-m-d H:i:s", $mstart)."' ";
+            $bquery .= " AND Date <= '".date("Y-m-d H:i:s", $mend)."' )";
+    
+            // Monthly
+            $monthly = array('Date' => date("Y-m-1", $mstart), 'Type' => "MONTHLY");
+            foreach($field as $k => $f) {
+                $query = "SELECT ".$f.$bquery." AND Data".$k." IS NOT NULL ";
+                $ret = $endpoint->db->getArray($query);
+                $monthly["Data"][$k] = $ret[0]["Data".$k];
+            }
+            $hist[] = analysis_averages_insert($monthly, $device['NumSensors']);
+			if ($verbose) print $lasterror." Monthly ";
+        }    
+
+		if (($device["MinAverage"] == "15MIN") 
+			|| ($device["MinAverage"] == "HOURLY")
+			|| ($device["MinAverage"] == "DAILY")
+			|| ($device["MinAverage"] == "WEEKLY")
+			|| ($device["MinAverage"] == "MONTHLY")
+			|| ($device["MinAverage"] == "YEARLY"))
+			{
+
+            $bquery = " FROM ".$history_table;
+            $bquery .= " WHERE DeviceKey=".$device["DeviceKey"]." ";
+            $m = (int)date("m", $useDate);
+            $y = (int)date("Y", $useDate);
+            $ystart = mktime(0, 0, 0, 1, 1, $y);
+            $yend = mktime(23, 59, 59, 12, 31, $y);
+            $bquery .= " AND (Date >= '".date("Y-m-d H:i:s", $ystart)."' ";
+            $bquery .= " AND Date <= '".date("Y-m-d H:i:s", $yend)."' )";
+    
+            // Yearly
+            $yearly = array('Date' => date("Y-1-1", $ystart), 'Type' => "YEARLY");
+            foreach($field as $k => $f) {
+                $query = "SELECT ".$f.$bquery." AND Data".$k." IS NOT NULL ";
+                $ret = $endpoint->db->getArray($query);
+                $yearly["Data"][$k] = $ret[0]["Data".$k];
+            }
+            $hist[] = analysis_averages_insert($yearly, $device['NumSensors']);
+			if ($verbose) print $lasterror." Yearly ";
+        }    
 
 
-        if ($verbose) print "\r\n";
 
+
+        // Save all of the averages
+        if ($verbose) print " Saving... ";
+        $qtime = microtime(TRUE);
+
+        $ret = $endpoint->db->Execute($avgquery, $hist);
+        if ($verbose) print " Done (".(microtime(TRUE) - $qtime)."s)";
+    	if ($ret === FALSE) {
+    	    if ($verbose) print "Insert Failed";
+    		$lasterror = " Error (".$endpoint->db->MetaError()."): ".$endpoint->db->MetaErrorMsg($endpoint->db->MetaError())." ";
+    	}
+
+        if ($verbose) print "\r\n$lasterror\r\n";
         $dTime = microtime(TRUE) - $sTime;
-		if ($verbose > 1) print "analysis_history_check end (".$dTime."s) \r\n";
+
+		if ($verbose > 1) print "analysis_averages end (".$dTime."s) \r\n";
     }
 
 	$this->register_function("analysis_averages", "Analysis");
@@ -200,7 +293,8 @@ function analysis_averages_insert($row, $count) {
     $ret[] = $row["Date"];
     $ret[] = $row["Type"];
     for($i = 0; $i < $count; $i++) {
-        $ret[] = $row['Data'][$i];
+        // Average tables don't allow NULL.  This prevents nulls from getting through
+        $ret[] = is_null($row['Data'][$i]) ? 0 : $row['Data'][$i];
     }
     return $ret;
 }
