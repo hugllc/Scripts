@@ -113,7 +113,7 @@
 					}
                 }
 				if (($rec['Status'] != $rec['StatusOld']) || $forceUpdate) {
-                    if ($verbose) print $rec['HistoryRawKey']." from ".$rec['Date']." ";
+                    if ($verbose) print $rec['HistoryRawKey']." from ".$rec['Date']."\r\n ";
 					if ($rec['Status'] == 'GOOD') {
                         $chHist[] = history_check_insert($rec, $device['NumSensors']);
 /*
