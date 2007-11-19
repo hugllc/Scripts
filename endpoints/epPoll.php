@@ -56,7 +56,7 @@ class epPoll {
     var $lastContactAttempt = 0; //!< Last time an endpoint was contacted.
     var $critTime = 60;
     
-    function epPoll(&$endpoint, $test=FALSE) {
+    function epPoll(&$endpoint, $gateway=NULL, $test=FALSE) {
         $this->uproc = new process();
         $this->uproc->clearStats();        
         $this->uproc->setStat('start', time());
@@ -83,6 +83,10 @@ class epPoll {
         $this->devices = new deviceCache();
         $this->lastContactTime = time();
         $this->lastContactAttempt = time();
+
+        if (!is_null($gateway)) {
+            $this->forceGateways($gateway);
+        }
 
         $this->setupMyInfo();
      }
@@ -131,6 +135,7 @@ class epPoll {
         $this->uproc->setStat('GatewayKey', $this->GatewayKey);
         $this->uproc->setStat('GatewayIP', $gw['GatewayIP']);
         $this->uproc->setStat('GatewayPort', $gw['GatewayPort']);
+        $this->packet->connect($this->gw[0]);
     }
 
     function devGateway($key) {
@@ -242,12 +247,13 @@ class epPoll {
     }
     
     function wait() {
+        $this->setupMyInfo();
         $this->uproc->setStat("doPoll", $this->myInfo['doPoll']);
         $this->uproc->setStat("doCCheck", $this->myInfo['doCCheck']);
         $this->uproc->setStat("doConfig", $this->myInfo['doConfig']);
         $this->uproc->setStat("doUnsolicited", $this->myInfo['doUnsolicited']);
         $this->uproc->setStat("Gateways", base64_encode(serialize($this->otherGW)));
-        $this->uproc->setStat("PacketSN", substr($this->packet->SN, 0, 6));
+        $this->uproc->setStat("PacketSN", substr($this->DeviceID, 0, 6));
 
         if (($this->lastContactAttempt - $this->lastContactTime) > (30 * 60)) {
             $this->criticalError("Last Poll at ".date("Y-m-d H:i:s", $this->lastContantTime));
@@ -274,10 +280,12 @@ class epPoll {
     
     function setPollWait() {
         if ($this->test) return;
+        $wait = mt_rand(90, 300);
         $this->otherGW["Wait"] = array(
             'LastConfig' => date("Y-m-d H:i:s"),
-            'RemoveTime' => time(),
+            'RemoveTime' => time() + $wait,
         );
+        print "Waiting $wait seconds before polling\n";
     }
 
     function findDev($DeviceID) {
@@ -635,6 +643,7 @@ class epPoll {
                     if (($maxPriority < $this->otherGW[$key]['Priority']) && !$expired)  {
                         $maxPriority = $this->otherGW[$key]['Priority'];
                     }
+                    print " Jobs: ";
 
                     if ($this->otherGW[$key]['doPoll']) {
                         $doPoll = FALSE;
@@ -679,8 +688,10 @@ class epPoll {
     }
 
     function setupMyInfo() {
-        $this->myInfo['DeviceID'] = $string = EPacket::hexify($this->packet->SN, 6);
+        $this->myInfo['DeviceID'] = $this->packet->SN;
+        $this->DeviceID = $this->myInfo['DeviceID'];
         $this->myInfo['SerialNum'] = $this->packet->SN;
+
         $this->myInfo['HWPartNum'] = POLL_PARTNUMBER;
         $this->myInfo['FWPartNum'] = POLL_PARTNUMBER;
         $this->myInfo['FWVersion'] = POLL_VERSION;    
@@ -703,47 +714,6 @@ class epPoll {
 
     }
 
-    function getMyConfig() {
-
-/*
-        $string = EPacket::hexify($this->packet->SN, 10);
-
-        $string .= POLL_PARTNUMBER . POLL_PARTNUMBER;
-        $ver = explode(".", POLL_VERSION);
-        for($i = 0; $i < 3; $i++) $string .= EPacket::hexify($ver[$i], 2);
-        $string .= "FFFFFF";
-
-        $stuff = 0;
-        if ($this->myInfo['doPoll']) $stuff |= 0x01;
-        if ($this->myInfo['doConfig']) $stuff |= 0x02;
-        if ($this->myInfo['doCCheck']) $stuff |= 0x04;
-        if ($this->myInfo['doUnsolicited']) $stuff |= 0x08;
-        $string .= EPacket::hexify($this->myInfo['Priority'], 2);
-        $string .= EPacket::hexify($stuff, 2);
-        $string .= EPacket::hexify($this->gw[0]['GatewayKey'], 4);
-
-        $uname = posix_uname();        
-        $myName = trim($uname['nodename']).".".trim($uname['domainname']);
-        $string .= EPacket::hexifyStr($myName, 60);
- 
-        // I know this works on Linux
-        $Info =`/sbin/ifconfig|grep Bcast`;
-        $Info = explode("  ", $Info);
-        foreach($Info as $key => $val) {
-            if (!empty($val)) {
-                $t = explode(":", $val);
-                $netInfo[trim($t[0])] = trim($t[1]);
-            }
-        }
-        $myIP = explode(".", $netInfo["inet addr"]);
-
-        for($i = 0; $i < 4; $i++) {
-            $string .= EPacket::hexify($myIP[$i], 2);
-        }        
-        return $string;
-*/
-    }
-
     function interpConfig($pkt) {
         if (!is_array($pkt)) return;
 
@@ -763,9 +733,9 @@ class epPoll {
             
             
             if (!is_array($this->otherGW[$pkt['From']])) {
-                $this->otherGW[$pkt['From']] = $newConfig;
+                $this->otherGW[$newConfig['DeviceID']] = $newConfig;
             } else {
-                $this->otherGW[$pkt['From']] = array_merge($this->otherGW[$pkt['From']], $newConfig);
+                $this->otherGW[$newConfig['DeviceID']] = array_merge($this->otherGW[$newConfig['DeviceID']], $newConfig);
             }
 
         } else if ($newConfig['sendCommand'] == PACKET_COMMAND_GETSETUP) {

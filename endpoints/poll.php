@@ -60,40 +60,25 @@
 	$endpoint->socket->Retries = 2;
 	$endpoint->socket->PacketTimeout = 6;
 
+    $gw = array(
+        'GatewayIP' => $GatewayIP,
+        'GatewayPort' => $GatewayPort,
+        'GatewayName' => $GatewayIP,
+        'GatewayKey' => $GatewayKey,
+    );
+	print "Using Gateway ".$gw["GatewayIP"].":".$gw["GatewayPort"]."\n";
 
-    $poll = new epPoll($endpoint, $testMode);
+    $poll = new epPoll($endpoint, $gw, $testMode);
     $poll->uproc->register();
 
 //    $poll->test = $testMode;
 //    $poll->getGateways($GatewayKey);
-    if (isset($GatewayIP)) {
-        $gw = array(
-            'GatewayIP' => $GatewayIP,
-            'GatewayPort' => $GatewayPort,
-            'GatewayName' => $GatewayIP,
-            'GatewayKey' => $GatewayKey,
-        );
-/*       
-        $TGatewayKey = $GatewayKey;
-        $query = "SELECT * FROM gateways ".
-                 "WHERE GatewayKey=".$gw['MasterGatewayKey'];
-        $tgw = $endpoint->db->getArray($query);
-                if ($tgw[0]["BackupKey"] != 0) {
-                        $gw['MasterGatewayKey'] = $tgw[0]["BackupKey"];
-                }
-        } while ($tgw[0]["BackupKey"] != 0);
-*/
-        $poll->forceGateways($gw);
-		print "Using Gateway ".$gw["GatewayIP"].":".$gw["GatewayPort"]."\n";
-    } else {
-        die("Gateway key must be supplied (-g)\r\n");
-    }
     $poll->powerup();
     $poll->packet->packetSetCallBack('checkPacket', $poll);
 
 	while (1) {
 
-        print "Using: ".$endpoint->packet->SN." Priority: ".$poll->Priority."\r\n";
+        print "Using: ".$poll->DeviceID." Priority: ".$poll->myInfo["Priority"]."\r\n";
         $poll->checkOtherGW();
         $poll->getAllDevices();
         $poll->controllerCheck();
