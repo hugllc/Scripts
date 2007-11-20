@@ -65,6 +65,8 @@ class epPoll {
         $this->test = (bool) $test;
     	$this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
         $this->endpoint = &$endpoint;
+        $this->endpoint->packet->_getAll = TRUE;
+
         do {
             $this->plog = new plog();
             if ($this->plog->criticalError !== FALSE) {
@@ -91,6 +93,29 @@ class epPoll {
         $this->setupMyInfo();
      }
     
+    /**
+     * Main routine for polling endpoints
+     * This routine will
+     */    
+    function main($while=1) {
+        $this->powerup();
+        $this->packet->packetSetCallBack('checkPacket', $poll);
+    
+    	do {
+    
+            print "Using: ".$this->myInfo['DeviceID']." Priority: ".$this->myInfo["Priority"]."\r\n";
+            $this->checkOtherGW();
+            $this->getAllDevices();
+            $this->controllerCheck();
+            $this->poll();	
+            
+            $this->wait();
+    	} while ($while);
+    
+    }
+    /**
+     * Sets the priority we run at.
+     */
     function setPriority() {
         if ($this->test) {
             $this->myInfo['Priority'] = 0xFF;
@@ -99,6 +124,9 @@ class epPoll {
         }
     }
 
+    /**
+     * Gets all of the gateways with $Key as their key or backup key
+     */
     function getGateways($Key) {
         $query = "SELECT * FROM ".$this->endpoint->gateway->table.
                  " WHERE ".
@@ -115,7 +143,9 @@ class epPoll {
         $this->gw = $res;
 
     }
-
+    /**
+     *  Sets everything up when we start
+     */
     function powerup() {
         if ($this->gw[0] !== array()) {
             // Send a powerup packet.
@@ -128,14 +158,28 @@ class epPoll {
         $this->lastminute = date('i');
         $this->setPollWait();
     }
-    
+
+    /**
+     *  Force the gateway to be a specific one.  The array given
+     *  must have the following keys:
+     *  - GatewayKey is the database key for the gateway
+     *  - GatewayIP is the IP address to contact the endpoints through
+     *       defaults to 127.0.0.2 if not given
+     *  - GatewayPort is the TCP port number to use to contact the gateways
+     *       defaults to 2000 if not given
+     *  - GatewayName is the name of the gateway (Optional)
+     *
+     * @param array $gw The gateway array
+     */
     function forceGateways($gw) {
+        if (empty($gw['GatewayIP'])) $gw['GatewayIP'] = '127.0.0.1';
+        if (empty($gw['GatewayPort'])) $gw['GatewayPort'] = '2000';
         $this->gw = array(0 => $gw);
         $this->GatewayKey = $gw['GatewayKey'];
         $this->uproc->setStat('GatewayKey', $this->GatewayKey);
         $this->uproc->setStat('GatewayIP', $gw['GatewayIP']);
         $this->uproc->setStat('GatewayPort', $gw['GatewayPort']);
-        $this->packet->connect($this->gw[0]);
+        $this->packet->connect($this->gw[0]        );
     }
 
     function devGateway($key) {
@@ -707,9 +751,8 @@ class epPoll {
         }
         $this->myInfo['IP'] = $netInfo["inet addr"];
 
-        $uname = posix_uname();        
-        $this->myInfo['Name'] = trim($uname['nodename']);
-        if (!empty($uname['domainname'])) $this->myInfo['Name'] .= ".".trim($uname['domainname']);
+        $this->myInfo['Name'] = trim($this->uproc->me['Host']);
+        if (!empty($this->uproc->me['Domain'])) $this->myInfo['Name'] .= ".".trim($this->uproc->me['Domain']);
 
 
     }
@@ -727,12 +770,8 @@ class epPoll {
             
             $send = array("FWVersion", "Priority", "myGatewayKey", "NodeName", "NodeIP",
                           "doPoll", "doConfig", "doCCheck", "doUnsolicited", 'ConfigExpire');
-            foreach($send as $var) {
-                $this->sendGW[$pkt['From']][$var] = $newConfig[$var];
-            }            
-            
-            
-            if (!is_array($this->otherGW[$pkt['From']])) {
+
+            if (!is_array($this->otherGW[$newConfig['DeviceID']])) {
                 $this->otherGW[$newConfig['DeviceID']] = $newConfig;
             } else {
                 $this->otherGW[$newConfig['DeviceID']] = array_merge($this->otherGW[$newConfig['DeviceID']], $newConfig);

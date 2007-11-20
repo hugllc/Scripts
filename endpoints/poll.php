@@ -28,8 +28,8 @@
  *
  */
 
-    define("POLL_VERSION", "0.2.10");
-    define("POLL_PARTNUMBER", "0039260150");  //0039-26-01-P
+    define("POLL_VERSION", "0.2.11");
+    define("POLL_PARTNUMBER", "0039-26-01-50");  //0039-26-01-P
     define("POLL_SVN", '$Id$');
 
 	$GatewayKey = FALSE;
@@ -45,21 +45,8 @@
 
     define("CONTROLLER_CHECK", 10);
 
-//	$proc = new process(NULL, "", "NORMAL", FALSE);
-//	if ($proc->Register() === FALSE) {
-//		die ("Already Running\r\n");	
-//	}
-
-	if (($GatewayKey == FALSE) | ($GatewayKey == 0)) die("You must supply a gateway key\n");
+	if (empty($GatewayKey)) die("You must supply a gateway key\n");
 	
-    $endpoint->packet->_getAll = TRUE;
-
-//	$plog = new MDB_QueryWrapper($prefs['servers'], "HUGnetLocal", array('table' => "PacketLog", "dbWrite" => true));
-    
-	//Only try twice per server.
-	$endpoint->socket->Retries = 2;
-	$endpoint->socket->PacketTimeout = 6;
-
     $gw = array(
         'GatewayIP' => $GatewayIP,
         'GatewayPort' => $GatewayPort,
@@ -71,26 +58,13 @@
     $poll = new epPoll($endpoint, $gw, $testMode);
     $poll->uproc->register();
 
-//    $poll->test = $testMode;
-//    $poll->getGateways($GatewayKey);
-    $poll->powerup();
-    $poll->packet->packetSetCallBack('checkPacket', $poll);
-
-	while (1) {
-
-        print "Using: ".$poll->DeviceID." Priority: ".$poll->myInfo["Priority"]."\r\n";
-        $poll->checkOtherGW();
-        $poll->getAllDevices();
-        $poll->controllerCheck();
-        $poll->poll();	
-        
-        $poll->wait();
-	}
+    $poll->main();
+    
     $poll->uproc->unregister();
 
 	print "Finished\n";
 /**
- *	@endcond
+ *
  */
 
 
