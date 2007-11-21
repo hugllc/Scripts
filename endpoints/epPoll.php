@@ -65,7 +65,7 @@ class epPoll {
         $this->test = (bool) $test;
     	$this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
         $this->endpoint = &$endpoint;
-        $this->endpoint->packet->_getAll = TRUE;
+        $this->endpoint->packet->getAll(TRUE);
 
         do {
             $this->plog = new plog();
