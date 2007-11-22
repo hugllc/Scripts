@@ -65,7 +65,7 @@
 	if (!isset($Info['GatewayKey'])) $Info["GatewayKey"] = 1;
     $endpoint->packet->verbose = $verbose;
     if ($testMode); 
-    $endpoint->packet->_getAll = TRUE;
+    $endpoint->packet->getAll(TRUE);
 	$pkt = $endpoint->packet->SendPacket($Info, $pkt);
 
     if (is_array($pkt)) {

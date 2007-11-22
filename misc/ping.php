@@ -27,29 +27,28 @@
  *   @version $Id$    
  *
  */
-	require("packet.inc.php");
+	require("EPacket.php");
+	require "../head.inc.php";
 
-	if (empty($argv[1])) {
-		die("DeviceID must be specified!\r\n");	
-	}
-
-	$Info["DeviceID"] = $argv[1];
-	if (isset($argv[2])) {
-		$Info["GatewayIP"] = $argv[2];
+	$Info["DeviceID"] = $DeviceID;
+	$Info["GatewayKey"] = 1;
+	if (isset($GatewayIP)) {
+		$Info["GatewayIP"] = $GatewayIP;
 	} else {
 		$Info["GatewayIP"] = "127.0.0.1";
-	}
-	if (isset($argv[3])) {
-		$Info["GatewayPort"] = $argv[3];
+	
+	if (isset($GatewayPort)) {
+		$Info["GatewayPort"] = $GatewayPort;
 	} else {
 		$Info["GatewayPort"] = 1200;
 	}
 	$Info["GatewayKey"] = 1;
-	$packet = new EPacket($Info["GatewayIP"], $Info["GatewayPort"], TRUE);
+	$verbose = TRUE;
+	$packet = new EPacket($Info, $verbose);
 
-	$pkt = $packet->Ping($Info, 0);
+	$pkt = $packet->Ping($Info, TRUE);
 	print_r($pkt);
-	$packet->socket->Close();
+	$packet->close($Info['GatewayKey']);
 	die();
 /**
  * @endcond
