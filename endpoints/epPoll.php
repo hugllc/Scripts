@@ -179,7 +179,7 @@ class epPoll {
         $this->uproc->setStat('GatewayKey', $this->GatewayKey);
         $this->uproc->setStat('GatewayIP', $gw['GatewayIP']);
         $this->uproc->setStat('GatewayPort', $gw['GatewayPort']);
-        $this->packet->connect($this->gw[0]        );
+        $this->packet->connect($this->gw[0]);
     }
 
     function devGateway($key) {
@@ -239,7 +239,6 @@ class epPoll {
     
     
     function getAllDevices() {
-
 		// Regenerate our endpoint information
 		if (((time() - $this->lastdev) > 60) || (count($this->ep) < 1)) {
 			$this->lastdev = time();
@@ -253,6 +252,7 @@ class epPoll {
             $res = $this->devices->query($query);
         	if (!is_array($res) || (count($res) == 0)) {
         	    $this->uproc->incStat("Device Cache Failed");
+        	    print "Didn't find any devices.\n";
                 $res = $this->endpoint->db->getArray($query);
             }
         	if (is_array($res) && (count($res) > 0)) {
@@ -377,7 +377,7 @@ class epPoll {
                             }
                             break;
                     }
-                    $lpkt = $this->endpoint->PacketLog($pkt, $this->gw[0], $Type);
+                    $lpkt = plog::packetLogSetup($pkt, $this->gw[0], $Type);
                     $this->plog->add($lpkt);
                 }
             } else if ($pkt['toMe']) {
@@ -400,7 +400,7 @@ class epPoll {
             
 
             } else {
-                $lpkt = $this->endpoint->PacketLog($pkt, $dev, $Type);
+                $lpkt = plog::packetLogSetup($pkt, $dev, $Type);
                 $this->plog->add($lpkt);
             }
             if ($pkt['isGateway']) {
@@ -450,9 +450,10 @@ class epPoll {
     								$this->_devInfo[$key]["failures"] = 0;
     								if (!isset($sensors['DataIndex']) || ($this->_devInfo[$key]['DataIndex'] != $sensors["DataIndex"])) {
 
-    									$sensors = $this->endpoint->PacketLog($sensors, $dev, "POLL");
+    									$sensors = plog::packetLogSetup($sensors, $dev, "POLL");
 
     									$ret = $this->plog->add($sensors);
+
     									if ($ret) {
     										print " Success (".number_format($sensors["ReplyTime"], 2).")";
     										$this->_devInfo[$key]['DataIndex'] = $sensors["DataIndex"];
@@ -521,7 +522,7 @@ class epPoll {
             $this->uproc->incStat("Sent User Packet");
             if (is_array($packet)) {
                 foreach($packet as $pkt) {
-                    $lpkt = $this->endpoint->PacketLog($pkt, $p, "REPLY");
+                    $lpkt = plog::packetLogSetup($pkt, $p, "REPLY");
                     $lpkt['Checked'] = 2;
                     $lpkt['id'] = $p['id'];
                     $lpkt['PacketTo'] = $p['PacketTo'];
@@ -563,7 +564,7 @@ class epPoll {
 				    if ($p["Reply"]) {
     					if (!isset($p['DeviceKey'])) $p['DeviceKey'] = $dev['DeviceKey'];
                         if (empty($dev['GatewayKey'])) $dev['GatewayKey'] = $this->GatewayKey;
-   	        					$logpkt = $this->endpoint->PacketLog($p, $dev, "CONFIG");
+   	        					$logpkt = plog::packetLogSetup($p, $dev, "CONFIG");
     					if ($this->plog->add($logpkt)) {
     						print " Done (".number_format($p["ReplyTime"], 2).")";
     						$gotConfig = TRUE;

@@ -66,12 +66,6 @@ class epUpdatedb {
 
 
         	$query = "SELECT * FROM ".$this->endpoint->device_table;
-//        	         " LEFT JOIN ".$this->endpoint->gateway->table.
-//        	         " ON ".$this->endpoint->device_table.".".$this->endpoint->gateway->id."=".$this->endpoint->gateway->table.".".$this->endpoint->gateway->id;
-/*
-        	         " WHERE ".
-        	         " LastConfig>='".$this->cutoffdate."' ";
-*/
             $res = $this->endpoint->db->getArray($query);
         	if (is_array($res) && (count($res) > 0)) {
                 $this->oldep = $this->ep;
