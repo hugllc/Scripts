@@ -75,26 +75,26 @@ class epUpdatedb {
      * local database.
      */
     function getAllDevices() {
-		// Regenerate our endpoint information
-		if (((time() - $this->lastdev) > 120) || (count($this->ep) < 1)) {
-			$this->lastdev = time();
+        // Regenerate our endpoint information
+        if (((time() - $this->lastdev) > 120) || (count($this->ep) < 1)) {
+            $this->lastdev = time();
 
-			print "Getting endpoints\n";
+            print "Getting endpoints\n";
 
 
-        	$query = "SELECT * FROM ".$this->endpoint->device_table;
+            $query = "SELECT * FROM ".$this->endpoint->device_table;
             $res = $this->endpoint->db->getArray($query);
-        	if (is_array($res) && (count($res) > 0)) {
+            if (is_array($res) && (count($res) > 0)) {
                 $this->oldep = $this->ep;
                 $this->ep = array();
-        		foreach($res as $key => $val) {
+                foreach($res as $key => $val) {
                     $dev = $this->endpoint->DriverInfo($val);
                     $dev['params'] = device::decodeParams($dev['params']);
 //                    if (isset($this->oldep[$key])) $dev = array_merge($this->oldep[$key], $dev);
                     $val['DeviceID'] = trim(strtoupper($val['DeviceID']));
-        			$this->ep[$val['DeviceID']] = $dev;				
+                    $this->ep[$val['DeviceID']] = $dev;                
                     $res = $this->devices->add($dev);
-        		}
+                }
             }
         }
         return $this->ep;    
@@ -104,10 +104,10 @@ class epUpdatedb {
      * Looks for packets to be sent out on the HUGnet network.
      */
     function getPacketSend() {
-    	$query = "SELECT * FROM PacketSend WHERE Checked = 0";
+        $query = "SELECT * FROM PacketSend WHERE Checked = 0";
         $res = $this->endpoint->db->getArray($query);
         if ($this->verbose) print "[".$this->uproc->me["PID"]."] Checking for Outgoing Packets\n";
-    	if (is_array($res) && (count($res) > 0)) {
+        if (is_array($res) && (count($res) > 0)) {
             foreach($res as $packet) {
                 unset($packet['Checked']);
                 $found = FALSE;
@@ -126,28 +126,9 @@ class epUpdatedb {
                 }
                 if ($found) {
                     print "[".$this->uproc->me["PID"]."] ".$packet["PacketTo"]." -> ".$packet["sendCommand"]." -> ";                        
-                    if ($this->psend->add($packet)) {
-                        print " Saved ";
-                        $where = " (GatewayKey = '".$packet['GatewayKey']."'".
-                                 " AND ".
-                                 " Date = '".$packet['Date']."'".
-                                 " AND ".
-                                 " Command = '".$packet['Command']."'".
-                                 " AND ".
-                                 " sendCommand = '".$packet['sendCommand']."'".
-                                 " AND ".
-                                 " PacketFrom = '".$packet['PacketFrom']."'".
-                                 " AND ".
-                                 " PacketTo = '".$packet['PacketTo']."') ";
-                        
-                        $res = $this->endpoint->db->AutoExecute("PacketSend", array("Checked" => 1), 'UPDATE', $where);
-                        if ($res) {
-                            print " Updated ";
-                        }
-    //                    print $this->endpoint->db->ErrorMsg();
-                    } else {
-                        print " Failed ";
-                    }
+
+                    $this->getPacketSave($packet);
+                    
                     print "\n";
                 }
             }
@@ -155,17 +136,47 @@ class epUpdatedb {
         if ($this->verbose) print "[".$this->uproc->me["PID"]."] Done\n";
        
     }
+    /**
+     * Saves the packet in the local database and marks it as saved in the remote database.
+     *
+     * @param array $packet the packet array
+     */    
+    private function getPacketSave(&$packet) {
+        if ($this->psend->add($packet)) {
+            print " Saved ";
+            $where = " (GatewayKey = '".$packet['GatewayKey']."'".
+                     " AND ".
+                     " Date = '".$packet['Date']."'".
+                     " AND ".
+                     " Command = '".$packet['Command']."'".
+                     " AND ".
+                     " sendCommand = '".$packet['sendCommand']."'".
+                     " AND ".
+                     " PacketFrom = '".$packet['PacketFrom']."'".
+                     " AND ".
+                     " PacketTo = '".$packet['PacketTo']."') ";
+            
+            $res = $this->endpoint->db->AutoExecute("PacketSend", array("Checked" => 1), 'UPDATE', $where);
+            if ($res) {
+                print " Updated ";
+                return TRUE;
+            }
+        } 
 
+        print " Failed ";
+        return FALSE;
+
+    }
     /**
      * Waits for a time when there is nothing to do.  This is so we don't eat
      * all of the processing time.
      */
     function wait() {
-    	if ($this->verbose) print  "[".$this->uproc->me["PID"]."] Pausing...\n";
+        if ($this->verbose) print  "[".$this->uproc->me["PID"]."] Pausing...\n";
 //        $cnt = 0;
-//		while((date("i") == $this->lastminute) && ($cnt++ < 2)) {
-		    sleep(2);
-//		}
+//        while((date("i") == $this->lastminute) && ($cnt++ < 2)) {
+            sleep(2);
+//        }
 //        sleep(10);
         $this->lastminute = date(i);
 
@@ -175,13 +186,13 @@ class epUpdatedb {
      * Update the remote database from the local one.
      */
     function updatedb() {
-    	$res = $this->plog->getAll(50);
-		if ($this->verbose) print "[".$this->uproc->me["PID"]."] Found ".count($res)." Packets\n";
+        $res = $this->plog->getAll(50);
+        if ($this->verbose) print "[".$this->uproc->me["PID"]."] Found ".count($res)." Packets\n";
         if (!is_array($res)) return;
-		foreach($res as $packet) {
-            $this->uproc->incStat("Packets");					
+        foreach($res as $packet) {
+            $this->uproc->incStat("Packets");                    
 
-			print "[".$this->uproc->me["PID"]."] ".$packet["PacketFrom"]." ".$packet["sendCommand"];
+            print "[".$this->uproc->me["PID"]."] ".$packet["PacketFrom"]." ".$packet["sendCommand"];
 
             $DeviceID = trim(strtoupper($packet['PacketFrom']));       
             if (is_array($this->ep[$DeviceID])) {
@@ -194,6 +205,7 @@ class epUpdatedb {
             $this->updatedbPoll($packet);
             $this->updatedbUnknown($packet);
             $this->updatedbRemove($packet);
+            print "\r\n";
 
         }
     }
@@ -206,21 +218,14 @@ class epUpdatedb {
     private function updatedbUnsolicited(&$packet) {
         if ($packet['Type'] == 'UNSOLICITED') {
             $packed["Checked"] = TRUE;
-            $this->uproc->incStat("Unsolicited");					
-		    $return = $this->endpoint->db->AutoExecute("PacketLog", $packet, 'INSERT');
-			if ($return) {
-				print " - Inserted ".$packet['sendCommand']."";					
-				$packet["remove"] = TRUE;
-			} else {
-                $error = $this->endpoint->db->MetaError();
-                if ($error == DB_ERROR_ALREADY_EXISTS) {
-					print " Duplicate ".$packet['Date']." ";
-					$packet["remove"] = TRUE;											
-				} else {
-                    $this->uproc->incStat("Unsolicited Failed");					
-					print " - Failed ";
-				}
-			}
+            $this->uproc->incStat("Unsolicited");                    
+            $return = $this->endpoint->db->AutoExecute("PacketLog", $packet, 'INSERT');
+            if ($return) {
+                print " - Inserted ".$packet['sendCommand']."";                    
+                $packet["remove"] = TRUE;
+            } else {
+                $this->updatedbError($packet, "Failed", "Unsolicited Failed");
+            }
         }
     }
     /**
@@ -232,14 +237,14 @@ class epUpdatedb {
         if ($packet['Type'] == 'REPLY') {
             $packed["Checked"] = TRUE;
             $this->uproc->incStat("Reply");
-		    $return = $this->endpoint->db->AutoExecute("PacketSend", $packet, 'INSERT');
-			if ($return) {
-				print " - Inserted into PacketSend ".$packet['sendCommand']."";					
-				$packet["remove"] = TRUE;
-			} else {
-				print " - Failed ";
+            $return = $this->endpoint->db->AutoExecute("PacketSend", $packet, 'INSERT');
+            if ($return) {
+                print " - Inserted into PacketSend ".$packet['sendCommand']."";                    
+                $packet["remove"] = TRUE;
+            } else {
+                print " - Failed ";
                 $this->uproc->incStat("Reply Failed");
-			}
+            }
         }
     }
     /**
@@ -251,30 +256,23 @@ class epUpdatedb {
         if ($packet['Type'] == 'CONFIG') {
             $packed["Checked"] = TRUE;
             $this->uproc->incStat("Config");
-		    $return = $this->endpoint->db->AutoExecute("PacketLog", $packet, 'INSERT');
+            $return = $this->endpoint->db->AutoExecute("PacketLog", $packet, 'INSERT');
             
-			if ($return) {
-				print " - Moved ";
-				$packet["remove"] = TRUE;
+            if ($return) {
+                print " - Moved ";
+                $packet["remove"] = TRUE;
 
-			} else {
-                $error = $this->endpoint->db->MetaError();
-                if ($error == DB_ERROR_ALREADY_EXISTS) {
-					print " Duplicate ".$packet['Date']." ";
-					$packet["remove"] = TRUE;											
-				} else {
-					print " - Failed ";
-                   $this->uproc->incStat("Config Failed");
-				}
-			}
-			if ($this->endpoint->UpdateDevice(array($packet))) {
+            } else {
+                $this->updatedbError($packet, "Update Failed", "Config Failed");
+            }
+            if ($this->endpoint->UpdateDevice(array($packet))) {
                 $this->uproc->incStat("Device Updated");
-				print " - Updated ";					
-			} else {
-				print " - Update Failed ";
+                print " - Updated ";                    
+            } else {
+                print " - Update Failed ";
 
-//	    			    $return = $this->endpoint->db->AutoExecute($this->endpoint->device_table, $packet, 'INSERT');
-			}
+//                        $return = $this->endpoint->db->AutoExecute($this->endpoint->device_table, $packet, 'INSERT');
+            }
         }
     }
     /**
@@ -287,80 +285,95 @@ class epUpdatedb {
             $packed["Checked"] = TRUE;
             $this->uproc->incStat("Poll");
             print " ".$packet['Driver']." ";
-			$packet = $this->endpoint->InterpSensors($packet, array($packet));
-			$packet = $packet[0];
-			print " ".$packet["Date"]; 
-			print " - decoded ".$packet['sendCommand']." ";
-			$duplicate = FALSE;
-			if (isset($packet['DataIndex'])) {
+            $packet = $this->endpoint->InterpSensors($packet, array($packet));
+            $packet = $packet[0];
+            print " ".$packet["Date"]; 
+            print " - decoded ".$packet['sendCommand']." ";
+            if ($this->updatedbPollDuplicate($packet)) {
+                print "Duplicate";
+                $packet["remove"] = TRUE;
+            } else {
 
-                $query = " SELECT * FROM ".$this->endpoint->raw_history_table.
-                         " WHERE " .
-                         " DeviceKey=".$packet['DeviceKey'] .
-                         " AND " .
-                         " sendCommand='".$packet['sendCommand']."'" .
-                         " AND " .
-                         " Date='".$packet["Date"]."' " . 
-                         " ORDER BY 'Date' desc " .
-                         " LIMIT 0, 1 ";
-                $check = $this->endpoint->db->getArray($query);
-				if (is_array($check)) {
-					$check = $this->endpoint->InterpSensors($packet, $check);
-					if ($check[0]['DataIndex'] == $packet['DataIndex']) {
-						$duplicate = TRUE;
-					}
-				}
-			}
-			if ($duplicate === FALSE) {
-				$return = $this->endpoint->db->AutoExecute($this->endpoint->raw_history_table, $packet, 'INSERT');
-
-				if ($return) {
-					$info = array();
-					print " - raw history ";
-	
-                    $set = " LastPoll = '".$packet["Date"]."' " .
-                           ", GatewayKey = '".$packet['GatewayKey']."' ";
-
-					$hist = $this->endpoint->saveSensorData($packet, array($packet));
-					if ($hist) {
-						$set .= ", LastHistory = '".$packet["Date"]."' ";
-						print " - ".$packet["Driver"]." history ";
-					} else {
-						print " - History Failed";
-						if ($testMode) {
-						    if ($this->endpoint->db->MetaError() != 0) {
-							    print $this->endpoint->db->MetaErrorMsg();
-							}
-						}
-					}
-
-                    $query = " UPDATE ".$this->endpoint->device_table.
-                             " SET " . $set .
-                             " WHERE " .
-                             " DeviceKey=".$packet['DeviceKey'];
-
-					if ($this->endpoint->db->Execute($query)) {
-						print " - Last Poll ";
-					} else {
-						print " - Last Poll Failed ";
-					}
-					$packet["remove"] = TRUE;
-				} else {
-                    $error = $this->endpoint->db->MetaError();
-                    if ($error == DB_ERROR_ALREADY_EXISTS) {
-						print " Duplicate ".$packet['Date']." ";
-						$packet["remove"] = TRUE;											
-					} else {
-						print " - Raw History Failed ";
-                        $this->uproc->incStat("Poll Failed");
-					}
-				}
-
-			} else {
-   						print "Duplicate";
-  						$packet["remove"] = TRUE;
-			}
+                if ($this->updatedbPollRawHistory(&$packet)) {
+                    $packet["remove"] = TRUE;
+                    $this->updatedbPollHistory($packet);
+                }
+            }
         }
+    }
+    /**
+     * Checks if this is a duplicate or not.
+     *
+     * @param array $packet the packet array
+     */ 
+    private function updatedbPollHistory(&$packet) {
+        $set = array(
+            "LastPoll" => $packet["Date"],
+            "GatewayKey" => $packet['GatewayKey'],
+        );
+
+        $hist = $this->endpoint->saveSensorData($packet, array($packet));
+        if ($hist) {
+            $set["LastHistory"] = $packet["Date"];
+            print " - ".$packet["Driver"]." history ";
+        } else {
+            print " - History Failed";
+            if ($testMode) print $this->endpoint->db->MetaErrorMsg();
+        }
+        $ret = $this->endpoint->device->update($packet['DeviceKey'], $set);
+        if ($ret) {
+            print " - Last Poll ";
+            return TRUE;
+        } else {
+            print " - Last Poll Failed ";
+            return FALSE;
+        }
+
+    }
+    /**
+     * Checks if this is a duplicate or not.
+     *
+     * @param array $packet the packet array
+     */ 
+    private function updatedbPollRawHistory(&$packet) {
+                $ret = $this->endpoint->db->AutoExecute($this->endpoint->raw_history_table, $packet, 'INSERT');
+                if ($ret) {
+                    $info = array();
+                    print " - raw history ";
+                    return TRUE;
+                } else {
+                    $this->updatedbError($packet, "Raw History Failed", "Poll Failed");
+                    return FALSE;
+                }
+        
+    }
+    /**
+     * Checks if this is a duplicate or not.
+     *
+     * @param array $packet the packet array
+     */ 
+    private function updatedbPollDuplicate(&$packet) {
+        if (isset($packet['DataIndex'])) {
+
+            $query = " SELECT * FROM ".$this->endpoint->raw_history_table.
+                     " WHERE " .
+                     " DeviceKey=".$packet['DeviceKey'] .
+                     " AND " .
+                     " sendCommand='".$packet['sendCommand']."'" .
+                     " AND " .
+                     " Date='".$packet["Date"]."' " . 
+                     " ORDER BY 'Date' desc " .
+                     " LIMIT 0, 1 ";
+            $check = $this->endpoint->db->getArray($query);
+            if (is_array($check)) {
+                $check = $this->endpoint->InterpSensors($packet, $check);
+                if ($check[0]['DataIndex'] == $packet['DataIndex']) {
+                    return TRUE;
+                }
+            }
+        }
+        return FALSE;
+
     }
     /**
      * Function to deal with unsolicited packets
@@ -370,23 +383,39 @@ class epUpdatedb {
     private function updatedbUnknown(&$packet) {
         if ($packet['Checked'] !== TRUE) {
             $this->uproc->incStat("Unknown");
-			$packet["remove"] = TRUE;
+            $packet["remove"] = TRUE;
         }
-    }        
+    }
+    /**
+     * Function to deal with unsolicited packets
+     *
+     * @param array $packet the packet array
+     * @param string $msg Generic message to print if specific failures can't be found
+     * @param string $stat Generic stat to increment if specific failures can't be found
+     */ 
+    private function updatedbError(&$packet, $msg, $stat) {
+        $error = $this->endpoint->db->MetaError();
+        if ($error == DB_ERROR_ALREADY_EXISTS) {
+            print " Duplicate ".$packet['Date']." ";
+            $packet["remove"] = TRUE;                                            
+        } else {
+            print " - ".$msg;
+           $this->uproc->incStat($stat);
+        }
+    }
     /**
      * Function to deal with unsolicited packets
      *
      * @param array $packet the packet array
      */ 
     private function updatedbRemove(&$packet) {
-		if ($packet["remove"]) {
-			if ($this->plog->remove($packet)) {
-				print " - local deleted";
-			} else {
-				print " - Delete Failed";
-			}
-		}
-		print "\r\n";
-	}
+        if ($packet["remove"]) {
+            if ($this->plog->remove($packet)) {
+                print " - local deleted";
+            } else {
+                print " - Delete Failed";
+            }
+        }
+    }
 }
 ?>
