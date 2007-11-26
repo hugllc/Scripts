@@ -81,50 +81,6 @@
 	while (1) {
 		$forceregen = FALSE;
 		
-		// Get all the unsolicitied packets
-		foreach($gw as $gate) {
-			while(($tmp = $endpoint->socket->GetUnsolicited($gate)) != FALSE) {
-				if (trim(strtoupper($tmp["from"])) != "FFFFFF") {
-					if (!isset($Packets[trim(strtoupper($tmp["from"])).".".trim(strtoupper($tmp["command"]))])) {
-						$Packets[trim(strtoupper($tmp["from"])).".".trim(strtoupper($tmp["command"]))] = $tmp;
-					}
-					$Packets[trim(strtoupper($tmp["from"])).".".trim(strtoupper($tmp["command"]))]["Gateways"][] = $gate;
-					
-				}
-			}
-		}
-		// Deal with the unsolicited packets.
-		if (is_array($Packets)) {
-			$Done = 0;
-			foreach($Packets as $key => $Packet) {
-				$found = FALSE;
-				foreach($Packet["Gateways"] as $gate) {
-					print "Dealing with Unsolicited packet from ".$Packet["from"]." ";
-					if ($endpoint->Unsolicited($Packet, $gate["GatewayKey"])) {
-						if (isset($endpoint->Info[strtoupper($Packet["from"])])) {
-							unset($PollTime[$endpoint->Info[strtoupper($Packet["from"])]["DeviceKey"]]);
-							unset($gwindex[$endpoint->Info[strtoupper($Packet["from"])]["DeviceKey"]]);
-						}
-						unset($Packets[$key]);
-						$forceregen = TRUE;
-						$found = TRUE;
-						print " Done ";
-						break;
-					}
-				}
-				if ($found !== TRUE) {
-					print " Failed ";
-					$Packets[$key]["RetryCount"]++;
-					if ($Packets[$key]["RetryCount"] > 3) {
-						print " Giving up ";
-						unset($Packets[$key]);
-					}
-				}
-				$Done++;
-				print "\n";
-				if ($Done > 4) break;
-			}
-		}
 		// Regenerate our endpoint information
 		if ((($lastminute % 10) == 0) || (count($ep) < 1) || $forceregen) {
 			print "Getting endpoints for Gateway #".$GatewayKey."\n";
