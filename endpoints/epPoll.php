@@ -27,7 +27,6 @@
  *   @version $Id: poll.php 425 2007-11-04 14:55:24Z prices $    
  *
  */
-
     require_once(HUGNET_INCLUDE_PATH.'/plog.php');
     require_once(HUGNET_INCLUDE_PATH.'/process.php');
 
