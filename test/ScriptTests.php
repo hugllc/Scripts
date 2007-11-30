@@ -49,16 +49,19 @@ class ScriptTests
 {
     public static function main()
     {
+        PHPUnit_Util_Filter::addDirectoryToFilter('HUGnetLib/', '.php');
         PHPUnit_TextUI_TestRunner::run(self::suite());
     }
  
     public static function suite()
     {
-        $suite = new PHPUnit_Framework_TestSuite('HUGnetLib');
+        PHPUnit_Util_Filter::addDirectoryToFilter('adodb/', '.php');
+        PHPUnit_Util_Filter::addDirectoryToFilter('Scripts/test/', '.php');
+        $suite = new PHPUnit_Framework_TestSuite('Scripts');
 
         //$suite->addTestSuite('otherTest');
         
-	$suite->addTest(ScriptEndpointTests::suite());
+    	$suite->addTest(ScriptEndpointTests::suite());
  
         return $suite;
     }
