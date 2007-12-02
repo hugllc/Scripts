@@ -299,7 +299,7 @@ class epPoll {
         $this->uproc->setStat("PacketSN", substr($this->DeviceID, 0, 6));
 
         if (($this->lastContactAttempt - $this->lastContactTime) > (30 * 60)) {
-            $this->criticalError("Last Poll at ".date("Y-m-d H:i:s", $this->lastContantTime));
+            $this->criticalFailure("Last Poll at ".date("Y-m-d H:i:s", $this->lastContantTime));
         }
         
 		do {
@@ -803,7 +803,7 @@ class epPoll {
         if ((time() - $last) > ($this->critTime * 60)) { 
             $to = "hugnet@hugllc.com";
             $from = "".$this->uproc->me['Host']."<noreply@hugllc.com>";
-            $subject = "HUGnet Critical Failure!";
+            $subject = "HUGnet Critical Failure on ".`hostname`."!";
             $message = $reason;
             mail ($to, $subject, $message);
             $this->last = time();
