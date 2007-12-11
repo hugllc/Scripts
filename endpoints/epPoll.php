@@ -441,7 +441,7 @@ class epPoll {
                     print $dev["DeviceID"]." (".$dev["Driver"].") -> ".date("Y-m-d H:i:s", $this->_devInfo[$key]["PollTime"])." <-> ".date("Y-m-d H:i:s");
                     $this->devGateway($key);
                     // print  " [".$dev["GatewayName"]."] ->";                    
-                    $sensorRead = $this->endpoint->ReadSensors($dev);
+                    $sensorRead = $this->endpoint->readSensors($dev);
                     $gotReply = false;
                     if (is_array($sensorRead) && (count($sensorRead) > 0)) {
                         foreach ($sensorRead as $sensors) {
@@ -557,7 +557,7 @@ class epPoll {
         
         print "Checking ".$dev["DeviceID"]." ";
         $this->uproc->incStat("Device Checked");
-        $pkt = $this->endpoint->ReadConfig($dev);
+        $pkt = $this->endpoint->readConfig($dev);
         $gotConfig = false;
         if ($pkt !== false) {
             $newConfig = $this->interpConfig($pkt);

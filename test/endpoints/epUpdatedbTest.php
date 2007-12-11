@@ -1,7 +1,7 @@
 <?php
 // Call epUpdatedbTest::main() if this source file is executed directly.
-if (!defined('PHPUnit_MAIN_METHOD')) {
-    define('PHPUnit_MAIN_METHOD', 'epUpdatedbTest::main');
+if (!defined('PHPUNIT_MAIN_METHOD')) {
+    define('PHPUNIT_MAIN_METHOD', 'epUpdatedbTest::main');
 }
 
 require_once 'PHPUnit/Framework.php';
@@ -86,7 +86,7 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase {
 }
 
 // Call epUpdatedbTest::main() if this source file is executed directly.
-if (PHPUnit_MAIN_METHOD == 'epUpdatedbTest::main') {
+if (PHPUNIT_MAIN_METHOD == 'epUpdatedbTest::main') {
     epUpdatedbTest::main();
 }
 ?>

@@ -158,7 +158,7 @@
                         $dev["GatewayIP"] = $gw[$gwindex[$dev["DeviceKey"]]]["GatewayIP"];    
                         $dev["GatewayPort"] = $gw[$gwindex[$dev["DeviceKey"]]]["GatewayPort"];
                         print  " [".$gw[$gwindex[$dev["DeviceKey"]]]["GatewayName"]."] ->";
-                        $sensors = $endpoint->ReadSensors($dev);
+                        $sensors = $endpoint->readSensors($dev);
                         if (($sensors !== false) && (count($sensors) > 0)) {
                             $failures[$dev["DeviceKey"]] = 0;
                             if ($lastindex[$sensors["DeviceKey"]] != $sensors["DataIndex"]) {

@@ -35,8 +35,8 @@
  *
  */
 
-if (!defined('PHPUnit_MAIN_METHOD')) {
-    define('PHPUnit_MAIN_METHOD', 'ScriptTests::main');
+if (!defined('PHPUNIT_MAIN_METHOD')) {
+    define('PHPUNIT_MAIN_METHOD', 'ScriptTests::main');
 }
 
 require_once "hugnet.inc.php";
@@ -72,7 +72,7 @@ class ScriptTests
     }
 }
  
-if (PHPUnit_MAIN_METHOD == 'ScriptTests::main') {
+if (PHPUNIT_MAIN_METHOD == 'ScriptTests::main') {
     ScriptTests::main();
 }
 ?>

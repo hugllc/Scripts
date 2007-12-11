@@ -243,7 +243,7 @@
             print "Done \r\n";
             
             print "Checking the configuration of ".$dev["DeviceID"]." ";
-            $pkt = $endpoint->ReadConfig($dev);
+            $pkt = $endpoint->readConfig($dev);
             if ($pkt !== false) {
                 $newConfig = $endpoint->InterpConfig($pkt);
                 if (is_array($newConfig)) { 
@@ -328,7 +328,7 @@ function getControllers() {
     if (is_array($pkt)) {
         foreach ($pkt as $p) {
             $c = $endpoint->InterpConfig(array($p));
-            $cfg = $endpoint->ReadConfig($c);
+            $cfg = $endpoint->readConfig($c);
         
             $config = $endpoint->InterpConfig($cfg);
             $cont[$p['From']] = $config;

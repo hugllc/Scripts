@@ -40,7 +40,7 @@
 
     $endpoint->packet->verbose = $verbose;
     
-    $pkt = $endpoint->ReadConfig($dev);
+    $pkt = $endpoint->readConfig($dev);
 
     $config = $endpoint->InterpConfig($pkt);
     var_dump($config);

@@ -57,7 +57,7 @@
     $endpoint->packet->verbose = $verbose;
     if (is_object($endpoint->drivers[$dev['Driver']]->firmware)) {
         if (empty($program)) {
-            $cfg = $endpoint->ReadConfig($dev);
+            $cfg = $endpoint->readConfig($dev);
             $return = $endpoint->drivers[$dev['Driver']]->checkProgram($dev, $cfg, true);        
         } else {
     

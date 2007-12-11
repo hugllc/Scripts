@@ -44,7 +44,7 @@
     $dev["GatewayPort"] = $GatewayPort;
 
     $endpoint->packet->verbose = $verbose;
-    $pkt = $endpoint->ReadSensors($dev);
+    $pkt = $endpoint->readSensors($dev);
 
 //    $config = $endpoint->InterpConfig($pkt);
     var_dump($pkt);
