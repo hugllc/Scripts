@@ -188,7 +188,7 @@ class epPoll {
         if (is_array($this->ep[$key])) {
             if (is_array($this->gw[$this->_devInfo[$key]["gwIndex"]])) {
                 $this->ep[$key] = array_merge($this->ep[$key], $this->gw[$this->_devInfo[$key]["gwIndex"]]);
-            } else if (is_array($this->gw[0])){
+            } else if (is_array($this->gw[0])) {
                 $this->ep[$key] = array_merge($this->ep[$key], $this->gw[0]);
                 $this->_devInfo[$key]["gwIndex"] = 0;                    
             } else {
