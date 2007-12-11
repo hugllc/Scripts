@@ -1,30 +1,33 @@
 <?php
 /**
- *   <pre>
- *   HUGnetLib is a library of HUGnet code
- *   Copyright (C) 2007 Hunt Utilities Group, LLC
- *   
- *   This program is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU General Public License
- *   as published by the Free Software Foundation; either version 3
- *   of the License, or (at your option) any later version.
- *   
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *   
- *   You should have received a copy of the GNU General Public License
- *   along with this program; if not, write to the Free Software
- *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *   </pre>
  *
- *   @license http://opensource.org/licenses/gpl-license.php GNU Public License
- *   @package Scripts
- *   @subpackage Test
- *   @copyright 2007 Hunt Utilities Group, LLC
- *   @author Scott Price <prices@hugllc.com>
- *   @version $Id: unitConversion.inc.php 369 2007-10-12 15:05:32Z prices $    
+ * PHP Version 5
+ *
+ * <pre>
+ * HUGnetLib is a library of HUGnet code
+ * Copyright (C) 2007 Hunt Utilities Group, LLC
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Scripts
+ * @subpackage Test
+ * @copyright 2007 Hunt Utilities Group, LLC
+ * @author Scott Price <prices@hugllc.com>
+ * @version SVN: $Id: unitConversion.inc.php 369 2007-10-12 15:05:32Z prices $    
  *
  */
     $required = array(
@@ -44,17 +47,17 @@
     );
 
     require_once(dirname(__FILE__).'/../head.inc.php');
-	
+    
     if (is_array($endpoint->sensors->sensors)) {
-        foreach($endpoint->sensors->sensors as &$class) {
+        foreach ($endpoint->sensors->sensors as &$class) {
             print "Working with class: ".get_class($class)."\n";
             if (is_array($class->sensors)) {
-                foreach($class->sensors as $type => $sArray) {
+                foreach ($class->sensors as $type => $sArray) {
                     print "-> 0x".dechex($type)."\n";
                     if (is_array($sArray)) {
-                        foreach($sArray as $shortName => $s) {
+                        foreach ($sArray as $shortName => $s) {
                             print "--> Short Name: '".$shortName."'\n";
-                            foreach($required as $key => $name) {
+                            foreach ($required as $key => $name) {
                                 if (isset($s[$key])) {
                                     print "---> ".$name.": '".$s[$key]."'\n";
                                     unset($s[$key]);
@@ -62,7 +65,7 @@
                                     die("** ERROR ** ".$key." is not defined!\n");
                                 }
                             }
-                            foreach($suggested as $key => $name) {
+                            foreach ($suggested as $key => $name) {
                                 if (isset($s[$key])) {
                                     print "---> ".$name.": '".$s[$key]."'\n";
                                     unset($s[$key]);
@@ -70,7 +73,7 @@
                                     print "** WARNING ** ".$key." is not defined!\n";
                                 }
                             }
-                            foreach($other as $key => $name) {
+                            foreach ($other as $key => $name) {
                                 if (isset($s[$key])) {
                                     print "---> ".$name.": '".$s[$key]."'\n";
                                     unset($s[$key]);

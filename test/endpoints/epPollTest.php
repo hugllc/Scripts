@@ -19,7 +19,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
      *
      * @access public
      * @static
-     */
+      */
     public static function main() {
         require_once 'PHPUnit/TextUI/TestRunner.php';
 
@@ -32,7 +32,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
      * This method is called before a test is executed.
      *
      * @access protected
-     */
+      */
     protected function setUp() {
     }
 
@@ -41,16 +41,16 @@ class epPollTest extends PHPUnit_Framework_TestCase {
      * This method is called after a test is executed.
      *
      * @access protected
-     */
+      */
     protected function tearDown() {
     }
 
     /**
      * @todo Implement testSetPriority().
-     */
+      */
     public function testSetPriority() {
-	$d = new driver();
-	$o = new epPoll($d);
+    $d = new driver();
+    $o = new epPoll($d);
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
           'This test has not been implemented yet.'
@@ -59,7 +59,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testGetGateways().
-     */
+      */
     public function testGetGateways() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -69,7 +69,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testPowerup().
-     */
+      */
     public function testPowerup() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -79,7 +79,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testForceGateways().
-     */
+      */
     public function testForceGateways() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -89,7 +89,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testDevGateway().
-     */
+      */
     public function testDevGateway() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -99,7 +99,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testGetNextPoll().
-     */
+      */
     public function testGetNextPoll() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -109,7 +109,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testGetAllDevices().
-     */
+      */
     public function testGetAllDevices() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -119,7 +119,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testControllerCheck().
-     */
+      */
     public function testControllerCheck() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -129,7 +129,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testWait().
-     */
+      */
     public function testWait() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -139,7 +139,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testQPacket().
-     */
+      */
     public function testQPacket() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -149,7 +149,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testSetPollWait().
-     */
+      */
     public function testSetPollWait() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -159,7 +159,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testFindDev().
-     */
+      */
     public function testFindDev() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -169,7 +169,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testCheckPacket().
-     */
+      */
     public function testCheckPacket() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -179,7 +179,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testPoll().
-     */
+      */
     public function testPoll() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -189,7 +189,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testCheckPacketQ().
-     */
+      */
     public function testCheckPacketQ() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -199,7 +199,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testCheckDev().
-     */
+      */
     public function testCheckDev() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -209,7 +209,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testGetConfig().
-     */
+      */
     public function testGetConfig() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -219,7 +219,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testCheckOtherGW().
-     */
+      */
     public function testCheckOtherGW() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -229,7 +229,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testRandomizegwTimeout().
-     */
+      */
     public function testRandomizegwTimeout() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -239,7 +239,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testGetMyConfig().
-     */
+      */
     public function testGetMyConfig() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -249,7 +249,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testInterpConfig().
-     */
+      */
     public function testInterpConfig() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -259,7 +259,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testCriticalFailure().
-     */
+      */
     public function testCriticalFailure() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(

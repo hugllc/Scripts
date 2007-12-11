@@ -1,46 +1,49 @@
 <?php
 /**
- *   <pre>
- *   HUGnetLib is a library of HUGnet code
- *   Copyright (C) 2007 Hunt Utilities Group, LLC
- *   
- *   This program is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU General Public License
- *   as published by the Free Software Foundation; either version 3
- *   of the License, or (at your option) any later version.
- *   
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *   
- *   You should have received a copy of the GNU General Public License
- *   along with this program; if not, write to the Free Software
- *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *   </pre>
  *
- *   @license http://opensource.org/licenses/gpl-license.php GNU Public License
- *   @package Scripts
- *   @copyright 2007 Hunt Utilities Group, LLC
- *   @author Scott Price <prices@hugllc.com>
- *   @version $Id$    
+ * PHP Version 5
+ *
+ * <pre>
+ * HUGnetLib is a library of HUGnet code
+ * Copyright (C) 2007 Hunt Utilities Group, LLC
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Scripts
+ * @copyright 2007 Hunt Utilities Group, LLC
+ * @author Scott Price <prices@hugllc.com>
+ * @version SVN: $Id$    
  *
  */
-	define('HUGNET_FS_DIR', dirname(__FILE__));
+    define('HUGNET_FS_DIR', dirname(__FILE__));
 
-	require_once(HUGNET_FS_DIR.'/config/config.inc.php');
-//	require_once('lib/MDB_QueryWrapper.inc.php');
-	require_once('adodb/adodb.inc.php');
+    require_once(HUGNET_FS_DIR.'/config/config.inc.php');
+//    require_once('lib/MDB_QueryWrapper.inc.php');
+    require_once('adodb/adodb.inc.php');
 
-//	require_once('lib/functions.inc.php');
-	require_once('lib/plugins.inc.php');
-	$prefs = &$conf;
-	require_once("hugnet.inc.php");
-	require_once(HUGNET_INCLUDE_PATH."/process.php");
-	require_once('adodb/adodb.inc.php');
+//    require_once('lib/functions.inc.php');
+    require_once('lib/plugins.inc.php');
+    $prefs = &$conf;
+    require_once("hugnet.inc.php");
+    require_once(HUGNET_INCLUDE_PATH."/process.php");
+    require_once('adodb/adodb.inc.php');
 
-    if (is_null($db)) {	
-        foreach($prefs['servers'] as $serv) {
+    if (is_null($db)) {    
+        foreach ($prefs['servers'] as $serv) {
     //        $dsn = $serv['Type']."://".$serv["User"].":".rawurlencode($serv["Password"])."@".$serv["Host"]."/".HUGNET_DATABASE;
     //var_dump($dsn);
             $db = &ADONewConnection($serv["Type"]);
@@ -102,14 +105,14 @@
                 break;
             // Packet Serial Number to use
             case "-t":
-                $testMode = TRUE;
-        	print "Test Mode Enabled\n";
+                $testMode = true;
+            print "Test Mode Enabled\n";
                 break;
 
             // Packet Serial Number to use
             case "-v":
                 $verbose++;
-        		print "Verbose Mode Enabled\n";
+                print "Verbose Mode Enabled\n";
                 break;
 
             // Go into an array that can be sorted by the program
@@ -118,9 +121,9 @@
                 break;
         }
     }
-	if ($phpunit) {
-	    print "PHPUnit installed and ready.\n";
-	}
+    if ($phpunit) {
+        print "PHPUnit installed and ready.\n";
+    }
 
     $endpoint = new driver($db, $conf['hugnetDb']);
     $endpoint->packet->verbose = $verbose;

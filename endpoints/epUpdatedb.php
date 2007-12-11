@@ -1,30 +1,33 @@
 <?php
 /**
- *   <pre>
- *   HUGnetLib is a library of HUGnet code
- *   Copyright (C) 2007 Hunt Utilities Group, LLC
- *   
- *   This program is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU General Public License
- *   as published by the Free Software Foundation; either version 3
- *   of the License, or (at your option) any later version.
- *   
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *   
- *   You should have received a copy of the GNU General Public License
- *   along with this program; if not, write to the Free Software
- *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *   </pre>
  *
- *   @license http://opensource.org/licenses/gpl-license.php GNU Public License
- *   @package Scripts
- *   @subpackage UpdateDB
- *   @copyright 2007 Hunt Utilities Group, LLC
- *   @author Scott Price <prices@hugllc.com>
- *   @version $Id: updatedb.php 375 2007-10-16 18:55:27Z prices $    
+ * PHP Version 5
+ *
+ * <pre>
+ * HUGnetLib is a library of HUGnet code
+ * Copyright (C) 2007 Hunt Utilities Group, LLC
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Scripts
+ * @subpackage UpdateDB
+ * @copyright 2007 Hunt Utilities Group, LLC
+ * @author Scott Price <prices@hugllc.com>
+ * @version SVN: $Id: updatedb.php 375 2007-10-16 18:55:27Z prices $    
  *
  */
 /** For retrieving packet logs */
@@ -45,17 +48,17 @@ class epUpdatedb {
     var $lastminute = 0;
     /** @var array Gateway information */
     var $gw = array(0 => array());
-    var $doPoll = FALSE;
+    var $doPoll = false;
     var $configInterval = 43200; //!< Number of seconds between config attempts.
     var $otherGW = array();
     var $packetQ = array();
-    var $verbose = FALSE;
+    var $verbose = false;
 
     /**
      * Constructor
      *
      * @param object $endpoint an endpoint object
-     */
+      */
     function __construct(&$endpoint) {
         $this->endpoint = &$endpoint;
         $this->plog = new plog();
@@ -73,7 +76,7 @@ class epUpdatedb {
     /**
      * Gets all devices from the remote database and stores them in the
      * local database.
-     */
+      */
     function getAllDevices() {
         // Regenerate our endpoint information
         if (((time() - $this->lastdev) > 120) || (count($this->ep) < 1)) {
@@ -87,7 +90,7 @@ class epUpdatedb {
             if (is_array($res) && (count($res) > 0)) {
                 $this->oldep = $this->ep;
                 $this->ep = array();
-                foreach($res as $key => $val) {
+                foreach ($res as $key => $val) {
                     $dev = $this->endpoint->DriverInfo($val);
                     $dev['params'] = device::decodeParams($dev['params']);
 //                    if (isset($this->oldep[$key])) $dev = array_merge($this->oldep[$key], $dev);
@@ -102,24 +105,24 @@ class epUpdatedb {
 
     /**
      * Looks for packets to be sent out on the HUGnet network.
-     */
+      */
     function getPacketSend() {
         $query = "SELECT * FROM PacketSend WHERE Checked = 0";
         $res = $this->endpoint->db->getArray($query);
         if ($this->verbose) print "[".$this->uproc->me["PID"]."] Checking for Outgoing Packets\n";
         if (is_array($res) && (count($res) > 0)) {
-            foreach($res as $packet) {
+            foreach ($res as $packet) {
                 unset($packet['Checked']);
-                $found = FALSE;
+                $found = false;
                 if (isset($this->ep[$packet['DeviceID']])) {
                     $packet['DeviceKey'] = $this->ep[$packet['DeviceID']]['DeviceKey'];
-                    $found = TRUE;
+                    $found = true;
                 } else {
             
-                    foreach($this->ep as $key => $val) {
+                    foreach ($this->ep as $key => $val) {
                         if (trim(strtoupper($val['DeviceID'])) == trim(strtoupper($packet['PacketTo']))) {
                             $packet['DeviceKey'] = $this->ep[$packet['DeviceID']]['DeviceKey'];
-                            $found = TRUE;
+                            $found = true;
                             break;
                         }
                     }
@@ -159,18 +162,18 @@ class epUpdatedb {
             $res = $this->endpoint->db->AutoExecute("PacketSend", array("Checked" => 1), 'UPDATE', $where);
             if ($res) {
                 print " Updated ";
-                return TRUE;
+                return true;
             }
         } 
 
         print " Failed ";
-        return FALSE;
+        return false;
 
     }
     /**
      * Waits for a time when there is nothing to do.  This is so we don't eat
      * all of the processing time.
-     */
+      */
     function wait() {
         if ($this->verbose) print  "[".$this->uproc->me["PID"]."] Pausing...\n";
 //        $cnt = 0;
@@ -184,12 +187,12 @@ class epUpdatedb {
 
     /**
      * Update the remote database from the local one.
-     */
+      */
     function updatedb() {
         $res = $this->plog->getAll(50);
         if ($this->verbose) print "[".$this->uproc->me["PID"]."] Found ".count($res)." Packets\n";
         if (!is_array($res)) return;
-        foreach($res as $packet) {
+        foreach ($res as $packet) {
             $this->uproc->incStat("Packets");                    
 
             print "[".$this->uproc->me["PID"]."] ".$packet["PacketFrom"]." ".$packet["sendCommand"];
@@ -198,7 +201,7 @@ class epUpdatedb {
             if (is_array($this->ep[$DeviceID])) {
                 $packet = array_merge($this->ep[$DeviceID], $packet);
             }
-            $packet["remove"] == FALSE;
+            $packet["remove"] == false;
             $this->updatedbUnsolicited($packet);
             $this->updatedbReply($packet);
             $this->updatedbConfig($packet);
@@ -217,12 +220,12 @@ class epUpdatedb {
      */ 
     private function updatedbUnsolicited(&$packet) {
         if ($packet['Type'] == 'UNSOLICITED') {
-            $packed["Checked"] = TRUE;
+            $packed["Checked"] = true;
             $this->uproc->incStat("Unsolicited");                    
             $return = $this->endpoint->db->AutoExecute("PacketLog", $packet, 'INSERT');
             if ($return) {
                 print " - Inserted ".$packet['sendCommand']."";                    
-                $packet["remove"] = TRUE;
+                $packet["remove"] = true;
             } else {
                 $this->updatedbError($packet, "Failed", "Unsolicited Failed");
             }
@@ -235,12 +238,12 @@ class epUpdatedb {
      */ 
     private function updatedbReply(&$packet) {
         if ($packet['Type'] == 'REPLY') {
-            $packed["Checked"] = TRUE;
+            $packed["Checked"] = true;
             $this->uproc->incStat("Reply");
             $return = $this->endpoint->db->AutoExecute("PacketSend", $packet, 'INSERT');
             if ($return) {
                 print " - Inserted into PacketSend ".$packet['sendCommand']."";                    
-                $packet["remove"] = TRUE;
+                $packet["remove"] = true;
             } else {
                 print " - Failed ";
                 $this->uproc->incStat("Reply Failed");
@@ -254,13 +257,13 @@ class epUpdatedb {
      */ 
     private function updatedbConfig(&$packet) {
         if ($packet['Type'] == 'CONFIG') {
-            $packed["Checked"] = TRUE;
+            $packed["Checked"] = true;
             $this->uproc->incStat("Config");
             $return = $this->endpoint->db->AutoExecute("PacketLog", $packet, 'INSERT');
             
             if ($return) {
                 print " - Moved ";
-                $packet["remove"] = TRUE;
+                $packet["remove"] = true;
 
             } else {
                 $this->updatedbError($packet, "Update Failed", "Config Failed");
@@ -282,7 +285,7 @@ class epUpdatedb {
      */ 
     private function updatedbPoll(&$packet) {
         if ($packet['Type'] == 'POLL') {
-            $packed["Checked"] = TRUE;
+            $packed["Checked"] = true;
             $this->uproc->incStat("Poll");
             print " ".$packet['Driver']." ";
             $packet = $this->endpoint->InterpSensors($packet, array($packet));
@@ -291,11 +294,11 @@ class epUpdatedb {
             print " - decoded ".$packet['sendCommand']." ";
             if ($this->updatedbPollDuplicate($packet)) {
                 print "Duplicate";
-                $packet["remove"] = TRUE;
+                $packet["remove"] = true;
             } else {
 
                 if ($this->updatedbPollRawHistory(&$packet)) {
-                    $packet["remove"] = TRUE;
+                    $packet["remove"] = true;
                     $this->updatedbPollHistory($packet);
                 }
             }
@@ -323,10 +326,10 @@ class epUpdatedb {
         $ret = $this->endpoint->device->update($packet['DeviceKey'], $set);
         if ($ret) {
             print " - Last Poll ";
-            return TRUE;
+            return true;
         } else {
             print " - Last Poll Failed ";
-            return FALSE;
+            return false;
         }
 
     }
@@ -340,10 +343,10 @@ class epUpdatedb {
                 if ($ret) {
                     $info = array();
                     print " - raw history ";
-                    return TRUE;
+                    return true;
                 } else {
                     $this->updatedbError($packet, "Raw History Failed", "Poll Failed");
-                    return FALSE;
+                    return false;
                 }
         
     }
@@ -368,11 +371,11 @@ class epUpdatedb {
             if (is_array($check)) {
                 $check = $this->endpoint->InterpSensors($packet, $check);
                 if ($check[0]['DataIndex'] == $packet['DataIndex']) {
-                    return TRUE;
+                    return true;
                 }
             }
         }
-        return FALSE;
+        return false;
 
     }
     /**
@@ -381,9 +384,9 @@ class epUpdatedb {
      * @param array $packet the packet array
      */ 
     private function updatedbUnknown(&$packet) {
-        if ($packet['Checked'] !== TRUE) {
+        if ($packet['Checked'] !== true) {
             $this->uproc->incStat("Unknown");
-            $packet["remove"] = TRUE;
+            $packet["remove"] = true;
         }
     }
     /**
@@ -397,7 +400,7 @@ class epUpdatedb {
         $error = $this->endpoint->db->MetaError();
         if ($error == DB_ERROR_ALREADY_EXISTS) {
             print " Duplicate ".$packet['Date']." ";
-            $packet["remove"] = TRUE;                                            
+            $packet["remove"] = true;                                            
         } else {
             print " - ".$msg;
            $this->uproc->incStat($stat);

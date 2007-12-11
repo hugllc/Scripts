@@ -18,7 +18,7 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase {
      *
      * @access public
      * @static
-     */
+      */
     public static function main() {
         require_once 'PHPUnit/TextUI/TestRunner.php';
 
@@ -31,7 +31,7 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase {
      * This method is called before a test is executed.
      *
      * @access protected
-     */
+      */
     protected function setUp() {
     }
 
@@ -40,13 +40,13 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase {
      * This method is called after a test is executed.
      *
      * @access protected
-     */
+      */
     protected function tearDown() {
     }
 
     /**
      * @todo Implement testGetAllDevices().
-     */
+      */
     public function testGetAllDevices() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -56,7 +56,7 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testGetPacketSend().
-     */
+      */
     public function testGetPacketSend() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -66,7 +66,7 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testWait().
-     */
+      */
     public function testWait() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
@@ -76,7 +76,7 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @todo Implement testUpdatedb().
-     */
+      */
     public function testUpdatedb() {
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete(
