@@ -196,7 +196,7 @@
     }
 
 
-    $this->register_function("analysis_history_check", "Analysis0");
+    $this->registerFunction("analysis_history_check", "Analysis0");
 
 function history_check_insert($row, $count) {
 

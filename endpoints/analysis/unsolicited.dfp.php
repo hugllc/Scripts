@@ -80,6 +80,6 @@
     }
 
 
-    $this->register_function("analysis_unsolicited", "Analysis");
+    $this->registerFunction("analysis_unsolicited", "Analysis");
 
 ?>

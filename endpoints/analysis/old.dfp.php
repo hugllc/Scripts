@@ -66,6 +66,6 @@
     }
 
 
-    $this->register_function("analysis_unassigned", "preAnalysis");
+    $this->registerFunction("analysis_unassigned", "preAnalysis");
 
 ?>

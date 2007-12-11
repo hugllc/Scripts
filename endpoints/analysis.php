@@ -60,7 +60,7 @@
     $uproc->Register();
     $uproc->CheckRegistered(true);
 
-    $plugins = new plugins(dirname(__FILE__)."/analysis/", "dfp.php", dirname(__FILE__)."/plugins");
+    $plugins = new Plugins(dirname(__FILE__)."/analysis/", "dfp.php", dirname(__FILE__)."/plugins");
 
     if (is_array($plugins->plugins["Functions"]["preAnalysis"])) {
         foreach ($plugins->plugins["Functions"]["preAnalysis"] as $plug) {
@@ -110,7 +110,7 @@
     $processed = 0;
     foreach ($devices as $dev) {
 
-        $temp = $plugins->run_filter($temp, "preAnalysis", $dev);
+        $temp = $plugins->runFilter($temp, "preAnalysis", $dev);
 
         // If this is an unassigned device don't do any analysis on it
         if ($dev['GatewayKey'] == 0) continue;
@@ -170,11 +170,11 @@
                 $filterout = array();
                 if ($verbose) print "\r\n"; 
                 for ($i = 0; $i < 10; $i++) {
-                    $plugins->run_filter($filterout, "Analysis".$i, $dev);
+                    $plugins->runFilter($filterout, "Analysis".$i, $dev);
                 }
-                $plugins->run_filter($filterout, "Analysis", $dev);
+                $plugins->runFilter($filterout, "Analysis", $dev);
                 for ($i = 10; $i < 20; $i++) {
-                    $plugins->run_filter($filterout, "Analysis".$i, $dev);
+                    $plugins->runFilter($filterout, "Analysis".$i, $dev);
                 }
                 $processed += $count;
                             

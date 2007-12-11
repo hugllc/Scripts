@@ -289,7 +289,7 @@
         if ($verbose > 1) print "analysis_averages end (".$dTime."s) \r\n";
     }
 
-    $this->register_function("analysis_averages", "Analysis");
+    $this->registerFunction("analysis_averages", "Analysis");
 
 function analysis_averages_insert($row, $count) {
 

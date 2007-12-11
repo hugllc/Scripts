@@ -69,6 +69,6 @@
     }
 
 
-    $this->register_function("analysis_polling", "Analysis");
+    $this->registerFunction("analysis_polling", "Analysis");
 
 ?>
