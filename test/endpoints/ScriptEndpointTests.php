@@ -35,8 +35,8 @@
  *
  */
 
-if (!defined('PHPUNIT_MAIN_METHOD')) {
-    define('PHPUNIT_MAIN_METHOD', 'ScriptEndpointTests::main');
+if (!defined('PHPUnit_MAIN_METHOD')) {
+    define('PHPUnit_MAIN_METHOD', 'ScriptEndpointTests::main');
 }
 
 require_once 'PHPUnit/Framework.php';
@@ -67,7 +67,7 @@ class ScriptEndpointTests
     }
 }
  
-if (PHPUNIT_MAIN_METHOD == 'ScriptEndpointTests::main') {
+if (PHPUnit_MAIN_METHOD == 'ScriptEndpointTests::main') {
     ScriptEndpointTests::main();
 }
 ?>

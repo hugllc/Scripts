@@ -1,7 +1,7 @@
 <?php
 // Call epPollTest::main() if this source file is executed directly.
-if (!defined('PHPUNIT_MAIN_METHOD')) {
-    define('PHPUNIT_MAIN_METHOD', 'epPollTest::main');
+if (!defined('PHPUnit_MAIN_METHOD')) {
+    define('PHPUnit_MAIN_METHOD', 'epPollTest::main');
 }
 
 require_once 'PHPUnit/Framework.php';
@@ -269,7 +269,7 @@ class epPollTest extends PHPUnit_Framework_TestCase {
 }
 
 // Call epPollTest::main() if this source file is executed directly.
-if (PHPUNIT_MAIN_METHOD == 'epPollTest::main') {
+if (PHPUnit_MAIN_METHOD == 'epPollTest::main') {
     epPollTest::main();
 }
 ?>
