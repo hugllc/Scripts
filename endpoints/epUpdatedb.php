@@ -31,7 +31,7 @@
  *
  */
 /** For retrieving packet logs */
-require_once(HUGNET_INCLUDE_PATH.'/plog.php');
+require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');
 /** For process information and control */
 require_once(HUGNET_INCLUDE_PATH.'/process.php');
 
