@@ -83,6 +83,10 @@ class epUpdatedb {
         $this->gateway->verbose($this->verbose); 
         $this->gateway->createCache(HUGNET_LOCAL_DATABASE);
         $this->gateway->getAll();
+        $this->firmware = new firmware($endpoint->db);
+        $this->firmware->verbose($this->verbose); 
+        $this->firmware->createCache(HUGNET_LOCAL_DATABASE);
+        $this->firmware->getAll();
         $this->rawHistory = new DbBase($endpoint->db, "history_raw", "HistoryRawKey");
         $this->rawHistory->verbose($this->verbose); 
 
@@ -97,13 +101,14 @@ class epUpdatedb {
         if (((time() - $this->lastdev) > 120) || (count($this->ep) < 1)) {
             $this->lastdev = time();
 
-            print "Getting endpoints\n";
+            print "Getting endpoints:  ";
 
 
 //            $query = "SELECT * FROM ".$this->endpoint->device_table;
 //            $res = $this->endpoint->db->getArray($query);
             $res = $this->device->getAll();
             if (is_array($res) && (count($res) > 0)) {
+                print "found ".count($res)."";
                 $this->oldep = $this->ep;
                 $this->ep = array();
                 foreach ($res as $key => $val) {
@@ -115,6 +120,7 @@ class epUpdatedb {
 //                    $res = $this->device->add($dev);
                 }
             }
+            print "\n";
         }
         return $this->ep;    
     }
