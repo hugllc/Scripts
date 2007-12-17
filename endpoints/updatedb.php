@@ -40,7 +40,6 @@
     print "Starting...\n";
     
     require_once(dirname(__FILE__).'/../head.inc.php');
-    require_once(HUGNET_INCLUDE_PATH.'/plog.php');
     require_once(HUGNET_INCLUDE_PATH.'/process.php');
     require_once("epUpdatedb.php");
 
@@ -53,13 +52,13 @@
 
     $refreshdev = true;
 
-    $updatedb = new epUpdatedb($endpoint);
+    $updatedb = new epUpdatedb($endpoint, $verbose);
     $updatedb->uproc->register();
     
     while(1) {
-        if (!$endpoint->db->IsConnected()) {
-            $endpoint->db->Connect($dbserver["Host"],$dbserver["User"],$dbserver["Password"],HUGNET_DATABASE);
-        }
+//        if (!$endpoint->db->IsConnected()) {
+//            $endpoint->db->Connect($dbserver["Host"],$dbserver["User"],$dbserver["Password"],HUGNET_DATABASE);
+//        }
 
         $updatedb->getAllDevices();
 
@@ -78,7 +77,7 @@
         if (file_exists("/var/log/php.log")) {
             if (filesize("/var/log/php.log") > (1024*1024)) {
                 $fd = fopen("/var/log/php.log","w");
-             * @fclose($fd);
+                @fclose($fd);
             }
         }
     }

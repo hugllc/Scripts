@@ -32,29 +32,24 @@
     define('HUGNET_FS_DIR', dirname(__FILE__));
 
     require_once(HUGNET_FS_DIR.'/config/config.inc.php');
-//    require_once('lib/MDB_QueryWrapper.inc.php');
-    require_once('adodb/adodb.inc.php');
-
-//    require_once('lib/functions.inc.php');
     require_once('lib/plugins.inc.php');
     $prefs = &$conf;
     require_once("hugnet.inc.php");
     require_once(HUGNET_INCLUDE_PATH."/process.php");
-    require_once('adodb/adodb.inc.php');
 
     if (is_null($db)) {    
         foreach ($prefs['servers'] as $serv) {
     //        $dsn = $serv['Type']."://".$serv["User"].":".rawurlencode($serv["Password"])."@".$serv["Host"]."/".HUGNET_DATABASE;
     //var_dump($dsn);
-            $db = &ADONewConnection($serv["Type"]);
-            $db->Connect($serv["Host"],$serv["User"],$serv["Password"],HUGNET_DATABASE);
-            $dbserver = $serv;
-            if ($db->IsConnected()) break;
+            $db = new PDO($serv["Type"].":host=".$serv["Host"].";dbname=".HUGNET_DATABASE, $serv["User"], $serv["Password"]);
+//            $db->Connect($serv["Host"],$serv["User"],$serv["Password"],HUGNET_DATABASE);
+//            $dbserver = $serv;
+            break;
         }
     }    
     if (!is_object($db)) die("Database connection not available.\n");
 
-    if (!$db->IsConnected()) die("Database Connection Failed\n");
+//    if (!$db->IsConnected()) die("Database Connection Failed\n");
 
     if (!isset($GatewayIP)) $GatewayIP = "127.0.0.1";
     if (!isset($GatewayPort)) $GatewayPort = 2000;
@@ -106,7 +101,7 @@
             // Packet Serial Number to use
             case "-t":
                 $testMode = true;
-            print "Test Mode Enabled\n";
+                print "Test Mode Enabled\n";
                 break;
 
             // Packet Serial Number to use

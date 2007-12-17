@@ -59,17 +59,32 @@ class epUpdatedb {
      *
      * @param object $endpoint an endpoint object
       */
-    function __construct(&$endpoint) {
+    function __construct(&$endpoint, $verbose=false) {
+        $this->verbose = (bool) $verbose;
         $this->endpoint = &$endpoint;
         $this->plog = new plog();
-        $this->plog->createPacketLog();
-        $this->psend = new plog("PacketSend");
+        $this->plog->verbose($this->verbose);
+        $this->plog->createTable();
+
+        $this->plogRemote = new plog($endpoint->db);
+        $this->plogRemote->verbose($this->verbose);
+        $this->psend = new DbBase($endpoint->db, "PacketSend");
+        $this->psend->verbose($this->verbose);
 //        $this->psend->createPacketLog("PacketSend");
         $this->uproc = new process();
         $this->uproc->clearStats();
         $this->uproc->setStat('start', time());
         $this->uproc->setStat('PID', $this->uproc->me['PID']);
-        $this->devices = new deviceCache();
+        $this->device = new device($endpoint);
+        $this->device->verbose($this->verbose); 
+        $this->device->createCache(HUGNET_LOCAL_DATABASE);
+        $this->device->getAll();
+        $this->gateway = new gateway($endpoint->db);
+        $this->gateway->verbose($this->verbose); 
+        $this->gateway->createCache(HUGNET_LOCAL_DATABASE);
+        $this->gateway->getAll();
+        $this->rawHistory = new DbBase($endpoint->db, "history_raw", "HistoryRawKey");
+        $this->rawHistory->verbose($this->verbose); 
 
      }
 
@@ -85,8 +100,9 @@ class epUpdatedb {
             print "Getting endpoints\n";
 
 
-            $query = "SELECT * FROM ".$this->endpoint->device_table;
-            $res = $this->endpoint->db->getArray($query);
+//            $query = "SELECT * FROM ".$this->endpoint->device_table;
+//            $res = $this->endpoint->db->getArray($query);
+            $res = $this->device->getAll();
             if (is_array($res) && (count($res) > 0)) {
                 $this->oldep = $this->ep;
                 $this->ep = array();
@@ -96,7 +112,7 @@ class epUpdatedb {
 //                    if (isset($this->oldep[$key])) $dev = array_merge($this->oldep[$key], $dev);
                     $val['DeviceID'] = trim(strtoupper($val['DeviceID']));
                     $this->ep[$val['DeviceID']] = $dev;                
-                    $res = $this->devices->add($dev);
+//                    $res = $this->device->add($dev);
                 }
             }
         }
@@ -107,8 +123,7 @@ class epUpdatedb {
      * Looks for packets to be sent out on the HUGnet network.
       */
     function getPacketSend() {
-        $query = "SELECT * FROM PacketSend WHERE Checked = 0";
-        $res = $this->endpoint->db->getArray($query);
+        $res = $this->psend->getWhere("Checked = 0");
         if ($this->verbose) print "[".$this->uproc->me["PID"]."] Checking for Outgoing Packets\n";
         if (is_array($res) && (count($res) > 0)) {
             foreach ($res as $packet) {
@@ -259,8 +274,7 @@ class epUpdatedb {
         if ($packet['Type'] == 'CONFIG') {
             $packed["Checked"] = true;
             $this->uproc->incStat("Config");
-            $return = $this->endpoint->db->AutoExecute("PacketLog", $packet, 'INSERT');
-            
+            $return = $this->plogRemote->add($packet);
             if ($return) {
                 print " - Moved ";
                 $packet["remove"] = true;
@@ -309,7 +323,8 @@ class epUpdatedb {
      *
      * @param array $packet the packet array
      */ 
-    private function updatedbPollHistory(&$packet) {
+    private function updatedbPollHistory(&$packet) 
+    {
         $set = array(
             "LastPoll" => $packet["Date"],
             "GatewayKey" => $packet['GatewayKey'],
@@ -338,36 +353,38 @@ class epUpdatedb {
      *
      * @param array $packet the packet array
      */ 
-    private function updatedbPollRawHistory(&$packet) {
-                $ret = $this->endpoint->db->AutoExecute($this->endpoint->raw_history_table, $packet, 'INSERT');
-                if ($ret) {
-                    $info = array();
-                    print " - raw history ";
-                    return true;
-                } else {
-                    $this->updatedbError($packet, "Raw History Failed", "Poll Failed");
-                    return false;
-                }
+    private function updatedbPollRawHistory(&$packet) 
+    {
+        $ret = $this->rawHistory->add($packet);
+        if ($ret) {
+            $info = array();
+            print " - raw history ";
+            return true;
+        } else {
+            $this->updatedbError($packet, "Raw History Failed", "Poll Failed");
+            return false;
+        }
         
     }
     /**
      * Checks if this is a duplicate or not.
      *
      * @param array $packet the packet array
+     *
+     * @return bool
      */ 
-    private function updatedbPollDuplicate(&$packet) {
+    private function updatedbPollDuplicate(&$packet) 
+    {
         if (isset($packet['DataIndex'])) {
-
-            $query = " SELECT * FROM ".$this->endpoint->raw_history_table.
-                     " WHERE " .
-                     " DeviceKey=".$packet['DeviceKey'] .
+            $data = array($packet["DeviceKey"], $packet["sendCommand"], $packet["Date"]);
+            $query = " DeviceKey= ? " .
                      " AND " .
-                     " sendCommand='".$packet['sendCommand']."'" .
+                     " sendCommand= ? ".
                      " AND " .
-                     " Date='".$packet["Date"]."' " . 
+                     " Date= ? " . 
                      " ORDER BY 'Date' desc " .
                      " LIMIT 0, 1 ";
-            $check = $this->endpoint->db->getArray($query);
+            $check = $this->rawHistory->getWhere($query, $data);
             if (is_array($check)) {
                 $check = $this->endpoint->InterpSensors($packet, $check);
                 if ($check[0]['DataIndex'] == $packet['DataIndex']) {
@@ -397,7 +414,7 @@ class epUpdatedb {
      * @param string $stat Generic stat to increment if specific failures can't be found
      */ 
     private function updatedbError(&$packet, $msg, $stat) {
-        $error = $this->endpoint->db->MetaError();
+        $error = $this->endpoint->db->errorInfo();
         if ($error == DB_ERROR_ALREADY_EXISTS) {
             print " Duplicate ".$packet['Date']." ";
             $packet["remove"] = true;                                            
@@ -413,7 +430,7 @@ class epUpdatedb {
      */ 
     private function updatedbRemove(&$packet) {
         if ($packet["remove"]) {
-            if ($this->plog->remove($packet)) {
+            if ($this->plog->remove($packet["id"])) {
                 print " - local deleted";
             } else {
                 print " - Delete Failed";

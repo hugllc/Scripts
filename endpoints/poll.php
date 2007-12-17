@@ -39,7 +39,7 @@
     $testMode = false;
 
     require_once(dirname(__FILE__).'/../head.inc.php');
-    require_once(HUGNET_INCLUDE_PATH.'/plog.php');
+    require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');
     require_once(HUGNET_INCLUDE_PATH.'/process.php');
     require_once('epPoll.php');
 
@@ -58,7 +58,7 @@
     );
     print "Using Gateway ".$gw["GatewayIP"].":".$gw["GatewayPort"]."\n";
 
-    $poll = new epPoll($endpoint, $gw, $testMode);
+    $poll = new epPoll($endpoint, $gw, $verbose, $testMode);
     $poll->uproc->register();
 
     $poll->main();

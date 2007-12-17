@@ -57,20 +57,25 @@ class epPoll {
     var $lastContactTime = 0; //!< Last time an endpoint was contacted.
     var $lastContactAttempt = 0; //!< Last time an endpoint was contacted.
     var $critTime = 60;
-    
-    function epPoll(&$endpoint, $gateway=null, $test=false) {
+
+    /**
+     *
+     */    
+    function __construct(&$endpoint, $gateway=null, $verbose=false, $test=false) 
+    {
         $this->uproc = new process();
         $this->uproc->clearStats();        
         $this->uproc->setStat('start', time());
         $this->uproc->setStat('PID', $this->uproc->me['PID']);
         $this->uproc->setStat('Priority', $this->myInfo['Priority']);
         $this->test = (bool) $test;
+        $this->verbose = (bool) $verbose;
         $this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
         $this->endpoint = &$endpoint;
         $this->endpoint->packet->getAll(true);
-
         do {
             $this->plog = new plog();
+            $this->plog->createTable();
             if ($this->plog->criticalError !== false) {
                 $this->criticalFailure($this->plog->criticalError);
                 print "Local Database not available.  Waiting 5 minutes\n";
@@ -79,14 +84,18 @@ class epPoll {
         } while ($this->plog->criticalError !== false);
         
 //        $this->plog->createPacketLog();
-        $this->psend = new plog("PacketSend");
+        $file = HUGNET_LOCAL_DATABASE;
+        $this->psend = new plog($file, "PacketSend");
+        $this->psend->createTable("PacketSend");
+        $this->psend->verbose($this->verbose);
         $this->packet = &$this->endpoint->packet;
-//        $this->getGateways($GatewayKey);
-//        $this->randomizegwTimeout();
         $this->setPriority();
-        $this->devices = new deviceCache();
+        $this->device = new device($file);
+        $this->device->verbose($this->verbose);
         $this->lastContactTime = time();
         $this->lastContactAttempt = time();
+        $this->gateway = new gateway($file);
+        $this->gateway->verbose($this->verbose);
 
         if (!is_null($gateway)) {
             $this->forceGateways($gateway);
@@ -130,14 +139,7 @@ class epPoll {
      * Gets all of the gateways with $Key as their key or backup key
       */
     function getGateways($Key) {
-        $query = "SELECT * FROM ".$this->endpoint->gateway->table.
-                 " WHERE ".
-                 $this->endpoint->gateway->id." = ".$Key.
-                 " OR ".
-                 " BackupKey = ".$Key.
-                 " ORDER BY BackupKey asc ";
-                 ;
-        $res = $this->endpoint->db->getArray($query);
+        $res = $this->gateway->get($Key);
         $this->GatewayKey = $Key;
 
         if (!is_array($res)) return false;
@@ -248,14 +250,12 @@ class epPoll {
             print "Getting endpoints for Gateway #".$this->gw[0]["GatewayKey"]."\n";
 
 
-            $query = "SELECT * FROM ".$this->endpoint->device_table.
-                     " WHERE ".
-                     "GatewayKey=".$this->gw[0]["GatewayKey"];
-            $res = $this->devices->query($query);
+            $query = "GatewayKey= ? ";
+            $res = $this->device->getWhere($query, array($this->gw[0]["GatewayKey"]));
             if (!is_array($res) || (count($res) == 0)) {
                 $this->uproc->incStat("Device Cache Failed");
                 print "Didn't find any devices.\n";
-                $res = $this->endpoint->db->getArray($query);
+//                $res = $this->endpoint->db->getArray($query);
             }
             if (is_array($res) && (count($res) > 0)) {
                 $this->ep = array();
@@ -416,7 +416,8 @@ class epPoll {
         }
     }
 
-    function poll() {
+    function poll() 
+    {
         if ($this->myInfo['doPoll'] !== true) {
             print "Skipping the poll.\r\n";
             return;
@@ -453,7 +454,6 @@ class epPoll {
                                     if (!isset($sensors['DataIndex']) || ($this->_devInfo[$key]['DataIndex'] != $sensors["DataIndex"])) {
 
                                         $sensors = plog::packetLogSetup($sensors, $dev, "POLL");
-
                                         $ret = $this->plog->add($sensors);
 
                                         if ($ret) {
