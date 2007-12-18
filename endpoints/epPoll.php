@@ -27,7 +27,7 @@
  * @subpackage Poll
  * @copyright 2007 Hunt Utilities Group, LLC
  * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id: poll.php 425 2007-11-04 14:55:24Z prices $    
+ * @version SVN: $Id$    
  *
  */
     require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');

@@ -27,7 +27,7 @@
  * @subpackage UpdateDB
  * @copyright 2007 Hunt Utilities Group, LLC
  * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id: updatedb.php 375 2007-10-16 18:55:27Z prices $    
+ * @version SVN: $Id$    
  *
  */
 /** For retrieving packet logs */

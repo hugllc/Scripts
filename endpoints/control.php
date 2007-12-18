@@ -27,13 +27,13 @@
  * @subpackage Control
  * @copyright 2007 Hunt Utilities Group, LLC
  * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id: unitConversion.inc.php 369 2007-10-12 15:05:32Z prices $    
+ * @version SVN: $Id$    
  *
  */
 
     define("CONTROL_VERSION", "0.0.1");
     define("CONTROL_PARTNUMBER", "0039260450");  //0039-26-01-P
-    define("CONTROL_SVN", '$Id: poll.php 149 2007-08-01 17:15:59Z prices $');
+    define("CONTROL_SVN", '$Id$');
 
     $GatewayKey = false;
     $testMode = false;
@@ -42,7 +42,7 @@
     require_once(HUGNET_INCLUDE_PATH.'/plog.inc.php');
     require_once(HUGNET_INCLUDE_PATH.'/process.inc.php');
 
-    print 'control.php Version '.CONTROL_VERSION.'  $Id: poll.php 149 2007-08-01 17:15:59Z prices $'."\n";
+    print 'control.php Version '.CONTROL_VERSION.'  $Id$'."\n";
     print "Starting...\n";
 
     while (1) {
