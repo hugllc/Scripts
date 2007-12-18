@@ -75,18 +75,22 @@ class epUpdatedb {
         $this->uproc->clearStats();
         $this->uproc->setStat('start', time());
         $this->uproc->setStat('PID', $this->uproc->me['PID']);
-        $this->device = new device($endpoint);
-        $this->device->verbose($this->verbose); 
-        $this->device->createCache(HUGNET_LOCAL_DATABASE);
-        $this->device->getAll();
+
         $this->gateway = new gateway($endpoint->db);
         $this->gateway->verbose($this->verbose); 
         $this->gateway->createCache(HUGNET_LOCAL_DATABASE);
         $this->gateway->getAll();
+
+        $this->device = new device($endpoint);
+        $this->device->verbose($this->verbose); 
+        $this->device->createCache(HUGNET_LOCAL_DATABASE);
+        $this->device->getAll();
+        
         $this->firmware = new firmware($endpoint->db);
         $this->firmware->verbose($this->verbose); 
         $this->firmware->createCache(HUGNET_LOCAL_DATABASE);
         $this->firmware->getAll();
+
         $this->rawHistory = new DbBase($endpoint->db, "history_raw", "HistoryRawKey");
         $this->rawHistory->verbose($this->verbose); 
 
@@ -103,9 +107,6 @@ class epUpdatedb {
 
             print "Getting endpoints:  ";
 
-
-//            $query = "SELECT * FROM ".$this->endpoint->device_table;
-//            $res = $this->endpoint->db->getArray($query);
             $res = $this->device->getAll();
             if (is_array($res) && (count($res) > 0)) {
                 print "found ".count($res)."";
@@ -114,10 +115,8 @@ class epUpdatedb {
                 foreach ($res as $key => $val) {
                     $dev = $this->endpoint->DriverInfo($val);
                     $dev['params'] = device::decodeParams($dev['params']);
-//                    if (isset($this->oldep[$key])) $dev = array_merge($this->oldep[$key], $dev);
                     $val['DeviceID'] = trim(strtoupper($val['DeviceID']));
                     $this->ep[$val['DeviceID']] = $dev;                
-//                    $res = $this->device->add($dev);
                 }
             }
             print "\n";
@@ -241,7 +240,7 @@ class epUpdatedb {
      */ 
     private function updatedbUnsolicited(&$packet) {
         if ($packet['Type'] == 'UNSOLICITED') {
-            $packed["Checked"] = true;
+            $packet["Checked"] = true;
             $this->uproc->incStat("Unsolicited");                    
             $return = $this->endpoint->db->AutoExecute("PacketLog", $packet, 'INSERT');
             if ($return) {
@@ -259,7 +258,7 @@ class epUpdatedb {
      */ 
     private function updatedbReply(&$packet) {
         if ($packet['Type'] == 'REPLY') {
-            $packed["Checked"] = true;
+            $packet["Checked"] = true;
             $this->uproc->incStat("Reply");
             $return = $this->endpoint->db->AutoExecute("PacketSend", $packet, 'INSERT');
             if ($return) {
@@ -278,14 +277,14 @@ class epUpdatedb {
      */ 
     private function updatedbConfig(&$packet) {
         if ($packet['Type'] == 'CONFIG') {
-            $packed["Checked"] = true;
+            $packet["Checked"] = true;
             $this->uproc->incStat("Config");
             $return = $this->plogRemote->add($packet);
             if ($return) {
                 print " - Moved ";
                 $packet["remove"] = true;
-
             } else {
+                print " - Move Failed ";
                 $this->updatedbError($packet, "Update Failed", "Config Failed");
             }
             if ($this->endpoint->UpdateDevice(array($packet))) {
@@ -305,7 +304,7 @@ class epUpdatedb {
      */ 
     private function updatedbPoll(&$packet) {
         if ($packet['Type'] == 'POLL') {
-            $packed["Checked"] = true;
+            $packet["Checked"] = true;
             $this->uproc->incStat("Poll");
             print " ".$packet['Driver']." ";
             $packet = $this->endpoint->InterpSensors($packet, array($packet));
@@ -408,6 +407,7 @@ class epUpdatedb {
      */ 
     private function updatedbUnknown(&$packet) {
         if ($packet['Checked'] !== true) {
+            print " - Unknown ";
             $this->uproc->incStat("Unknown");
             $packet["remove"] = true;
         }

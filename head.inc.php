@@ -41,13 +41,12 @@
         foreach ($prefs['servers'] as $serv) {
     //        $dsn = $serv['Type']."://".$serv["User"].":".rawurlencode($serv["Password"])."@".$serv["Host"]."/".HUGNET_DATABASE;
     //var_dump($dsn);
-            $db = new PDO($serv["Type"].":host=".$serv["Host"].";dbname=".HUGNET_DATABASE, $serv["User"], $serv["Password"]);
-//            $db->Connect($serv["Host"],$serv["User"],$serv["Password"],HUGNET_DATABASE);
-//            $dbserver = $serv;
+            $serv["dsn"] = $serv["Type"].":host=".$serv["Host"].";dbname=".HUGNET_DATABASE;
+            $db = new PDO($serv["dsn"], $serv["User"], $serv["Password"]);
             break;
         }
     }    
-    if (!is_object($db)) die("Database connection not available.\n");
+//    if (!is_object($db)) die("Database connection not available.\n");
 
 //    if (!$db->IsConnected()) die("Database Connection Failed\n");
 

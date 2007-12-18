@@ -56,9 +56,10 @@
     $updatedb->uproc->register();
     
     while(1) {
-//        if (!$endpoint->db->IsConnected()) {
-//            $endpoint->db->Connect($dbserver["Host"],$dbserver["User"],$dbserver["Password"],HUGNET_DATABASE);
-//        }
+        if (!$endpoint->device->IsConnected()) {
+            $endpoint->db = new PDO($serv["dsn"], $serv["User"], $serv["Password"]);
+            $updatedb->updatedbError($emptyVar, "Reconnected to the database", "dbReconnect");
+        }
 
         $updatedb->getAllDevices();
 

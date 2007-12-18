@@ -38,10 +38,14 @@
     $GatewayKey = false;
     $testMode = false;
 
+    $db = false;
+    
     require_once(dirname(__FILE__).'/../head.inc.php');
     require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');
     require_once(HUGNET_INCLUDE_PATH.'/process.php');
     require_once('epPoll.php');
+
+    $db = HUGNET_LOCAL_DATABASE;
 
     print 'poll.php Version '.POLL_VERSION.'  $Id$'."\n";
     print "Starting...\n";

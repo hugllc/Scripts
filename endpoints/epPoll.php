@@ -113,7 +113,6 @@ class epPoll {
         $this->packet->packetSetCallBack('checkPacket', $poll);
     
         do {
-    
             print "Using: ".$this->myInfo['DeviceID']." Priority: ".$this->myInfo["Priority"]."\r\n";
             $this->checkOtherGW();
             $this->getAllDevices();
@@ -252,6 +251,7 @@ class epPoll {
 
             $query = "GatewayKey= ? ";
             $res = $this->device->getWhere($query, array($this->gw[0]["GatewayKey"]));
+
             if (!is_array($res) || (count($res) == 0)) {
                 $this->uproc->incStat("Device Cache Failed");
                 print "Didn't find any devices.\n";
