@@ -60,14 +60,13 @@ class ScriptTests
 {
     public static function main()
     {
-        PHPUnit_Util_Filter::addDirectoryToFilter('HUGnetLib/', '.php');
+        PHPUnit_Util_Filter::addDirectoryToFilter(HUGNET_INCLUDE_PATH, '.php');
         PHPUnit_TextUI_TestRunner::run(self::suite());
     }
  
     public static function suite()
     {
-        PHPUnit_Util_Filter::addDirectoryToFilter('adodb/', '.php');
-        PHPUnit_Util_Filter::addDirectoryToFilter('Scripts/test/', '.php');
+        PHPUnit_Util_Filter::addDirectoryToFilter(dirname(__FILE__), '.php');
         $suite = new PHPUnit_Framework_TestSuite('Scripts');
 
         //$suite->addTestSuite('otherTest');
