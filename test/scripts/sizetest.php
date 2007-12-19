@@ -22,47 +22,48 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Test
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
- *
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-    require("packet.inc.php");
+require("packet.inc.php");
 
-    if (empty($argv[1])) {
-        die("DeviceID must be specified!\r\n");    
-    }
-    $pkt = array();
-    $Info["DeviceID"] = $argv[1];
-    $pkt["To"] = $argv[1];
-    $pkt["Command"] = "02";
+if (empty($argv[1])) {
+    die("DeviceID must be specified!\r\n");    
+}
+$pkt = array();
+$Info["DeviceID"] = $argv[1];
+$pkt["To"] = $argv[1];
+$pkt["Command"] = "02";
 
 
-    if (isset($argv[2])) {
-        $Info["GatewayIP"] = $argv[2];
-    } else {
-        $Info["GatewayIP"] = "127.0.0.1";
-    }
-    if (isset($argv[3])) {
-        $Info["GatewayPort"] = $argv[3];
-    } else {
-        $Info["GatewayPort"] = 1200;
-    }
-    $Info["GatewayKey"] = 1;
-    $packet = new EPacket($Info, true);
+if (isset($argv[2])) {
+    $Info["GatewayIP"] = $argv[2];
+} else {
+    $Info["GatewayIP"] = "127.0.0.1";
+}
+if (isset($argv[3])) {
+    $Info["GatewayPort"] = $argv[3];
+} else {
+    $Info["GatewayPort"] = 1200;
+}
+$Info["GatewayKey"] = 1;
+$packet = new EPacket($Info, true);
 
-    $index = 0;
-    do {
+$index = 0;
+do {
 //        $pkt["Data"] .= str_pad(dechex($index++), 2, "0", STR_PAD_LEFT);
-        $pkt["Data"] = str_repeat("00", $index++);
-        $return = $packet->SendPacket($Info, $pkt);        
-    } while($return !== false);
-    $index--;
-    print "Died at ".$index." Length\r\n";
-    $packet->socket->Close();
-    die();
+    $pkt["Data"] = str_repeat("00", $index++);
+    $return = $packet->SendPacket($Info, $pkt);        
+} while($return !== false);
+$index--;
+print "Died at ".$index." Length\r\n";
+$packet->socket->Close();
+die();
     
 ?>

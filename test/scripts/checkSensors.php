@@ -22,72 +22,73 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Test
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
- *
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-    $required = array(
-        "longName" => "Long Name",
-        "unitType" => "Unit Type",
-        "storageUnit" => "Storage Unit",
-    );
-    $suggested = array(
-        "function" => "Decoding Function",
-        "checkFunction" => "Record checking function",
-    );
-    $other = array(
-        "mult" => "Multiplier",
-        "doTotal" => "Total",
-        "extraText" => "Extra Text",
-        "extraDefault" => "Extra Default",
-    );
+$required = array(
+    "longName" => "Long Name",
+    "unitType" => "Unit Type",
+    "storageUnit" => "Storage Unit",
+);
+$suggested = array(
+    "function" => "Decoding Function",
+    "checkFunction" => "Record checking function",
+);
+$other = array(
+    "mult" => "Multiplier",
+    "doTotal" => "Total",
+    "extraText" => "Extra Text",
+    "extraDefault" => "Extra Default",
+);
 
-    require_once(dirname(__FILE__).'/../head.inc.php');
-    
-    if (is_array($endpoint->sensors->sensors)) {
-        foreach ($endpoint->sensors->sensors as &$class) {
-            print "Working with class: ".get_class($class)."\n";
-            if (is_array($class->sensors)) {
-                foreach ($class->sensors as $type => $sArray) {
-                    print "-> 0x".dechex($type)."\n";
-                    if (is_array($sArray)) {
-                        foreach ($sArray as $shortName => $s) {
-                            print "--> Short Name: '".$shortName."'\n";
-                            foreach ($required as $key => $name) {
-                                if (isset($s[$key])) {
-                                    print "---> ".$name.": '".$s[$key]."'\n";
-                                    unset($s[$key]);
-                                } else {
-                                    die("** ERROR ** ".$key." is not defined!\n");
-                                }
+require_once(dirname(__FILE__).'/../head.inc.php');
+
+if (is_array($endpoint->sensors->sensors)) {
+    foreach ($endpoint->sensors->sensors as &$class) {
+        print "Working with class: ".get_class($class)."\n";
+        if (is_array($class->sensors)) {
+            foreach ($class->sensors as $type => $sArray) {
+                print "-> 0x".dechex($type)."\n";
+                if (is_array($sArray)) {
+                    foreach ($sArray as $shortName => $s) {
+                        print "--> Short Name: '".$shortName."'\n";
+                        foreach ($required as $key => $name) {
+                            if (isset($s[$key])) {
+                                print "---> ".$name.": '".$s[$key]."'\n";
+                                unset($s[$key]);
+                            } else {
+                                die("** ERROR ** ".$key." is not defined!\n");
                             }
-                            foreach ($suggested as $key => $name) {
-                                if (isset($s[$key])) {
-                                    print "---> ".$name.": '".$s[$key]."'\n";
-                                    unset($s[$key]);
-                                } else {
-                                    print "** WARNING ** ".$key." is not defined!\n";
-                                }
+                        }
+                        foreach ($suggested as $key => $name) {
+                            if (isset($s[$key])) {
+                                print "---> ".$name.": '".$s[$key]."'\n";
+                                unset($s[$key]);
+                            } else {
+                                print "** WARNING ** ".$key." is not defined!\n";
                             }
-                            foreach ($other as $key => $name) {
-                                if (isset($s[$key])) {
-                                    print "---> ".$name.": '".$s[$key]."'\n";
-                                    unset($s[$key]);
-                                } else {
-                                    print "---> ".$key." is not defined. (This is okay)\n";
-                                }
+                        }
+                        foreach ($other as $key => $name) {
+                            if (isset($s[$key])) {
+                                print "---> ".$name.": '".$s[$key]."'\n";
+                                unset($s[$key]);
+                            } else {
+                                print "---> ".$key." is not defined. (This is okay)\n";
                             }
                         }
                     }
                 }
             }
         }
-    } else {
-        print "No sensors defined. \n";
     }
+} else {
+    print "No sensors defined. \n";
+}
 
 ?>

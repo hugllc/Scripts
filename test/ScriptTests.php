@@ -24,15 +24,13 @@
  * </pre>
  *
  * @category   Test
- * @package    HUGnetLib
+ * @package    ScriptsTest
  * @subpackage Test
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2007 Hunt Utilities Group, LLC
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
- * @version SVN: $Id$    
- *
  */
 
 if (!defined('PHPUnit_MAIN_METHOD')) {
@@ -49,6 +47,14 @@ require_once 'endpoints/ScriptEndpointTests.php';
 /**
  *  This class runs all of the tests.  This must be done with no errors
  * before the software is ever released.
+ *
+ * @category   Test
+ * @package    ScriptsTest
+ * @subpackage Test
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
 class ScriptTests
 {

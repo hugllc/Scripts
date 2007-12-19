@@ -22,34 +22,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Test
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
- *
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-    $dfportal_no_session = true;
+$dfportal_no_session = true;
 
-    include_once("blankhead.inc.php");
-    include_once("hugnetservers.inc.php");
+include_once("blankhead.inc.php");
+include_once("hugnetservers.inc.php");
 
-    $mhistory = new history_raw();
-    $mhistory->DefaultSortBy = "Date desc";
+$mhistory = new history_raw();
+$mhistory->DefaultSortBy = "Date desc";
 
-    $mhistory->lookup($argv[1], "DeviceKey");
-    print "Found ".count($lhistory->lookup)." records\n";
-    $packet=$mhistory->lookup[0];
-    $endpoint->device->lookup($packet["DeviceKey"], "DeviceKey");
+$mhistory->lookup($argv[1], "DeviceKey");
+print "Found ".count($lhistory->lookup)." records\n";
+$packet=$mhistory->lookup[0];
+$endpoint->device->lookup($packet["DeviceKey"], "DeviceKey");
 
-    $packet = array_merge($packet, $endpoint->device->lookup[0]);
+$packet = array_merge($packet, $endpoint->device->lookup[0]);
 
 
-    $packet = $endpoint->DecodeData($packet);
+$packet = $endpoint->DecodeData($packet);
 
-    print strip_tags(get_stuff($packet));
-/**
- * @endcond    
-*/
+print strip_tags(get_stuff($packet));
