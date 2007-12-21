@@ -41,15 +41,15 @@ require_once(HUGNET_INCLUDE_PATH."/process.php");
 
 if (is_null($db)) {    
     foreach ($prefs['servers'] as $serv) {
-//        $dsn = $serv['Type']."://".$serv["User"].":".rawurlencode($serv["Password"])."@".$serv["Host"]."/".HUGNET_DATABASE;
-//var_dump($dsn);
+        //        $dsn = $serv['Type']."://".$serv["User"].":".rawurlencode($serv["Password"])."@".$serv["Host"]."/".HUGNET_DATABASE;
+        //var_dump($dsn);
         $serv["dsn"] = $serv["Type"].":host=".$serv["Host"].";dbname=".HUGNET_DATABASE;
         $db = DbBase::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
         if (is_object($db)) break;
     }
-//        if (!is_object($db)) die("Database connection not available.\n");
+    //if (!is_object($db)) die("Database connection not available.\n");
 }    
-var_dump($db);
+
 if (!isset($GatewayIP)) $GatewayIP = "127.0.0.1";
 if (!isset($GatewayPort)) $GatewayPort = 2000;
 $newArgv = array();
