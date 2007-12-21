@@ -84,9 +84,13 @@ class epUpdatedb
         $this->psend->verbose($this->verbose);
 //        $this->psend->createPacketLog("PacketSend");
         $this->uproc = new process();
-        $this->uproc->clearStats();
-        $this->uproc->setStat('start', time());
-        $this->uproc->setStat('PID', $this->uproc->me['PID']);
+        $this->uproc->createTable();
+        
+        $this->stats = new ProcStats();
+        $this->stats->createTable();
+        $this->stats->clearStats();
+        $this->stats->setStat('start', time());
+        $this->stats->setStat('PID', $this->uproc->me['PID']);
 
         print("Creating Gateway Cache...\n");
         $this->gateway = new gateway($endpoint->db);
@@ -228,7 +232,7 @@ class epUpdatedb
         if ($this->verbose) print "[".$this->uproc->me["PID"]."] Found ".count($res)." Packets\n";
         if (!is_array($res)) return;
         foreach ($res as $packet) {
-            $this->uproc->incStat("Packets");                    
+            $this->stats->incStat("Packets");                    
 
             print "[".$this->uproc->me["PID"]."] ".$packet["PacketFrom"]." ".$packet["sendCommand"];
 
@@ -256,7 +260,7 @@ class epUpdatedb
     private function updatedbUnsolicited(&$packet) {
         if ($packet['Type'] == 'UNSOLICITED') {
             $packet["Checked"] = true;
-            $this->uproc->incStat("Unsolicited");                    
+            $this->stats->incStat("Unsolicited");                    
             $return = $this->endpoint->db->AutoExecute("PacketLog", $packet, 'INSERT');
             if ($return) {
                 print " - Inserted ".$packet['sendCommand']."";                    
@@ -274,14 +278,14 @@ class epUpdatedb
     private function updatedbReply(&$packet) {
         if ($packet['Type'] == 'REPLY') {
             $packet["Checked"] = true;
-            $this->uproc->incStat("Reply");
+            $this->stats->incStat("Reply");
             $return = $this->endpoint->db->AutoExecute("PacketSend", $packet, 'INSERT');
             if ($return) {
                 print " - Inserted into PacketSend ".$packet['sendCommand']."";                    
                 $packet["remove"] = true;
             } else {
                 print " - Failed ";
-                $this->uproc->incStat("Reply Failed");
+                $this->stats->incStat("Reply Failed");
             }
         }
     }
@@ -293,7 +297,7 @@ class epUpdatedb
     private function updatedbConfig(&$packet) {
         if ($packet['Type'] == 'CONFIG') {
             $packet["Checked"] = true;
-            $this->uproc->incStat("Config");
+            $this->stats->incStat("Config");
             $return = $this->plogRemote->add($packet);
             if ($return) {
                 print " - Moved ";
@@ -303,7 +307,7 @@ class epUpdatedb
                 $this->updatedbError($packet, "Update Failed", "Config Failed");
             }
             if ($this->endpoint->UpdateDevice(array($packet))) {
-                $this->uproc->incStat("Device Updated");
+                $this->stats->incStat("Device Updated");
                 print " - Updated ";                    
             } else {
                 print " - Update Failed ";
@@ -320,7 +324,7 @@ class epUpdatedb
     private function updatedbPoll(&$packet) {
         if ($packet['Type'] == 'POLL') {
             $packet["Checked"] = true;
-            $this->uproc->incStat("Poll");
+            $this->stats->incStat("Poll");
             print " ".$packet['Driver']." ";
             $packet = $this->endpoint->InterpSensors($packet, array($packet));
             $packet = $packet[0];
@@ -423,7 +427,7 @@ class epUpdatedb
     private function updatedbUnknown(&$packet) {
         if ($packet['Checked'] !== true) {
             print " - Unknown ";
-            $this->uproc->incStat("Unknown");
+            $this->stats->incStat("Unknown");
             $packet["remove"] = true;
         }
     }
@@ -455,7 +459,7 @@ class epUpdatedb
             $packet["remove"] = true;                                            
         } else {
             print " - ".$msg;
-           $this->uproc->incStat($stat);
+           $this->stats->incStat($stat);
         }
     }
     /**

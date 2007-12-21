@@ -76,10 +76,16 @@ class epPoll
     function __construct(&$endpoint, $gateway=null, $verbose=false, $test=false) 
     {
         $this->uproc = new process();
-        $this->uproc->clearStats();        
-        $this->uproc->setStat('start', time());
-        $this->uproc->setStat('PID', $this->uproc->me['PID']);
-        $this->uproc->setStat('Priority', $this->myInfo['Priority']);
+        $this->uproc->createTable();
+        
+        $this->stats = new ProcStats();
+        $this->stats->createTable();
+        $this->stats->clearStats();        
+        $this->stats->setStat('start', time());
+        $this->stats->setStat('PID', $this->uproc->me['PID']);
+        $this->stats->setStat('Priority', $this->myInfo['Priority']);
+
+
         $this->test = (bool) $test;
         $this->verbose = (bool) $verbose;
         $this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
@@ -191,9 +197,9 @@ class epPoll
         if (empty($gw['GatewayPort'])) $gw['GatewayPort'] = '2000';
         $this->gw = array(0 => $gw);
         $this->GatewayKey = $gw['GatewayKey'];
-        $this->uproc->setStat('GatewayKey', $this->GatewayKey);
-        $this->uproc->setStat('GatewayIP', $gw['GatewayIP']);
-        $this->uproc->setStat('GatewayPort', $gw['GatewayPort']);
+        $this->stats->setStat('GatewayKey', $this->GatewayKey);
+        $this->stats->setStat('GatewayIP', $gw['GatewayIP']);
+        $this->stats->setStat('GatewayPort', $gw['GatewayPort']);
         $this->packet->connect($this->gw[0]);
     }
 
@@ -265,7 +271,7 @@ class epPoll
             $res = $this->device->getWhere($query, array($this->gw[0]["GatewayKey"]));
 
             if (!is_array($res) || (count($res) == 0)) {
-                $this->uproc->incStat("Device Cache Failed");
+                $this->stats->incStat("Device Cache Failed");
                 print "Didn't find any devices.\n";
 //                $res = $this->endpoint->db->getArray($query);
             }
@@ -306,12 +312,12 @@ class epPoll
     
     function wait() {
         $this->setupMyInfo();
-        $this->uproc->setStat("doPoll", $this->myInfo['doPoll']);
-        $this->uproc->setStat("doCCheck", $this->myInfo['doCCheck']);
-        $this->uproc->setStat("doConfig", $this->myInfo['doConfig']);
-        $this->uproc->setStat("doUnsolicited", $this->myInfo['doUnsolicited']);
-        $this->uproc->setStat("Gateways", base64_encode(serialize($this->otherGW)));
-        $this->uproc->setStat("PacketSN", substr($this->DeviceID, 0, 6));
+        $this->stats->setStat("doPoll", $this->myInfo['doPoll']);
+        $this->stats->setStat("doCCheck", $this->myInfo['doCCheck']);
+        $this->stats->setStat("doConfig", $this->myInfo['doConfig']);
+        $this->stats->setStat("doUnsolicited", $this->myInfo['doUnsolicited']);
+        $this->stats->setStat("Gateways", base64_encode(serialize($this->otherGW)));
+        $this->stats->setStat("PacketSN", substr($this->DeviceID, 0, 6));
 
         if (($this->lastContactAttempt - $this->lastContactTime) > (30 * 60)) {
             $this->criticalFailure("Last Poll at ".date("Y-m-d H:i:s", $this->lastContantTime));
@@ -362,7 +368,7 @@ class epPoll
         if (is_array($pkt)) {
             if ($pkt['Unsolicited']) {
                 if ($this->myInfo['doUnsolicited']) {
-                    $this->uproc->incStat("Unsolicited");
+                    $this->stats->incStat("Unsolicited");
                     $Type = "UNSOLICITED";
                     switch(trim(strtoupper($pkt['Command']))) {
                         case PACKET_COMMAND_POWERUP:
@@ -395,7 +401,7 @@ class epPoll
                     $this->plog->add($lpkt);
                 }
             } else if ($pkt['toMe']) {
-                $this->uproc->incStat("To Me");
+                $this->stats->incStat("To Me");
                 switch(trim(strtoupper($pkt['sendCommand']))) {
                     case PACKET_COMMAND_GETSETUP:
                         $this->interpConfig(array($pkt));
@@ -450,7 +456,7 @@ class epPoll
 
                 if ($this->_devInfo[$key]["PollTime"] <= time()) { 
                     $this->lastContactAttempt = time();
-                    $this->uproc->incStat("Polls");
+                    $this->stats->incStat("Polls");
                     print $dev["DeviceID"]." (".$dev["Driver"].") -> ".date("Y-m-d H:i:s", $this->_devInfo[$key]["PollTime"])." <-> ".date("Y-m-d H:i:s");
                     $this->devGateway($key);
                     // print  " [".$dev["GatewayName"]."] ->";                    
@@ -478,11 +484,11 @@ class epPoll
                                         } else {
                                             $DevCount++;
                                             print " Failed to store data \r\n"; //(".$history->Errno."): ".$history->Error;
-                                            $this->uproc->incStat("Poll Store Failed");
+                                            $this->stats->incStat("Poll Store Failed");
                                             //print strip_tags(get_stuff($history));
                                         }
                                     } else {
-                                        $this->uproc->incStat("Poll Data Index Ident");
+                                        $this->stats->incStat("Poll Data Index Ident");
                                         print " Data Index (".$sensors['DataIndex'].") Identical (".number_format($sensors["ReplyTime"], 2).")";
                                     }
                                 }
@@ -496,14 +502,14 @@ class epPoll
                            }
 //                           $this->GetNextPoll($key, time());
                          // This will make the controller board find it if it doesn't see it yet
-                        $this->uproc->incStat("Find Device");
+                        $this->stats->incStat("Find Device");
                         $ping = $this->endpoint->packet->ping($dev, true);
                         $DevCount++;
                         print " No data returned (".$this->_devInfo[$key]["failures"].")";
                         $this->_devInfo[$key]['gwIndex']++;
                         $this->ep[] = array_shift($this->ep);
                     } else {
-                       $this->uproc->incStat("Poll Success");                    
+                       $this->stats->incStat("Poll Success");                    
                     }
                     print "\n";
                 }
@@ -533,7 +539,7 @@ class epPoll
             );
             print $p['PacketTo']." -> Sending user Packet -> ".$p['sendCommand']." -> ";
             $packet = $this->endpoint->packet->sendPacket($this->gw[0], array($pk));
-            $this->uproc->incStat("Sent User Packet");
+            $this->stats->incStat("Sent User Packet");
             if (is_array($packet)) {
                 foreach ($packet as $pkt) {
                     $lpkt = plog::packetLogSetup($pkt, $p, "REPLY");
@@ -545,7 +551,7 @@ class epPoll
                     $this->plog->add($lpkt);
                 }
                 print "Success";
-                $this->uproc->incStat("Sent User Success");
+                $this->stats->incStat("Sent User Success");
             } else {
                 print "Failed";
             }
@@ -568,7 +574,7 @@ class epPoll
         }
         
         print "Checking ".$dev["DeviceID"]." ";
-        $this->uproc->incStat("Device Checked");
+        $this->stats->incStat("Device Checked");
         $pkt = $this->endpoint->readConfig($dev);
         $gotConfig = false;
         if ($pkt !== false) {
@@ -596,13 +602,13 @@ class epPoll
             }
             if ($gotConfig) {
                 // If it is a controller board check the program
-                $this->uproc->incStat("Device Checked Success");
+                $this->stats->incStat("Device Checked Success");
                 if (method_exists($this->endpoint->drivers[$newConfig['Driver']], "checkProgram")) {
-                    $this->uproc->incStat("Check Program");
+                    $this->stats->incStat("Check Program");
                     print " Checking Program ";
                     $ret = $this->endpoint->drivers[$dev['Driver']]->checkProgram($newConfig, $pkt, true);
                     if ($ret) {
-                        $this->uproc->incStat("Check Program Success");
+                        $this->stats->incStat("Check Program Success");
                         print " Done ";
                     } else {
                         print " Failed ";
@@ -772,7 +778,8 @@ class epPoll
 
     }
 
-    function interpConfig($pkt) {
+    function interpConfig($pkt) 
+    {
         if (!is_array($pkt)) return;
 
         $newConfig = $this->endpoint->InterpConfig($pkt);
@@ -809,8 +816,9 @@ class epPoll
         return $newConfig;
     }
     
-    function criticalFailure($reason) {
-        $last = (int) $this->uproc->getStat("LastCriticalError", $this->uproc->me['Program']);
+    function criticalFailure($reason) 
+    {
+        $last = (int) $this->stats->getStat("LastCriticalError", $this->uproc->me['Program']);
         
         if (is_null($last)) {
             $last = $this->last;
@@ -824,7 +832,7 @@ class epPoll
             $this->last = time();
 
         }
-        $this->uproc->setStat("LastCriticalError", time());
+        $this->stats->setStat("LastCriticalError", time());
 
     }
 
