@@ -33,6 +33,7 @@
  */
     require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');
     require_once(HUGNET_INCLUDE_PATH.'/database/process.php');
+    require_once(HUGNET_INCLUDE_PATH.'/database/procstats.php');
 
 /**
  * Class for polling endpoints

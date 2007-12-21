@@ -35,6 +35,8 @@
 require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');
 /** For process information and control */
 require_once(HUGNET_INCLUDE_PATH.'/database/process.php');
+/** For process statistics */
+require_once(HUGNET_INCLUDE_PATH.'/database/procstats.php');
 
 /**
  * This class interacts with the final database.  It has the following functions:
