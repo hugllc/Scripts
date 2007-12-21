@@ -22,26 +22,35 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
- * @subpackage UpdateDB
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
- *
+ * @category   Test
+ * @package    Scripts
+ * @subpackage Poll
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 /** For retrieving packet logs */
 require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');
 /** For process information and control */
-require_once(HUGNET_INCLUDE_PATH.'/process.php');
+require_once(HUGNET_INCLUDE_PATH.'/database/process.php');
 
 /**
  * This class interacts with the final database.  It has the following functions:
  * - Get device and other information from the database
  * - Send pollings and packet logs up to the final database
  *
+ * @category   Test
+ * @package    Scripts
+ * @subpackage Poll
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-class epUpdatedb {
+class epUpdatedb
+{
     /** @var array The array of device information */
     var $ep = array();
     /** @var int To keep track if the minute has changed */

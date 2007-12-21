@@ -22,19 +22,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Poll
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
- *
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
     require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');
-    require_once(HUGNET_INCLUDE_PATH.'/process.php');
+    require_once(HUGNET_INCLUDE_PATH.'/database/process.php');
 
-
-class epPoll {
+/**
+ * Class for polling endpoints
+ *
+ * @category   Test
+ * @package    Scripts
+ * @subpackage Poll
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ */ 
+class epPoll
+{
 
     var $ep = array();
     var $lastminute = 0;
