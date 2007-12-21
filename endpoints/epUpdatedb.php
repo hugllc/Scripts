@@ -62,10 +62,13 @@ class epUpdatedb {
     function __construct(&$endpoint, $verbose=false) {
         $this->verbose = (bool) $verbose;
         $this->endpoint = &$endpoint;
+        
+        print "Creating plog...\n";
         $this->plog = new plog();
         $this->plog->verbose($this->verbose);
         $this->plog->createTable();
 
+        print "Creating remote plog...\n";
         $this->plogRemote = new plog($endpoint->db);
         $this->plogRemote->verbose($this->verbose);
         $this->psend = new DbBase($endpoint->db, "PacketSend");
@@ -76,16 +79,19 @@ class epUpdatedb {
         $this->uproc->setStat('start', time());
         $this->uproc->setStat('PID', $this->uproc->me['PID']);
 
+        print("Creating Gateway Cache...\n");
         $this->gateway = new gateway($endpoint->db);
         $this->gateway->verbose($this->verbose); 
         $this->gateway->createCache(HUGNET_LOCAL_DATABASE);
         $this->gateway->getAll();
 
+        print("Creating Device Cache...\n");
         $this->device = new device($endpoint);
         $this->device->verbose($this->verbose); 
         $this->device->createCache(HUGNET_LOCAL_DATABASE);
         $this->device->getAll();
-        
+
+        print("Creating Firmware Cache...\n");
         $this->firmware = new firmware($endpoint->db);
         $this->firmware->verbose($this->verbose); 
         $this->firmware->createCache(HUGNET_LOCAL_DATABASE);
