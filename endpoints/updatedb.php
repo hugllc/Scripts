@@ -57,8 +57,16 @@
     
     while(1) {
         if (!$endpoint->device->IsConnected()) {
-            $endpoint->db = new PDO($serv["dsn"], $serv["User"], $serv["Password"]);
-            $updatedb->updatedbError($emptyVar, "Reconnected to the database", "dbReconnect");
+            print "Trying to reconnect to the database ";
+            $endpoint->db = DbBase::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
+            if ($endpoint->db === false) {
+                $updatedb->updatedbError($emptyVar, "Failed", "dbReconnectFail");
+                print " - Sleeping";
+                sleep(60);
+            } else {
+                $updatedb->updatedbError($emptyVar, "Succeeded", "dbReconnect");
+            }
+            print "\n";
         }
 
         $updatedb->getAllDevices();

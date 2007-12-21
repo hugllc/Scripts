@@ -42,14 +42,12 @@
     //        $dsn = $serv['Type']."://".$serv["User"].":".rawurlencode($serv["Password"])."@".$serv["Host"]."/".HUGNET_DATABASE;
     //var_dump($dsn);
             $serv["dsn"] = $serv["Type"].":host=".$serv["Host"].";dbname=".HUGNET_DATABASE;
-            $db = new PDO($serv["dsn"], $serv["User"], $serv["Password"]);
-            break;
+            $db = DbBase::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
+            if (is_object($db)) break;
         }
+//        if (!is_object($db)) die("Database connection not available.\n");
     }    
-//    if (!is_object($db)) die("Database connection not available.\n");
-
-//    if (!$db->IsConnected()) die("Database Connection Failed\n");
-
+var_dump($db);
     if (!isset($GatewayIP)) $GatewayIP = "127.0.0.1";
     if (!isset($GatewayPort)) $GatewayPort = 2000;
     $newArgv = array();

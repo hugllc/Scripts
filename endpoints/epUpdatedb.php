@@ -413,14 +413,28 @@ class epUpdatedb {
         }
     }
     /**
+     * Gets error info
+     *
+     * @return int error number
+     */    
+    function getDbError() 
+    {
+        if (is_object($this->endpoint->db)) {
+            return $this->endpoint->db->errorInfo();
+        } else {
+            return FALSE;
+        }
+    }
+    /**
      * Function to deal with unsolicited packets
      *
      * @param array $packet the packet array
      * @param string $msg Generic message to print if specific failures can't be found
      * @param string $stat Generic stat to increment if specific failures can't be found
      */ 
-    private function updatedbError(&$packet, $msg, $stat) {
-        $error = $this->endpoint->db->errorInfo();
+    function updatedbError(&$packet, $msg, $stat) 
+    {
+        $error = $this->getDbError();
         if ($error == DB_ERROR_ALREADY_EXISTS) {
             print " Duplicate ".$packet['Date']." ";
             $packet["remove"] = true;                                            
