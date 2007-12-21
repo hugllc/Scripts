@@ -22,73 +22,72 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Test
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-    $pktData = "";
-    require_once(dirname(__FILE__).'/../head.inc.php');
-    $endpoint->packet->SNCheck(false);
+$pktData = "";
+require_once(dirname(__FILE__).'/../head.inc.php');
+$endpoint->packet->SNCheck(false);
 
-    if (empty($DeviceID)) {
-        die("DeviceID must be specified!\r\n");    
-    }
-    $pkt = array();
-    $Info["DeviceID"] = $DeviceID;
-    $pkt["To"] = strtoupper($DeviceID);
-    if (isset($pktCommand)) {
-        $pkt["Command"] = $pktCommand;
+if (empty($DeviceID)) {
+    die("DeviceID must be specified!\r\n");    
+}
+$pkt = array();
+$Info["DeviceID"] = $DeviceID;
+$pkt["To"] = strtoupper($DeviceID);
+if (isset($pktCommand)) {
+    $pkt["Command"] = $pktCommand;
+} else {
+    $pkt["Command"] = "02";
+}
+
+$pkt["Data"] = $pktData;
+
+
+if (!empty($GatewayIP)) {
+    $Info["GatewayIP"] = $GatewayIP;
+} else {
+    $dev = $endpoint->getDevice($pkt["To"], "ID");
+
+    if (is_array($dev["Gateway"])) {
+        $Info["GatewayIP"] = $dev["Gateway"]["GatewayIP"];
+        $Info["GatewayPort"] = $dev["Gateway"]["GatewayPort"];
+        $Info["GatewayKey"] = $dev['Gateway']["GatewayKey"];
     } else {
-        $pkt["Command"] = "02";
+        $Info["GatewayIP"] = "127.0.0.1";
     }
+}
 
-    $pkt["Data"] = $pktData;
+if (!isset($Info['GatewayPort'])) $Info['GatewayPort'] = $GatewayPort;
 
+if (!isset($Info['GatewayKey'])) $Info["GatewayKey"] = 1;
+$endpoint->packet->verbose = $verbose;
+if ($testMode); 
+$endpoint->packet->getAll(true);
+$pkt = $endpoint->packet->SendPacket($Info, $pkt);
 
-    if (!empty($GatewayIP)) {
-        $Info["GatewayIP"] = $GatewayIP;
-    } else {
-        $dev = $endpoint->getDevice($pkt["To"], "ID");
-
-        if (is_array($dev["Gateway"])) {
-            $Info["GatewayIP"] = $dev["Gateway"]["GatewayIP"];
-            $Info["GatewayPort"] = $dev["Gateway"]["GatewayPort"];
-            $Info["GatewayKey"] = $dev['Gateway']["GatewayKey"];
-        } else {
-            $Info["GatewayIP"] = "127.0.0.1";
-        }
-    }
-
-    if (!isset($Info['GatewayPort'])) $Info['GatewayPort'] = $GatewayPort;
-
-    if (!isset($Info['GatewayKey'])) $Info["GatewayKey"] = 1;
-    $endpoint->packet->verbose = $verbose;
-    if ($testMode); 
-    $endpoint->packet->getAll(true);
-    $pkt = $endpoint->packet->SendPacket($Info, $pkt);
-
-    if (is_array($pkt)) {
-        foreach ($pkt as $p) {
-            if (($p["From"] == $p["SentTo"]) || $p["group"]) {
-                print_r($p);
-                if (is_array($p["Data"])) {
-                    foreach ($p["Data"] as $key => $val) {
-                        print $key ."\t=> ".$val."\t=> ".dechex($val)."\t=> ".str_pad(decbin($val), 8, "0", STR_PAD_LEFT)."\n";
-                    }
+if (is_array($pkt)) {
+    foreach ($pkt as $p) {
+        if (($p["From"] == $p["SentTo"]) || $p["group"]) {
+            print_r($p);
+            if (is_array($p["Data"])) {
+                foreach ($p["Data"] as $key => $val) {
+                    print $key ."\t=> ".$val."\t=> ".dechex($val)."\t=> ".str_pad(decbin($val), 8, "0", STR_PAD_LEFT)."\n";
                 }
             }
         }
-    } else {
-        print "Nothing Returned\r\n";
     }
-    $endpoint->packet->Close($Info);
-    die();
-/**
- * @endcond
-*/
+} else {
+    print "Nothing Returned\r\n";
+}
+$endpoint->packet->Close($Info);
+die();
 
 ?>

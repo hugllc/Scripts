@@ -32,7 +32,7 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-   if ($argc < 2) die("You must supply a device name\n");
+if ($argc < 2) die("You must supply a device name\n");
 $DeviceID = $argv[1];
 
 include_once("blankhead.inc.php");

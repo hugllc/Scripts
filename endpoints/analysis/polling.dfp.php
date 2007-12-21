@@ -22,53 +22,62 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Analysis
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
- *
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
+/**
+ * Analysis plugin
+ *
+ * @param array &$here   Here
+ * @param array &$device The devInfo array for the device
+ *
+ * @return none
+ */
+function analysis_polling(&$here, &$device) 
+{
+    $sTime = microtime(true);
+    global $verbose;
 
-    function analysis_polling(&$here, &$device) {
-        $sTime = microtime(true);
-        global $verbose;
+    if ($verbose > 1) print "analysis_polling start\r\n";
 
-        if ($verbose > 1) print "analysis_polling start\r\n";
-
-        $data = &$_SESSION['rawHistoryCache'];
-        $stuff = &$_SESSION['analysisOut'];
-        $stuff["AveragePollTime"] = 0;
-        $stuff["Polls"] = 0;
-        $stuff['AverageReplyTime'] = 0;
-        $stuff['Replies'] = 0;
-        $lastpoll = 0;
-        foreach ($data as $key => $row) {
-            if ($row["Status"] == "GOOD") {
-                if ($lastpoll != 0) {
-                       $stuff["Polls"]++;
-                    $stuff["AveragePollTime"] += (strtotime($row["Date"]) - $lastpoll)/60;
-                }
+    $data = &$_SESSION['rawHistoryCache'];
+    $stuff = &$_SESSION['analysisOut'];
+    $stuff["AveragePollTime"] = 0;
+    $stuff["Polls"] = 0;
+    $stuff['AverageReplyTime'] = 0;
+    $stuff['Replies'] = 0;
+    $lastpoll = 0;
+    foreach ($data as $key => $row) {
+        if ($row["Status"] == "GOOD") {
+            if ($lastpoll != 0) {
+                   $stuff["Polls"]++;
+                $stuff["AveragePollTime"] += (strtotime($row["Date"]) - $lastpoll)/60;
             }
-            $lastpoll = strtotime($row["Date"]);
-            if ($row['ReplyTime'] > 0) {
-                $stuff['AverageReplyTime'] += $row['ReplyTime'];
-                $stuff['Replies']++;
-            }
         }
-        if ($stuff["Polls"] > 0) {
-            $stuff["AveragePollTime"] /= $stuff["Polls"];
+        $lastpoll = strtotime($row["Date"]);
+        if ($row['ReplyTime'] > 0) {
+            $stuff['AverageReplyTime'] += $row['ReplyTime'];
+            $stuff['Replies']++;
         }
-        if ($stuff['Replies'] > 0) {
-            $stuff['AverageReplyTime'] /= $stuff['Replies'];
-        }
-        $dTime = microtime(true) - $sTime;
-        if ($verbose > 1) print "analysis_polling end (".$dTime."s) \r\n";
-
     }
+    if ($stuff["Polls"] > 0) {
+        $stuff["AveragePollTime"] /= $stuff["Polls"];
+    }
+    if ($stuff['Replies'] > 0) {
+        $stuff['AverageReplyTime'] /= $stuff['Replies'];
+    }
+    $dTime = microtime(true) - $sTime;
+    if ($verbose > 1) print "analysis_polling end (".$dTime."s) \r\n";
+
+}
 
 
-    $this->registerFunction("analysis_polling", "Analysis");
+$this->registerFunction("analysis_polling", "Analysis");
 
 ?>

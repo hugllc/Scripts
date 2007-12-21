@@ -22,61 +22,59 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Misc
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-    print '$Id$'."\n";
-    print "Starting...\n";
+print '$Id$'."\n";
+print "Starting...\n";
 
 
-    require_once(dirname(__FILE__).'/../head.inc.php');
+require_once(dirname(__FILE__).'/../head.inc.php');
 
-    $prefs =& $conf;
+$prefs =& $conf;
 
-    if ($GatewayIP == false) {
+if ($GatewayIP == false) {
 
-    } else {
-        $gw = array(
-            "GatewayKey" => 0,
-            "GatewayIP" => $GatewayIP,
-            "GatewayName" => $GatewayIP,
-            "GatewayPort" => $GatewayPort,
-        );            
+} else {
+    $gw = array(
+        "GatewayKey" => 0,
+        "GatewayIP" => $GatewayIP,
+        "GatewayName" => $GatewayIP,
+        "GatewayPort" => $GatewayPort,
+    );            
+}
+$ep = array();
+$getDevInfo = true;
+$minuteCounter = 0;
+$packets = array();
+
+$endpoint->packet->verbose = $verbose;    
+
+//Only try twice per server.
+$endpoint->socket->Retries = 2;
+$endpoint->socket->PacketTimeout = 4;
+
+print "Waiting for packets\r\n";
+while (1) {
+
+    $pkt = $endpoint->packet->monitor($gw);
+    if ($pkt !== false) {
+        print "From: ".$pkt['From'];
+        print " -> To: ".$pkt['To'];
+        print "  Command: ".$pkt['Command']."\r\n";
+        if (!empty($pkt['RawData'])) print "Data: ".$pkt['RawData']."\r\n";
     }
-    $ep = array();
-    $getDevInfo = true;
-    $minuteCounter = 0;
-    $packets = array();
 
-    $endpoint->packet->verbose = $verbose;    
-    
-    //Only try twice per server.
-    $endpoint->socket->Retries = 2;
-    $endpoint->socket->PacketTimeout = 4;
+}    
 
-    print "Waiting for packets\r\n";
-    while (1) {
-    
-        $pkt = $endpoint->packet->monitor($gw);
-        if ($pkt !== false) {
-            print "From: ".$pkt['From'];
-            print " -> To: ".$pkt['To'];
-            print "  Command: ".$pkt['Command']."\r\n";
-            if (!empty($pkt['RawData'])) print "Data: ".$pkt['RawData']."\r\n";
-        }
-
-    }    
-
-    include_once("blanktail.inc.php");
-    print "Finished\n";
-/**
- * @endcond    
-*/
-
+include_once("blanktail.inc.php");
+print "Finished\n";
 
 ?>

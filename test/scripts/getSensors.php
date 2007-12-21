@@ -32,7 +32,7 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 require_once(dirname(__FILE__).'/../../head.inc.php');
-    $endpoint->packet->SNCheck(false);
+$endpoint->packet->SNCheck(false);
 
 
 if (empty($DeviceID)) {

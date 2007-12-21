@@ -22,43 +22,42 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Misc
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
 
-    if (empty($argv[1]) || !file_exists($argv[2]) || !file_exists($argv[3])) {
-        die("Usage: ".$argv[0]." <version> <Code File> <Data File> <file Type> <firmwarePart> <hardwarePart> <status> <cvstag></cvstag>\r\n");    
-    }
-    require_once(dirname(__FILE__).'/../head.inc.php');
-    require_once("firmware.inc.php");
+if (empty($argv[1]) || !file_exists($argv[2]) || !file_exists($argv[3])) {
+    die("Usage: ".$argv[0]." <version> <Code File> <Data File> <file Type> <firmwarePart> <hardwarePart> <status> <cvstag></cvstag>\r\n");    
+}
+require_once(dirname(__FILE__).'/../head.inc.php');
+require_once("firmware.inc.php");
 
-    $firmware = new firmware($prefs['servers'], HUGNET_DATABASE, array("dbWrite" => true));
-    $Info["FirmwareVersion"] = $argv[1];
-    $Info["FirmwareCode"] = implode("", file($argv[2]));
-    $Info["FirmwareData"] = implode("", file($argv[3]));
-    $Info["FWPartNum"] = $argv[5];
-    $Info["HWPartNum"] = $argv[6];
-    $Info["Date"] = date("Y-m-d H:i:s");
-    $Info["FirmwareFileType"] = $argv[4];
-    $Info["FirmwareStatus"] = $argv[7];
-    $Info["FirmwareCVSTag"] = $argv[8];
-    $Info["Target"] = $argv[9];
-    $return = $endpoint->db->AutoExecute('firmware', $Info, 'INSERT');
-    if ($return) {
-        print "Successfully Added\r\n";
-        return(0);
-    } else {
+$firmware = new firmware($prefs['servers'], HUGNET_DATABASE, array("dbWrite" => true));
+$Info["FirmwareVersion"] = $argv[1];
+$Info["FirmwareCode"] = implode("", file($argv[2]));
+$Info["FirmwareData"] = implode("", file($argv[3]));
+$Info["FWPartNum"] = $argv[5];
+$Info["HWPartNum"] = $argv[6];
+$Info["Date"] = date("Y-m-d H:i:s");
+$Info["FirmwareFileType"] = $argv[4];
+$Info["FirmwareStatus"] = $argv[7];
+$Info["FirmwareCVSTag"] = $argv[8];
+$Info["Target"] = $argv[9];
+$return = $endpoint->db->AutoExecute('firmware', $Info, 'INSERT');
+if ($return) {
+    print "Successfully Added\r\n";
+    return(0);
+} else {
 
-        print "Error (".$firmware->Errno."):  ".$firmware->Error."\r\n";
-//        print "Query: ".$firmware->wdb->LastQuery."\r\n";
-        return($firmware->Errno);
-    }
-/**
- * @endcond
- */
+    print "Error (".$firmware->Errno."):  ".$firmware->Error."\r\n";
+    //        print "Query: ".$firmware->wdb->LastQuery."\r\n";
+    return($firmware->Errno);
+}
 ?>

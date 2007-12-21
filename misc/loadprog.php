@@ -22,54 +22,56 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Test
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
 
-     require_once(dirname(__FILE__).'/../head.inc.php');
-    for ($i = 0; $i < count($newArgv); $i++) {
-        switch($newArgv[$i]) {
-            // Gateway IP address
-            case "-P":
-                $i++;
-                $program = $newArgv[$i];
-                break;
-            // Gateway IP address
-            case "-V":
-                $i++;
-                $version = $newArgv[$i];
-                break;
-        }
+ require_once(dirname(__FILE__).'/../head.inc.php');
+for ($i = 0; $i < count($newArgv); $i++) {
+    switch($newArgv[$i]) {
+        // Gateway IP address
+        case "-P":
+            $i++;
+            $program = $newArgv[$i];
+            break;
+        // Gateway IP address
+        case "-V":
+            $i++;
+            $version = $newArgv[$i];
+            break;
     }
+}
 
-    $endpoint->packet->SNCheck(false);
+$endpoint->packet->SNCheck(false);
 
-    $dev = $endpoint->getDevice($DeviceID, "ID");
+$dev = $endpoint->getDevice($DeviceID, "ID");
 
-    $dev["GatewayIP"] = $GatewayIP;
-    $dev["GatewayPort"] = $GatewayPort;
+$dev["GatewayIP"] = $GatewayIP;
+$dev["GatewayPort"] = $GatewayPort;
 
-    $endpoint->packet->verbose = $verbose;
-    if (is_object($endpoint->drivers[$dev['Driver']]->firmware)) {
-        if (empty($program)) {
-            $cfg = $endpoint->readConfig($dev);
-            $return = $endpoint->drivers[$dev['Driver']]->checkProgram($dev, $cfg, true);        
-        } else {
-    
-            $res = $endpoint->drivers[$dev['Driver']]->firmware->getFirmware($program, $version);
-            if (is_array($res)) {
-                print " found v".$res[0]['FirmwareVersion']."\r\n";
-
-                $return = $endpoint->drivers[$dev['Driver']]->RunBootloader($dev);
-                $return = $endpoint->drivers[$dev['Driver']]->loadProgram($dev, $dev, $res[0]['FirmwareKey']);
-            }
-        }
+$endpoint->packet->verbose = $verbose;
+if (is_object($endpoint->drivers[$dev['Driver']]->firmware)) {
+    if (empty($program)) {
+        $cfg = $endpoint->readConfig($dev);
+        $return = $endpoint->drivers[$dev['Driver']]->checkProgram($dev, $cfg, true);        
     } else {
-        print "Not a loadable device\r\n";
+
+        $res = $endpoint->drivers[$dev['Driver']]->firmware->getFirmware($program, $version);
+        if (is_array($res)) {
+            print " found v".$res[0]['FirmwareVersion']."\r\n";
+
+            $return = $endpoint->drivers[$dev['Driver']]->RunBootloader($dev);
+            $return = $endpoint->drivers[$dev['Driver']]->loadProgram($dev, $dev, $res[0]['FirmwareKey']);
+        }
     }
+} else {
+    print "Not a loadable device\r\n";
+}
 ?>

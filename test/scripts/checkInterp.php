@@ -32,42 +32,42 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-        require_once(dirname(__FILE__).'/../../head.inc.php');
-    
-    if (empty($argv[1])) {
-        die("DeviceID must be specified!\r\n");    
+require_once(dirname(__FILE__).'/../../head.inc.php');
+
+if (empty($argv[1])) {
+    die("DeviceID must be specified!\r\n");    
+}
+
+$rCount = 2;
+    for ($i = 0; $i < count($newArgv); $i++) {
+        switch($newArgv[$i]) {
+            // Gateway IP address
+            case "-D":
+                $i++;
+                $forceStart = $newArgv[$i];
+                break;
+            case "-C":
+                $i++;
+                $rCount = $newArgv[$i];
+                break;
+        }
     }
 
-    $rCount = 2;
-        for ($i = 0; $i < count($newArgv); $i++) {
-            switch($newArgv[$i]) {
-                // Gateway IP address
-                case "-D":
-                    $i++;
-                    $forceStart = $newArgv[$i];
-                    break;
-                case "-C":
-                    $i++;
-                    $rCount = $newArgv[$i];
-                    break;
-            }
-        }
 
+$Info = $endpoint->getDevice($DeviceID, "ID");
 
-    $Info = $endpoint->getDevice($DeviceID, "ID");
+$query = "SELECT * FROM ".$endpoint->raw_history_table." WHERE ";
+$query .= " DeviceKey=".$Info["DeviceKey"];
+if (!is_null($pktCommand)) $query .= " AND sendCommand='".$pktCommand."' ";
+if (!is_null($forceStart)) $query .= " AND Date < '".$forceStart."' ";
+$query .= " AND Status='GOOD' ";
+$query .= " ORDER BY Date DESC ";
+$query .= " LIMIT 0, ".$rCount;
 
-    $query = "SELECT * FROM ".$endpoint->raw_history_table." WHERE ";
-    $query .= " DeviceKey=".$Info["DeviceKey"];
-    if (!is_null($pktCommand)) $query .= " AND sendCommand='".$pktCommand."' ";
-    if (!is_null($forceStart)) $query .= " AND Date < '".$forceStart."' ";
-    $query .= " AND Status='GOOD' ";
-    $query .= " ORDER BY Date DESC ";
-    $query .= " LIMIT 0, ".$rCount;
+$rHist = $endpoint->db->getArray($query);
+$rHist = array_reverse($rHist);
 
-    $rHist = $endpoint->db->getArray($query);
-    $rHist = array_reverse($rHist);
-
-    $packet = $endpoint->InterpSensors($Info, $rHist);
-    $endpoint->modifyUnits($packet, $Info, 2, $Info['params']['dType'], $Info['params']['Units']);
-    var_dump($packet);
+$packet = $endpoint->InterpSensors($Info, $rHist);
+$endpoint->modifyUnits($packet, $Info, 2, $Info['params']['dType'], $Info['params']['Units']);
+var_dump($packet);
 ?>

@@ -22,57 +22,55 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Poll
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
- *
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-    define("POLL_VERSION", "0.2.11");
-    define("POLL_PARTNUMBER", "0039-26-01-50");  //0039-26-01-P
-    define("POLL_SVN", '$Id$');
+define("POLL_VERSION", "0.2.11");
+define("POLL_PARTNUMBER", "0039-26-01-50");  //0039-26-01-P
+define("POLL_SVN", '$Id$');
 
-    $GatewayKey = false;
-    $testMode = false;
+$GatewayKey = false;
+$testMode = false;
 
-    $db = false;
-    
-    require_once(dirname(__FILE__).'/../head.inc.php');
-    require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');
-    require_once(HUGNET_INCLUDE_PATH.'/process.php');
-    require_once('epPoll.php');
+$db = false;
 
-    $db = HUGNET_LOCAL_DATABASE;
+require_once(dirname(__FILE__).'/../head.inc.php');
+require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');
+require_once(HUGNET_INCLUDE_PATH.'/process.php');
+require_once('epPoll.php');
 
-    print 'poll.php Version '.POLL_VERSION.'  $Id$'."\n";
-    print "Starting...\n";
+$db = HUGNET_LOCAL_DATABASE;
 
-    define("CONTROLLER_CHECK", 10);
+print 'poll.php Version '.POLL_VERSION.'  $Id$'."\n";
+print "Starting...\n";
 
-    if (empty($GatewayKey)) die("You must supply a gateway key\n");
-    
-    $gw = array(
-        'GatewayIP' => $GatewayIP,
-        'GatewayPort' => $GatewayPort,
-        'GatewayName' => $GatewayIP,
-        'GatewayKey' => $GatewayKey,
-    );
-    print "Using Gateway ".$gw["GatewayIP"].":".$gw["GatewayPort"]."\n";
+define("CONTROLLER_CHECK", 10);
 
-    $poll = new epPoll($endpoint, $gw, $verbose, $testMode);
-    $poll->uproc->register();
+if (empty($GatewayKey)) die("You must supply a gateway key\n");
 
-    $poll->main();
-    
-    $poll->uproc->unregister();
+$gw = array(
+    'GatewayIP' => $GatewayIP,
+    'GatewayPort' => $GatewayPort,
+    'GatewayName' => $GatewayIP,
+    'GatewayKey' => $GatewayKey,
+);
+print "Using Gateway ".$gw["GatewayIP"].":".$gw["GatewayPort"]."\n";
 
-    print "Finished\n";
-/**
- *
- */
+$poll = new epPoll($endpoint, $gw, $verbose, $testMode);
+$poll->uproc->register();
+
+$poll->main();
+
+$poll->uproc->unregister();
+
+print "Finished\n";
 
 
 ?>

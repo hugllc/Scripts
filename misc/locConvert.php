@@ -22,56 +22,54 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Misc
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
- *
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-    print '$Id$'."\n";
-    print "Starting...\n";
+print '$Id$'."\n";
+print "Starting...\n";
 
 
-    require_once(dirname(__FILE__).'/../head.inc.php');
+require_once(dirname(__FILE__).'/../head.inc.php');
 
-    $query = "select * from location";
-    $oldLoc = array();
-    $loc = $endpoint->db->getArray($query);
-    if (is_array($loc)) {
-        foreach ($loc as $row) {
-            foreach ($row as $key => $tLoc) {
-                $key = trim($key);
-                if (strtolower(substr($key, 0, 3)) == "loc") {
-                    if (!empty($tLoc)) {
-                        $nKey = (int) substr($key, 3);
-                        $oldLoc[$row["DeviceKey"]][$nKey] = $tLoc;
-                    }
+$query = "select * from location";
+$oldLoc = array();
+$loc = $endpoint->db->getArray($query);
+if (is_array($loc)) {
+    foreach ($loc as $row) {
+        foreach ($row as $key => $tLoc) {
+            $key = trim($key);
+            if (strtolower(substr($key, 0, 3)) == "loc") {
+                if (!empty($tLoc)) {
+                    $nKey = (int) substr($key, 3);
+                    $oldLoc[$row["DeviceKey"]][$nKey] = $tLoc;
                 }
             }
         }
     }
+}
 
-    foreach ($oldLoc as $DeviceKey => $loc) {
-        print $DeviceKey;
-        $devInfo = $endpoint->device->getDevice($DeviceKey);
-        foreach ($loc as $key => $l) {
-            $devInfo['params']['Loc'][$key] = $l;
-        }
-        $ret = $endpoint->device->setParams($DeviceKey, $devInfo['params']);
-        if ($ret) {
-            print " Done ";
-        } else {
-            print " Failed ";
-        }
-        print "\n";
+foreach ($oldLoc as $DeviceKey => $loc) {
+    print $DeviceKey;
+    $devInfo = $endpoint->device->getDevice($DeviceKey);
+    foreach ($loc as $key => $l) {
+        $devInfo['params']['Loc'][$key] = $l;
     }
+    $ret = $endpoint->device->setParams($DeviceKey, $devInfo['params']);
+    if ($ret) {
+        print " Done ";
+    } else {
+        print " Failed ";
+    }
+    print "\n";
+}
 
-    print "Finished\n";
-/**
- * @endcond    
-*/
+print "Finished\n";
 
 
 ?>

@@ -22,28 +22,37 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Analysis
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
- *
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-    function analysis_unsolicited(&$stuff, &$dev) {
-        $sTime = microtime(true);
-        global $verbose;
+/**
+ * Gets interesting information out of the packet logs
+ *
+ * @param array &$stuff Here
+ * @param array &$dev   The devInfo array for the device
+ *
+ * @return none
+ */
+function analysis_unsolicited(&$stuff, &$dev) {
+    $sTime = microtime(true);
+    global $verbose;
 
-        if ($verbose > 1) print "analysis_unsolicited start\r\n";
-        global $endpoint;
+    if ($verbose > 1) print "analysis_unsolicited start\r\n";
+    global $endpoint;
 
-        $data = &$_SESSION['rawHistoryCache'];
-        $stuff = &$_SESSION['analysisOut'];
+    $data = &$_SESSION['rawHistoryCache'];
+    $stuff = &$_SESSION['analysisOut'];
 
-        $stuff["Powerups"] = 0;
-        $stuff["Boredom"] = 0;
-        $stuff["Reconfigs"] = 0;
+    $stuff["Powerups"] = 0;
+    $stuff["Boredom"] = 0;
+    $stuff["Reconfigs"] = 0;
 
 //        $plog = new container("", "PacketLog", "HUGNet");
 //        $plog->AutoSETS();
@@ -52,34 +61,34 @@
 
 
 //        $res = $endpoint->db->;
-        $query = "SELECT * FROM ".$endpoint->packet_log_table." WHERE ".
-                 " DeviceKey= ".$dev['DeviceKey']." AND (".$dev['datewhere'].")";
-        $res = $endpoint->db->getArray($query);
+    $query = "SELECT * FROM ".$endpoint->packet_log_table." WHERE ".
+             " DeviceKey= ".$dev['DeviceKey']." AND (".$dev['datewhere'].")";
+    $res = $endpoint->db->getArray($query);
 
-        if (is_array($res)) {
-            foreach ($res as $log) {
-                switch($log["Command"]) {
-                    case "5D":
-                        $stuff["Reconfigs"]++;
-                        break;
-                    case "5E":
-                        $stuff["Powerups"]++;
-                        break;
-                    case "5F";
-                        $stuff["Boredom"]++;
-                        break;
-                    default:
-                        break;
-                }
+    if (is_array($res)) {
+        foreach ($res as $log) {
+            switch($log["Command"]) {
+                case "5D":
+                    $stuff["Reconfigs"]++;
+                    break;
+                case "5E":
+                    $stuff["Powerups"]++;
+                    break;
+                case "5F";
+                    $stuff["Boredom"]++;
+                    break;
+                default:
+                    break;
             }
-        }        
-        
-        $dTime = microtime(true) - $sTime;
-        if ($verbose > 1) print "analysis_unsolicited end (".$dTime."s)\r\n";
+        }
+    }        
+    
+    $dTime = microtime(true) - $sTime;
+    if ($verbose > 1) print "analysis_unsolicited end (".$dTime."s)\r\n";
 
-    }
+}
 
 
-    $this->registerFunction("analysis_unsolicited", "Analysis");
+$this->registerFunction("analysis_unsolicited", "Analysis");
 
 ?>

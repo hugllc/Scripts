@@ -22,90 +22,92 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Misc
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-    require_once(dirname(__FILE__).'/../head.inc.php');
+require_once(dirname(__FILE__).'/../head.inc.php');
 
-    require_once('firmware.inc.php');
-    
-    if (empty($argv[1])) {
-        die("Usage: ".$argv[0]." <firmwarePart> [ <clean> [ <parallel port> ] ]\n"); 
-    }
-    if (empty($argv[3])) {
-        $pPort = '/dev/parport0';
-    } else {
-        $pPort = $argv[3];
-    }
+require_once('firmware.inc.php');
 
-    if (trim(strtolower($argv[1])) == 'clean') {
-        unlink('/tmp/uisp*');
-        die();    
-    }
+if (empty($argv[1])) {
+    die("Usage: ".$argv[0]." <firmwarePart> [ <clean> [ <parallel port> ] ]\n"); 
+}
+if (empty($argv[3])) {
+    $pPort = '/dev/parport0';
+} else {
+    $pPort = $argv[3];
+}
+
+if (trim(strtolower($argv[1])) == 'clean') {
+    unlink('/tmp/uisp*');
+    die();    
+}
 
 
-    if ((trim(strtolower($argv[2])) != 'clean') && file_exists("/tmp/uisp".$argv[1])) {
-        print "Reading information from cache: ";
-        $ret = file("/tmp/uisp".$argv[1]);
-        $ret = implode("", $ret);
-        $ret = trim($ret);
-        $ret = unserialize($ret);
-        print "  Found Version: ".$ret['FirmwareVersion']."\n";
-    }
-    if (!isset($ret['FirmwareCode'])) {
-        print "Reading information from database: ";
-        $dsn = "mysql://Portal:".urlencode("Por*tal")."@floyd.int.hugllc.com/HUGNet";
-        $db = NewADOConnection($dsn);
-        $firmware = new firmware($db);
-        $ret = $firmware->GetLatestFirmware($argv[1]);
+if ((trim(strtolower($argv[2])) != 'clean') && file_exists("/tmp/uisp".$argv[1])) {
+    print "Reading information from cache: ";
+    $ret = file("/tmp/uisp".$argv[1]);
+    $ret = implode("", $ret);
+    $ret = trim($ret);
+    $ret = unserialize($ret);
+    print "  Found Version: ".$ret['FirmwareVersion']."\n";
+}
+if (!isset($ret['FirmwareCode'])) {
+    print "Reading information from database: ";
+    $dsn = "mysql://Portal:".urlencode("Por*tal")."@floyd.int.hugllc.com/HUGNet";
+    $db = NewADOConnection($dsn);
+    $firmware = new firmware($db);
+    $ret = $firmware->GetLatestFirmware($argv[1]);
 
-        print "  Found Version: ".$ret['FirmwareVersion']."\n";
+    print "  Found Version: ".$ret['FirmwareVersion']."\n";
 
-        print "Caching...";
-     * @unlink("/tmp/uisp".$ret["FWPartNum"]);
-        $fp = fopen("/tmp/uisp".$ret["FWPartNum"], 'w');
-        fwrite($fp, serialize($ret));
-        fclose($fp);
-        print "Done\n";
-    }
+    print "Caching...";
+    @unlink("/tmp/uisp".$ret["FWPartNum"]);
+    $fp = fopen("/tmp/uisp".$ret["FWPartNum"], 'w');
+    fwrite($fp, serialize($ret));
+    fclose($fp);
+    print "Done\n";
+}
 
-    if (!is_null($ret)) {
+if (!is_null($ret)) {
     //    $Prog = 'uisp -dprog=dapa -v -dpart='.$ret['Target'].' -dlpt='.$pPort.' -dvoltage=5.0';
-        $Prog = 'avrdude -c avrisp2 -p '.$ret['Target'].' -P usb ';
+    $Prog = 'avrdude -c avrisp2 -p '.$ret['Target'].' -P usb ';
+
+    // Program the flash
+    $tempname = tempnam("/tmp", "uisp");
     
-        // Program the flash
-        $tempname = tempnam("/tmp", "uisp");
-        
-        $fp = fopen($tempname, "w");
-        fwrite($fp, $ret['FirmwareCode']);
-        fclose($fp);
+    $fp = fopen($tempname, "w");
+    fwrite($fp, $ret['FirmwareCode']);
+    fclose($fp);
     //    $flash = ' --segment=flash --erase --upload --verify if='.$tempname;
-        $flash = ' -e -U flash:w:'.$tempname.':s';
-        print "Using: ".$Prog.$flash."\n";
-        passthru($Prog.$flash);
-        unlink($tempname);
+    $flash = ' -e -U flash:w:'.$tempname.':s';
+    print "Using: ".$Prog.$flash."\n";
+    passthru($Prog.$flash);
+    unlink($tempname);
+
+    // Program the E2
+    $tempname = tempnam("/tmp", "uisp");
     
-        // Program the E2
-        $tempname = tempnam("/tmp", "uisp");
-        
-        $fp = fopen($tempname, "w");
-        fwrite($fp, $ret['FirmwareData']);
-        fclose($fp);
-//        $eeprom = ' --segment=eeprom --upload --verify if='.$tempname;
-        $eeprom = ' -V -U eeprom:w:'.$tempname.':s';
-    
-        print "Using: ".$Prog.$eeprom."\n";
-        passthru($Prog.$eeprom);
-    
-        unlink($tempname);
-    } else {
-        print "Firmware not found. \n";
-    }
+    $fp = fopen($tempname, "w");
+    fwrite($fp, $ret['FirmwareData']);
+    fclose($fp);
+    //        $eeprom = ' --segment=eeprom --upload --verify if='.$tempname;
+    $eeprom = ' -V -U eeprom:w:'.$tempname.':s';
+
+    print "Using: ".$Prog.$eeprom."\n";
+    passthru($Prog.$eeprom);
+
+    unlink($tempname);
+} else {
+    print "Firmware not found. \n";
+}
 
 /**
  * @endcond

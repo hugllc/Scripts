@@ -22,30 +22,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Control
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
- *
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-    define("CONTROL_VERSION", "0.0.1");
-    define("CONTROL_PARTNUMBER", "0039260450");  //0039-26-01-P
-    define("CONTROL_SVN", '$Id$');
+define("CONTROL_VERSION", "0.0.1");
+define("CONTROL_PARTNUMBER", "0039260450");  //0039-26-01-P
+define("CONTROL_SVN", '$Id$');
 
-    $GatewayKey = false;
-    $testMode = false;
+$GatewayKey = false;
+$testMode = false;
 
-    require_once(dirname(__FILE__).'/../head.inc.php');
-    require_once(HUGNET_INCLUDE_PATH.'/plog.inc.php');
-    require_once(HUGNET_INCLUDE_PATH.'/process.inc.php');
+require_once(dirname(__FILE__).'/../head.inc.php');
+require_once(HUGNET_INCLUDE_PATH.'/plog.inc.php');
+require_once(HUGNET_INCLUDE_PATH.'/process.inc.php');
 
-    print 'control.php Version '.CONTROL_VERSION.'  $Id$'."\n";
-    print "Starting...\n";
+print 'control.php Version '.CONTROL_VERSION.'  $Id$'."\n";
+print "Starting...\n";
 
-    while (1) {
-    
-    }
+while (1) {
+
+}
 ?>

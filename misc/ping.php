@@ -22,39 +22,37 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @package Scripts
+ * @category   Scripts
+ * @package    Scripts
  * @subpackage Test
- * @copyright 2007 Hunt Utilities Group, LLC
- * @author Scott Price <prices@hugllc.com>
- * @version SVN: $Id$    
- *
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-    require("EPacket.php");
-    require "../head.inc.php";
+require("EPacket.php");
+require "../head.inc.php";
 
-    $Info["DeviceID"] = $DeviceID;
-    $Info["GatewayKey"] = 1;
-    if (isset($GatewayIP)) {
-        $Info["GatewayIP"] = $GatewayIP;
-    } else {
-        $Info["GatewayIP"] = "127.0.0.1";
-    
-    if (isset($GatewayPort)) {
-        $Info["GatewayPort"] = $GatewayPort;
-    } else {
-        $Info["GatewayPort"] = 1200;
-    }
-    $Info["GatewayKey"] = 1;
-    $verbose = true;
-    $packet = new EPacket($Info, $verbose);
+$Info["DeviceID"] = $DeviceID;
+$Info["GatewayKey"] = 1;
+if (isset($GatewayIP)) {
+    $Info["GatewayIP"] = $GatewayIP;
+} else {
+    $Info["GatewayIP"] = "127.0.0.1";
 
-    $pkt = $packet->Ping($Info, true);
-    print_r($pkt);
-    $packet->close($Info['GatewayKey']);
-    die();
-/**
- * @endcond
-*/
+if (isset($GatewayPort)) {
+    $Info["GatewayPort"] = $GatewayPort;
+} else {
+    $Info["GatewayPort"] = 1200;
+}
+$Info["GatewayKey"] = 1;
+$verbose = true;
+$packet = new EPacket($Info, $verbose);
+
+$pkt = $packet->Ping($Info, true);
+print_r($pkt);
+$packet->close($Info['GatewayKey']);
+die();
     
 ?>
