@@ -37,7 +37,7 @@ require_once(HUGNET_FS_DIR.'/config/config.inc.php');
 require_once('lib/plugins.inc.php');
 $prefs = &$conf;
 require_once("hugnet.inc.php");
-require_once(HUGNET_INCLUDE_PATH."/process.php");
+require_once(HUGNET_INCLUDE_PATH."/database/process.php");
 
 if (is_null($db)) {    
     foreach ($prefs['servers'] as $serv) {
