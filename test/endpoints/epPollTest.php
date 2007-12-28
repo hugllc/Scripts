@@ -93,7 +93,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testSetPriority().
      */
@@ -108,7 +108,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testGetGateways().
      */
@@ -121,7 +121,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testPowerup().
      */
@@ -134,7 +134,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testForceGateways().
      */
@@ -147,7 +147,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testDevGateway().
      */
@@ -160,7 +160,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testGetNextPoll().
      */
@@ -173,7 +173,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testGetAllDevices().
      */
@@ -186,7 +186,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testControllerCheck().
      */
@@ -199,7 +199,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testWait().
      */
@@ -212,7 +212,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testQPacket().
      */
@@ -225,7 +225,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testSetPollWait().
      */
@@ -238,7 +238,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testFindDev().
      */
@@ -251,7 +251,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testCheckPacket().
      */
@@ -264,7 +264,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testPoll().
      */
@@ -277,7 +277,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testCheckPacketQ().
      */
@@ -290,7 +290,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testCheckDev().
      */
@@ -303,7 +303,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testGetConfig().
      */
@@ -316,7 +316,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testCheckOtherGW().
      */
@@ -329,7 +329,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testRandomizegwTimeout().
      */
@@ -342,7 +342,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testGetMyConfig().
      */
@@ -355,7 +355,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testInterpConfig().
      */
@@ -368,7 +368,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testCriticalFailure().
      */

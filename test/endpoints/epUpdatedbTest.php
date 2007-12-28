@@ -91,7 +91,7 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testGetAllDevices().
      */
@@ -104,7 +104,7 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testGetPacketSend().
      */
@@ -117,7 +117,7 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testWait().
      */
@@ -130,7 +130,7 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase
     /**
      * test
      *
-     * @return none
+     * @return void
      *
      * @todo Implement testUpdatedb().
      */

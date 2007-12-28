@@ -455,8 +455,7 @@ class epUpdatedb
      */ 
     function updatedbError(&$packet, $msg, $stat) 
     {
-        $error = $this->getDbError();
-        if ($error == DB_ERROR_ALREADY_EXISTS) {
+        if ($this->rawHistory->error == "1062") {
             print " Duplicate ".$packet['Date']." ";
             $packet["remove"] = true;                                            
         } else {

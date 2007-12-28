@@ -38,7 +38,7 @@
  * @param array &$stuff Here
  * @param array &$dev   The devInfo array for the device
  *
- * @return none
+ * @return void
  */
 function analysis_unsolicited(&$stuff, &$dev) {
     $sTime = microtime(true);
