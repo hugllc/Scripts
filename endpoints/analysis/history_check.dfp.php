@@ -147,12 +147,12 @@ function analysis_history_check(&$stuff, &$device) {
                     $info = array(
                         'DeviceKey' => $rec['DeviceKey'],
                         'Date' => $rec['Date'],
-                    );
+                   );
                     $ret = $endpoint->db->Execute("DELETE FROM ".$history_table." WHERE ".
                                                   " DeviceKey = ".$rec['DeviceKey'].
                                                   " AND ".
                                                   " Date='".$rec['Date']."'"
-                                                  );
+                                                 );
                     if ($ret === false) {
                         if ($verbose) print "Remove Failed\r\n";
                     } else {

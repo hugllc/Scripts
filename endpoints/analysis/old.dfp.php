@@ -58,7 +58,7 @@ function analysis_unassigned(&$stuff, &$dev)
         if ((strtotime($dev["LastHistory"]) < $cutoff) 
             && (strtotime($dev["LastPoll"]) < $cutoff)
             && (strtotime($dev["LastConfig"]) < $cutoff)
-            ) {
+           ) {
             $query = "UPDATE ".$endpoint->device_table
                      ." SET GatewayKey=0 "
                      ." WHERE "
@@ -70,7 +70,7 @@ function analysis_unassigned(&$stuff, &$dev)
         }
     }    
     $dTime = microtime(true) - $sTime;
-       if ($verbose > 1) print "analysis_unassigned end (".$dTime."s )\r\n";
+       if ($verbose > 1) print "analysis_unassigned end (".$dTime."s)\r\n";
 }
 
 

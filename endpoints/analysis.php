@@ -184,7 +184,7 @@ foreach ($devices as $dev) {
             if ($ret) {
                 $update = array(
                     "LastAnalysis" => date("Y-m-d H:i:s", $dev['date']),
-                );
+               );
                 $ret  = $endpoint->db->AutoExecute($endpoint->device_table, $update, 'UPDATE', "DeviceKey=".$dev['DeviceKey']);
                 
             } else {

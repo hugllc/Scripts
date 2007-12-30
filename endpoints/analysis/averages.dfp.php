@@ -209,7 +209,7 @@ function analysis_averages(&$stuff, &$device)
         $wstart = mktime(0, 0, 0, $m, $d, $y);
         $wend = mktime(23, 59, 59, $m+1, $d+7, $y);
         $bquery .= " AND (Date >= '".date("Y-m-d H:i:s", $wstart)."' ";
-        $bquery .= " AND Date <= '".date("Y-m-d H:i:s", $wend)."' )";
+        $bquery .= " AND Date <= '".date("Y-m-d H:i:s", $wend)."')";
 
         // Weekly
         $weekly = array('Date' => date("Y-m-d", $wstart), 'Type' => "WEEKLY");
@@ -237,7 +237,7 @@ function analysis_averages(&$stuff, &$device)
         $mstart = mktime(0, 0, 0, $m, 1, $y);
         $mend = mktime(23, 59, 59, $m+1, 0, $y);
         $bquery .= " AND (Date >= '".date("Y-m-d H:i:s", $mstart)."' ";
-        $bquery .= " AND Date <= '".date("Y-m-d H:i:s", $mend)."' )";
+        $bquery .= " AND Date <= '".date("Y-m-d H:i:s", $mend)."')";
 
         // Monthly
         $monthly = array('Date' => date("Y-m-1", $mstart), 'Type' => "MONTHLY");
@@ -265,7 +265,7 @@ function analysis_averages(&$stuff, &$device)
         $ystart = mktime(0, 0, 0, 1, 1, $y);
         $yend = mktime(23, 59, 59, 12, 31, $y);
         $bquery .= " AND (Date >= '".date("Y-m-d H:i:s", $ystart)."' ";
-        $bquery .= " AND Date <= '".date("Y-m-d H:i:s", $yend)."' )";
+        $bquery .= " AND Date <= '".date("Y-m-d H:i:s", $yend)."')";
 
         // Yearly
         $yearly = array('Date' => date("Y-1-1", $ystart), 'Type' => "YEARLY");

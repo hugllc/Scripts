@@ -174,7 +174,7 @@ class epPoll
             $pkt = array(
                 'to' => $this->endpoint->packet->unsolicitedID,
                 'command' => PACKET_COMMAND_POWERUP,
-            );
+           );
             $this->endpoint->packet->sendPacket($this->gw[0], array($pkt), false);
         }
         $this->lastminute = date('i');
@@ -537,7 +537,7 @@ class epPoll
                 'to' => $p['PacketTo'],
                 'command' => $p['sendCommand'],
                 'data' => $p['RawData'],
-            );
+           );
             print $p['PacketTo']." -> Sending user Packet -> ".$p['sendCommand']." -> ";
             $packet = $this->endpoint->packet->sendPacket($this->gw[0], array($pk));
             $this->stats->incStat("Sent User Packet");
