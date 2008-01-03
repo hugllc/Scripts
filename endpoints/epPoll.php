@@ -283,7 +283,7 @@ class epPoll
                         $dev = $this->endpoint->DriverInfo($val);
                         $this->ep[$val['DeviceID']] = $dev;
                         $this->devGateway($key);
-                        if ($this->endpoint->device->isController($dev)) {
+                        if ($this->endpoint->isController($dev)) {
                             $this->_devInfo[$key]['GetConfig'] = true;
                            }
                            if (!isset($this->_devInfo[$key]["GetConfig"])) $this->_devInfo[$key]["GetConfig"] = false;

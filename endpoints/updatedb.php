@@ -44,7 +44,7 @@
     require_once(HUGNET_INCLUDE_PATH.'/database/process.php');
     require_once("epUpdatedb.php");
 
-    if ($testMode) $endpoint->db->debug = true;
+//    if ($testMode) $endpoint->db->debug = true;
 
 //    $mhistory = new history_raw($db, $conf['hugnetDb']);
 

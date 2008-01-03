@@ -73,7 +73,6 @@ class epUpdatedb
     function __construct(&$endpoint, $verbose=false) {
         $this->verbose = (bool) $verbose;
         $this->endpoint = &$endpoint;
-        
         print "Creating plog...\n";
         $this->plog = new plog();
         $this->plog->verbose($this->verbose);
@@ -101,7 +100,7 @@ class epUpdatedb
         $this->gateway->getAll();
 
         print("Creating Device Cache...\n");
-        $this->device = new device($endpoint);
+        $this->device = new device($endpoint->db);
         $this->device->verbose($this->verbose); 
         $this->device->createCache(HUGNET_LOCAL_DATABASE);
         $this->device->getAll();
