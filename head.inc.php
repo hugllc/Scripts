@@ -33,10 +33,10 @@
  */
 define('HUGNET_FS_DIR', dirname(__FILE__));
 
-require_once(HUGNET_FS_DIR.'/config/config.inc.php');
-require_once('lib/plugins.inc.php');
+@include_once(HUGNET_FS_DIR.'/config/config.inc.php');
 $prefs = &$conf;
 require_once("hugnet.inc.php");
+require_once(HUGNET_INCLUDE_PATH.'/lib/plugins.inc.php');
 require_once(HUGNET_INCLUDE_PATH."/database/process.php");
 
 if (is_null($db)) {    
