@@ -31,18 +31,18 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-    define("UPDATEDB_VERSION", "0.2.5");
-    define("UPDATEDB_PARTNUMBER", "0039260250");  //0039-26-01-P
-    define("UPDATEDB_SVN", '$Id$');
+define("UPDATEDB_VERSION", "0.2.5");
+define("UPDATEDB_PARTNUMBER", "0039260250");  //0039-26-01-P
+define("UPDATEDB_SVN", '$Id$');
 
 
-    print '$Id$'."\n";
-    print 'updatedb.php Version '.UPDATEDB_VERSION."\n";
-    print "Starting...\n";
-    
-    require_once(dirname(__FILE__).'/../head.inc.php');
-    require_once(HUGNET_INCLUDE_PATH.'/database/process.php');
-    require_once("epUpdatedb.php");
+print '$Id$'."\n";
+print 'updatedb.php Version '.UPDATEDB_VERSION."\n";
+print "Starting...\n";
+
+require_once dirname(__FILE__).'/../head.inc.php';
+require_once HUGNET_INCLUDE_PATH.'/database/process.php';
+require_once "epUpdatedb.php";
 
 //    if ($testMode) $endpoint->db->debug = true;
 
@@ -51,49 +51,13 @@
 //    $lplog = new plog();
 
 
-    $refreshdev = true;
+$refreshdev = true;
 
-    $updatedb = new epUpdatedb($endpoint, $verbose);
-    $updatedb->uproc->register();
-    
-    while(1) {
-        if (!$endpoint->device->IsConnected()) {
-            print "Trying to reconnect to the database ";
-            $endpoint->db = DbBase::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
-            if ($endpoint->db === false) {
-                $updatedb->updatedbError($emptyVar, "Failed", "dbReconnectFail");
-                print " - Sleeping";
-                sleep(60);
-            } else {
-                $updatedb->updatedbError($emptyVar, "Succeeded", "dbReconnect");
-            }
-            print "\n";
-        }
+$updatedb = new epUpdatedb($endpoint, $verbose);
 
-        $updatedb->getAllDevices();
+$updatedb->main($serv);
 
-        if ($updatedb->verbose) print "[".$updatedb->uproc->me["PID"]."] Starting database update...\n";
-//        $updatedb->uproc->FastCheckin();
-
-        // This section does the packetlog
-        $updatedb->updatedb();
-        $updatedb->getPacketSend();
-
-        //        $lplog->reset();
-        $updatedb->wait();
-
-        // Check the PHP log to make sure it isn't too big.
-        clearstatcache();
-        if (file_exists("/var/log/php.log")) {
-            if (filesize("/var/log/php.log") > (1024*1024)) {
-                $fd = fopen("/var/log/php.log","w");
-                @fclose($fd);
-            }
-        }
-    }
-    $updatedb->uproc->unregister();
-
-    print "[".$this->uproc->me["PID"]."] Finished\n";
+print "[".$this->uproc->me["PID"]."] Finished\n";
 
 /**
  * @endcond

@@ -72,6 +72,7 @@ class epUpdatedb
       */
     function __construct(&$endpoint, $verbose=false) {
         $this->verbose = (bool) $verbose;
+        $this->db = &$endpoint->db;
         $this->endpoint = &$endpoint;
         print "Creating plog...\n";
         $this->plog = new plog();
@@ -79,9 +80,9 @@ class epUpdatedb
         $this->plog->createTable();
 
         print "Creating remote plog...\n";
-        $this->plogRemote = new plog($endpoint->db);
+        $this->plogRemote = new plog($this->db);
         $this->plogRemote->verbose($this->verbose);
-        $this->psend = new DbBase($endpoint->db, "PacketSend");
+        $this->psend = new DbBase($this->db, "PacketSend");
         $this->psend->verbose($this->verbose);
 //        $this->psend->createPacketLog("PacketSend");
         $this->uproc = new process();
@@ -94,28 +95,80 @@ class epUpdatedb
         $this->stats->setStat('PID', $this->uproc->me['PID']);
 
         print("Creating Gateway Cache...\n");
-        $this->gateway = new gateway($endpoint->db);
+        $this->gateway = new gateway($this->db);
         $this->gateway->verbose($this->verbose); 
         $this->gateway->createCache(HUGNET_LOCAL_DATABASE);
         $this->gateway->getAll();
 
         print("Creating Device Cache...\n");
-        $this->device = new device($endpoint->db);
+        $this->device = new device($this->db);
         $this->device->verbose($this->verbose); 
         $this->device->createCache(HUGNET_LOCAL_DATABASE);
         $this->device->getAll();
 
         print("Creating Firmware Cache...\n");
-        $this->firmware = new firmware($endpoint->db);
+        $this->firmware = new firmware($this->db);
         $this->firmware->verbose($this->verbose); 
         $this->firmware->createCache(HUGNET_LOCAL_DATABASE);
         $this->firmware->getAll();
 
-        $this->rawHistory = new DbBase($endpoint->db, "history_raw", "HistoryRawKey");
-        $this->rawHistory->verbose($this->verbose); 
+        $this->rawHistory = new DbBase($this->db, "history_raw", "HistoryRawKey", true);
+//        $this->rawHistory->verbose($this->verbose); 
 
      }
 
+    /**
+     * The main loop
+     *
+     * @param array $serv The database server info.  Should contain keys 'dsn', 'User', and 'Password'
+     *
+     * @return void
+     */ 
+    function main($serv) 
+    {
+        $this->uproc->register();
+        
+        while(1) {
+            if ($this->errors[DBBASE_META_ERROR_SERVER_GONE] > 0) {
+                do {
+                    print "Trying to reconnect to the database ";
+                    $this->db = DbBase::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
+                    if ($this->db === false) {
+                        $this->updatedbError($emptyVar, "Failed", "dbReconnectFail");
+                        print " - Sleeping";
+                        sleep(60);
+                    } else {
+                        $this->updatedbError($emptyVar, "Succeeded", "dbReconnect");
+                    }
+                    print "\n";
+                } while ($this->db === false);
+                $this->errors[DBBASE_META_ERROR_SERVER_GONE] = 0;
+            }
+    
+            $this->getAllDevices();
+    
+            if ($this->verbose) print "[".$this->uproc->me["PID"]."] Starting database update...\n";
+    //        $this->uproc->FastCheckin();
+    
+            // This section does the packetlog
+            $this->updatedb();
+            $this->getPacketSend();
+    
+            //        $lplog->reset();
+            $this->wait();
+    
+            // Check the PHP log to make sure it isn't too big.
+            clearstatcache();
+            if (file_exists("/var/log/php.log")) {
+                if (filesize("/var/log/php.log") > (1024*1024)) {
+                    $fd = fopen("/var/log/php.log","w");
+                    @fclose($fd);
+                }
+            }
+        }
+        $this->uproc->unregister();
+    
+    }
     /**
      * Gets all devices from the remote database and stores them in the
      * local database.
@@ -361,7 +414,7 @@ class epUpdatedb
             print " - ".$packet["Driver"]." history ";
         } else {
             print " - History Failed";
-            if ($testMode) print $this->endpoint->db->MetaErrorMsg();
+//            if ($testMode) var_dump($this->);
         }
         $ret = $this->endpoint->device->update($packet['DeviceKey'], $set);
         if ($ret) {
@@ -454,7 +507,8 @@ class epUpdatedb
      */ 
     function updatedbError(&$packet, $msg, $stat) 
     {
-        if ($this->rawHistory->error == "1062") {
+        $this->errors[$this->rawHistory->metaError]++;
+        if ($this->rawHistory->metaError == DBBASE_META_ERROR_DUPLICATE) {
             print " Duplicate ".$packet['Date']." ";
             $packet["remove"] = true;                                            
         } else {
