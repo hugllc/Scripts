@@ -54,6 +54,7 @@ print "Starting...\n";
 define("CONTROLLER_CHECK", 10);
 
 if (empty($GatewayKey)) die("You must supply a gateway key\n");
+print "Using GatewayKey ".$GatewayKey."\n";
 
 $gw = array(
     'GatewayIP' => $GatewayIP,

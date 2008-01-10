@@ -112,8 +112,7 @@ class epUpdatedb
         $this->firmware->createCache(HUGNET_LOCAL_DATABASE);
         $this->firmware->getAll();
 
-        $this->rawHistory = new DbBase($this->db, "history_raw", "HistoryRawKey", true);
-//        $this->rawHistory->verbose($this->verbose); 
+        $this->rawHistory = new DbBase($this->db, "history_raw", "HistoryRawKey", $this->verbose);
 
      }
 

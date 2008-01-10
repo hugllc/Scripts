@@ -33,20 +33,31 @@
  */
 define('HUGNET_FS_DIR', dirname(__FILE__));
 
-@include_once(HUGNET_FS_DIR.'/config/config.inc.php');
-$prefs = &$conf;
-require_once("hugnet.inc.php");
-require_once(HUGNET_INCLUDE_PATH.'/lib/plugins.inc.php');
-require_once(HUGNET_INCLUDE_PATH."/database/process.php");
+if (!@include_once '/etc/hugnet/config.inc.php') {
+    if (!@include_once HUGNET_FS_DIR.'/config/config.inc.php') {
+        echo "No config file found.  \n";
+        echo "Checked /etc/hugnet/config.inc.php, ".HUGNET_FS_DIR."/config/config.inc.php\n";
+        echo "Waiting 60 seconds then dying.\n";
+        sleep(60);
+        die();
+    }
+}
+require_once "hugnet.inc.php";
+require_once HUGNET_INCLUDE_PATH.'/lib/plugins.inc.php';
+require_once HUGNET_INCLUDE_PATH."/database/process.php";
 
+$GatewayKey = $hugnet_config["script_gatewaykey"];
 if (is_null($db)) {    
-    foreach ($prefs['servers'] as $serv) {
+    $db = DbBase::createPDO($hugnet_config['servers']);
+    /*
+    foreach ($hugnet_prefs['servers'] as $serv) {
         //        $dsn = $serv['Type']."://".$serv["User"].":".rawurlencode($serv["Password"])."@".$serv["Host"]."/".HUGNET_DATABASE;
         //var_dump($dsn);
         $serv["dsn"] = $serv["Type"].":host=".$serv["Host"].";dbname=".HUGNET_DATABASE;
         $db = DbBase::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
         if (is_object($db)) break;
     }
+    */
     //if (!is_object($db)) die("Database connection not available.\n");
 }    
 
