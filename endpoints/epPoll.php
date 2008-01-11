@@ -384,14 +384,14 @@ class epPoll
         return false;
     }
 
-    function checkPacket($pkt, $Type = "UNKNOWN") 
+    function checkPacket($pkt) 
     {
         if (is_array($pkt)) {
+            $pkt["Type"] = $Type = plog::packetType($pkt);
             // Add it to the debug log
             $lpkt = plog::packetLogSetup($pkt, $dev, $Type);
             $this->debugplog->add($lpkt);
             $this->debugplog->removeWhere("Date < ? ", array(date("Y-m-d H:i:s", time() - (86400 * 30))));
-
             // Do some printing if we are not otherwise working
             if ($this->myInfo['doPoll'] !== true) $v = true;
             if ($v) print "Got Pkt: F:".$pkt["From"]." - T:".$pkt["To"]." -".$pkt["Command"];
@@ -419,9 +419,11 @@ class epPoll
                     $ret = $this->qPacket($pkt, $pkt['From'], PACKET_COMMAND_GETSETUP, 30);
                 }
             }
-                if ($v) print "\r\n";
+            if ($v) print "\r\n";
+
         }
     }
+
 
     /**
      * Deals with packets to me.
@@ -740,7 +742,7 @@ class epPoll
                     $doUnsolicited = false;
                     $maxPriority = 0xFFFF;  // Real priorities should never be this high.
                 } else {
-                    print "Checking in with Gateway ".$gw['DeviceID']; 
+                    print "Checking in with Gateway ".$gw['DeviceID'].":\n"; 
                     $pkt = $this->packet->buildPacket($gw['DeviceID'], PACKET_COMMAND_GETSETUP);
                     $ret = $this->packet->sendPacket($this->gw[0], array($pkt), true, 2);
                     if (is_array($ret)) {
