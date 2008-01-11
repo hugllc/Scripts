@@ -33,7 +33,7 @@
  */
 
 define("POLL_VERSION", "0.2.11");
-define("POLL_PARTNUMBER", "0039-26-01-50");  //0039-26-01-P
+define("POLL_PARTNUMBER", "0039-26-01-P");  //0039-26-01-P
 define("POLL_SVN", '$Id$');
 
 $GatewayKey = false;
@@ -48,7 +48,7 @@ require_once('epPoll.php');
 
 $db = HUGNET_LOCAL_DATABASE;
 
-print 'poll.php Version '.POLL_VERSION.'  $Id$'."\n";
+print 'poll.php Version '.POLL_VERSION.'  '.POLL_SVN."\n";
 print "Starting...\n";
 
 define("CONTROLLER_CHECK", 10);

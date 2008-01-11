@@ -129,7 +129,7 @@ class epPoll
      */    
     function main($while=1) {
         $this->powerup();
-        $this->packet->packetSetCallBack('checkPacket', $poll);
+        $this->packet->packetSetCallBack('checkPacket', $this);
     
         do {
             print "Using: ".$this->myInfo['DeviceID']." Priority: ".$this->myInfo["Priority"]."\r\n";
@@ -367,7 +367,7 @@ class epPoll
 
     function checkPacket($pkt, $Type = "UNKNOWN") {
         if (is_array($pkt)) {
-            if ($pkt['Unsolicited']) {
+            if ($pkt['Unsolicited'] === true) {
                 if ($this->myInfo['doUnsolicited']) {
                     $this->stats->incStat("Unsolicited");
                     $Type = "UNSOLICITED";
@@ -410,7 +410,8 @@ class epPoll
                     default:    // We didn't send a packet out.
                         switch(trim(strtoupper($pkt['Command']))) {
                             case PACKET_COMMAND_GETSETUP:
-                                $ret = $this->packet->sendReply($pkt, $pkt['From'], e00392601::getConfigStr($this->myInfo));
+                                $this->qPacket($this->gw[0], $pkt['From'], PACKET_COMMAND_REPLY, e00392601::getConfigStr($this->myInfo));
+                                //$ret = $this->packet->sendReply($pkt, $pkt['From'], e00392601::getConfigStr($this->myInfo));
                                 break;
                             default:
                                 break;
@@ -451,6 +452,7 @@ class epPoll
         shuffle($epkeys);
 //        foreach ($this->ep as $key => $dev) {
         foreach ($epkeys as $key) {
+            $packet = $this->checkPacketQ();
             $dev = $this->ep[$key];
             if ($dev["PollInterval"] > 0) {
                 if (empty($this->_devInfo[$key]["PollTime"])) $this->GetNextPoll($key);
@@ -637,6 +639,7 @@ class epPoll
         if ($this->myInfo['doConfig'] !== true) return;
         
         foreach ($this->ep as $key => $dev) {
+            $packet = $this->checkPacketQ();
             if (empty($dev['DeviceID'])) {
                 unset($this->ep[$key]);
             }
@@ -683,7 +686,7 @@ class epPoll
                             $this->CheckPacket($p);
                         }
                         print " Done ";
-                           unset($this->otherGW[$key]['failedCheckGW']);
+                        unset($this->otherGW[$key]['failedCheckGW']);
         
                     } else {
                         print " Failed ";
@@ -701,8 +704,8 @@ class epPoll
         
                     }
                     print " P:".$this->otherGW[$key]['Priority'];
-                    print " IP:".$this->otherGW[$key]['NodeIP'];
-                    print " Name:".$this->otherGW[$key]['NodeName'];
+                    print " IP:".$this->otherGW[$key]['IP'];
+                    print " Name:".$this->otherGW[$key]['Name'];
                     if ($this->otherGW[$key]['Priority'] == $this->myInfo['Priority']) {
                         $this->setPriority();
                     }
@@ -793,13 +796,11 @@ class epPoll
             
             $send = array("FWVersion", "Priority", "myGatewayKey", "NodeName", "NodeIP",
                           "doPoll", "doConfig", "doCCheck", "doUnsolicited", 'ConfigExpire');
-
             if (!is_array($this->otherGW[$newConfig['DeviceID']])) {
                 $this->otherGW[$newConfig['DeviceID']] = $newConfig;
             } else {
                 $this->otherGW[$newConfig['DeviceID']] = array_merge($this->otherGW[$newConfig['DeviceID']], $newConfig);
             }
-
         } else if ($newConfig['sendCommand'] == PACKET_COMMAND_GETSETUP) {
             if (!is_null($newConfig['DeviceKey'])) {
                 $devKey = $newConfig['DeviceKey'];
