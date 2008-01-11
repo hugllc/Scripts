@@ -156,9 +156,9 @@ class epPoll
     function setPriority() 
     {
         if ($this->test) {
-            $this->myInfo['Priority'] = 1; //0xFF;
+            $this->myInfo['Priority'] = 0xFF;
         } else {
-            $this->myInfo['Priority'] = mt_rand(1, 0xFF);
+            $this->myInfo['Priority'] = mt_rand(1, 0xFE);
         }
     }
 
@@ -302,9 +302,8 @@ class epPoll
                            if (!isset($this->_devInfo[$key]["GetConfig"])) $this->_devInfo[$key]["GetConfig"] = false;
                     }
                 }
-                print " (Found ".count($this->ep).") ";
             }
-            print "\n";
+            print " (Found ".count($this->ep).")\n";
         }
         return $this->ep;    
     }
@@ -398,65 +397,17 @@ class epPoll
             if ($v) print "Got Pkt: F:".$pkt["From"]." - T:".$pkt["To"]." -".$pkt["Command"];
             if ($pkt['toMe']) {
                 if ($v) print " - To Me! ";
-                $this->stats->incStat("To Me");
-                switch(trim(strtoupper($pkt['sendCommand']))) {
-                    case PACKET_COMMAND_GETSETUP:
-                        $this->interpConfig(array($pkt));
-                        break;
-                    default:    // We didn't send a packet out.
-                        switch(trim(strtoupper($pkt['Command']))) {
-                            case PACKET_COMMAND_GETSETUP:
-                                //$this->qPacket($this->gw[0], $pkt['From'], PACKET_COMMAND_REPLY, e00392601::getConfigStr($this->myInfo));
-                                $ret = $this->packet->sendReply($pkt, $pkt['From'], e00392601::getConfigStr($this->myInfo));
-                                break;
-                            case PACKET_COMMAND_ECHOREQUEST:
-                            case PACKET_COMMAND_FINDECHOREQUEST:
-                                $ret = $this->packet->sendReply($pkt, $pkt['From'], $pkt["Data"]);
-                                break;
-                            default:
-                                break;
-                        }
-                        break;
-                    
-                }            
+                $this->checkPacketToMe($pkt);
             } else if ($pkt['isGateway']) {
                 if ($v) print " - Gateway ";
                 // Do nothing here.
             } else if ($pkt['Unsolicited'] === true) {
                 if ($v) print " - Unsolicited ";
-                if ($this->myInfo['doUnsolicited']) {
-                    $this->stats->incStat("Unsolicited");
-                    $Type = "UNSOLICITED";
-                    switch(trim(strtoupper($pkt['Command']))) {
-                        case PACKET_COMMAND_POWERUP:
-                        case PACKET_COMMAND_RECONFIG:
-                            if (!$pkt['isGateway']) {
-                                $pkt['DeviceID'] = trim(strtoupper($pkt['From']));
-                                if (isset($this->ep[$pkt['DeviceID']])) {
-                                        $this->_devInfo[$pkt['DeviceID']]["failures"] = 0;
-                                        unset($this->_devInfo[$pkt['DeviceID']]['failedcCheck']);
-                                        unset($this->_devInfo[$pkt['DeviceID']]['failedCheck']);
-                                        unset($this->_devInfo[$pkt['DeviceID']]['nextCheck']);
-                                        $this->getNextPoll($pkt['DeviceID']);                                        
-                                        $pkt['DeviceKey'] = $this->ep[$pkt['DeviceID']]['DeviceKey'];
-                                        $this->_devInfo[$pkt['DeviceID']]['GetConfig'] = true;
-                                } else {
-                                    $this->ep[$pkt['From']] = $pkt;
-                                    $this->ep[$pkt['From']]['DeviceID'] = $pkt['From'];
-                                    $this->_devInfo[$pkt['From']]['GetConfig'] = true;
-                                    $this->ep[$pkt['From']]['LastConfig'] = date("Y-m-d H:i:s", (time() - (86400*2)));
-                                    $this->_devInfo[$pkt['From']]['LastConfig'] = date("Y-m-d H:i:s", (time() - (86400*2)));
-                                }
-                            }
-                            break;
-                    }
-                    $lpkt = plog::packetLogSetup($pkt, $this->gw[0], $Type);
-                    $this->plog->add($lpkt);
-                }
-            } else {
-//                if ($v) print " - Logged ";
-//                $lpkt = plog::packetLogSetup($pkt, $dev, $Type);
-//                $this->plog->add($lpkt);
+                $this->checkPacketUnsolicited($pkt);
+            } else if ($pkt["Reply"]) {
+                if ($v) print " - Logged ";
+                $lpkt = plog::packetLogSetup($pkt, $dev, $Type);
+                $this->plog->add($lpkt);
             }
             if ($pkt['isGateway']) {
                 if ($v) print " - Gateway Again ";
@@ -470,6 +421,79 @@ class epPoll
             }
                 if ($v) print "\r\n";
         }
+    }
+
+    /**
+     * Deals with packets to me.
+     *
+     * @param array $pkt The packet array
+     *
+     * @return void
+     */
+    protected function checkPacketToMe($pkt)
+    {
+        $this->stats->incStat("To Me");
+        $sendCommand = trim(strtoupper($pkt['sendCommand']));
+        if ($sendCommand == PACKET_COMMAND_GETSETUP) {
+            $this->interpConfig(array($pkt));
+            return;
+        }
+        $Command = trim(strtoupper($pkt['Command']));
+        switch($Command) {
+        case PACKET_COMMAND_GETSETUP:
+            // Get our setup
+            //$this->qPacket($this->gw[0], $pkt['From'], PACKET_COMMAND_REPLY, e00392601::getConfigStr($this->myInfo));
+            $ret = $this->packet->sendReply($pkt, $pkt['From'], e00392601::getConfigStr($this->myInfo));
+            break;
+        case PACKET_COMMAND_ECHOREQUEST:
+        case PACKET_COMMAND_FINDECHOREQUEST:
+            // Reply to a ping request
+            $ret = $this->packet->sendReply($pkt, $pkt['From'], $pkt["Data"]);
+            break;
+        default:
+            break;
+        }
+    
+    }
+    /**
+     * Deals with unsolicited packets we get
+     *
+     * @param array $pkt The packet array
+     *
+     * @return void
+     */
+    protected function checkPacketUnsolicited($pkt)
+    {
+        if ($this->myInfo['doUnsolicited']) {
+            $this->stats->incStat("Unsolicited");
+            $Type = "UNSOLICITED";
+            switch(trim(strtoupper($pkt['Command']))) {
+                case PACKET_COMMAND_POWERUP:
+                case PACKET_COMMAND_RECONFIG:
+                    if (!$pkt['isGateway']) {
+                        $pkt['DeviceID'] = trim(strtoupper($pkt['From']));
+                        if (isset($this->ep[$pkt['DeviceID']])) {
+                                $this->_devInfo[$pkt['DeviceID']]["failures"] = 0;
+                                unset($this->_devInfo[$pkt['DeviceID']]['failedcCheck']);
+                                unset($this->_devInfo[$pkt['DeviceID']]['failedCheck']);
+                                unset($this->_devInfo[$pkt['DeviceID']]['nextCheck']);
+                                $this->getNextPoll($pkt['DeviceID']);                                        
+                                $pkt['DeviceKey'] = $this->ep[$pkt['DeviceID']]['DeviceKey'];
+                                $this->_devInfo[$pkt['DeviceID']]['GetConfig'] = true;
+                        } else {
+                            $this->ep[$pkt['From']] = $pkt;
+                            $this->ep[$pkt['From']]['DeviceID'] = $pkt['From'];
+                            $this->_devInfo[$pkt['From']]['GetConfig'] = true;
+                            $this->ep[$pkt['From']]['LastConfig'] = date("Y-m-d H:i:s", (time() - (86400*2)));
+                            $this->_devInfo[$pkt['From']]['LastConfig'] = date("Y-m-d H:i:s", (time() - (86400*2)));
+                        }
+                    }
+                    break;
+            }
+            $lpkt = plog::packetLogSetup($pkt, $this->gw[0], $Type);
+            $this->plog->add($lpkt);
+        }
+    
     }
 
     function poll() 
