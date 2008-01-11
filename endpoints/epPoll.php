@@ -31,9 +31,12 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-    require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');
-    require_once(HUGNET_INCLUDE_PATH.'/database/process.php');
-    require_once(HUGNET_INCLUDE_PATH.'/database/procstats.php');
+/** Packet log include stuff */
+require_once HUGNET_INCLUDE_PATH.'/database/plog.php';
+/** Packet log process stuff */
+require_once HUGNET_INCLUDE_PATH.'/database/process.php';
+/** Packet log stats stuff */
+require_once HUGNET_INCLUDE_PATH.'/database/procstats.php';
 
 /**
  * Class for polling endpoints
@@ -127,7 +130,8 @@ class epPoll
      * Main routine for polling endpoints
      * This routine will
      */    
-    function main($while=1) {
+    function main($while=1) 
+    {
         $this->powerup();
         $this->packet->packetSetCallBack('checkPacket', $this);
     
@@ -145,7 +149,8 @@ class epPoll
     /**
      * Sets the priority we run at.
       */
-    function setPriority() {
+    function setPriority() 
+    {
         if ($this->test) {
             $this->myInfo['Priority'] = 0xFF;
         } else {
@@ -156,7 +161,8 @@ class epPoll
     /**
      * Gets all of the gateways with $Key as their key or backup key
       */
-    function getGateways($Key) {
+    function getGateways($Key) 
+    {
         $res = $this->gateway->get($Key);
         $this->GatewayKey = $Key;
 
@@ -168,7 +174,8 @@ class epPoll
     /**
      *  Sets everything up when we start
       */
-    function powerup() {
+    function powerup() 
+    {
         if ($this->gw[0] !== array()) {
             // Send a powerup packet.
             $pkt = array(
@@ -193,7 +200,8 @@ class epPoll
      *
      * @param array $gw The gateway array
       */
-    function forceGateways($gw) {
+    function forceGateways($gw) 
+    {
         if (empty($gw['GatewayIP'])) $gw['GatewayIP'] = '127.0.0.1';
         if (empty($gw['GatewayPort'])) $gw['GatewayPort'] = '2000';
         $this->gw = array(0 => $gw);
@@ -204,7 +212,8 @@ class epPoll
         $this->packet->connect($this->gw[0]);
     }
 
-    function devGateway($key) {
+    function devGateway($key) 
+    {
         if (is_array($this->ep[$key])) {
             if (is_array($this->gw[$this->_devInfo[$key]["gwIndex"]])) {
                 $this->ep[$key] = array_merge($this->ep[$key], $this->gw[$this->_devInfo[$key]["gwIndex"]]);
@@ -223,7 +232,8 @@ class epPoll
      * @param $failures
      * @return The time of the next poll
      */
-    function GetNextPoll($key, $time=null) {
+    function GetNextPoll($key, $time=null) 
+    {
 //        $time = time();
         if ($this->ep[$key]["PollInterval"] <= 0) return;
 
@@ -260,12 +270,13 @@ class epPoll
     }
     
     
-    function getAllDevices() {
+    function getAllDevices() 
+    {
         // Regenerate our endpoint information
         if (((time() - $this->lastdev) > 60) || (count($this->ep) < 1)) {
             $this->lastdev = time();
 
-            print "Getting endpoints for Gateway #".$this->gw[0]["GatewayKey"]."\n";
+            print "Getting endpoints for Gateway #".$this->gw[0]["GatewayKey"];
 
 
             $query = "GatewayKey= ? ";
@@ -273,7 +284,7 @@ class epPoll
 
             if (!is_array($res) || (count($res) == 0)) {
                 $this->stats->incStat("Device Cache Failed");
-                print "Didn't find any devices.\n";
+                print "Didn't find any devices";
 //                $res = $this->endpoint->db->getArray($query);
             }
             if (is_array($res) && (count($res) > 0)) {
@@ -289,14 +300,17 @@ class epPoll
                            if (!isset($this->_devInfo[$key]["GetConfig"])) $this->_devInfo[$key]["GetConfig"] = false;
                     }
                 }
+                print " (".count($this->ep).") ";
             }
+            print "\n";
         }
         return $this->ep;    
     }
     
     
 
-    function controllerCheck() {
+    function controllerCheck() 
+    {
         if (!$this->myInfo['doCCheck']) return;
 
         print "Checking Controllers...\n";
@@ -311,7 +325,8 @@ class epPoll
         }
     }
     
-    function wait() {
+    function wait() 
+    {
         $this->setupMyInfo();
         $this->stats->setStat("doPoll", $this->myInfo['doPoll']);
         $this->stats->setStat("doCCheck", $this->myInfo['doCCheck']);
@@ -334,7 +349,8 @@ class epPoll
         print "Checking... ".date("Y-m-d H:i:s")."\n";
     }
 
-    function qPacket($gw, $to, $command, $data="", $timeout=0) {
+    function qPacket($gw, $to, $command, $data="", $timeout=0) 
+    {
   
         $pkt = $this->packet->buildPacket($to, $command, $data);
         $pkt['Timeout'] = $timeout;
@@ -343,7 +359,8 @@ class epPoll
         return $ret;
     }
     
-    function setPollWait() {
+    function setPollWait() 
+    {
         if ($this->test) return;
         $wait = mt_rand(90, 300);
         $this->otherGW["Wait"] = array(
@@ -353,7 +370,8 @@ class epPoll
         print "Waiting $wait seconds before polling\n";
     }
 
-    function findDev($DeviceID) {
+    function findDev($DeviceID) 
+    {
         if (isset($this->ep[$DeviceID])) {
             return $DeviceID;
         }
@@ -365,7 +383,8 @@ class epPoll
         return false;
     }
 
-    function checkPacket($pkt, $Type = "UNKNOWN") {
+    function checkPacket($pkt, $Type = "UNKNOWN") 
+    {
         if (is_array($pkt)) {
             if ($pkt['Unsolicited'] === true) {
                 if ($this->myInfo['doUnsolicited']) {
@@ -410,8 +429,8 @@ class epPoll
                     default:    // We didn't send a packet out.
                         switch(trim(strtoupper($pkt['Command']))) {
                             case PACKET_COMMAND_GETSETUP:
-                                $this->qPacket($this->gw[0], $pkt['From'], PACKET_COMMAND_REPLY, e00392601::getConfigStr($this->myInfo));
-                                //$ret = $this->packet->sendReply($pkt, $pkt['From'], e00392601::getConfigStr($this->myInfo));
+                                //$this->qPacket($this->gw[0], $pkt['From'], PACKET_COMMAND_REPLY, e00392601::getConfigStr($this->myInfo));
+                                $ret = $this->packet->sendReply($pkt, $pkt['From'], e00392601::getConfigStr($this->myInfo));
                                 break;
                             default:
                                 break;
@@ -522,7 +541,8 @@ class epPoll
 
     }
 
-    function checkPacketQ() {
+    function checkPacketQ() 
+    {
         if (count($this->packetQ) > 0) {
             list($key, $q) = each($this->packetQ);
             $gw = (isset($q['gw'])) ? $q['gw'] : $this->gw[0];
@@ -566,7 +586,8 @@ class epPoll
         }
     }
 
-    function checkDev($key) {
+    function checkDev($key) 
+    {
         if (!is_array($this->ep[$key])) return;
         if (empty($key)) return;
         
@@ -635,7 +656,8 @@ class epPoll
     
     }
 
-    function getConfig() {
+    function getConfig() 
+    {
         if ($this->myInfo['doConfig'] !== true) return;
         
         foreach ($this->ep as $key => $dev) {
@@ -657,7 +679,8 @@ class epPoll
 
     }
 
-    function checkOtherGW() {
+    function checkOtherGW() 
+    {
 
         $doPoll = true;
         $doConfig = true;
@@ -752,11 +775,22 @@ class epPoll
         $this->myInfo['doUnsolicited'] = $doUnsolicited;
     }
 
-    function randomizegwTimeout() {
+    /**
+     * Returns random timeout
+     *
+     * @return int
+     */
+    function randomizegwTimeout() 
+    {
         return (time() + mt_rand(120, 420));
     }
-
-    function setupMyInfo() {
+    /**
+     * This sets up my info so that I look like an endpoint.
+     *
+     * @return none
+     */
+    function setupMyInfo() 
+    {
         $this->myInfo['DeviceID'] = $this->packet->SN;
         $this->DeviceID = $this->myInfo['DeviceID'];
         $this->myInfo['SerialNum'] = $this->packet->SN;
