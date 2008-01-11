@@ -703,7 +703,7 @@ class epPoll
                 } else {
                     print "Checking in with Gateway ".$gw['DeviceID']; 
                     $pkt = $this->packet->buildPacket($gw['DeviceID'], PACKET_COMMAND_GETSETUP);
-                    $ret = $this->packet->sendPacket($gw, array($pkt), true, 2);
+                    $ret = $this->packet->sendPacket($this->gw[0], array($pkt), true, 2);
                     if (is_array($ret)) {
                         foreach ($ret as $p) {
                             $this->CheckPacket($p);

@@ -251,7 +251,7 @@ class epUpdatedb
                      " AND ".
                      " PacketTo = '".$packet['PacketTo']."') ";
             
-            $res = $this->endpoint->db->AutoExecute("PacketSend", array("Checked" => 1), 'UPDATE', $where);
+//            $res = $this->endpoint->db->AutoExecute("PacketSend", array("Checked" => 1), 'UPDATE', $where);
             if ($res) {
                 print " Updated ";
                 return true;
@@ -288,6 +288,8 @@ class epUpdatedb
             $this->stats->incStat("Packets");                    
 
             print "[".$this->uproc->me["PID"]."] ".$packet["PacketFrom"]." ".$packet["sendCommand"];
+            if (empty($packet["PacketFrom"])) $packet["Type"] = BAD;
+            if ($this->endpoint->packet->isGateway($packet["PacketFrom"])) $packet["Type"] = BAD;
 
             $DeviceID = trim(strtoupper($packet['PacketFrom']));       
             if (is_array($this->ep[$DeviceID])) {
@@ -309,12 +311,15 @@ class epUpdatedb
      * Function to deal with unsolicited packets
      *
      * @param array $packet the packet array
+     *
+     * @return none
      */ 
     private function updatedbUnsolicited(&$packet) {
         if ($packet['Type'] == 'UNSOLICITED') {
             $packet["Checked"] = true;
-            $this->stats->incStat("Unsolicited");                    
-            $return = $this->endpoint->db->AutoExecute("PacketLog", $packet, 'INSERT');
+            $this->stats->incStat("Unsolicited");
+            $packet = $this->plog->packetLogSetup($packet, $packet);              
+            $return = $this->plog->add($packet);
             if ($return) {
                 print " - Inserted ".$packet['sendCommand']."";                    
                 $packet["remove"] = true;
@@ -332,7 +337,7 @@ class epUpdatedb
         if ($packet['Type'] == 'REPLY') {
             $packet["Checked"] = true;
             $this->stats->incStat("Reply");
-            $return = $this->endpoint->db->AutoExecute("PacketSend", $packet, 'INSERT');
+//            $return = $this->endpoint->db->AutoExecute("PacketSend", $packet, 'INSERT');
             if ($return) {
                 print " - Inserted into PacketSend ".$packet['sendCommand']."";                    
                 $packet["remove"] = true;
@@ -403,6 +408,7 @@ class epUpdatedb
     private function updatedbPollHistory(&$packet) 
     {
         $set = array(
+            "DeviceKey" => $packet["DeviceKey"],
             "LastPoll" => $packet["Date"],
             "GatewayKey" => $packet['GatewayKey'],
         );
@@ -415,8 +421,8 @@ class epUpdatedb
             print " - History Failed";
 //            if ($testMode) var_dump($this->);
         }
-        $ret = $this->endpoint->device->update($packet['DeviceKey'], $set);
-        if ($ret) {
+        $ret = $this->endpoint->device->update($set);
+        if ($ret === true) {
             print " - Last Poll ";
             return true;
         } else {
