@@ -284,8 +284,6 @@ class epPoll
 
             if (!is_array($res) || (count($res) == 0)) {
                 $this->stats->incStat("Device Cache Failed");
-                print "Didn't find any devices";
-//                $res = $this->endpoint->db->getArray($query);
             }
             if (is_array($res) && (count($res) > 0)) {
                 $this->ep = array();
@@ -300,7 +298,7 @@ class epPoll
                            if (!isset($this->_devInfo[$key]["GetConfig"])) $this->_devInfo[$key]["GetConfig"] = false;
                     }
                 }
-                print " (".count($this->ep).") ";
+                print " (Found ".count($this->ep).") ";
             }
             print "\n";
         }
