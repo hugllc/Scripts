@@ -438,11 +438,15 @@ class epPoll
                 }            
             
 
+            } else if (!$pkt['isGateway']) {
+                // Do nothing here.
             } else {
                 $lpkt = plog::packetLogSetup($pkt, $dev, $Type);
                 $this->plog->add($lpkt);
             }
             if ($pkt['isGateway']) {
+                // This might happen in a number of places above, so we put it here
+                // so it only has to be here once.
                 if (!isset($this->otherGW[$pkt['From']])) {
                     $pkt['DeviceID'] = $pkt['From'];
                     $this->otherGW[$pkt['From']] = array('DeviceID' => $pkt['From'], 'RemoveTime' => (time() + $this->gwRemove));
@@ -469,7 +473,6 @@ class epPoll
         shuffle($epkeys);
 //        foreach ($this->ep as $key => $dev) {
         foreach ($epkeys as $key) {
-            $packet = $this->checkPacketQ();
             $dev = $this->ep[$key];
             if ($dev["PollInterval"] > 0) {
                 if (empty($this->_devInfo[$key]["PollTime"])) $this->GetNextPoll($key);
@@ -659,7 +662,6 @@ class epPoll
         if ($this->myInfo['doConfig'] !== true) return;
         
         foreach ($this->ep as $key => $dev) {
-            $packet = $this->checkPacketQ();
             if (empty($dev['DeviceID'])) {
                 unset($this->ep[$key]);
             }
