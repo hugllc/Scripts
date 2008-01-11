@@ -82,6 +82,7 @@ class epUpdatedb
         print "Creating remote plog...\n";
         $this->plogRemote = new plog($this->db);
         $this->plogRemote->verbose($this->verbose);
+        
         $this->psend = new DbBase($this->db, "PacketSend");
         $this->psend->verbose($this->verbose);
 //        $this->psend->createPacketLog("PacketSend");
@@ -318,8 +319,8 @@ class epUpdatedb
         if ($packet['Type'] == 'UNSOLICITED') {
             $packet["Checked"] = true;
             $this->stats->incStat("Unsolicited");
-            $packet = $this->plog->packetLogSetup($packet, $packet);              
-            $return = $this->plog->add($packet);
+            $pkt = $this->plog->packetLogSetup($packet, $packet);              
+            $return = $this->plogRemote->add($pkt);
             if ($return) {
                 print " - Inserted ".$packet['sendCommand']."";                    
                 $packet["remove"] = true;
