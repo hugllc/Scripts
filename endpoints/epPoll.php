@@ -454,9 +454,9 @@ class epPoll
                     $this->plog->add($lpkt);
                 }
             } else {
-                if ($v) print " - Logged ";
-                $lpkt = plog::packetLogSetup($pkt, $dev, $Type);
-                $this->plog->add($lpkt);
+//                if ($v) print " - Logged ";
+//                $lpkt = plog::packetLogSetup($pkt, $dev, $Type);
+//                $this->plog->add($lpkt);
             }
             if ($pkt['isGateway']) {
                 if ($v) print " - Gateway Again ";
