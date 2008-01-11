@@ -392,27 +392,20 @@ class epPoll
             $lpkt = plog::packetLogSetup($pkt, $dev, $Type);
             $this->debugplog->add($lpkt);
             $this->debugplog->removeWhere("Date < ? ", array(date("Y-m-d H:i:s", time() - (86400 * 30))));
+            if ($pkt["Reply"] && !$pkt['isGateway']) $this->plog->add($lpkt);
+
             // Do some printing if we are not otherwise working
             if ($this->myInfo['doPoll'] !== true) $v = true;
             if ($v) print "Got Pkt: F:".$pkt["From"]." - T:".$pkt["To"]." -".$pkt["Command"];
             if ($pkt['toMe']) {
                 if ($v) print " - To Me! ";
                 $this->checkPacketToMe($pkt);
-            } else if ($pkt['isGateway']) {
-                if ($v) print " - Gateway ";
-                // Do nothing here.
             } else if ($pkt['Unsolicited'] === true) {
                 if ($v) print " - Unsolicited ";
                 $this->checkPacketUnsolicited($pkt);
-            } else if ($pkt["Reply"]) {
-                if ($v) print " - Logged ";
-                $lpkt = plog::packetLogSetup($pkt, $dev, $Type);
-                $this->plog->add($lpkt);
             }
             if ($pkt['isGateway']) {
-                if ($v) print " - Gateway Again ";
-                // This might happen in a number of places above, so we put it here
-                // so it only has to be here once.
+                if ($v) print " - Gateway ";
                 if (!isset($this->otherGW[$pkt['From']])) {
                     $pkt['DeviceID'] = $pkt['From'];
                     $this->otherGW[$pkt['From']] = array('DeviceID' => $pkt['From'], 'RemoveTime' => (time() + $this->gwRemove));
