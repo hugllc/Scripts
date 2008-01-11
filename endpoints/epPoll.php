@@ -104,6 +104,10 @@ class epPoll
                 sleep(300);
             }
         } while ($this->plog->criticalError !== false);
+
+        $d = null;
+        $this->debugplog = new plog($db, "DebugPacketLog");
+        $this->debugplog->createTable();
         
 //        $this->plog->createPacketLog();
         $file = HUGNET_LOCAL_DATABASE;
@@ -152,7 +156,7 @@ class epPoll
     function setPriority() 
     {
         if ($this->test) {
-            $this->myInfo['Priority'] = 0xFF;
+            $this->myInfo['Priority'] = 1; //0xFF;
         } else {
             $this->myInfo['Priority'] = mt_rand(1, 0xFF);
         }
@@ -384,7 +388,42 @@ class epPoll
     function checkPacket($pkt, $Type = "UNKNOWN") 
     {
         if (is_array($pkt)) {
-            if ($pkt['Unsolicited'] === true) {
+            // Add it to the debug log
+            $lpkt = plog::packetLogSetup($pkt, $dev, $Type);
+            $this->debugplog->add($lpkt);
+            $this->debugplog->removeWhere("Date < ? ", array(date("Y-m-d H:i:s", time() - (86400 * 30))));
+
+            // Do some printing if we are not otherwise working
+            if ($this->myInfo['doPoll'] !== true) $v = true;
+            if ($v) print "Got Pkt: F:".$pkt["From"]." - T:".$pkt["To"]." -".$pkt["Command"];
+            if ($pkt['toMe']) {
+                if ($v) print " - To Me! ";
+                $this->stats->incStat("To Me");
+                switch(trim(strtoupper($pkt['sendCommand']))) {
+                    case PACKET_COMMAND_GETSETUP:
+                        $this->interpConfig(array($pkt));
+                        break;
+                    default:    // We didn't send a packet out.
+                        switch(trim(strtoupper($pkt['Command']))) {
+                            case PACKET_COMMAND_GETSETUP:
+                                //$this->qPacket($this->gw[0], $pkt['From'], PACKET_COMMAND_REPLY, e00392601::getConfigStr($this->myInfo));
+                                $ret = $this->packet->sendReply($pkt, $pkt['From'], e00392601::getConfigStr($this->myInfo));
+                                break;
+                            case PACKET_COMMAND_ECHOREQUEST:
+                            case PACKET_COMMAND_FINDECHOREQUEST:
+                                $ret = $this->packet->sendReply($pkt, $pkt['From'], $pkt["Data"]);
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    
+                }            
+            } else if ($pkt['isGateway']) {
+                if ($v) print " - Gateway ";
+                // Do nothing here.
+            } else if ($pkt['Unsolicited'] === true) {
+                if ($v) print " - Unsolicited ";
                 if ($this->myInfo['doUnsolicited']) {
                     $this->stats->incStat("Unsolicited");
                     $Type = "UNSOLICITED";
@@ -392,10 +431,6 @@ class epPoll
                         case PACKET_COMMAND_POWERUP:
                         case PACKET_COMMAND_RECONFIG:
                             if (!$pkt['isGateway']) {
-//                                $found = false;
- //                               foreach ($this->ep as $key => $ep) {
-//                                    if (trim(strtoupper($ep["DeviceID"])) == trim(strtoupper($pkt['From']))) {
-                                        //$this->ep[$key]['LastConfig'] = date("Y-m-d H:i:s", 0);
                                 $pkt['DeviceID'] = trim(strtoupper($pkt['From']));
                                 if (isset($this->ep[$pkt['DeviceID']])) {
                                         $this->_devInfo[$pkt['DeviceID']]["failures"] = 0;
@@ -418,33 +453,13 @@ class epPoll
                     $lpkt = plog::packetLogSetup($pkt, $this->gw[0], $Type);
                     $this->plog->add($lpkt);
                 }
-            } else if ($pkt['toMe']) {
-                $this->stats->incStat("To Me");
-                switch(trim(strtoupper($pkt['sendCommand']))) {
-                    case PACKET_COMMAND_GETSETUP:
-                        $this->interpConfig(array($pkt));
-                        break;
-                    default:    // We didn't send a packet out.
-                        switch(trim(strtoupper($pkt['Command']))) {
-                            case PACKET_COMMAND_GETSETUP:
-                                //$this->qPacket($this->gw[0], $pkt['From'], PACKET_COMMAND_REPLY, e00392601::getConfigStr($this->myInfo));
-                                $ret = $this->packet->sendReply($pkt, $pkt['From'], e00392601::getConfigStr($this->myInfo));
-                                break;
-                            default:
-                                break;
-                        }
-                        break;
-                    
-                }            
-            
-
-            } else if (!$pkt['isGateway']) {
-                // Do nothing here.
             } else {
+                if ($v) print " - Logged ";
                 $lpkt = plog::packetLogSetup($pkt, $dev, $Type);
                 $this->plog->add($lpkt);
             }
             if ($pkt['isGateway']) {
+                if ($v) print " - Gateway Again ";
                 // This might happen in a number of places above, so we put it here
                 // so it only has to be here once.
                 if (!isset($this->otherGW[$pkt['From']])) {
@@ -453,7 +468,7 @@ class epPoll
                     $ret = $this->qPacket($pkt, $pkt['From'], PACKET_COMMAND_GETSETUP, 30);
                 }
             }
-
+                if ($v) print "\r\n";
         }
     }
 
