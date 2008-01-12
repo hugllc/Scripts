@@ -87,7 +87,6 @@ class epPoll
         $this->stats->clearStats();        
         $this->stats->setStat('start', time());
         $this->stats->setStat('PID', $this->uproc->me['PID']);
-        $this->stats->setStat('Priority', $this->myInfo['Priority']);
 
 
         $this->test = (bool) $test;
@@ -160,6 +159,7 @@ class epPoll
         } else {
             $this->myInfo['Priority'] = mt_rand(1, 0xFE);
         }
+        $this->stats->setStat('Priority', $this->myInfo['Priority']);
     }
 
     /**
@@ -765,6 +765,7 @@ class epPoll
                         }
         
                     }
+                    print " GW:".$this->otherGW[$key]['GatewayKey'];
                     print " P:".$this->otherGW[$key]['Priority'];
                     print " IP:".$this->otherGW[$key]['IP'];
                     print " Name:".$this->otherGW[$key]['Name'];
@@ -772,7 +773,9 @@ class epPoll
                         $this->setPriority();
                     }
                     if (($maxPriority < $this->otherGW[$key]['Priority']) && !$expired)  {
-                        $maxPriority = $this->otherGW[$key]['Priority'];
+                        if ($this->otherGW[$key]["GatewayKey"] == $this->gw[0]["GatewayKey"]) {
+                            $maxPriority = $this->otherGW[$key]['Priority'];
+                        }
                     }
                     print " Jobs: ";
 
@@ -837,6 +840,7 @@ class epPoll
         $this->myInfo['HWPartNum'] = POLL_PARTNUMBER;
         $this->myInfo['FWPartNum'] = POLL_PARTNUMBER;
         $this->myInfo['FWVersion'] = POLL_VERSION;    
+        $this->myInfo['GatewayKey'] = $this->gw[0]["GatewayKey"];
 
         // I know this works on Linux
         $Info =`/sbin/ifconfig|grep Bcast`;
@@ -866,7 +870,6 @@ class epPoll
             $newConfig['ConfigExpire'] = $this->randomizegwTimeout();
             $newConfig['RemoveTimeDate'] = date("Y-m-d H:i:s", $newConfig['RemoveTime']);
             $newConfig['ConfigExpireDate'] = date("Y-m-d H:i:s", $newConfig['ConfigExpire']);
-            
             $send = array("FWVersion", "Priority", "myGatewayKey", "NodeName", "NodeIP",
                           "doPoll", "doConfig", "doCCheck", "doUnsolicited", 'ConfigExpire');
             if (!is_array($this->otherGW[$newConfig['DeviceID']])) {

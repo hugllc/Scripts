@@ -31,8 +31,8 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-define("UPDATEDB_VERSION", "0.2.5");
-define("UPDATEDB_PARTNUMBER", "0039260250");  //0039-26-01-P
+define("UPDATEDB_VERSION", "0.3.0");
+define("UPDATEDB_PARTNUMBER", "0039-26-02-P");  //0039-26-01-P
 define("UPDATEDB_SVN", '$Id$');
 
 

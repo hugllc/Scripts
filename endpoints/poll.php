@@ -32,7 +32,7 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-define("POLL_VERSION", "0.2.11");
+define("POLL_VERSION", "0.3.0");
 define("POLL_PARTNUMBER", "0039-26-01-P");  //0039-26-01-P
 define("POLL_SVN", '$Id$');
 
