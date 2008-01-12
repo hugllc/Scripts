@@ -491,6 +491,11 @@ class epPoll
     
     }
 
+    /**
+     * This function polls the endpoints
+     *
+     * @return void
+     */
     function poll() 
     {
         if ($this->myInfo['doPoll'] !== true) {
@@ -747,7 +752,7 @@ class epPoll
         
                     } else {
                         print " Failed ";
-                           $this->otherGW[$key]['failedCheckGW'] = date("i");
+                         $this->otherGW[$key]['failedCheckGW'] = date("i");
                         if ($gw['ConfigExpire'] < time()) {
                             $this->otherGW[$key]['doPoll'] = false;
                             $this->otherGW[$key]['doConfig'] = false;
