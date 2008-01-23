@@ -137,6 +137,7 @@ class epUpdatedb
                         $this->updatedbError($emptyVar, "Failed", "dbReconnectFail");
                         print " - Sleeping";
                         sleep(60);
+                        throw new Exception("Database connection failed.");
                     } else {
                         $this->updatedbError($emptyVar, "Succeeded", "dbReconnect");
                     }
