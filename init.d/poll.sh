@@ -1,9 +1,6 @@
 #!/bin/sh
 
-start() {
-	/usr/bin/php-cli /home/hugnet/Scripts/endpoint/poll.php 
-}
-
-stop() {
-	kill `cat /tmp/poll.php.pid`
-}
+echo "Starting Poll..."
+/usr/bin/php-cli /home/hugnet/Scripts/endpoints/poll.php
+echo "Poll Died..."
+sleep 5

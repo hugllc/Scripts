@@ -1,0 +1,4 @@
+tty4::respawn:/etc/init.d/ser2net.sh
+tty5::respawn:/etc/init.d/poll.sh
+tty6::respawn:/etc/init.d/updatedb.sh
+
