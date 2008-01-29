@@ -1,3 +1,4 @@
+#!/usr/bin/php-cli
 <?php
 /**
  *

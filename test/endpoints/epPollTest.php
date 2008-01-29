@@ -39,7 +39,7 @@ if (!defined('PHPUnit_MAIN_METHOD')) {
 
 require_once 'PHPUnit/Framework.php';
 
-require_once dirname(__FILE__).'/../../endpoints/epPoll.php';
+require_once dirname(__FILE__).'/../../endpoints/lib/epPoll.php';
 require_once dirname(__FILE__).'/../../../HUGnetLib/hugnet.inc.php';
 
 /**

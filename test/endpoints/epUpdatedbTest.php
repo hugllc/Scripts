@@ -39,7 +39,7 @@ if (!defined('PHPUnit_MAIN_METHOD')) {
 
 require_once 'PHPUnit/Framework.php';
 
-require_once dirname(__FILE__).'/../../endpoints/epUpdatedb.php';
+require_once dirname(__FILE__).'/../../endpoints/lib/epUpdatedb.php';
 
 /**
  * Test class for epUpdatedb.
