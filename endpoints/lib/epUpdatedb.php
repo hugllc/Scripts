@@ -122,7 +122,7 @@ class epUpdatedb
      *
      * @param array $serv The database server info.  Should contain keys 'dsn', 'User', and 'Password'
      *
-     * @return void
+     * @return null
      */ 
     function main($serv) 
     {

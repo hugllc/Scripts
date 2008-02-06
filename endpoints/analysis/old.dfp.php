@@ -41,7 +41,7 @@
  * @param array &$stuff Here
  * @param array &$dev   The devInfo array for the device
  *
- * @return void
+ * @return null
  */
 function analysis_unassigned(&$stuff, &$dev) 
 {

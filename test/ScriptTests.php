@@ -77,7 +77,7 @@ class ScriptTests
     }
 }
  
-if (PHPUNIT_MAIN_METHOD == 'ScriptTests::main') {
+if (PHPUnit_MAIN_METHOD == 'ScriptTests::main') {
     ScriptTests::main();
 }
 ?>

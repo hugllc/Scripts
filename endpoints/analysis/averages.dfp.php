@@ -37,7 +37,7 @@
  * @param array &$stuff  Here
  * @param array &$device The devInfo array for the device
  *
- * @return void
+ * @return null
  */
 function analysis_averages(&$stuff, &$device) 
 {

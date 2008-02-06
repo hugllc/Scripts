@@ -423,7 +423,7 @@ class epPoll
      *
      * @param array $pkt The packet array
      *
-     * @return void
+     * @return null
      */
     protected function checkPacketToMe($pkt)
     {
@@ -455,7 +455,7 @@ class epPoll
      *
      * @param array $pkt The packet array
      *
-     * @return void
+     * @return null
      */
     protected function checkPacketUnsolicited($pkt)
     {
@@ -494,7 +494,7 @@ class epPoll
     /**
      * This function polls the endpoints
      *
-     * @return void
+     * @return null
      */
     function poll() 
     {
