@@ -130,6 +130,6 @@ if ($phpunit) {
     print "PHPUnit installed and ready.\n";
 }
 
-$endpoint = new driver($db, $conf['hugnetDb']);
+$endpoint = new driver($db);
 $endpoint->packet->verbose = $verbose;
 ?>

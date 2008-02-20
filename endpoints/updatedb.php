@@ -42,7 +42,7 @@ print 'updatedb.php Version '.UPDATEDB_VERSION."\n";
 print "Starting...\n";
 
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once HUGNET_INCLUDE_PATH.'/database/process.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Process.php';
 require_once "lib/epUpdatedb.php";
 
 //    if ($testMode) $endpoint->db->debug = true;

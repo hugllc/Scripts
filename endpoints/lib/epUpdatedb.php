@@ -32,11 +32,11 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 /** For retrieving packet logs */
-require_once(HUGNET_INCLUDE_PATH.'/database/plog.php');
+require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
 /** For process information and control */
-require_once(HUGNET_INCLUDE_PATH.'/database/process.php');
+require_once(HUGNET_INCLUDE_PATH.'/database/Process.php');
 /** For process statistics */
-require_once(HUGNET_INCLUDE_PATH.'/database/procstats.php');
+require_once(HUGNET_INCLUDE_PATH.'/database/ProcStats.php');
 
 /**
  * This class interacts with the final database.  It has the following functions:

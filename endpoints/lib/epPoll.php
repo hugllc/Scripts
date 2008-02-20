@@ -32,11 +32,11 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 /** Packet log include stuff */
-require_once HUGNET_INCLUDE_PATH.'/database/plog.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Plog.php';
 /** Packet log process stuff */
-require_once HUGNET_INCLUDE_PATH.'/database/process.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Process.php';
 /** Packet log stats stuff */
-require_once HUGNET_INCLUDE_PATH.'/database/procstats.php';
+require_once HUGNET_INCLUDE_PATH.'/database/ProcStats.php';
 
 /**
  * Class for polling endpoints
