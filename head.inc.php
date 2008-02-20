@@ -48,13 +48,13 @@ require_once HUGNET_INCLUDE_PATH."/database/process.php";
 
 $GatewayKey = $hugnet_config["script_gatewaykey"];
 if (is_null($db)) {    
-    $db = DbBase::createPDO($hugnet_config['servers']);
+    $db = HUGnetDB::createPDO($hugnet_config['servers']);
     /*
     foreach ($hugnet_prefs['servers'] as $serv) {
         //        $dsn = $serv['Type']."://".$serv["User"].":".rawurlencode($serv["Password"])."@".$serv["Host"]."/".HUGNET_DATABASE;
         //var_dump($dsn);
         $serv["dsn"] = $serv["Type"].":host=".$serv["Host"].";dbname=".HUGNET_DATABASE;
-        $db = DbBase::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
+        $db = HUGnetDB::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
         if (is_object($db)) break;
     }
     */

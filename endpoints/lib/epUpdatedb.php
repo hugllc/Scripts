@@ -83,7 +83,7 @@ class epUpdatedb
         $this->plogRemote = new plog($this->db);
         $this->plogRemote->verbose($this->verbose);
         
-        $this->psend = new DbBase($this->db, "PacketSend");
+        $this->psend = new HUGnetDB($this->db, "PacketSend");
         $this->psend->verbose($this->verbose);
 //        $this->psend->createPacketLog("PacketSend");
         $this->uproc = new process();
@@ -113,7 +113,7 @@ class epUpdatedb
         $this->firmware->createCache(HUGNET_LOCAL_DATABASE);
         $this->firmware->getAll();
 
-        $this->rawHistory = new DbBase($this->db, "history_raw", "HistoryRawKey", $this->verbose);
+        $this->rawHistory = new HUGnetDB($this->db, "history_raw", "HistoryRawKey", $this->verbose);
 
      }
 
@@ -129,10 +129,10 @@ class epUpdatedb
         $this->uproc->register();
         
         while(1) {
-            if ($this->errors[DBBASE_META_ERROR_SERVER_GONE] > 0) {
+            if ($this->errors[HUGnetDB_META_ERROR_SERVER_GONE] > 0) {
                 do {
                     print "Trying to reconnect to the database ";
-                    $this->db = DbBase::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
+                    $this->db = HUGnetDB::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
                     if ($this->db === false) {
                         $this->updatedbError($emptyVar, "Failed", "dbReconnectFail");
                         print " - Sleeping";
@@ -143,7 +143,7 @@ class epUpdatedb
                     }
                     print "\n";
                 } while ($this->db === false);
-                $this->errors[DBBASE_META_ERROR_SERVER_GONE] = 0;
+                $this->errors[HUGnetDB_META_ERROR_SERVER_GONE] = 0;
             }
     
             $this->getAllDevices();
@@ -515,7 +515,7 @@ class epUpdatedb
     function updatedbError(&$packet, $msg, $stat) 
     {
         $this->errors[$this->rawHistory->metaError]++;
-        if ($this->rawHistory->metaError == DBBASE_META_ERROR_DUPLICATE) {
+        if ($this->rawHistory->metaError == HUGnetDB_META_ERROR_DUPLICATE) {
             print " Duplicate ".$packet['Date']." ";
             $packet["remove"] = true;                                            
         } else {
