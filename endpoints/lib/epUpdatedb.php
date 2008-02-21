@@ -70,50 +70,56 @@ class epUpdatedb
      *
      * @param object $endpoint an endpoint object
       */
-    function __construct(&$endpoint, $verbose=false) {
-        $this->verbose = (bool) $verbose;
-        $this->db = &$endpoint->db;
+    function __construct(&$endpoint, $config = array()) {
+        $this->verbose = (int) $config["verbose"];
         $this->endpoint = &$endpoint;
-        print "Creating plog...\n";
-        $this->plog = new plog();
-        $this->plog->verbose($this->verbose);
-        $this->plog->createTable();
+        $this->config = $config;
 
         print "Creating remote plog...\n";
-        $this->plogRemote = new plog($this->db);
-        $this->plogRemote->verbose($this->verbose);
+        unset($config["table"]);
+        $this->plogRemote =& HUGnetDB::getInstance("Plog", $config); // new plog($this->db);
         
-        $this->psend = new HUGnetDB($this->db, "PacketSend");
-        $this->psend->verbose($this->verbose);
+        $config["table"] = "PacketSend";
+        $this->psend =& HUGnetDB::getInstance("Plog", $config); // new HUGnetDB($this->db, "PacketSend");
 //        $this->psend->createPacketLog("PacketSend");
-        $this->uproc = new process();
-        $this->uproc->createTable();
-        
-        $this->stats = new ProcStats();
-        $this->stats->createTable();
-        $this->stats->clearStats();
-        $this->stats->setStat('start', time());
-        $this->stats->setStat('PID', $this->uproc->me['PID']);
-
         print("Creating Gateway Cache...\n");
-        $this->gateway = new gateway($this->db);
-        $this->gateway->verbose($this->verbose); 
+        unset($config["table"]);
+        $this->gateway =& HUGnetDB::getInstance("Gateway", $config); // new gateway($this->db);
         $this->gateway->createCache(HUGNET_LOCAL_DATABASE);
         $this->gateway->getAll();
 
         print("Creating Device Cache...\n");
-        $this->device = new device($this->db);
-        $this->device->verbose($this->verbose); 
+        unset($config["table"]);
+        $this->device =& HUGnetDB::getInstance("Device", $config); // new device($this->db);
         $this->device->createCache(HUGNET_LOCAL_DATABASE);
         $this->device->getAll();
 
         print("Creating Firmware Cache...\n");
-        $this->firmware = new firmware($this->db);
-        $this->firmware->verbose($this->verbose); 
+        unset($config["table"]);
+        $this->firmware =& HUGnetDB::getInstance("Firmware", $config); // new firmware($this->db);
         $this->firmware->createCache(HUGNET_LOCAL_DATABASE);
         $this->firmware->getAll();
 
-        $this->rawHistory = new HUGnetDB($this->db, "history_raw", "HistoryRawKey", $this->verbose);
+        unset($config["table"]);
+        $this->rawHistory = & HUGnetDB::getInstance("RawHistory", $config); //new HUGnetDB($this->db, "history_raw", "HistoryRawKey", $this->verbose);
+
+        // This is the local stuff.  
+        $config["driver"] = "sqlite";
+        unset($config["table"]);
+        print "Creating local plog...\n";
+        $this->plog =& HUGnetDB::getInstance("Plog", $config); // new plog();
+        $this->plog->createTable();
+
+        unset($config["table"]);
+        $this->uproc =& HUGnetDB::getInstance("Process", $config); //new process();
+        $this->uproc->createTable();
+        
+        unset($config["table"]);
+        $this->stats =& HUGnetDB::getInstance("ProcStats", $config); //new ProcStats();
+        $this->stats->createTable();
+        $this->stats->clearStats();
+        $this->stats->setStat('start', time());
+        $this->stats->setStat('PID', $this->uproc->me['PID']);
 
      }
 

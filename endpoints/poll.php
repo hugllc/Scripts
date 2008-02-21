@@ -40,14 +40,12 @@ define("POLL_SVN", '$Id$');
 $GatewayKey = false;
 $testMode = false;
 
-$db = false;
+$database_driver = "sqlite";
 
 require_once(dirname(__FILE__).'/../head.inc.php');
 require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
 require_once(HUGNET_INCLUDE_PATH.'/database/Process.php');
 require_once('lib/epPoll.php');
-
-$db = HUGNET_LOCAL_DATABASE;
 
 print 'poll.php Version '.POLL_VERSION.'  '.POLL_SVN."\n";
 print "Starting...\n";
@@ -65,7 +63,7 @@ $gw = array(
 );
 print "Using Gateway ".$gw["GatewayIP"].":".$gw["GatewayPort"]."\n";
 
-$poll = new epPoll($endpoint, $gw, $verbose, $testMode);
+$poll = new epPoll($endpoint, $hugnet_config, $gw);
 $poll->uproc->register();
 
 $poll->main();

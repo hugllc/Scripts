@@ -42,24 +42,14 @@ if (!@include_once '/etc/hugnet/config.inc.php') {
         die();
     }
 }
-require_once "hugnet.inc.php";
+if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
+    include_once "/home/hugnet/HUGnetLib/hugnet.inc.php";
+} else {
+    include_once "hugnet.inc.php";
+}
 require_once HUGNET_INCLUDE_PATH.'/lib/plugins.inc.php';
-require_once HUGNET_INCLUDE_PATH."/database/process.php";
 
 $GatewayKey = $hugnet_config["script_gatewaykey"];
-if (is_null($db)) {    
-    $db = HUGnetDB::createPDO($hugnet_config['servers']);
-    /*
-    foreach ($hugnet_prefs['servers'] as $serv) {
-        //        $dsn = $serv['Type']."://".$serv["User"].":".rawurlencode($serv["Password"])."@".$serv["Host"]."/".HUGNET_DATABASE;
-        //var_dump($dsn);
-        $serv["dsn"] = $serv["Type"].":host=".$serv["Host"].";dbname=".HUGNET_DATABASE;
-        $db = HUGnetDB::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
-        if (is_object($db)) break;
-    }
-    */
-    //if (!is_object($db)) die("Database connection not available.\n");
-}    
 
 if (!isset($GatewayIP)) $GatewayIP = "127.0.0.1";
 if (!isset($GatewayPort)) $GatewayPort = 2000;
@@ -110,13 +100,13 @@ for ($i = 1; $i < count($argv); $i++) {
         break;
     // Packet Serial Number to use
     case "-t":
-        $testMode = true;
+        $hugnet_config["test"] = true;
         print "Test Mode Enabled\n";
         break;
 
     // Packet Serial Number to use
     case "-v":
-        $verbose++;
+        $hugnet_config["verbose"]++;
         print "Verbose Mode Enabled\n";
         break;
 
@@ -130,6 +120,6 @@ if ($phpunit) {
     print "PHPUnit installed and ready.\n";
 }
 
-$endpoint = new driver($db);
-$endpoint->packet->verbose = $verbose;
+if (isset($database_driver)) $hugnet_config["driver"] = $database_driver;
+$endpoint = new driver($hugnet_config);
 ?>

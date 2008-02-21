@@ -77,50 +77,47 @@ class epPoll
     /**
      *
      */    
-    function __construct(&$endpoint, $gateway=null, $verbose=false, $test=false) 
+    function __construct(&$endpoint, $config = array(), $gateway = null) 
     {
-        $this->uproc = new process();
+        unset($config["table"]);
+        $this->uproc =& HUGnetDB::getInstance("Process", $config); //new process();
         $this->uproc->createTable();
         
-        $this->stats = new ProcStats();
+        unset($config["table"]);
+        $this->stats =& HUGnetDB::getInstance("ProcStats", $config); //new process(); new ProcStats();
         $this->stats->createTable();
         $this->stats->clearStats();        
         $this->stats->setStat('start', time());
         $this->stats->setStat('PID', $this->uproc->me['PID']);
 
 
-        $this->test = (bool) $test;
-        $this->verbose = (bool) $verbose;
+        $this->test = (bool) $config["test"];
+        $this->verbose = (bool) $config["verbose"];
         $this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
         $this->endpoint = &$endpoint;
         $this->endpoint->packet->getAll(true);
-        do {
-            $this->plog = new plog();
-            $this->plog->createTable();
-            if ($this->plog->criticalError !== false) {
-                $this->criticalFailure($this->plog->criticalError);
-                print "Local Database not available.  Waiting 5 minutes\n";
-                sleep(300);
-            }
-        } while ($this->plog->criticalError !== false);
 
-        $d = null;
-        $this->debugplog = new plog($db, "DebugPacketLog");
-        $this->debugplog->createTable();
-        
-//        $this->plog->createPacketLog();
-        $file = HUGNET_LOCAL_DATABASE;
-        $this->psend = new plog($file, "PacketSend");
-        $this->psend->createTable("PacketSend");
-        $this->psend->verbose($this->verbose);
-        $this->packet = &$this->endpoint->packet;
-        $this->setPriority();
-        $this->device = new device($file);
-        $this->device->verbose($this->verbose);
+        unset($config["table"]);
+        $this->plog = & HUGnetDB::getInstance("Plog", $config); //new plog();
+        $this->plog->createTable();
+
+        unset($config["table"]);
+        $this->device =& HUGnetDB::getInstance("Device", $config); // new device($file);
         $this->lastContactTime = time();
         $this->lastContactAttempt = time();
-        $this->gateway = new gateway($file);
-        $this->gateway->verbose($this->verbose);
+        $this->gateway =& HUGnetDB::getInstance("Gateway", $config); // new gateway($file);
+
+
+        $config["table"] = "DebugPacketLog";
+        $this->debugplog =& HUGnetDB::getInstance("Plog", $config); //new process(); = new plog($db, "DebugPacketLog");
+        $this->debugplog->createTable();
+        
+        $config["table"] = "PacketSend";
+        $this->psend =& HUGnetDB::getInstance("Plog", $config); // new plog($file, "PacketSend");
+        $this->psend->createTable("PacketSend");
+        $this->packet = &$this->endpoint->packet;
+        $this->setPriority();
+
 
         if (!is_null($gateway)) {
             $this->forceGateways($gateway);
