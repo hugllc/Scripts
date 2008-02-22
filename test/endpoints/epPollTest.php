@@ -99,8 +99,7 @@ class epPollTest extends PHPUnit_Framework_TestCase
      */
     public function testSetPriority() 
     {
-        $d = new driver();
-        $o = new epPoll($d);
+        $o = new epPoll($this->config);
         // Remove the following lines when you implement this test.
         $this->markTestIncomplete('This test has not been implemented yet.');
     }
