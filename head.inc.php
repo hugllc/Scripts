@@ -120,6 +120,4 @@ if ($phpunit) {
     print "PHPUnit installed and ready.\n";
 }
 
-if (isset($database_driver)) $hugnet_config["driver"] = $database_driver;
-$endpoint = new driver($hugnet_config);
 ?>

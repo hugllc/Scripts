@@ -55,15 +55,18 @@ define("CONTROLLER_CHECK", 10);
 if (empty($GatewayKey)) die("You must supply a gateway key\n");
 print "Using GatewayKey ".$GatewayKey."\n";
 
-$gw = array(
+$hugnet_config["gateway"] = array(
     'GatewayIP' => $GatewayIP,
     'GatewayPort' => $GatewayPort,
     'GatewayName' => $GatewayIP,
     'GatewayKey' => $GatewayKey,
 );
-print "Using Gateway ".$gw["GatewayIP"].":".$gw["GatewayPort"]."\n";
+// Make sure we only go with the sqlite driver.
+$hugnet_config["driver"] = "sqlite";
 
-$poll = new epPoll($endpoint, $hugnet_config, $gw);
+print "Using Gateway ".$hugnet_config["gateway"]["GatewayIP"].":".$hugnet_config["gateway"]["GatewayPort"]."\n";
+
+$poll = new epPoll($hugnet_config);
 $poll->uproc->register();
 
 $poll->main();

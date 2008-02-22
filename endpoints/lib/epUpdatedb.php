@@ -70,9 +70,9 @@ class epUpdatedb
      *
      * @param object $endpoint an endpoint object
       */
-    function __construct(&$endpoint, $config = array()) {
+    function __construct($config = array()) {
         $this->verbose = (int) $config["verbose"];
-        $this->endpoint = &$endpoint;
+        $this->endpoint =& HUGnetDriver::getInstance($config);
         $this->config = $config;
 
         print "Creating remote plog...\n";

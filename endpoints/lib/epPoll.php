@@ -77,7 +77,7 @@ class epPoll
     /**
      *
      */    
-    function __construct(&$endpoint, $config = array(), $gateway = null) 
+    function __construct($config = array()) 
     {
         unset($config["table"]);
         $this->uproc =& HUGnetDB::getInstance("Process", $config); //new process();
@@ -94,7 +94,7 @@ class epPoll
         $this->test = (bool) $config["test"];
         $this->verbose = (bool) $config["verbose"];
         $this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
-        $this->endpoint = &$endpoint;
+        $this->endpoint =& HUGnetDriver::getInstance($config);
         $this->endpoint->packet->getAll(true);
 
         unset($config["table"]);
@@ -119,8 +119,8 @@ class epPoll
         $this->setPriority();
 
 
-        if (!is_null($gateway)) {
-            $this->forceGateways($gateway);
+        if (!is_null($config["gateway"])) {
+            $this->forceGateways($config["gateway"]);
         }
 
         $this->setupMyInfo();

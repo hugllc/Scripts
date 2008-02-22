@@ -54,7 +54,7 @@ require_once "lib/epUpdatedb.php";
 
 $refreshdev = true;
 
-$updatedb = new epUpdatedb($endpoint, $hugnet_config);
+$updatedb = new epUpdatedb($hugnet_config);
 
 $updatedb->main($serv);
 
