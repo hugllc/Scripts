@@ -52,20 +52,26 @@ $rCount = 2;
                 break;
         }
     }
-
+$endpoint =& HUGnetDriver::getInstance($hugnet_config);
 
 $Info = $endpoint->getDevice($DeviceID, "ID");
+$history =& $endpoint->getHistoryInstance(array("Type" => "raw"));
 
-$query = "SELECT * FROM ".$endpoint->raw_history_table." WHERE ";
-$query .= " DeviceKey=".$Info["DeviceKey"];
-if (!is_null($pktCommand)) $query .= " AND sendCommand='".$pktCommand."' ";
-if (!is_null($forceStart)) $query .= " AND Date < '".$forceStart."' ";
+$query .= " DeviceKey = ?";
+$data[] = $Info["DeviceKey"];
+if (!is_null($pktCommand)) {
+    $query .= " AND sendCommand= ? ";
+    $data[] = $pktCommand;
+}
+if (!is_null($forceStart)) {
+     $query .= " AND Date < ? ";
+     $data[] = $forceStart;
+}
 $query .= " AND Status='GOOD' ";
-$query .= " ORDER BY Date DESC ";
-$query .= " LIMIT 0, ".$rCount;
+$orderby = " ORDER BY Date DESC ";
+var_dump($query);
+$rHist = $history->getWhere($query, $data, $rCount, 0, $orderby);
 
-$rHist = $endpoint->db->getArray($query);
-$rHist = array_reverse($rHist);
 
 $packet = $endpoint->InterpSensors($Info, $rHist);
 $endpoint->modifyUnits($packet, $Info, 2, $Info['params']['dType'], $Info['params']['Units']);
