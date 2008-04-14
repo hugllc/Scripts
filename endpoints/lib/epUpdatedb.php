@@ -104,7 +104,7 @@ class epUpdatedb
         $this->rawHistory = & HUGnetDB::getInstance("RawHistory", $config); //new HUGnetDB($this->db, "history_raw", "HistoryRawKey", $this->verbose);
 
         // This is the local stuff.  
-        $config["driver"] = "sqlite";
+        unset($config["servers"]);
         unset($config["table"]);
         print "Creating local plog...\n";
         $this->plog =& HUGnetDB::getInstance("Plog", $config); // new plog();
