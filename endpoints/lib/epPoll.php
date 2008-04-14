@@ -79,6 +79,7 @@ class epPoll
      */    
     function __construct($config = array()) 
     {
+        unset($config["servers"]);
         unset($config["table"]);
         $this->uproc =& HUGnetDB::getInstance("Process", $config); //new process();
         $this->uproc->createTable();
