@@ -150,10 +150,13 @@ class epUpdatedb
                     print "\n";
                 } while ($this->db === false);
                 $this->errors[HUGnetDB_META_ERROR_SERVER_GONE] = 0;
+            } else if ($this->errors["updatedb"] > 10) {
+                die ("Too many errors");
             }
     
             $this->getAllDevices();
-    
+            if (count($this->ep) == 0) die("No devices found");
+            
             if ($this->verbose) print "[".$this->uproc->me["PID"]."] Starting database update...\n";
     //        $this->uproc->FastCheckin();
     
@@ -450,9 +453,11 @@ class epUpdatedb
         if ($ret) {
             $info = array();
             print " - raw history ";
+            $this->errors["updatedb"] = 0;
             return true;
         } else {
             $this->updatedbError($packet, "Raw History Failed", "Poll Failed");
+            $this->errors["updatedb"]++;
             return false;
         }
         
