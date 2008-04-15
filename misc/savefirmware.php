@@ -33,10 +33,15 @@
  *
  */
 
+require_once(dirname(__FILE__).'/../head.inc.php');
+define("SAVEFIRMWARE_SVN", '$Id$');
+
+print 'savefirmware.php Version '.SAVEFIRMWARE_SVN."\n";
+print "Starting...\n";
+
 if (empty($argv[1]) || !file_exists($argv[2]) || !file_exists($argv[3])) {
     die("Usage: ".$argv[0]." <version> <Code File> <Data File> <file Type> <firmwarePart> <hardwarePart> <status> <cvstag></cvstag>\r\n");    
 }
-require_once(dirname(__FILE__).'/../head.inc.php');
 require_once("firmware.inc.php");
 
 $firmware = new firmware($prefs['servers'], HUGNET_DATABASE, array("dbWrite" => true));

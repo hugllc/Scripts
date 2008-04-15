@@ -33,7 +33,6 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-define("POLL_VERSION", "0.3.0");
 define("POLL_PARTNUMBER", "0039-26-01-P");  //0039-26-01-P
 define("POLL_SVN", '$Id$');
 
@@ -47,7 +46,7 @@ require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
 require_once(HUGNET_INCLUDE_PATH.'/database/Process.php');
 require_once('lib/epPoll.php');
 
-print 'poll.php Version '.POLL_VERSION.'  '.POLL_SVN."\n";
+print 'poll.php Version '.POLL_SVN."\n";
 print "Starting...\n";
 
 define("CONTROLLER_CHECK", 10);

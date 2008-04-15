@@ -32,13 +32,11 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-define("UPDATEDB_VERSION", "0.3.0");
 define("UPDATEDB_PARTNUMBER", "0039-26-02-P");  //0039-26-01-P
 define("UPDATEDB_SVN", '$Id$');
 
 
-print '$Id$'."\n";
-print 'updatedb.php Version '.UPDATEDB_VERSION."\n";
+print 'updatedb.php Version '.UPDATEDB_SVN."\n";
 print "Starting...\n";
 
 require_once dirname(__FILE__).'/../head.inc.php';

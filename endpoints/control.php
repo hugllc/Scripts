@@ -33,7 +33,6 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-define("CONTROL_VERSION", "0.0.1");
 define("CONTROL_PARTNUMBER", "0039260450");  //0039-26-01-P
 define("CONTROL_SVN", '$Id$');
 
@@ -44,7 +43,7 @@ require_once(dirname(__FILE__).'/../head.inc.php');
 require_once(HUGNET_INCLUDE_PATH.'/plog.inc.php');
 require_once(HUGNET_INCLUDE_PATH.'/process.inc.php');
 
-print 'control.php Version '.CONTROL_VERSION.'  $Id$'."\n";
+print 'control.php Version '.CONTROL_SVN."\n";
 print "Starting...\n";
 
 while (1) {

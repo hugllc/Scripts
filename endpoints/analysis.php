@@ -33,11 +33,10 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-define("ANALYSIS_VERSION", "0.2.1");
-define("ANALYSIS_PARTNUMBER", "0039260350");  //0039-26-01-P
+define("ANALYSIS_PARTNUMBER", "0039-26-03-P");  //0039-26-01-P
+define("ANALYSIS_SVN", '$Id$');
 
-print '$Id$'."\n";
-print 'analysis.php Version '.ANALYSIS_VERSION."\n";
+print 'analysis.php Version '.ANALYSIS_SVN."\n";
 print "Starting...\n";
 
 

@@ -33,6 +33,13 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 require_once dirname(__FILE__).'/../head.inc.php';
+define("ALARM_PARTNUMBER", "0039-26-03-P");  //0039-26-01-P
+define("ALARM_SVN", '$Id$');
+
+print 'alarm.php Version '.ALARM_SVN."\n";
+print "Starting...\n";
+
+
 
 $uproc = new process($prefs['servers'], HUGNET_DATABASE, "NORMAL", basename(__FILE__));
 $uproc->Register();

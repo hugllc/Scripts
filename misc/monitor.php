@@ -32,11 +32,11 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-print '$Id$'."\n";
-print "Starting...\n";
-
-
 require_once(dirname(__FILE__).'/../head.inc.php');
+define("MONITOR_SVN", '$Id$');
+
+print 'monitor.php Version '.MONITOR_SVN."\n";
+print "Starting...\n";
 
 $prefs =& $conf;
 

@@ -33,6 +33,10 @@
  *
  */
 require_once(dirname(__FILE__).'/../head.inc.php');
+define("PROGRAMEP_SVN", '$Id$');
+
+print 'programEP.php Version '.PROGRAMEP_SVN."\n";
+print "Starting...\n";
 
 require_once('firmware.inc.php');
 

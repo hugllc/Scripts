@@ -33,7 +33,13 @@
  *
  */
 
- require_once(dirname(__FILE__).'/../head.inc.php');
+require_once(dirname(__FILE__).'/../head.inc.php');
+define("LOADPROG_SVN", '$Id$');
+
+print 'loadprog.php Version '.LOADPROG_SVN."\n";
+print "Starting...\n";
+
+
 for ($i = 0; $i < count($newArgv); $i++) {
     switch($newArgv[$i]) {
         // Gateway IP address

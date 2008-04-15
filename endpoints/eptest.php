@@ -34,11 +34,11 @@
  */
 
 $GatewayKey=3;
-define("EPTEST_VERSION", "0.0.7");
-define("EPTEST_PARTNUMBER", "0039260450");  //0039-26-04-P
+define("EPTEST_PARTNUMBER", "0039-26-04-P");  //0039-26-04-P
+define("EPTEST_SVN", '$Id$');
 
-print '$Id$'."\n";
-print 'eptest.php Version '.EPTEST_VERSION."\n";
+
+print 'eptest.php Version '.EPTEST_SVN."\n";
 print "Starting...\n";
 
 require_once(dirname(__FILE__).'/../head.inc.php');

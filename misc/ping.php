@@ -31,8 +31,11 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-require("EPacket.php");
 require "../head.inc.php";
+define("PING_SVN", '$Id$');
+
+print 'ping.php Version '.PING_SVN."\n";
+print "Starting...\n";
 
 $Info["DeviceID"] = $DeviceID;
 $Info["GatewayKey"] = 1;

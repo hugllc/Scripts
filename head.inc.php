@@ -32,6 +32,8 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 define('HUGNET_FS_DIR', dirname(__FILE__));
+define('SCRIPTS_VERSION', "0.5.0");
+define("SCRIPTS_PARTNUMBER", "0039-26-00-P");  //0039-26-00-P
 
 if (!@include_once '/etc/hugnet/config.inc.php') {
     if (!@include_once HUGNET_FS_DIR.'/config/config.inc.php') {
@@ -119,5 +121,6 @@ for ($i = 1; $i < count($argv); $i++) {
 if ($phpunit) {
     print "PHPUnit installed and ready.\n";
 }
+print 'HUGnet Scripts Version '.SCRIPTS_VERSION."\n";
 
 ?>

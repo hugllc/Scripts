@@ -31,11 +31,13 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-print '$Id$'."\n";
-print "Starting...\n";
-
-
+/** Get the main stuff */
 require_once(dirname(__FILE__).'/../head.inc.php');
+
+define("LOCCONVERT_SVN", '$Id$');
+
+print 'locConvert.php Version '.LOCCONVERT_SVN."\n";
+print "Starting...\n";
 
 $query = "select * from location";
 $oldLoc = array();
