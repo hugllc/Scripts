@@ -36,10 +36,10 @@ define("UPDATEDB_PARTNUMBER", "0039-26-02-P");  //0039-26-01-P
 define("UPDATEDB_SVN", '$Id$');
 
 
+require_once dirname(__FILE__).'/../head.inc.php';
 print 'updatedb.php Version '.UPDATEDB_SVN."\n";
 print "Starting...\n";
 
-require_once dirname(__FILE__).'/../head.inc.php';
 require_once HUGNET_INCLUDE_PATH.'/database/Process.php';
 require_once "lib/epUpdatedb.php";
 
