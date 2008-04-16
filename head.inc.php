@@ -122,5 +122,6 @@ if ($phpunit) {
     print "PHPUnit installed and ready.\n";
 }
 print 'HUGnet Scripts Version '.SCRIPTS_VERSION."\n";
+print 'HUGnet Lib Version '.HUGNET_LIB_VERSION."\n";
 
 ?>
