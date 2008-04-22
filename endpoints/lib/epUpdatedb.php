@@ -423,14 +423,13 @@ class epUpdatedb
             "LastPoll" => $packet["Date"],
             "GatewayKey" => $packet['GatewayKey'],
         );
-
         $hist = $this->endpoint->saveSensorData($packet, array($packet));
         if ($hist) {
             $set["LastHistory"] = $packet["Date"];
             print " - ".$packet["Driver"]." history ";
         } else {
             print " - History Failed";
-//            if ($testMode) var_dump($this->);
+            return false;
         }
         $ret = $this->endpoint->device->update($set);
         if ($ret === true) {
