@@ -39,19 +39,19 @@ if (empty($argv[1])) {
 }
 
 $rCount = 2;
-    for ($i = 0; $i < count($newArgv); $i++) {
-        switch($newArgv[$i]) {
-            // Gateway IP address
-            case "-D":
-                $i++;
-                $forceStart = $newArgv[$i];
-                break;
-            case "-C":
-                $i++;
-                $rCount = $newArgv[$i];
-                break;
-        }
+for ($i = 0; $i < count($newArgv); $i++) {
+    switch($newArgv[$i]) {
+        // Gateway IP address
+        case "-D":
+            $i++;
+            $forceStart = $newArgv[$i];
+            break;
+        case "-C":
+            $i++;
+            $rCount = $newArgv[$i];
+            break;
     }
+}
 $endpoint =& HUGnetDriver::getInstance($hugnet_config);
 
 $Info = $endpoint->getDevice($DeviceID, "ID");
@@ -75,5 +75,6 @@ $rHist = $history->getWhere($query, $data, $rCount, 0, $orderby);
 
 $packet = $endpoint->InterpSensors($Info, $rHist);
 $endpoint->modifyUnits($packet, $Info, 2, $Info['params']['dType'], $Info['params']['Units']);
+
 var_dump($packet);
 ?>
