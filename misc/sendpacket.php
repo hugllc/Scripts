@@ -34,6 +34,8 @@
  */
 $pktData = "";
 require_once(dirname(__FILE__).'/../head.inc.php');
+$endpoint =& HUGnetDriver::getInstance($hugnet_config);
+
 $endpoint->packet->SNCheck(false);
 
 if (empty($DeviceID)) {
