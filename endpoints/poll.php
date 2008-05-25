@@ -46,6 +46,12 @@ require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
 require_once(HUGNET_INCLUDE_PATH.'/database/Process.php');
 require_once('lib/epPoll.php');
 
+if (!(bool)$hugnet_config["poll_enable"]) {
+    print "Poll disabled... Sleeping\n";
+    sleep(60);
+    die();
+}
+
 print 'poll.php Version '.POLL_SVN."\n";
 print "Starting...\n";
 
