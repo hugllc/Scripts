@@ -44,17 +44,20 @@ if (!@include_once '/etc/hugnet/config.inc.php') {
         die();
     }
 }
+
 if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
     include_once "/home/hugnet/HUGnetLib/hugnet.inc.php";
 } else {
     include_once "hugnet.inc.php";
 }
+
 require_once HUGNET_INCLUDE_PATH.'/lib/plugins.inc.php';
 
 $GatewayKey = $hugnet_config["script_gatewaykey"];
 
-if (!isset($GatewayIP)) $GatewayIP = "127.0.0.1";
-if (!isset($GatewayPort)) $GatewayPort = 2000;
+if (!isset($GatewayIP)) $GatewayIP = (empty($hugnet_config["gatewayIP"])) ? "127.0.0.1" : $hugnet_config["gatewayIP"];
+if (!isset($GatewayPort)) $GatewayPort = (empty($hugnet_config["gatewayPort"])) ? "2000" : $hugnet_config["gatewayPort"];
+
 $newArgv = array();
 for ($i = 1; $i < count($argv); $i++) {
     switch($argv[$i]) {
