@@ -46,30 +46,21 @@ require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
 require_once(HUGNET_INCLUDE_PATH.'/database/Process.php');
 require_once('lib/endpoint.php');
 
-if (!(bool)$hugnet_config["poll_enable"]) {
-    print "Poll disabled... Sleeping\n";
-    sleep(60);
-    die();
-}
-
 print 'endpoint.php Version '.ENDPOINT_SVN."\n";
 print "Starting...\n";
-
-define("CONTROLLER_CHECK", 10);
 
 if (empty($GatewayKey)) die("You must supply a gateway key\n");
 print "Using GatewayKey ".$GatewayKey."\n";
 
-$hugnet_config["gateway"] = array(
-    'GatewayIP' => $GatewayIP,
-    'GatewayPort' => $GatewayPort,
-    'GatewayName' => $GatewayIP,
-    'GatewayKey' => $GatewayKey,
-);
+$hugnet_config['GatewayIP']   = $GatewayIP;
+$hugnet_config['GatewayPort'] = $GatewayPort;
+$hugnet_config['GatewayName'] = $GatewayIP;
+$hugnet_config['GatewayKey']  = $GatewayKey;
+
 // Make sure we only go with the sqlite driver.
 $hugnet_config["driver"] = "sqlite";
 
-print "Using Gateway ".$hugnet_config["gateway"]["GatewayIP"].":".$hugnet_config["gateway"]["GatewayPort"]."\n";
+print "Using hardware connection at ".$hugnet_config["GatewayIP"].":".$hugnet_config["GatewayPort"]."\n";
 
 $ep = new endpoint($hugnet_config);
 $ep->uproc->register();

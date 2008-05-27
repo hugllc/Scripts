@@ -32,46 +32,33 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
+/** HUGnet code */
 require_once(dirname(__FILE__).'/../head.inc.php');
+/** Packet log include stuff */
+require_once HUGNET_INCLUDE_PATH.'/database/Plog.php';
 define("MONITOR_SVN", '$Id$');
 
 print 'monitor.php Version '.MONITOR_SVN."\n";
 print "Starting...\n";
 
-$prefs =& $conf;
+// Make sure we only go with the sqlite driver.
+unset($hugnet_config["servers"]);
 
-if ($GatewayIP == false) {
-
-} else {
-    $gw = array(
-        "GatewayKey" => 0,
-        "GatewayIP" => $GatewayIP,
-        "GatewayName" => $GatewayIP,
-        "GatewayPort" => $GatewayPort,
-    );            
-}
-$ep = array();
-$getDevInfo = true;
-$minuteCounter = 0;
-$packets = array();
-
-$endpoint->packet->verbose = $verbose;    
-
-//Only try twice per server.
-$endpoint->socket->Retries = 2;
-$endpoint->socket->PacketTimeout = 4;
-
+$plog = new plog($hugnet_config);
+$last = "0000-00-00 00:00:00";
 print "Waiting for packets\r\n";
 while (1) {
 
-    $pkt = $endpoint->packet->monitor($gw);
-    if ($pkt !== false) {
-        print "From: ".$pkt['From'];
-        print " -> To: ".$pkt['To'];
+    $now = date("Y-m-d H:i:s");
+    $packets = $plog->getWhere("Date >= ? AND Date < ?", array($last, $now));
+    foreach ($packets as $pkt) {
+        print "From: ".$pkt['PacketFrom'];
+        print " -> To: ".$pkt['PacketTo'];
         print "  Command: ".$pkt['Command']."\r\n";
         if (!empty($pkt['RawData'])) print "Data: ".$pkt['RawData']."\r\n";
     }
-
+    $last = $now;
+    sleep(1);
 }    
 
 include_once("blanktail.inc.php");
