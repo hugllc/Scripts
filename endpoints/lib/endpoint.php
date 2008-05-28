@@ -262,7 +262,7 @@ class endpoint
 
             // Do some printing if we are not otherwise working
             if ($this->myInfo['doPoll'] !== true) $v = true;
-            if ($v) print "Got Pkt: F:".$pkt["From"]." - T:".$pkt["To"]." -".$pkt["Command"];
+            if ($v) print "Got Pkt:".$pkt["id"]." F:".$pkt["From"]." - T:".$pkt["To"]." C:".$pkt["Command"];
             if ($pkt['toMe']) {
                 if ($v) print " - To Me! ";
                 $this->checkPacketToMe($pkt);
@@ -305,75 +305,33 @@ class endpoint
         }
     
     }
-    /**
-     * Deals with unsolicited packets we get
-     *
-     * @param array $pkt The packet array
-     *
-     * @return null
-     */
-    protected function checkPacketUnsolicited($pkt)
-    {
-        if ($this->myInfo['doUnsolicited']) {
-            $this->stats->incStat("Unsolicited");
-            $Type = "UNSOLICITED";
-            switch(trim(strtoupper($pkt['Command']))) {
-                case PACKET_COMMAND_POWERUP:
-                case PACKET_COMMAND_RECONFIG:
-                    if (!$pkt['isGateway']) {
-                        $pkt['DeviceID'] = trim(strtoupper($pkt['From']));
-                        if (isset($this->ep[$pkt['DeviceID']])) {
-                                $this->_devInfo[$pkt['DeviceID']]["failures"] = 0;
-                                unset($this->_devInfo[$pkt['DeviceID']]['failedcCheck']);
-                                unset($this->_devInfo[$pkt['DeviceID']]['failedCheck']);
-                                unset($this->_devInfo[$pkt['DeviceID']]['nextCheck']);
-                                $this->getNextPoll($pkt['DeviceID']);                                        
-                                $pkt['DeviceKey'] = $this->ep[$pkt['DeviceID']]['DeviceKey'];
-                                $this->_devInfo[$pkt['DeviceID']]['GetConfig'] = true;
-                        } else {
-                            $this->ep[$pkt['From']] = $pkt;
-                            $this->ep[$pkt['From']]['DeviceID'] = $pkt['From'];
-                            $this->_devInfo[$pkt['From']]['GetConfig'] = true;
-                            $this->ep[$pkt['From']]['LastConfig'] = date("Y-m-d H:i:s", (time() - (86400*2)));
-                            $this->_devInfo[$pkt['From']]['LastConfig'] = date("Y-m-d H:i:s", (time() - (86400*2)));
-                        }
-                    }
-                    break;
-            }
-            $lpkt = plog::packetLogSetup($pkt, $this->gw[0], $Type);
-            $this->plog->add($lpkt);
-        }
-    
-    }
-
 
     function checkPacketQ() 
     {
         $now = date("Y-m-d H:i:s");
-        $packets = $this->plog->getWhere("Date >= ? AND Date < ? AND Type='OUTGOING'", array($this->last, $now));
+        $packets = $this->plog->getWhere("Type='OUTGOING'", array());
         foreach ($packets as $p) {
+            $from = $p["PacketFrom"];
             $pk = array(
                 'to' => $p['PacketTo'],
                 'command' => $p['sendCommand'],
                 'data' => $p['RawData'],
            );
-            print $p['PacketTo']." -> Sending user Packet -> ".$p['sendCommand']." -> ";
+            print "Sent Pkt:".$p["id"]." T:".$p['PacketTo']." C:".$p['sendCommand']."\n";
             $packet = $this->endpoint->packet->sendPacket($this->gw[0], array($pk));
             $this->stats->incStat("Sent User Packet");
             if (is_array($packet)) {
                 foreach ($packet as $pkt) {
                     $lpkt = plog::packetLogSetup($pkt, $p, "REPLY");
-                    $this->plog->add($lpkt);
+                    $lpkt["id"] = $p["id"];
+                    $this->plog->update($lpkt);
+                    print "Got Pkt:".$lpkt["id"]." F:".$lpkt["PacketFrom"]." T:".$lpkt["PacketTo"]. " C:".$lpkt["Command"]." RTime:".$lpkt["ReplyTime"]."\n";
                 }
-                print "Success";
                 $this->stats->incStat("Sent Packet Success");
-            } else {
-                print "Failed";
             }
-            $this->psend->remove($p);
-            print "\n";
-            $this->last = $now;
+            if (empty($packet)) $this->plog->remove($lpkt["id"]);
         }
+        $this->last = $now;
         return (bool) count($packets);
     }
 

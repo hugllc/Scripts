@@ -34,13 +34,11 @@
  */
 $pktData = "";
 require_once(dirname(__FILE__).'/../head.inc.php');
-$endpoint =& HUGnetDriver::getInstance($hugnet_config);
-
-$endpoint->packet->SNCheck(false);
 
 if (empty($DeviceID)) {
     die("DeviceID must be specified!\r\n");    
 }
+
 $pkt = array();
 $Info["DeviceID"] = $DeviceID;
 $pkt["To"] = strtoupper($DeviceID);
@@ -49,30 +47,21 @@ if (isset($pktCommand)) {
 } else {
     $pkt["Command"] = "02";
 }
-
 $pkt["Data"] = $pktData;
 
+print "Using GatewayKey ".$GatewayKey."\n";
 
-if (!empty($GatewayIP)) {
-    $Info["GatewayIP"] = $GatewayIP;
-} else {
-    $dev = $endpoint->getDevice($pkt["To"], "ID");
+unset($hugnet_config["servers"]);
+$hugnet_config['GatewayIP']   = $GatewayIP;
+$hugnet_config['GatewayPort'] = $GatewayPort;
+$hugnet_config['GatewayName'] = $GatewayIP;
+$hugnet_config['GatewayKey']  = $GatewayKey;
+$hugnet_config['socketType'] = "db";
+$hugnet_config['socketTable'] = "PacketLog";
+$hugnet_config['packetSNCheck'] = false;
 
-    if (is_array($dev["Gateway"])) {
-        $Info["GatewayIP"] = $dev["Gateway"]["GatewayIP"];
-        $Info["GatewayPort"] = $dev["Gateway"]["GatewayPort"];
-        $Info["GatewayKey"] = $dev['Gateway']["GatewayKey"];
-    } else {
-        $Info["GatewayIP"] = "127.0.0.1";
-    }
-}
+$endpoint =& HUGnetDriver::getInstance($hugnet_config);
 
-if (!isset($Info['GatewayPort'])) $Info['GatewayPort'] = $GatewayPort;
-
-if (!isset($Info['GatewayKey'])) $Info["GatewayKey"] = 1;
-$endpoint->packet->verbose = $verbose;
-if ($testMode); 
-$endpoint->packet->getAll(true);
 $pkt = $endpoint->packet->SendPacket($Info, $pkt);
 
 if (is_array($pkt)) {

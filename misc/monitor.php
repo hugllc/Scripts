@@ -50,7 +50,7 @@ print "Waiting for packets\r\n";
 while (1) {
 
     $now = date("Y-m-d H:i:s");
-    $packets = $plog->getWhere("Date >= ? AND Date < ?", array($last, $now));
+    $packets = $plog->getWhere("Date >= ? AND Date < ? AND Type <> 'OUTGOING'", array($last, $now));
     foreach ($packets as $pkt) {
         print "From: ".$pkt['PacketFrom'];
         print " -> To: ".$pkt['PacketTo'];
