@@ -229,23 +229,7 @@ class endpoint
     {
         return (time() + mt_rand(120, 420));
     }
-    
-    /**
-     * Returns random timeout
-     *
-     * @return int
-     */
-    function qPacket($gw, $to, $command, $data="", $timeout=0) 
-    {
-  
-        $pkt = $this->packet->buildPacket($to, $command, $data);
-        $pkt['Timeout'] = $timeout;
-        $pkt['gw'] = $gw;
-        $this->packetQ[] = $pkt;
-        return $ret;
-    }
-    
-
+        
     /**
      * Returns random timeout
      *
@@ -329,7 +313,7 @@ class endpoint
                 }
                 $this->stats->incStat("Sent Packet Success");
             }
-            if (empty($packet)) $this->plog->remove($lpkt["id"]);
+            if (empty($packet)) $this->plog->remove($p["id"]);
         }
         $this->last = $now;
         return (bool) count($packets);
