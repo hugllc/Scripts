@@ -31,6 +31,8 @@
  * @version    SVN: $Id: epPoll.php 1203 2008-04-14 21:17:46Z prices $    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
+/** This is our base class */
+require_once "endpointBase.php";
 /** Packet log include stuff */
 require_once HUGNET_INCLUDE_PATH.'/database/Plog.php';
 /** Packet log process stuff */
@@ -49,21 +51,15 @@ require_once HUGNET_INCLUDE_PATH.'/database/ProcStats.php';
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */ 
-class endpoint
+class endpoint extends endpointBase
 {
 
-    var $ep = array();
     var $lastminute = 0;
     
-    var $configInterval = 43200; //!< Number of seconds between config attempts.
-    var $packetQ = array();
-    var $gwTimeout = 120;    //!< Minutes. How long we keep a non responding gateway on our list.
     var $gwRemove = 600;
-    var $ccTimeout = 600;    //!< Minutes. How long we keep a non responding gateway on our list.
-    var $cutoffdays = 14;
     var $test = false;
-    var $failureLimit = 5;
-    var $critTime = 60;
+    
+    public $exit = false;
 
     /** List of gateways to check */
     public $gwCheck = array();
@@ -119,7 +115,7 @@ class endpoint
         $this->psend->createTable("PacketSend");
         $this->packet = &$this->endpoint->packet;
 
-        $this->setupMyInfo();
+        parent::__construct($config);
      }
     
     /**
@@ -127,12 +123,13 @@ class endpoint
      * 
      * @return none
      */    
-    function main($while=1) 
+    function main() 
     {
         $this->powerup();
         $this->packet->packetSetCallBack('checkPacket', $this);
     
-        do {
+        while ($GLOBALS["exit"] !== true) {
+            declare(ticks = 1);
             if ($lastminute != date("i")) {
                 print "Using: ".$this->myInfo['DeviceID']."\r\n";
                 $this->checkAllGW();
@@ -140,34 +137,13 @@ class endpoint
                 $this->stats->setStat("PacketSN", substr($this->DeviceID, 0, 6));
             }
             $lastminute = date("i");
+            if ($GLOBALS["exit"] == true) break;
             $packet = $this->checkPacketQ();
+            if ($GLOBALS["exit"] == true) break;
             if ($packet === false) $packet = $this->endpoint->packet->monitor($this->config, 1);
-
-        } while ($while);
+            if ($GLOBALS["exit"] == true) break;
+        }
     
-    }
-
-    /**
-     *  Sets everything up when we start
-     */
-    function powerup() 
-    {
-        // Send a powerup packet.
-        $pkt = array(
-            'to' => $this->endpoint->packet->unsolicitedID,
-            'command' => PACKET_COMMAND_POWERUP,
-        );
-        $this->endpoint->packet->sendPacket($this->config, array($pkt), false);
-    }
-
-    /**
-     * Returns random timeout
-     *
-     * @return int
-     */
-         function randomizegwTimeout() 
-    {
-        return (time() + mt_rand(120, 420));
     }
         
     /**
@@ -335,97 +311,6 @@ class endpoint
         if ($this->gw->replace($config)) print "Gateway ".$gw["DeviceID"]." config saved\n";
     }
 
-    /**
-     * This sets up my info so that I look like an endpoint.
-     *
-     * @return none
-     */
-    function setupMyInfo() 
-    {
-        $this->myInfo['DeviceID'] = $this->packet->SN;
-        $this->DeviceID = $this->myInfo['DeviceID'];
-        $this->myInfo['SerialNum'] = hexdec($this->packet->SN);
-
-        $this->myInfo['HWPartNum'] = ENDPOINT_PARTNUMBER;
-        $this->myInfo['FWPartNum'] = ENDPOINT_PARTNUMBER;
-        $this->myInfo['FWVersion'] = SCRIPTS_VERSION;    
-        $this->myInfo['GatewayKey'] = $this->config["GatewayKey"];
-
-        $this->myInfo['Job'] = e00392601::getJob($this->myInfo);
-
-        // I know this works on Linux
-        $Info =`/sbin/ifconfig|grep Bcast`;
-        $Info = explode("  ", $Info);
-        foreach ($Info as $key => $val) {
-            if (!empty($val)) {
-                $t = explode(":", $val);
-                $netInfo[trim($t[0])] = trim($t[1]);
-            }
-        }
-        $this->myInfo['IP'] = $netInfo["inet addr"];
-
-        $this->myInfo['Name'] = trim($this->uproc->me['Host']);
-        if (!empty($this->uproc->me['Domain'])) $this->myInfo['Name'] .= ".".trim($this->uproc->me['Domain']);
-
-
-    }
-    
-    /**
-     * Check packets to send out
-     *
-     * @param array $pkt The packet to interpret
-     *
-     * @return bool
-     */
-    function interpConfig($pkt) 
-    {
-        if (!is_array($pkt)) return;
-
-        $newConfig = $this->endpoint->InterpConfig($pkt);
-        if ($newConfig['isGateway']) {
-
-            $newConfig['RemoveTime'] = time() + $this->gwRemove;
-            $newConfig['ConfigExpire'] = $this->randomizegwTimeout();
-            $newConfig['RemoveTimeDate'] = date("Y-m-d H:i:s", $newConfig['RemoveTime']);
-            $newConfig['ConfigExpireDate'] = date("Y-m-d H:i:s", $newConfig['ConfigExpire']);
-            $send = array("FWVersion", "Priority", "myGatewayKey", "NodeName", "NodeIP",
-                          "doPoll", "doConfig", "doCCheck", "doUnsolicited", 'ConfigExpire');
-            if (!is_array($this->otherGW[$newConfig['DeviceID']])) {
-                $this->otherGW[$newConfig['DeviceID']] = $newConfig;
-            } else {
-                $this->otherGW[$newConfig['DeviceID']] = array_merge($this->otherGW[$newConfig['DeviceID']], $newConfig);
-            }
-        }
-        
-        return $newConfig;
-    }
-    
-    /**
-     * Sets a critical failure
-     *
-     * @param string $reason The reason for the error
-     *
-     * @return null
-     */
-    function criticalFailure($reason) 
-    {
-        $last = (int) $this->stats->getStat("LastCriticalError", $this->uproc->me['Program']);
-        
-        if (is_null($last)) {
-            $last = $this->last;
-        }
-        if ((time() - $last) > ($this->critTime * 60)) { 
-            $to = "hugnet@hugllc.com";
-            $from = "".$this->uproc->me['Host']."<noreply@hugllc.com>";
-            $subject = "HUGnet Critical Failure on ".`hostname`."!";
-            $message = $reason;
-            mail ($to, $subject, $message);
-            $this->last = time();
-
-        }
-        $this->stats->setStat("LastCriticalError", time());
-
-    }
 
 }
 

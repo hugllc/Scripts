@@ -25,7 +25,7 @@
  *
  * @category   Scripts
  * @package    Scripts
- * @subpackage Control
+ * @subpackage Poll
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2007 Hunt Utilities Group, LLC
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
@@ -33,20 +33,49 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-define("CONTROL_PARTNUMBER", "0039-26-05-P");  //0039-26-01-P
-define("CONTROL_SVN", '$Id$');
+define("CONFIG_PARTNUMBER", "0039-26-01-P");  //0039-26-01-P
+define("CONFIG_SVN", '$Id$');
 
 $GatewayKey = false;
 $testMode = false;
 
-require_once(dirname(__FILE__).'/../head.inc.php');
-require_once(HUGNET_INCLUDE_PATH.'/plog.inc.php');
-require_once(HUGNET_INCLUDE_PATH.'/process.inc.php');
+$database_driver = "sqlite";
 
-print 'control.php Version '.CONTROL_SVN."\n";
+require_once(dirname(__FILE__).'/../head.inc.php');
+require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
+require_once(HUGNET_INCLUDE_PATH.'/database/Process.php');
+require_once('lib/epConfig.php');
+
+if (!(bool)$hugnet_config["config_enable"]) {
+    print "Config disabled... Sleeping\n";
+    sleep(60);
+    die();
+}
+
+print 'config.php Version '.POLL_SVN."\n";
 print "Starting...\n";
 
-while (1) {
+define("CONTROLLER_CHECK", 10);
 
-}
+if (empty($GatewayKey)) die("You must supply a gateway key\n");
+print "Using GatewayKey ".$GatewayKey."\n";
+
+unset($hugnet_config["servers"]);
+$hugnet_config['GatewayIP']   = $GatewayIP;
+$hugnet_config['GatewayPort'] = $GatewayPort;
+$hugnet_config['GatewayName'] = $GatewayIP;
+$hugnet_config['GatewayKey']  = $GatewayKey;
+$hugnet_config['socketType'] = "db";
+$hugnet_config['socketTable'] = "PacketLog";
+
+$poll = new epConfig($hugnet_config);
+$poll->uproc->register();
+
+$poll->main();
+
+$poll->uproc->unregister();
+
+print "Finished\n";
+
+
 ?>
