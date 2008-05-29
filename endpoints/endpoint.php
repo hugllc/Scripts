@@ -56,6 +56,7 @@ $hugnet_config['GatewayIP']   = $GatewayIP;
 $hugnet_config['GatewayPort'] = $GatewayPort;
 $hugnet_config['GatewayName'] = $GatewayIP;
 $hugnet_config['GatewayKey']  = $GatewayKey;
+if (!empty($DeviceID)) $hugnet_config['DeviceID']  = $DeviceID;
 
 // Make sure we only go with the sqlite driver.
 $hugnet_config["driver"] = "sqlite";
