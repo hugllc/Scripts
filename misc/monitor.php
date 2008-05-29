@@ -41,20 +41,32 @@ define("MONITOR_SVN", '$Id$');
 print 'monitor.php Version '.MONITOR_SVN."\n";
 print "Starting...\n";
 
-// Make sure we only go with the sqlite driver.
-unset($hugnet_config["servers"]);
+print "Using GatewayKey ".$GatewayKey."\n";
 
-$plog = new plog($hugnet_config);
-$last = "0000-00-00 00:00:00";
-print "Waiting for packets\r\n";
+unset($hugnet_config["servers"]);
+$hugnet_config['GatewayIP']   = $GatewayIP;
+$hugnet_config['GatewayPort'] = $GatewayPort;
+$hugnet_config['GatewayName'] = $GatewayIP;
+$hugnet_config['GatewayKey']  = $GatewayKey;
+$hugnet_config['socketType'] = "db";
+$hugnet_config['socketTable'] = "PacketLog";
+$hugnet_config['packetSNCheck'] = false;
+
+$endpoint =& HUGnetDriver::getInstance($hugnet_config);
+
 while (1) {
 
-    $now = date("Y-m-d H:i:s");
-    $packets = $plog->getWhere("Date >= ? AND Date < ? AND Type <> 'OUTGOING'", array($last, $now));
+    $packets = $endpoint->packet->monitor();
     foreach ($packets as $pkt) {
-        print "From: ".$pkt['PacketFrom'];
-        print " -> To: ".$pkt['PacketTo'];
-        print "  Command: ".$pkt['Command']."\r\n";
+        if (!is_array($pkt)) continue;
+        print "From: ".$pkt['From'];
+        print " -> To: ".$pkt['To'];
+        if (empty($pkt["Command"])) {
+            print "  Command: ".$pkt['sendCommand'];
+        } else {
+            print "  Command: ".$pkt['Command'];
+        }
+        print "\r\n";
         if (!empty($pkt['RawData'])) print "Data: ".$pkt['RawData']."\r\n";
     }
     $last = $now;
