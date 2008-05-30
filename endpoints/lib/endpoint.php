@@ -75,6 +75,7 @@ class endpoint extends endpointBase
         unset($config["servers"]);
         unset($config["table"]);
         $config["partNum"] = ENDPOINT_PARTNUMBER;
+        $config["Retries"] = 1;
         $this->config = $config;
 
         $this->uproc =& HUGnetDB::getInstance("Process", $config); //new process();
@@ -220,7 +221,7 @@ class endpoint extends endpointBase
                 'command' => $p['sendCommand'],
                 'data' => $p['RawData'],
            );
-            print "Snt Pkt:".$p["id"]." T:".$p['PacketTo']." C:".$p['sendCommand']."\n";
+            print "Snt Pkt: F:".$this->DeviceID." - T:".$p['PacketTo']." C:".$p['sendCommand']." Id:".$p["id"]."\n";
             $packet = $this->endpoint->packet->sendPacket($this->config, array($pk));
             $this->stats->incStat("Sent User Packet");
             if (is_array($packet)) {
@@ -228,19 +229,36 @@ class endpoint extends endpointBase
                     $lpkt = plog::packetLogSetup($pkt, $p, "REPLY");
                     $lpkt["id"] = $p["id"];
                     $this->plog->update($lpkt);
-                    print "Got Pkt:".$lpkt["id"]." F:".$lpkt["PacketFrom"]." T:".$lpkt["PacketTo"]. " C:".$lpkt["Command"]." RTime:".$lpkt["ReplyTime"]."\n";
+                    print "Got Pkt: F:".$lpkt["PacketFrom"]." - T:".$lpkt["PacketTo"]. " C:".$lpkt["Command"]." Id:".$lpkt["id"]." RTime:".$lpkt["ReplyTime"]."\n";
                 }
                 $this->stats->incStat("Sent Packet Success");
             }
-            if (empty($packet)) $this->plog->remove($p["id"]);
+            if (empty($packet)) {
+                $this->plog->remove($p["id"]);
+                $this->findDev($p["PacketTo"]);
+            }
         }
         $this->last = $now;
         // This removes the packets from more than an hour ago.
-        $this->plog->removeWhere("`Date` < ?", array(date("Y-m-d H:i:s", time() - 3600)));
+        $this->plog->removeWhere("`Date` < ? AND Checked < 10", array(date("Y-m-d H:i:s", time() - 3600)));
         return (bool) count($packets);
     }
 
-
+    /**
+     * This function attempts to find a device that is not responding
+     *
+     * @param string $id The deviceID of the device to find
+     *
+     * @return bool|array false on failure, packet on success
+     */
+    function findDev($id)
+    {
+        $dev = $this->config;
+        $dev["DeviceID"] = $id; 
+        print "Snt Pkt: F:".$this->DeviceID." - T:".$dev['DeviceID']." C:".PACKET_COMMAND_FINDECHOREQUEST." - From Me!\n";
+        $ret = $this->endpoint->packet->ping($dev, true, false);        
+        return $ret;
+    }
     /**
      * Checks other gateways
      *

@@ -68,11 +68,8 @@ $hugnet_config['socketTable'] = "PacketLog";
 if (!empty($DeviceID)) $hugnet_config['DeviceID']  = $DeviceID;
 
 $config = new epConfig($hugnet_config);
-$config->uproc->register();
 
 $config->main();
-
-$config->uproc->unregister();
 
 print "Finished\n";
 

@@ -230,7 +230,7 @@ class epUpdatedb extends endpointBase
      * Update the remote database from the local one.
       */
     function updatedb() {
-        $res = $this->plog->getAll(50);
+        $res = $this->plog->getWhere("Checked > 10", array(), 50);
         if ($this->verbose) print "[".$this->uproc->me["PID"]."] Found ".count($res)." Packets\n";
         if (!is_array($res)) return;
         foreach ($res as $packet) {

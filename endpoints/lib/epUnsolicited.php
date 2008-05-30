@@ -51,12 +51,16 @@ require_once HUGNET_INCLUDE_PATH.'/database/ProcStats.php';
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */ 
-class epConfig extends endpointBase
+class epPoll extends EndpointBase
 {
 
     var $ep = array();
-    var $doConfig = true;
-    var $doCCheck = true;
+    var $lastminute = 0;
+    var $gw = array(0 => array());
+    var $doPoll = false;
+    var $doCCheck = false;
+    var $doConfig = false;
+    var $doUnsolicited = false;
     
     var $configInterval = 43200; //!< Number of seconds between config attempts.
     var $otherGW = array();
@@ -66,10 +70,9 @@ class epConfig extends endpointBase
     var $ccTimeout = 600;    //!< Minutes. How long we keep a non responding gateway on our list.
     var $cutoffdays = 14;
     var $test = false;
-    var $failureLimit = 5;
+    var $failureLimit = 3;
     var $Priority = 0;
     var $lastContactTime = 0; //!< Last time an endpoint was contacted.
-    var $lastContactAttempt = 0; //!< Last time an endpoint was contacted.
     var $critTime = 60;
 
     /**
@@ -79,9 +82,8 @@ class epConfig extends endpointBase
     {
         unset($config["servers"]);
         unset($config["table"]);
-        $config["partNum"] = CONFIG_PARTNUMBER;
+        $config["partNum"] = POLL_PARTNUMBER;
         $this->config = $config;
-
         $this->uproc =& HUGnetDB::getInstance("Process", $config); //new process();
         $this->uproc->createTable();
         
@@ -93,8 +95,8 @@ class epConfig extends endpointBase
         $this->stats->setStat('PID', $this->uproc->me['PID']);
 
 
-        $this->test = $config["test"];
-        $this->verbose = $config["verbose"];
+        $this->test = (bool) $config["test"];
+        $this->verbose = (bool) $config["verbose"];
         $this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
         $this->endpoint =& HUGnetDriver::getInstance($config);
         $this->endpoint->packet->getAll(true);
@@ -105,12 +107,17 @@ class epConfig extends endpointBase
 
         unset($config["table"]);
         $this->device =& HUGnetDB::getInstance("Device", $config); // new device($file);
-        $this->lastContactTime = time();
-        $this->lastContactAttempt = time();
         $this->gateway =& HUGnetDB::getInstance("Gateway", $config); // new gateway($file);
 
-        $this->gw =& HUGnetDB::getInstance("Gateway", $config); // new gateway($file);
-        $this->gw->createLocalTable("LocalGW");
+        $config["table"] = "DebugPacketLog";
+        $this->debugplog =& HUGnetDB::getInstance("Plog", $config); //new process(); = new plog($db, "DebugPacketLog");
+        $this->debugplog->createTable();
+        
+        $config["table"] = "PacketSend";
+        $this->psend =& HUGnetDB::getInstance("Plog", $config); // new plog($file, "PacketSend");
+        $this->psend->createTable("PacketSend");
+        $this->packet = &$this->endpoint->packet;
+        $this->setPriority();
 
         parent::__construct($config);
      }
@@ -119,28 +126,61 @@ class epConfig extends endpointBase
      * Main routine for polling endpoints
      * This routine will
      */    
-    function main($while=1) 
+    function main() 
     {
         static $lastminute;
-
         $this->powerup();
-        $this->endpoint->packet->packetSetCallBack('checkPacket', $this);
-        $this->setPriority();
+        $this->packet->packetSetCallBack('checkPacket', $this);
         $this->uproc->register();
-
+    
         while ($GLOBALS["exit"] !== true) {
             declare(ticks = 1);
-            if ($lastminute != date("i")) {
+            if ($lastminute == date("i")) {
                 print "Using: ".$this->myInfo['DeviceID']." Priority: ".$this->myInfo["Priority"]." - ".date("Y-m-d H:i:s")."\r\n";
                 $this->getAllDevices();
             }
             $lastminute = date("i");
-            $checked = $this->configCheck();
-            if ($checked == 0) $this->wait();
+            $count = $this->poll();    
+            
+            if ($count == 0) $this->wait();
         }
         $this->uproc->unregister();
     
     }
+
+    /**
+     * Figures out the next time we should poll    
+     *
+     * @param string $key The key to use
+     *
+     * @return null
+     */
+    function GetNextPoll($key) 
+    {
+//        $time = time();
+        $devInfo =& $this->_devInfo[$key];
+        $dev =& $this->ep[$key];
+        if ($dev["PollInterval"] <= 0) return;
+
+        if (!isset($devInfo["gwIndex"])) $devInfo["gwIndex"] = 0;
+
+        if ($devInfo['failures'] > $this->failureLimit) {
+            $time = time();
+        } else if (empty($devInfo["LastPoll"])) {
+            $time = strtotime($dev["LastPoll"]);
+        } else {
+            $time = strtotime($devInfo["LastPoll"]);
+        }
+        
+        $mult = (int) ($devInfo['failures'] / $this->failureLimit) + 1;
+        if ($mult > 25) $mult = 25;
+        
+        // Poll interval is in minutes that is where the 60 comes from
+        $newtime = $time + (60 * $mult * $this->ep[$key]["PollInterval"]);
+
+        if ($devInfo["PollTime"] < $newtime) $devInfo["PollTime"] = $newtime;
+    }
+    
     
     function getAllDevices() 
     {
@@ -148,7 +188,7 @@ class epConfig extends endpointBase
         print "Getting endpoints for Gateway #".$this->config["GatewayKey"];
 
 
-        $query = "GatewayKey= ? ";
+        $query = "GatewayKey = ? AND PollInterval > 0";
         $res = $this->device->getWhere($query, array($this->config["GatewayKey"]));
 
         if (!is_array($res) || (count($res) == 0)) {
@@ -159,38 +199,21 @@ class epConfig extends endpointBase
             foreach ($res as $key => $val) {
                 if ($val['DeviceID'] !== "000000") {
                     $dev = $this->endpoint->DriverInfo($val);
-                    $k = $val['DeviceID'];
-                    $this->ep[$k] = $dev;
-//                        $this->devGateway($key);
-                    if ($this->endpoint->isController($dev)) {
-                        $this->_devInfo[$k]["Controller"] = true;
-                    }
-                    if (!isset($this->_devInfo[$k]["GetConfig"])) $this->_devInfo[$k]["GetConfig"] = false;
+                    $key = $val['DeviceID'];
+                    $this->ep[$key] = $dev;
+                    $this->getNextPoll($key);
                 }
             }
         }
         print " (Found ".count($this->ep).")\n";
         return $this->ep;    
     }
-        
+    
+    
     function wait() 
     {
         $sleep = mt_rand(1, 6);
-        sleep($sleep);        
-    }
-
-
-    function findDev($DeviceID) 
-    {
-        if (isset($this->ep[$DeviceID])) {
-            return $DeviceID;
-        }
-        foreach ($this->ep as $key => $ep) {
-            if (trim(strtoupper($ep["DeviceID"])) == trim(strtoupper($DeviceID))) {
-                return $key;
-            }
-        }
-        return false;
+        sleep($sleep); 
     }
 
     /**
@@ -200,10 +223,15 @@ class epConfig extends endpointBase
      *
      * @return null
      */
-    public function checkPacket($pkt)
+    function checkPacket($pkt)
     {
         if (!$pkt['toMe']) return;
         $this->stats->incStat("To Me");
+        $sendCommand = trim(strtoupper($pkt['sendCommand']));
+        if ($sendCommand == PACKET_COMMAND_GETSETUP) {
+            $this->interpConfig(array($pkt));
+            return;
+        }
         $Command = trim(strtoupper($pkt['Command']));
         switch($Command) {
         case PACKET_COMMAND_GETSETUP:
@@ -221,103 +249,77 @@ class epConfig extends endpointBase
         }
     
     }
-
-    function checkDev($key) 
-    {
-        if (!is_array($this->ep[$key])) return;
-        if (empty($key)) return;
-        
-        $this->lastContactAttempt = time();
-        $dev = $this->ep[$key];
-        if (is_array($this->_devInfo[$key])) {
-            $dev = array_merge($dev, $this->_devInfo[$key]);
-        }
-        
-        print "Checking ".$dev["DeviceID"]." ";
-        $this->stats->incStat("Device Checked");
-        $pkt = $this->endpoint->readConfig($dev);
-        $gotConfig = false;
-        if ($pkt !== false) {
-            $newConfig = $this->interpConfig($pkt);
-            foreach ($pkt as $p) {
-                if ($p !== false) {
-                    if ($p["Reply"]) {
-                        if (!isset($p['DeviceKey'])) $p['DeviceKey'] = $dev['DeviceKey'];
-                        if (empty($dev['GatewayKey'])) $dev['GatewayKey'] = $this->GatewayKey;
-                        $logpkt = plog::packetLogSetup($p, $dev, "CONFIG", (20+$this->myInfo["Job"]));
-                        if ($this->plog->add($logpkt)) {
-                            print " Done (".number_format($p["ReplyTime"], 2).")";
-                            $gotConfig = true;
-                            $this->ep[$key]["LastConfig"] = date("Y-m-d H:i:s");
-                            $next = ($this->_devInfo[$key]["Controller"]) ? $this->ccTimeout : $this->configInterval;
-                            $this->_devInfo[$key]["nextCheck"] = time() + $next;
-
-                            $this->_devInfo[$key]["LastConfig"] = date("Y-m-d H:i:s");
-                            $this->_devInfo[$key]["GetConfig"] = false;
-                            $this->_devInfo[$key]['LastCheck'] = time();
-                            unset($this->_devInfo[$key]['failedCheck']);
-                            $this->lastContactTime = time();
-                        } else {
-//                            print "Error: ".$this->plog->_sqlite->lastError();
-                        }
-                    }
-                }
-            }
-            if ($gotConfig) {
-                // If it is a controller board check the program
-                $this->stats->incStat("Device Checked Success");
-                if (method_exists($this->endpoint->drivers[$newConfig['Driver']], "checkProgram")) {
-                    $this->stats->incStat("Check Program");
-                    print " Checking Program ";
-                    $ret = $this->endpoint->drivers[$dev['Driver']]->checkProgram($newConfig, $pkt, true);
-                    if ($ret) {
-                        $this->stats->incStat("Check Program Success");
-                        print " Done ";
-                    } else {
-                        print " Failed ";
-                    }
-                }
-               } else {
-                   print " Failed ";
-                   $this->_devInfo[$key]['nextCheck'] = time()+120;
-                   print " - Next Check ".date("Y-m-d H:i:s", $this->_devInfo[$key]['nextCheck']);
-               }
-
-        } else {
-            print " Nothing Returned";
-            $this->_devInfo[$key]['nextCheck'] = time()+300;
-            print " - Next Check ".date("Y-m-d H:i:s", $this->_devInfo[$key]['nextCheck']);
-
-        }
-        print "\r\n";
     
-    }
 
     /**
-     * Check all of the configurations
+     * This function polls the endpoints
      *
-     * @return int
+     * @return null
      */
-    function configCheck() 
+    function poll() 
     {
-        $checked = 0;
         $epkeys = array_keys($this->ep);
         shuffle($epkeys);
         $count = 0;
         foreach ($epkeys as $key) {
-            $dev =& $this->ep[$key];
             if ($GLOBALS["exit"]) return 1;
-            if (empty($dev['DeviceID'])) {
-                unset($this->ep[$key]);
-            }
-            if ($this->_devInfo[$key]['nextCheck'] < time()) {
-                $checked++;
-                $this->checkDev($key);
-            }
-        }
-        return $checked;
-    }
+            $dev =& $this->ep[$key];
+            $devInfo =& $this->_devInfo[$key];
+            if ($dev["PollInterval"] > 0) {
+                if ($devInfo["PollTime"] <= time()) { 
+                    $count ++;
+                    $this->stats->incStat("Polls");
+                    print $dev["DeviceID"]." (".$dev["Driver"].") -> ".date("Y-m-d H:i:s", $devInfo["PollTime"]);
+                    // print  " [".$dev["GatewayName"]."] ->";                    
+                    $sensorRead = $this->endpoint->readSensors($dev);
+                    $gotReply = false;
+                    if (is_array($sensorRead) && (count($sensorRead) > 0)) {
+                        foreach ($sensorRead as $sensors) {
+                            if ($sensors['Reply'] == true) {
+                                $gotReply = true;
+                                if (is_array($sensors) && (count($sensors) > 0) && isset($sensors['RawData'])) {
+                                    $sensors['DeviceKey'] = $dev['DeviceKey'];
+                                    $devInfo["failures"] = 0;
+                                    if (!isset($sensors['DataIndex']) || ($devInfo['DataIndex'] != $sensors["DataIndex"])) {
 
+                                        $sensors = plog::packetLogSetup($sensors, $dev, "POLL", (20+$this->myInfo["Job"]));
+                                        $ret = $this->plog->add($sensors);
+
+                                        if ($ret) {
+                                            print " Success (".number_format($sensors["ReplyTime"], 2).")";
+                                            $devInfo['DataIndex'] = $sensors["DataIndex"];
+                                            $dev['LastPoll'] = $devInfo["LastPoll"] = $sensors['Date'];
+                                            $this->GetNextPoll($key);
+                                            $this->lastContactTime = time(); // Reset the last contact time
+                                        } else {
+                                            $DevCount++;
+                                            print " Failed to store data \r\n"; //(".$history->Errno."): ".$history->Error;
+                                            $this->stats->incStat("Poll Store Failed");
+                                            //print strip_tags(get_stuff($history));
+                                        }
+                                    } else {
+                                        $this->stats->incStat("Poll Data Index Ident");
+                                        print " Data Index (".$sensors['DataIndex'].") Identical (".number_format($sensors["ReplyTime"], 2).")";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if ($gotReply === false) {
+                        $devInfo["failures"]++;
+                        $this->GetNextPoll($key);
+                        $DevCount++;
+                        print " No data returned (".$devInfo["failures"].")";
+                    } else {
+                       $this->stats->incStat("Poll Success");                    
+                    }
+                    print " Next:".date("Y-m-d H:i:s", $devInfo["PollTime"])."\n";
+                }
+            }
+
+        }
+        return $count;
+    }
 
 }
 

@@ -88,7 +88,20 @@ class endpointBase
     {
         return (time() + mt_rand(120, 420));
     }
-        
+
+    /**
+     * Sets the priority we run at.
+      */
+    function setPriority() 
+    {
+        if ($this->test) {
+            $this->myInfo['Priority'] = 0xFF;
+        } else {
+            $this->myInfo['Priority'] = mt_rand(1, 0xFE);
+        }
+        $this->stats->setStat('Priority', $this->myInfo['Priority']);
+    }
+            
     /**
      * Returns random timeout
      *
