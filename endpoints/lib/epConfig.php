@@ -118,8 +118,12 @@ class epConfig extends endpointBase
     /**
      * Main routine for polling endpoints
      * This routine will
+     *
+     * @param bool &$while Loop until this changes
+     *
+     * @return null
      */    
-    function main($while=1) 
+    function main() 
     {
         static $lastminute;
 
@@ -176,7 +180,7 @@ class epConfig extends endpointBase
     function wait() 
     {
         $sleep = mt_rand(1, 6);
-        sleep($sleep);        
+        $this->endpoint->packet->monitor($this->config, $sleep);
     }
 
 
@@ -202,6 +206,7 @@ class epConfig extends endpointBase
      */
     public function checkPacket($pkt)
     {
+        $this->checkPacketUnsolicited($pkt);
         if (!$pkt['toMe']) return;
         $this->stats->incStat("To Me");
         $Command = trim(strtoupper($pkt['Command']));
@@ -220,6 +225,33 @@ class epConfig extends endpointBase
             break;
         }
     
+    }
+    /**
+     * Deals with packets to me.
+     *
+     * @param array $pkt The packet array
+     *
+     * @return null
+     */
+    public function checkPacketUnsolicited($pkt)
+    {
+        if (!$pkt["Unsolicited"]) return;
+print "HERE";
+        $Command = trim(strtoupper($pkt['Command']));
+        switch($Command) {
+        case PACKET_COMMAND_POWERUP:
+            $type = "Powerup";
+            $this->_devInfo[$pkt["From"]]["nextCheck"] = 0;
+            break;
+        case PACKET_COMMAND_RECONFIG:
+            $type = "Reconfig";
+            $this->_devInfo[$pkt["From"]]["nextCheck"] = 0;
+            break;
+        default:
+            break;
+        }
+        if (!empty($type)) print "\n$type packet F:".$pkt["From"]."\n";
+
     }
 
     function checkDev($key) 

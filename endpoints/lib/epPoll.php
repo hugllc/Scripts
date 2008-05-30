@@ -125,6 +125,10 @@ class epPoll extends EndpointBase
     /**
      * Main routine for polling endpoints
      * This routine will
+     *
+     * @param bool &$while Loop until this changes
+     *
+     * @return null
      */    
     function main() 
     {
@@ -155,7 +159,7 @@ class epPoll extends EndpointBase
      *
      * @return null
      */
-    function GetNextPoll($key) 
+    function GetNextPoll($key, $forceInterval = null) 
     {
 //        $time = time();
         $devInfo =& $this->_devInfo[$key];
@@ -164,7 +168,7 @@ class epPoll extends EndpointBase
 
         if (!isset($devInfo["gwIndex"])) $devInfo["gwIndex"] = 0;
 
-        if ($devInfo['failures'] > $this->failureLimit) {
+        if (($devInfo['failures'] > $this->failureLimit) || !empty($forceInterval)) {
             $time = time();
         } else if (empty($devInfo["LastPoll"])) {
             $time = strtotime($dev["LastPoll"]);
@@ -175,8 +179,9 @@ class epPoll extends EndpointBase
         $mult = (int) ($devInfo['failures'] / $this->failureLimit) + 1;
         if ($mult > 25) $mult = 25;
         
+        $Interval = (empty($forceInterval)) ? $this->ep[$key]["PollInterval"] : $forceInterval;
         // Poll interval is in minutes that is where the 60 comes from
-        $newtime = $time + (60 * $mult * $this->ep[$key]["PollInterval"]);
+        $newtime = $time + (60 * $mult * $Interval);
 
         if ($devInfo["PollTime"] < $newtime) $devInfo["PollTime"] = $newtime;
     }
@@ -300,6 +305,7 @@ class epPoll extends EndpointBase
                                     } else {
                                         $this->stats->incStat("Poll Data Index Ident");
                                         print " Data Index (".$sensors['DataIndex'].") Identical (".number_format($sensors["ReplyTime"], 2).")";
+                                        $this->GetNextPoll($key, 1);
                                     }
                                 }
                             }
