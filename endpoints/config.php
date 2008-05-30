@@ -33,13 +33,11 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-define("CONFIG_PARTNUMBER", "0039-26-01-P");  //0039-26-01-P
+define("CONFIG_PARTNUMBER", "0039-26-06-P");  //0039-26-01-P
 define("CONFIG_SVN", '$Id$');
 
 $GatewayKey = false;
 $testMode = false;
-
-$database_driver = "sqlite";
 
 require_once(dirname(__FILE__).'/../head.inc.php');
 require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
@@ -52,7 +50,7 @@ if (!(bool)$hugnet_config["config_enable"]) {
     die();
 }
 
-print 'config.php Version '.POLL_SVN."\n";
+print 'config.php Version '.CONFIG_SVN."\n";
 print "Starting...\n";
 
 define("CONTROLLER_CHECK", 10);
@@ -67,13 +65,14 @@ $hugnet_config['GatewayName'] = $GatewayIP;
 $hugnet_config['GatewayKey']  = $GatewayKey;
 $hugnet_config['socketType'] = "db";
 $hugnet_config['socketTable'] = "PacketLog";
+if (!empty($DeviceID)) $hugnet_config['DeviceID']  = $DeviceID;
 
-$poll = new epConfig($hugnet_config);
-$poll->uproc->register();
+$config = new epConfig($hugnet_config);
+$config->uproc->register();
 
-$poll->main();
+$config->main();
 
-$poll->uproc->unregister();
+$config->uproc->unregister();
 
 print "Finished\n";
 

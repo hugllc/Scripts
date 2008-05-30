@@ -154,12 +154,11 @@ class endpointBase
      */
     function setupMyInfo() 
     {
-        $this->myInfo['DeviceID'] = $this->packet->SN;
+        $this->myInfo['DeviceID'] = $this->endpoint->packet->SN;
         $this->DeviceID = $this->myInfo['DeviceID'];
-        $this->myInfo['SerialNum'] = hexdec($this->packet->SN);
-
-        $this->myInfo['HWPartNum'] = ENDPOINT_PARTNUMBER;
-        $this->myInfo['FWPartNum'] = ENDPOINT_PARTNUMBER;
+        $this->myInfo['SerialNum'] = hexdec($this->endpoint->packet->SN);
+        $this->myInfo['HWPartNum'] = $this->config["partNum"];
+        $this->myInfo['FWPartNum'] = $this->config["partNum"];
         $this->myInfo['FWVersion'] = SCRIPTS_VERSION;    
         $this->myInfo['GatewayKey'] = $this->config["GatewayKey"];
 

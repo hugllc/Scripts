@@ -74,6 +74,7 @@ class endpoint extends endpointBase
     {
         unset($config["servers"]);
         unset($config["table"]);
+        $config["partNum"] = ENDPOINT_PARTNUMBER;
         $this->config = $config;
 
         $this->uproc =& HUGnetDB::getInstance("Process", $config); //new process();

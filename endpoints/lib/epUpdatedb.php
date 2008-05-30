@@ -31,6 +31,8 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
+/** This is our base class */
+require_once "endpointBase.php";
 /** For retrieving packet logs */
 require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
 /** For process information and control */
@@ -51,7 +53,7 @@ require_once(HUGNET_INCLUDE_PATH.'/database/ProcStats.php');
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-class epUpdatedb
+class epUpdatedb extends endpointBase
 {
     /** @var array The array of device information */
     var $ep = array();
@@ -59,7 +61,6 @@ class epUpdatedb
     var $lastminute = 0;
     /** @var array Gateway information */
     var $gw = array(0 => array());
-    var $doPoll = false;
     var $configInterval = 43200; //!< Number of seconds between config attempts.
     var $otherGW = array();
     var $packetQ = array();
@@ -73,6 +74,7 @@ class epUpdatedb
     function __construct($config = array()) {
         $this->verbose = (int) $config["verbose"];
         $this->endpoint =& HUGnetDriver::getInstance($config);
+        $config["partNum"] = UPDATEDB_PARTNUMBER;
         $this->config = $config;
 
         print "Creating remote plog...\n";
@@ -120,6 +122,8 @@ class epUpdatedb
         $this->stats->clearStats();
         $this->stats->setStat('start', time());
         $this->stats->setStat('PID', $this->uproc->me['PID']);
+        
+        parent::__construct($config);
 
      }
 
@@ -130,15 +134,16 @@ class epUpdatedb
      *
      * @return null
      */ 
-    function main($serv) 
+    function main() 
     {
         $this->uproc->register();
         
-        while(1) {
+        while ($GLOBALS["exit"] !== true) {
+            declare(ticks = 1);
             if ($this->errors[HUGnetDB_META_ERROR_SERVER_GONE] > 0) {
                 do {
                     print "Trying to reconnect to the database ";
-                    $this->db = HUGnetDB::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
+//                    $this->db = HUGnetDB::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
                     if ($this->db === false) {
                         $this->updatedbError($emptyVar, "Failed", "dbReconnectFail");
                         print " - Sleeping";
@@ -162,7 +167,6 @@ class epUpdatedb
     
             // This section does the packetlog
             $this->updatedb();
-            $this->getPacketSend();
     
             //        $lplog->reset();
             $this->wait();
@@ -207,72 +211,6 @@ class epUpdatedb
         return $this->ep;    
     }
 
-    /**
-     * Looks for packets to be sent out on the HUGnet network.
-      */
-    function getPacketSend() {
-        $res = $this->psend->getWhere("Checked = 0");
-        if ($this->verbose) print "[".$this->uproc->me["PID"]."] Checking for Outgoing Packets\n";
-        if (is_array($res) && (count($res) > 0)) {
-            foreach ($res as $packet) {
-                unset($packet['Checked']);
-                $found = false;
-                if (isset($this->ep[$packet['DeviceID']])) {
-                    $packet['DeviceKey'] = $this->ep[$packet['DeviceID']]['DeviceKey'];
-                    $found = true;
-                } else {
-            
-                    foreach ($this->ep as $key => $val) {
-                        if (trim(strtoupper($val['DeviceID'])) == trim(strtoupper($packet['PacketTo']))) {
-                            $packet['DeviceKey'] = $this->ep[$packet['DeviceID']]['DeviceKey'];
-                            $found = true;
-                            break;
-                        }
-                    }
-                }
-                if ($found) {
-                    print "[".$this->uproc->me["PID"]."] ".$packet["PacketTo"]." -> ".$packet["sendCommand"]." -> ";                        
-
-                    $this->getPacketSave($packet);
-                    
-                    print "\n";
-                }
-            }
-        }
-        if ($this->verbose) print "[".$this->uproc->me["PID"]."] Done\n";
-       
-    }
-    /**
-     * Saves the packet in the local database and marks it as saved in the remote database.
-     *
-     * @param array $packet the packet array
-     */    
-    private function getPacketSave(&$packet) {
-        if ($this->psend->add($packet)) {
-            print " Saved ";
-            $where = " (GatewayKey = '".$packet['GatewayKey']."'".
-                     " AND ".
-                     " Date = '".$packet['Date']."'".
-                     " AND ".
-                     " Command = '".$packet['Command']."'".
-                     " AND ".
-                     " sendCommand = '".$packet['sendCommand']."'".
-                     " AND ".
-                     " PacketFrom = '".$packet['PacketFrom']."'".
-                     " AND ".
-                     " PacketTo = '".$packet['PacketTo']."') ";
-            
-//            $res = $this->endpoint->db->AutoExecute("PacketSend", array("Checked" => 1), 'UPDATE', $where);
-            if ($res) {
-                print " Updated ";
-                return true;
-            }
-        } 
-
-        print " Failed ";
-        return false;
-
-    }
     /**
      * Waits for a time when there is nothing to do.  This is so we don't eat
      * all of the processing time.

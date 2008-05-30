@@ -43,22 +43,20 @@ print "Starting...\n";
 require_once HUGNET_INCLUDE_PATH.'/database/Process.php';
 require_once "lib/epUpdatedb.php";
 
-//    if ($testMode) $endpoint->db->debug = true;
-
-//    $mhistory = new history_raw($db, $conf['hugnetDb']);
-
-//    $lplog = new plog();
-
+$hugnet_config['GatewayIP']   = $GatewayIP;
+$hugnet_config['GatewayPort'] = $GatewayPort;
+$hugnet_config['GatewayName'] = $GatewayIP;
+$hugnet_config['GatewayKey']  = $GatewayKey;
+$hugnet_config['socketType'] = "db";
+$hugnet_config['socketTable'] = "PacketLog";
+$hugnet_config['packetSNCheck'] = false;
 
 $refreshdev = true;
 
 $updatedb = new epUpdatedb($hugnet_config);
 
-$updatedb->main($serv);
+$updatedb->main();
 
-print "[".$this->uproc->me["PID"]."] Finished\n";
+print "Finished\n";
 
-/**
- * @endcond
- */
 ?>
