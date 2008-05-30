@@ -264,5 +264,5 @@ function endpoint_sig_kill($signo)
     $GLOBALS["exit"] = true;    
 }
 
-pcntl_signal(SIGINT, "endpoint_sig_kill");
+if (function_exists(pcntl_signal)) pcntl_signal(SIGINT, "endpoint_sig_kill");
 ?>
