@@ -122,7 +122,10 @@ class epUpdatedb extends endpointBase
         $this->stats->clearStats();
         $this->stats->setStat('start', time());
         $this->stats->setStat('PID', $this->uproc->me['PID']);
+        $this->stats->setStat('HWPartNum', UPDATEDB_PARTNUMBER);
+        $this->stats->setStat('FWPartNum', UPDATEDB_PARTNUMBER);
         
+
         parent::__construct($config);
 
      }
@@ -197,6 +200,7 @@ class epUpdatedb extends endpointBase
             $res = $this->device->getAll();
             if (is_array($res) && (count($res) > 0)) {
                 print "found ".count($res)."";
+                $this->stats->setStat('Devices', count($res));
                 $this->oldep = $this->ep;
                 $this->ep = array();
                 foreach ($res as $key => $val) {

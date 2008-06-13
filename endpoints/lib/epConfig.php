@@ -173,6 +173,7 @@ class epConfig extends endpointBase
                 }
             }
         }
+        $this->stats->setStat('Devices', count($this->ep));
         print " (Found ".count($this->ep).")\n";
         return $this->ep;    
     }

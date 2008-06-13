@@ -159,6 +159,7 @@ class endpoint extends endpointBase
     function checkPacket($pkt) 
     {
         if (is_array($pkt)) {
+            $this->stats->incStat("Pkts Received");
             $pkt["Type"] = $Type = plog::packetType($pkt);
             // Add it to the debug log
             $lpkt = plog::packetLogSetup($pkt, $this->myInfo, $Type);
@@ -206,6 +207,7 @@ class endpoint extends endpointBase
             break;
         }
         if ($sent) print "\r\nSnt Pkt: F:".$this->DeviceID." - T:".$pkt['From']." C:01 - From Me!";
+        if ($sent) $this->stats->incStat("From Me");
     
     }
     /**
@@ -323,11 +325,14 @@ class endpoint extends endpointBase
     {
         if (empty($gw["DeviceID"])) continue;
         $pkt = $this->packet->buildPacket($gw['DeviceID'], PACKET_COMMAND_GETSETUP);
+        $this->stats->incStat("From Me");
         print "Snt Pkt: F:".$this->DeviceID." - T:".$pkt['To']." C:".$pkt["Command"]." - From Me!\r\n";
         $reply = $this->packet->sendPacket($this->config, array($pkt), true, 2);
         if (!is_array($reply)) return;
-        foreach($reply as $p) print "Got Pkt: F:".$p["From"]." - T:".$p['To']." C:".$p["Command"]." - To Me!\r\n";
-
+        foreach($reply as $p) {
+            $this->stats->incStat("To Me");
+            print "Got Pkt: F:".$p["From"]." - T:".$p['To']." C:".$p["Command"]." - To Me!\r\n";
+        }
         $config = $this->interpConfig($reply);
         $config["LastContact"] = date("Y-m-d H:i:s");
         if ($this->gw->replace($config)) print "Gateway ".$gw["DeviceID"]." config saved\n";

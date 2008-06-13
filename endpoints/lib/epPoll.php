@@ -210,6 +210,7 @@ class epPoll extends EndpointBase
                 }
             }
         }
+        $this->stats->setStat('Devices', count($this->ep));
         print " (Found ".count($this->ep).")\n";
         return $this->ep;    
     }

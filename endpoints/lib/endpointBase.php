@@ -191,7 +191,9 @@ class endpointBase
         $this->myInfo['Name'] = trim($this->uproc->me['Host']);
         if (!empty($this->uproc->me['Domain'])) $this->myInfo['Name'] .= ".".trim($this->uproc->me['Domain']);
 
-
+        foreach ($this->myInfo as $key => $value) {
+            $this->stats->setStat($key, $value);
+        }
     }
     
     /**
