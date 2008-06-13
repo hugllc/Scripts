@@ -49,7 +49,6 @@ $hugnet_config['GatewayName'] = $GatewayIP;
 $hugnet_config['GatewayKey']  = $GatewayKey;
 $hugnet_config['socketType'] = "db";
 $hugnet_config['socketTable'] = "PacketLog";
-$hugnet_config['packetSNCheck'] = false;
 
 $refreshdev = true;
 

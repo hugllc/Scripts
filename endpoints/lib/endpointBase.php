@@ -63,7 +63,12 @@ class endpointBase
      */    
     function __construct($config = array()) 
     {
+
+        $this->gw =& HUGnetDB::getInstance("Gateway", $config); // new gateway($file);
+        $this->gw->createLocalTable("LocalGW");
+        
         $this->setupMyInfo();
+        $ret = $this->gw->removeWhere("`Job` = ? AND `IP` = ?", array($this->myInfo["Job"], $this->myInfo["IP"]));
     }
 
     /**
@@ -92,14 +97,13 @@ class endpointBase
     /**
      * Sets the priority we run at.
       */
-    function setPriority() 
+    function getPriority() 
     {
         if ($this->test) {
-            $this->myInfo['Priority'] = 0xFF;
+            return 0xFF;
         } else {
-            $this->myInfo['Priority'] = mt_rand(1, 0xFE);
+            return mt_rand(1, 0xFE);
         }
-        $this->stats->setStat('Priority', $this->myInfo['Priority']);
     }
             
     /**
@@ -159,7 +163,6 @@ class endpointBase
         if ($sent) print "\r\nSnt Pkt: F:".$this->DeviceID." - T:".$pkt['From']." C:01 - From Me!";
     
     }
-
     /**
      * This sets up my info so that I look like an endpoint.
      *
@@ -174,6 +177,8 @@ class endpointBase
         $this->myInfo['FWPartNum'] = $this->config["partNum"];
         $this->myInfo['FWVersion'] = SCRIPTS_VERSION;    
         $this->myInfo['GatewayKey'] = $this->config["GatewayKey"];
+        $this->myInfo['CurrentGatewayKey'] = $this->config["GatewayKey"];
+        if (empty($this->myInfo["Priority"])) $this->myInfo['Priority'] = $this->getPriority();
 
         $this->myInfo['Job'] = e00392601::getJob($this->myInfo);
 
@@ -187,13 +192,54 @@ class endpointBase
             }
         }
         $this->myInfo['IP'] = $netInfo["inet addr"];
-
+        $this->myInfo['LastContact'] = date("Y-m-d H:i:s");
+ 
         $this->myInfo['Name'] = trim($this->uproc->me['Host']);
         if (!empty($this->uproc->me['Domain'])) $this->myInfo['Name'] .= ".".trim($this->uproc->me['Domain']);
+        $this->myInfo["RawSetup"] = e00392601::getConfigStr($this->myInfo);
+
+        $this->myInfo["Local"] = 1;
+        $g = $this->gw->getWhere("Local = 1");
+        foreach ($g as $gw) {
+            $this->myInfo["Priorities"][$gw["Job"]] = $gw["Priority"];
+        }
+        $this->gw->replace($this->myInfo);
 
         foreach ($this->myInfo as $key => $value) {
             $this->stats->setStat($key, $value);
         }
+    }
+
+    /**
+     * Check packets to send out
+     *
+     * @return bool
+     */
+    function getOtherPriorities() 
+    {
+        $this->gwPriorities = array();
+        $g = $this->gw->getWhere("Local = 0");
+        foreach ($g as $gw) {
+            e00392601::interpConfig($gw);
+            $this->gwPriorities[$gw["DeviceID"]] = $gw["Priorities"];
+        }
+    }
+    /**
+     * Returns true if we are the highest priority program of our job.  Returns the
+     * deviceID if we are not the highest priority
+     *
+     * @return bool/string
+     */
+    function checkPriority(&$id, &$priority) 
+    {
+        foreach ($this->gwPriorities as $i => $p) {
+            if ($p[$this->myInfo["Job"]] > $this->myInfo["Priority"]) {
+                $id = $i;
+                $priority = $p;
+                return false;
+            }
+        }
+        return true;
     }
     
     /**

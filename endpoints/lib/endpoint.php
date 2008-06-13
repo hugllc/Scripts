@@ -56,7 +56,7 @@ class endpoint extends endpointBase
 
     var $lastminute = 0;
     
-    var $gwRemove = 600;
+    var $gwRemove = 300;
     var $test = false;
     
     public $exit = false;
@@ -104,9 +104,6 @@ class endpoint extends endpointBase
         $this->lastContactTime = time();
         $this->lastContactAttempt = time();
         $this->gateway =& HUGnetDB::getInstance("Gateway", $config); // new gateway($file);
-
-        $this->gw =& HUGnetDB::getInstance("Gateway", $config); // new gateway($file);
-        $this->gw->createLocalTable("LocalGW");
         
         $config["table"] = "DebugPacketLog";
         $this->debugplog =& HUGnetDB::getInstance("Plog", $config); //new process(); = new plog($db, "DebugPacketLog");
@@ -293,23 +290,25 @@ class endpoint extends endpointBase
         // This gets rid of old stuff
         $this->gw->removeWhere("LastContact < ?", array(date("Y-m-d H:i:s", time() - $this->gwRemove)));
         // This gets everything
-        $ret = $this->gw->getAll();
+        $ret = $this->gw->getWhere("`Job` = ? AND `Name` <> ?", array($this->myInfo["Job"], $this->myInfo["Name"]));
         if (!is_array($ret)) return;
         foreach ($ret as $gw) {
             // This saves us the time of actually contacting the gateway
             // It uses the date of the last packet we saw from this gateway
             // to set the LastContact date
             $sn = hexdec($gw["DeviceID"]);
+/*            
             if (!empty($this->gwCheck[$sn])) {
                 $p = array(
                     "DeviceID" => $gw["DeviceID"],
                     "LastContact" => $this->gwCheck[$sn],
                 );
-                $this->gw->update($p);
+                $this->gw->replace($p);
                 unset($this->gwCheck[$sn]);
                 print "Updated LastContact to ".$p["LastContact"]." on ".$p["DeviceID"]."\r\n";
                 continue;
             }
+*/
             // Check the gateway
             $this->checkGW($gw);
         }

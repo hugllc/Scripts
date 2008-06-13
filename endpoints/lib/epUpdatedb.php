@@ -161,6 +161,11 @@ class epUpdatedb extends endpointBase
             } else if ($this->errors["updatedb"] > 10) {
                 die ("Too many errors");
             }
+            if ($lastminute != date("i")) {
+                $this->setupMyInfo();
+                $this->getOtherPriorities();
+                $lastminute = date("i");
+            }
     
             $this->getAllDevices();
             if (count($this->ep) == 0) die("No devices found");

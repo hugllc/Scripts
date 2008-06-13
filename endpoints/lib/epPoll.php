@@ -117,7 +117,6 @@ class epPoll extends EndpointBase
         $this->psend =& HUGnetDB::getInstance("Plog", $config); // new plog($file, "PacketSend");
         $this->psend->createTable("PacketSend");
         $this->packet = &$this->endpoint->packet;
-        $this->setPriority();
 
         parent::__construct($config);
      }
@@ -139,11 +138,13 @@ class epPoll extends EndpointBase
     
         while ($GLOBALS["exit"] !== true) {
             declare(ticks = 1);
-            if ($lastminute != date("i")) {
+            if ($this->lastminute != date("i")) {
                 print "Using: ".$this->myInfo['DeviceID']." Priority: ".$this->myInfo["Priority"]." - ".date("Y-m-d H:i:s")."\r\n";
+                $this->setupMyInfo();
                 $this->getAllDevices();
+                $this->getOtherPriorities();
+                $this->lastminute = date("i");
             }
-            $lastminute = date("i");
             $count = $this->poll();    
             
             if ($count == 0) $this->wait();
@@ -264,6 +265,13 @@ class epPoll extends EndpointBase
      */
     function poll() 
     {
+        $check = $this->checkPriority($id, $priority);
+        if (!$check) {
+            print "Skipping the poll.  $id is polling priority ($priority)\n";
+            $this->stats->setStat('polling', $id);
+            return;
+        }
+        $this->stats->setStat('polling', $this->myInfo["DeviceID"]);
         $epkeys = array_keys($this->ep);
         shuffle($epkeys);
         $count = 0;
@@ -323,7 +331,7 @@ class epPoll extends EndpointBase
                     print " Next:".date("Y-m-d H:i:s", $devInfo["PollTime"])."\n";
                 }
             }
-
+            if ($this->lastminute != date("i")) break;
         }
         return $count;
     }

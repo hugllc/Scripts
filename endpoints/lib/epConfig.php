@@ -129,16 +129,17 @@ class epConfig extends endpointBase
 
         $this->powerup();
         $this->endpoint->packet->packetSetCallBack('checkPacket', $this);
-        $this->setPriority();
         $this->uproc->register();
 
         while ($GLOBALS["exit"] !== true) {
             declare(ticks = 1);
-            if ($lastminute != date("i")) {
+            if ($this->lastminute != date("i")) {
                 print "Using: ".$this->myInfo['DeviceID']." Priority: ".$this->myInfo["Priority"]." - ".date("Y-m-d H:i:s")."\r\n";
+                $this->setupMyInfo();
                 $this->getAllDevices();
+                $this->getOtherPriorities();
+                $this->lastminute = date("i");
             }
-            $lastminute = date("i");
             $checked = $this->configCheck();
             if ($checked == 0) $this->wait();
         }
@@ -237,7 +238,8 @@ class epConfig extends endpointBase
     public function checkPacketUnsolicited($pkt)
     {
         if (!$pkt["Unsolicited"]) return;
-print "HERE";
+        if ($this->checkPriority($id, $priority) !== true) return;
+        
         $Command = trim(strtoupper($pkt['Command']));
         switch($Command) {
         case PACKET_COMMAND_POWERUP:
@@ -333,6 +335,15 @@ print "HERE";
      */
     function configCheck() 
     {
+
+        $check = $this->checkPriority($id, $priority);
+        if (!$check) {
+            print "Skipping the config check.  $id is checking configs priority ($priority)\n";
+            $this->stats->setStat('ccheck', $id);
+            return;
+        }
+        $this->stats->setStat('ccheck', $this->myInfo["DeviceID"]);
+
         $checked = 0;
         $epkeys = array_keys($this->ep);
         shuffle($epkeys);
@@ -347,6 +358,7 @@ print "HERE";
                 $checked++;
                 $this->checkDev($key);
             }
+            if ($this->lastminute != date("i")) break;
         }
         return $checked;
     }
