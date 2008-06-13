@@ -137,6 +137,9 @@ class endpoint extends endpointBase
                 $this->checkAllGW();
                 $this->setupMyInfo();
                 $this->stats->setStat("PacketSN", substr($this->DeviceID, 0, 6));
+                $this->stats->setStat("GatewayKey", (int)$this->config["GatewayKey"]);
+                $this->stats->setStat("GatewayIP", (string)$this->config["GatewayIP"]);
+                $this->stats->setStat("GatewayPort", (int)$this->config["GatewayPort"]);
             }
             $lastminute = date("i");
             if ($GLOBALS["exit"] == true) break;
