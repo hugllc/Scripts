@@ -29,12 +29,12 @@
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2007 Hunt Utilities Group, LLC
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version    SVN: $Id: poll.php 1361 2008-05-25 00:53:23Z prices $    
+ * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
 define("ENDPOINT_PARTNUMBER", "0039-26-04-P");  //0039-26-01-P
-define("ENDPOINT_SVN", '$Id: poll.php 1361 2008-05-25 00:53:23Z prices $');
+define("ENDPOINT_SVN", '$Id$');
 
 $GatewayKey = false;
 $testMode = false;
