@@ -56,7 +56,7 @@ class endpoint extends endpointBase
 
     var $lastminute = 0;
     
-    var $gwRemove = 300;
+    var $gwRemove = 360;
     var $test = false;
     
     public $exit = false;
@@ -288,7 +288,7 @@ class endpoint extends endpointBase
     private function _checkAllGWdb() 
     {
         // This gets rid of old stuff
-        $this->gw->removeWhere("LastContact < ?", array(date("Y-m-d H:i:s", time() - $this->gwRemove)));
+        $this->gw->removeWhere("LastContact < ?", array(date("Y-m-d H:i:s", (time() - $this->gwRemove))));
         // This gets everything
         $ret = $this->gw->getWhere("`Job` = ? AND `Name` <> ?", array($this->myInfo["Job"], $this->myInfo["Name"]));
         if (!is_array($ret)) return;

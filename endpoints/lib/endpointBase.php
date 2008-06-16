@@ -66,9 +66,9 @@ class endpointBase
 
         $this->gw =& HUGnetDB::getInstance("Gateway", $config); // new gateway($file);
         $this->gw->createLocalTable("LocalGW");
-        
+
         $this->setupMyInfo();
-        $ret = $this->gw->removeWhere("`Job` = ? AND `IP` = ?", array($this->myInfo["Job"], $this->myInfo["IP"]));
+        $this->getOtherPriorities();
     }
 
     /**
@@ -218,7 +218,7 @@ class endpointBase
     function getOtherPriorities() 
     {
         $this->gwPriorities = array();
-        $g = $this->gw->getWhere("Local = 0");
+        $g = $this->gw->getWhere("Local = 0 AND CurrentGatewayKey = ?", array($this->config["GatewayKey"]));
         foreach ($g as $gw) {
             e00392601::interpConfig($gw);
             $this->gwPriorities[$gw["DeviceID"]] = $gw["Priorities"];
@@ -235,7 +235,7 @@ class endpointBase
         foreach ($this->gwPriorities as $i => $p) {
             if ($p[$this->myInfo["Job"]] > $this->myInfo["Priority"]) {
                 $id = $i;
-                $priority = $p;
+                $priority = $p[$this->myInfo["Job"]];
                 return false;
             }
         }

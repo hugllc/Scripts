@@ -55,8 +55,7 @@ class epConfig extends endpointBase
 {
 
     var $ep = array();
-    var $doConfig = true;
-    var $doCCheck = true;
+    var $doConfig = false;
     
     var $configInterval = 43200; //!< Number of seconds between config attempts.
     var $otherGW = array();
@@ -138,6 +137,12 @@ class epConfig extends endpointBase
                 $this->setupMyInfo();
                 $this->getAllDevices();
                 $this->getOtherPriorities();
+                if (!$this->checkPriority($id, $priority)) {
+                    print "Skipping the config check.  $id is checking configs with priority $priority\n";
+                    $this->doConfig = false;
+                } else {
+                    $this->doConfig = true;
+                }
                 $this->lastminute = date("i");
             }
             $checked = $this->configCheck();
@@ -238,7 +243,7 @@ class epConfig extends endpointBase
     public function checkPacketUnsolicited($pkt)
     {
         if (!$pkt["Unsolicited"]) return;
-        if ($this->checkPriority($id, $priority) !== true) return;
+        if ($this->doConfig !== true) return;
         
         $Command = trim(strtoupper($pkt['Command']));
         switch($Command) {
@@ -336,9 +341,7 @@ class epConfig extends endpointBase
     function configCheck() 
     {
 
-        $check = $this->checkPriority($id, $priority);
-        if (!$check) {
-            print "Skipping the config check.  $id is checking configs priority ($priority)\n";
+        if (!$this->doConfig) {
             $this->stats->setStat('ccheck', $id);
             return;
         }

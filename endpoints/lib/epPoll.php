@@ -58,9 +58,6 @@ class epPoll extends EndpointBase
     var $lastminute = 0;
     var $gw = array(0 => array());
     var $doPoll = false;
-    var $doCCheck = false;
-    var $doConfig = false;
-    var $doUnsolicited = false;
     
     var $configInterval = 43200; //!< Number of seconds between config attempts.
     var $otherGW = array();
@@ -143,6 +140,12 @@ class epPoll extends EndpointBase
                 $this->setupMyInfo();
                 $this->getAllDevices();
                 $this->getOtherPriorities();
+                if (!$this->checkPriority($id, $priority)) {
+                    print "Skipping the poll.  $id is polling with priority $priority\n";
+                    $this->doPoll = false;
+                } else {
+                    $this->doPoll = true;
+                }
                 $this->lastminute = date("i");
             }
             $count = $this->poll();    
@@ -265,9 +268,7 @@ class epPoll extends EndpointBase
      */
     function poll() 
     {
-        $check = $this->checkPriority($id, $priority);
-        if (!$check) {
-            print "Skipping the poll.  $id is polling priority ($priority)\n";
+        if (!$this->doPoll) {
             $this->stats->setStat('polling', $id);
             return;
         }
