@@ -142,9 +142,11 @@ class epPoll extends EndpointBase
                 $this->getOtherPriorities();
                 if (!$this->checkPriority($id, $priority)) {
                     print "Skipping the poll.  $id is polling with priority $priority\n";
+                    $this->stats->setStat('polling', $id);
                     $this->doPoll = false;
                 } else {
                     $this->doPoll = true;
+                    $this->stats->setStat('polling', $this->myInfo["DeviceID"]);
                 }
                 $this->lastminute = date("i");
             }
@@ -268,11 +270,7 @@ class epPoll extends EndpointBase
      */
     function poll() 
     {
-        if (!$this->doPoll) {
-            $this->stats->setStat('polling', $id);
-            return;
-        }
-        $this->stats->setStat('polling', $this->myInfo["DeviceID"]);
+        if (!$this->doPoll) return;
         $epkeys = array_keys($this->ep);
         shuffle($epkeys);
         $count = 0;

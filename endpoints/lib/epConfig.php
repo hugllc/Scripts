@@ -139,8 +139,10 @@ class epConfig extends endpointBase
                 $this->getOtherPriorities();
                 if (!$this->checkPriority($id, $priority)) {
                     print "Skipping the config check.  $id is checking configs with priority $priority\n";
+                    $this->stats->setStat('ccheck', $id);
                     $this->doConfig = false;
                 } else {
+                    $this->stats->setStat('ccheck', $this->myInfo["DeviceID"]);
                     $this->doConfig = true;
                 }
                 $this->lastminute = date("i");
@@ -341,11 +343,7 @@ class epConfig extends endpointBase
     function configCheck() 
     {
 
-        if (!$this->doConfig) {
-            $this->stats->setStat('ccheck', $id);
-            return;
-        }
-        $this->stats->setStat('ccheck', $this->myInfo["DeviceID"]);
+        if (!$this->doConfig) return;
 
         $checked = 0;
         $epkeys = array_keys($this->ep);

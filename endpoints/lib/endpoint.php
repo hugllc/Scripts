@@ -271,10 +271,11 @@ class endpoint extends endpointBase
         $this->_checkAllGWdb();
         if (!is_array($this->gwCheck)) return;
         foreach ($this->gwCheck as $gw => $val) {
-            $p = array(
-                "DeviceID" => devInfo::hexify($gw, 6),
-                "GatewayKey" => $this->config["GatewayKey"],
-            );
+            $b = $this->gw->getWhere("`DeviceID` = ?", array(devInfo::hexify($gw, 6)));
+            if (is_array($p[0])) $p = $p[0];
+            if (!isset($p["DeviceID"])) $p["DeviceID"] = devInfo::hexify($gw, 6);
+            if (!isset($p["GatewayKey"])) $p["GatewayKey"] = $this->config["GatewayKey"];
+            print "Force check of gateway ".$p["DeviceID"]."\n";
             $this->checkGW($p);
         }
         $this->gwCheck = array();
@@ -293,23 +294,7 @@ class endpoint extends endpointBase
         $ret = $this->gw->getWhere("`Job` = ? AND `Name` <> ?", array($this->myInfo["Job"], $this->myInfo["Name"]));
         if (!is_array($ret)) return;
         foreach ($ret as $gw) {
-            // This saves us the time of actually contacting the gateway
-            // It uses the date of the last packet we saw from this gateway
-            // to set the LastContact date
-            $sn = hexdec($gw["DeviceID"]);
-/*            
-            if (!empty($this->gwCheck[$sn])) {
-                $p = array(
-                    "DeviceID" => $gw["DeviceID"],
-                    "LastContact" => $this->gwCheck[$sn],
-                );
-                $this->gw->replace($p);
-                unset($this->gwCheck[$sn]);
-                print "Updated LastContact to ".$p["LastContact"]." on ".$p["DeviceID"]."\r\n";
-                continue;
-            }
-*/
-            // Check the gateway
+            print "Checking gateway ".$gw["DeviceID"]."\n";
             $this->checkGW($gw);
         }
     }
@@ -323,6 +308,7 @@ class endpoint extends endpointBase
     function checkGW($gw) 
     {
         if (empty($gw["DeviceID"])) continue;
+
         $pkt = $this->packet->buildPacket($gw['DeviceID'], PACKET_COMMAND_GETSETUP);
         $this->stats->incStat("From Me");
         print "Snt Pkt: F:".$this->DeviceID." - T:".$pkt['To']." C:".$pkt["Command"]." - From Me!\r\n";
@@ -334,7 +320,11 @@ class endpoint extends endpointBase
         }
         $config = $this->interpConfig($reply);
         $config["LastContact"] = date("Y-m-d H:i:s");
-        if ($this->gw->replace($config)) print "Gateway ".$gw["DeviceID"]." config saved\n";
+        if ($this->gw->replace($config)) {
+            print "Gateway ".$gw["DeviceID"]." config saved\n";
+            $sn = hexdec($gw["DeviceID"]);
+            unset($this->gwCheck[$sn]);
+        }
     }
 
 

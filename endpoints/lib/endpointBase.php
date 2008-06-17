@@ -52,8 +52,10 @@ require_once HUGNET_INCLUDE_PATH.'/database/ProcStats.php';
 class endpointBase
 {
 
-    var $lastminute = 0;
-    
+    /** This just keeps track of the minutes */
+    var $lastminute = -1;
+    /** This stores all of the priorities */
+    protected $gwPriorities = array();
     /**
      * Construction
      *
@@ -217,11 +219,10 @@ class endpointBase
      */
     function getOtherPriorities() 
     {
-        $this->gwPriorities = array();
         $g = $this->gw->getWhere("Local = 0 AND CurrentGatewayKey = ?", array($this->config["GatewayKey"]));
         foreach ($g as $gw) {
             e00392601::interpConfig($gw);
-            $this->gwPriorities[$gw["DeviceID"]] = $gw["Priorities"];
+            $this->gwPriorities[$gw["DeviceID"]] = is_array($gw["Priorities"]) ? $gw["Priorities"] : array();
         }
     }
     /**
