@@ -69,6 +69,8 @@ class endpointBase
         $this->gw =& HUGnetDB::getInstance("Gateway", $config); // new gateway($file);
         $this->gw->createLocalTable("LocalGW");
 
+        $this->lastUnsolicited = date("Y-m-d H:i:s");
+
         $this->setupMyInfo();
         $this->getOtherPriorities();
     }
@@ -107,7 +109,20 @@ class endpointBase
             return mt_rand(1, 0xFE);
         }
     }
-            
+
+    /**
+     * Returns random timeout
+     *
+     * @return int
+     */
+    function getUnsolicited() 
+    {
+        $check = $this->lastUnsolicited;
+        $this->lastUnsolicited = date("Y-m-d H:i:s");
+        $pkts = $this->plog->getWhere("Type = 'UNSOLICITED' and `Date` >= ?", array($check));
+        if (!is_array($pkts)) return array();
+        return $pkts;
+    }            
     /**
      * Returns random timeout
      *

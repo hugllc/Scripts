@@ -96,7 +96,7 @@ class epConfig extends endpointBase
         $this->verbose = $config["verbose"];
         $this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
         $this->endpoint =& HUGnetDriver::getInstance($config);
-        $this->endpoint->packet->getAll(true);
+//        $this->endpoint->packet->getAll(true);
 
         unset($config["table"]);
         $this->plog = & HUGnetDB::getInstance("Plog", $config); //new plog();
@@ -127,8 +127,9 @@ class epConfig extends endpointBase
         static $lastminute;
 
         $this->powerup();
-        $this->endpoint->packet->packetSetCallBack('checkPacket', $this);
+//        $this->endpoint->packet->packetSetCallBack('checkPacket', $this);
         $this->uproc->register();
+
 
         while ($GLOBALS["exit"] !== true) {
             declare(ticks = 1);
@@ -147,6 +148,7 @@ class epConfig extends endpointBase
                 }
                 $this->lastminute = date("i");
             }
+            $this->checkUnsolicitedPackets();
             $checked = $this->configCheck();
             if ($checked == 0) $this->wait();
         }
@@ -189,7 +191,7 @@ class epConfig extends endpointBase
     function wait() 
     {
         $sleep = mt_rand(1, 6);
-        $this->endpoint->packet->monitor($this->config, $sleep);
+        sleep($sleep);
     }
 
 
@@ -213,54 +215,20 @@ class epConfig extends endpointBase
      *
      * @return null
      */
-    public function checkPacket($pkt)
+    public function checkUnsolicitedPackets()
     {
-        $this->checkPacketUnsolicited($pkt);
-        if (!$pkt['toMe']) return;
-        $this->stats->incStat("To Me");
-        $Command = trim(strtoupper($pkt['Command']));
-        switch($Command) {
-        case PACKET_COMMAND_GETSETUP:
-            // Get our setup
-            //$this->qPacket($this->config, $pkt['From'], PACKET_COMMAND_REPLY, e00392601::getConfigStr($this->myInfo));
-            $ret = $this->packet->sendReply($pkt, $pkt['From'], e00392601::getConfigStr($this->myInfo));
-            break;
-        case PACKET_COMMAND_ECHOREQUEST:
-        case PACKET_COMMAND_FINDECHOREQUEST:
-            // Reply to a ping request
-            $ret = $this->packet->sendReply($pkt, $pkt['From'], $pkt["Data"]);
-            break;
-        default:
-            break;
+        $pkts = $this->getUnsolicited();
+        foreach ($pkts as $p) {
+            print "Unsolicited packet from ".$p["PacketFrom"]." command ".$p["Command"]."\n";
+            switch ($p["Command"]) {
+            case PACKET_COMMAND_RECONFIG:
+            case PACKET_COMMAND_POWERUP:
+                $this->_devInfo[$p["PacketFrom"]]['nextCheck'] = 0;
+                break;
+            default:
+                break;
+            }
         }
-    
-    }
-    /**
-     * Deals with packets to me.
-     *
-     * @param array $pkt The packet array
-     *
-     * @return null
-     */
-    public function checkPacketUnsolicited($pkt)
-    {
-        if (!$pkt["Unsolicited"]) return;
-        if ($this->doConfig !== true) return;
-        
-        $Command = trim(strtoupper($pkt['Command']));
-        switch($Command) {
-        case PACKET_COMMAND_POWERUP:
-            $type = "Powerup";
-            $this->_devInfo[$pkt["From"]]["nextCheck"] = 0;
-            break;
-        case PACKET_COMMAND_RECONFIG:
-            $type = "Reconfig";
-            $this->_devInfo[$pkt["From"]]["nextCheck"] = 0;
-            break;
-        default:
-            break;
-        }
-        if (!empty($type)) print "\n$type packet F:".$pkt["From"]."\n";
 
     }
 
