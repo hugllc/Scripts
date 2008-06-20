@@ -119,7 +119,7 @@ class epUpdatedb extends endpointBase
         unset($config["table"]);
         $this->stats =& HUGnetDB::getInstance("ProcStats", $config); //new ProcStats();
         $this->stats->createTable();
-        $this->stats->clearStats();
+//        $this->stats->clearStats();
         $this->stats->setStat('start', time());
         $this->stats->setStat('PID', $this->uproc->me['PID']);
         $this->stats->setStat('HWPartNum', UPDATEDB_PARTNUMBER);
@@ -144,22 +144,9 @@ class epUpdatedb extends endpointBase
         while ($GLOBALS["exit"] !== true) {
             declare(ticks = 1);
             if ($this->errors[HUGnetDB_META_ERROR_SERVER_GONE] > 0) {
-                do {
-                    print "Trying to reconnect to the database ";
-//                    $this->db = HUGnetDB::createPDO($serv["dsn"], $serv["User"], $serv["Password"]);
-                    if ($this->db === false) {
-                        $this->updatedbError($emptyVar, "Failed", "dbReconnectFail");
-                        print " - Sleeping";
-                        sleep(60);
-                        throw new Exception("Database connection failed.");
-                    } else {
-                        $this->updatedbError($emptyVar, "Succeeded", "dbReconnect");
-                    }
-                    print "\n";
-                } while ($this->db === false);
-                $this->errors[HUGnetDB_META_ERROR_SERVER_GONE] = 0;
-            } else if ($this->errors["updatedb"] > 10) {
-                die ("Too many errors");
+                die("Lost my database connection\n");
+            } else if (!$this->checkErrors(10)) {
+                die ("Too many errors\n");
             }
             if ($lastminute != date("i")) {
                 $this->setupMyInfo();
@@ -192,6 +179,22 @@ class epUpdatedb extends endpointBase
     
     }
     /**
+     * Check to see if any error is higher than the value given
+     *
+     * @param int $value The value
+     *
+     * @return bool
+     */
+    function checkErrors ($value)
+    {
+        if (!is_array($this->errors)) return true;
+        foreach ($this->errors as $e) {
+            if ($e > $value) return false;
+        }
+        return true;
+    }    
+    
+    /**
      * Gets all devices from the remote database and stores them in the
      * local database.
       */
@@ -214,6 +217,8 @@ class epUpdatedb extends endpointBase
                     $val['DeviceID'] = trim(strtoupper($val['DeviceID']));
                     $this->ep[$val['DeviceID']] = $dev;                
                 }
+            } else {
+                die("Gaahhh...  Can't get devices!\n");
             }
             print "\n";
         }
@@ -318,9 +323,11 @@ class epUpdatedb extends endpointBase
             if ($return) {
                 print " - Moved ";
                 $packet["remove"] = true;
+                $this->errors["updatedbConfig"] = 0;
             } else {
                 print " - Move Failed ";
                 $this->updatedbError($packet, "Update Failed", "Config Failed");
+                $this->errors["updatedbConfig"]++;
             }
             if ($this->endpoint->UpdateDevice(array($packet))) {
                 $this->stats->incStat("Device Updated");
@@ -374,8 +381,10 @@ class epUpdatedb extends endpointBase
         if ($hist) {
             $set["LastHistory"] = $packet["Date"];
             print " - ".$packet["Driver"]." history ";
+            $this->errors["updatedbHist"] = 0;
         } else {
             print " - History Failed";
+            $this->errors["updatedbHist"]++;
             return false;
         }
         $ret = $this->endpoint->device->update($set);
@@ -399,11 +408,11 @@ class epUpdatedb extends endpointBase
         if ($ret) {
             $info = array();
             print " - raw history ";
-            $this->errors["updatedb"] = 0;
+            $this->errors["updatedbRaw"] = 0;
             return true;
         } else {
             $this->updatedbError($packet, "Raw History Failed", "Poll Failed");
-            $this->errors["updatedb"]++;
+            $this->errors["updatedbRaw"]++;
             return false;
         }
         
