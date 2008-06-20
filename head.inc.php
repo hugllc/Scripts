@@ -32,7 +32,7 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 define('HUGNET_FS_DIR', dirname(__FILE__));
-define('SCRIPTS_VERSION', "0.5.0");
+define('SCRIPTS_VERSION', "0.5.1");
 define("SCRIPTS_PARTNUMBER", "0039-26-00-P");  //0039-26-00-P
 
 if (!@include_once '/etc/hugnet/config.inc.php') {
