@@ -36,15 +36,20 @@
 define("ANALYSIS_PARTNUMBER", "0039-26-03-P");  //0039-26-01-P
 define("ANALYSIS_SVN", '$Id$');
 
-print 'analysis.php Version '.ANALYSIS_SVN."\n";
-print "Starting...\n";
-
-
 define('ANALYSIS_HISTORY_COUNT', 1000);
 
 require_once dirname(__FILE__).'/../head.inc.php';
 require_once HUGNET_INCLUDE_PATH.'/database/Analysis.php';
 require_once dirname(__FILE__).'/lib/epAnalysis.php';
+
+if (!(bool)$hugnet_config["analysis_enable"]) {
+    print "Analysis disabled... Sleeping\n";
+    sleep(60);
+    die();
+}
+
+print 'analysis.php Version '.ANALYSIS_SVN."\n";
+print "Starting...\n";
 
 if (empty($hugnet_config["analysisPluginDir"])) $hugnet_config["analysisPluginDir"] = dirname(__FILE__)."/analysis/";
 

@@ -224,7 +224,7 @@ class endpoint extends endpointBase
                 'command' => $p['sendCommand'],
                 'data' => $p['RawData'],            
             );
-            $pk["Type"] = plog::packetType($pk);
+            $pk["Type"] = plog::packetType($p);
             print "Snt Pkt: F:".$this->DeviceID." - T:".$p['PacketTo']." C:".$p['sendCommand']." Id:".$p["id"]." Type:".$pk["Type"]."\n";
             $packet = $this->endpoint->packet->sendPacket($this->config, array($pk));
             $this->stats->setStat("Last".$pk["Type"], time());

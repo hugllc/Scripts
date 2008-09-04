@@ -36,13 +36,21 @@
 define("ALARM_PARTNUMBER", "0039-26-03-P");  //0039-26-01-P
 define("ALARM_SVN", '$Id$');
 
-print 'alarm.php Version '.ALARM_SVN."\n";
-print "Starting...\n";
-
 require_once dirname(__FILE__).'/../head.inc.php';
 require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
 require_once(HUGNET_INCLUDE_PATH.'/database/Process.php');
 require_once('lib/epAlarm.php');
+
+if (!(bool)$hugnet_config["alarm_enable"]) {
+    print "Alarm disabled... Sleeping\n";
+    sleep(60);
+    die();
+}
+
+print 'alarm.php Version '.ALARM_SVN."\n";
+print "Starting...\n";
+
+
 
 if (empty($hugnet_config["pluginDir"])) $hugnet_config["alarmPluginDir"] = dirname(__FILE__)."/alarm/";
 

@@ -84,7 +84,7 @@ for ($i = 1; $i < count($argv); $i++) {
     case "-g":
         $i++;
         $GatewayKey = $argv[$i];
-        $hugnet_config["GatewayKey"] = $argv[$i];
+        $hugnet_config["script_gatewaykey"] = $argv[$i];
         break;
     // DeviceID
     case "-i":

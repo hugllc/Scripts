@@ -49,7 +49,7 @@ class epScheduler
     protected $pluginDir = "pluginDir";
 
     /** int The number of seconds to pause before trying again */
-    protected $wait = 60;
+    protected $wait = 600;
 
     /** array This is the stuff to check...  */
     protected $check = array(
@@ -102,10 +102,10 @@ class epScheduler
     function main()
     {
         do {
-            $this->clearErrors();         
+            if ($this->config["loop"]) $this->sleep();
+            $this->clearErrors();
             $this->check();
             $this->errorHandler();
-            if ($this->config["loop"]) $this->sleep();
         } while ($this->config["loop"]);
             return 0;
     }
@@ -137,9 +137,43 @@ class epScheduler
     */
     function errorHandler()
     {
-        var_dump($this->error);
+        if (!empty($this->error["critical"])) $this->sendErrorEmail();
+        $this->error = array();
+        return;            
     }
     
+     /**
+    * Handles the errors that might happen
+    *
+    * @return null
+     */
+    function sendErrorEmail()
+    {
+        if (empty($this->config["admin_email"])) return;
+        $errors = array("critical" => "Critical Errors", "error" => "Errors", "warning" => "Warnings");
+        $msg = "";
+       
+        foreach ($errors as $name => $text) {
+            if (count($this->error[$name]) > 0) {
+                $msg .= "\n".$text.":\n";
+                foreach ($this->error[$name] as $code => $err) {
+                    $msg .= $err["Date"]." => ".$code."\n\t".$err["Message"]."\n";
+                }
+            }
+        }        
+        mail($this->config["admin_email"], "Critical Error on ".`hostname`, $msg);
+        return;
+    }
+   
+     /**
+    * This checks the hourly scripts
+    *
+    * @return int The error code, if any
+     */
+    function dailyReport()
+    {
+        
+    }      
     /**
     * This checks the hourly scripts
     *
@@ -188,7 +222,10 @@ class epScheduler
     function setError($type, $plugin, $err, $errMsg)
     {
         $this->error[$type][$err] = array("Message" => $errMsg, "Date" => date("Y-m-d H:i:s"), "Plugin" => $plugin);
-    }      
+        $this->daily[$type][$err]["Message"] = $errMsg;
+        $this->daily[$type][$err]["Date"][] = date("Y-m-d H:i:s");
+        $this->daily[$type][$err]["Plugin"] = $plugin;
+    }
 
    /**
     * This function creates a critical error
