@@ -32,6 +32,7 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
+ 
 define("ALARM_PARTNUMBER", "0039-26-03-P");  //0039-26-01-P
 define("ALARM_SVN", '$Id$');
 
@@ -43,9 +44,7 @@ require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
 require_once(HUGNET_INCLUDE_PATH.'/database/Process.php');
 require_once('lib/epAlarm.php');
 
-$hugnet_config["verbose"] = true;
-
-if (empty($hugnet_config["alarmPluginDir"])) $hugnet_config["alarmPluginDir"] = dirname(__FILE__)."/alarm/";
+if (empty($hugnet_config["pluginDir"])) $hugnet_config["alarmPluginDir"] = dirname(__FILE__)."/alarm/";
 
 $epAlarm = new epAlarm($hugnet_config);
 

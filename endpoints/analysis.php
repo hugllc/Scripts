@@ -43,8 +43,26 @@ print "Starting...\n";
 define('ANALYSIS_HISTORY_COUNT', 1000);
 
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once 'analysis.inc.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Analysis.php';
+require_once dirname(__FILE__).'/lib/epAnalysis.php';
 
+if (empty($hugnet_config["analysisPluginDir"])) $hugnet_config["analysisPluginDir"] = dirname(__FILE__)."/analysis/";
+
+$epAnalysis = new epAnalysis($hugnet_config);
+
+$epAnalysis->main();
+
+print "Exiting...\n";
+
+
+
+
+
+
+
+
+
+/*
 if ($testMode) $endpoint->db->debug = true;
 for ($i = 0; $i < count($newArgv); $i++) {
     switch($newArgv[$i]) {
@@ -198,5 +216,5 @@ foreach ($devices as $dev) {
 }
 $uproc->Unregister();
 $uproc->CheckUnregistered(true);
-
+*/
 ?>

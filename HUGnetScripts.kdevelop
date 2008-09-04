@@ -3,7 +3,7 @@
   <general>
     <author>Scott Price</author>
     <email>prices@hugllc.com</email>
-    <version>0.5.0</version>
+    <version>0.5.2</version>
     <projectmanagement>KDevScriptProject</projectmanagement>
     <primarylanguage>PHP</primarylanguage>
     <ignoreparts/>
@@ -11,7 +11,7 @@
     <projectdirectory>.</projectdirectory>
     <absoluteprojectpath>false</absoluteprojectpath>
     <description>This is the scripts that run the HUGnet system.  They collect data nad allow debugging, and other things.</description>
-    <defaultencoding></defaultencoding>
+    <defaultencoding/>
     <versioncontrol>kdevsubversion</versioncontrol>
   </general>
   <kdevscriptproject>
@@ -46,11 +46,11 @@
     </webInvocation>
     <shell>
       <phpexe>/usr/bin/php</phpexe>
-      <phpini></phpini>
+      <phpini/>
     </shell>
     <options>
-      <phpincludepath></phpincludepath>
-      <defaultFile></defaultFile>
+      <phpincludepath/>
+      <defaultFile/>
       <startupFileMode>1</startupFileMode>
     </options>
   </kdevphpsupport>
@@ -107,13 +107,16 @@
   </kdevfilecreate>
   <kdevdocumentation>
     <projectdoc>
-      <docsystem></docsystem>
-      <docurl></docurl>
-      <usermanualurl></usermanualurl>
+      <docsystem/>
+      <docurl/>
+      <usermanualurl/>
     </projectdoc>
   </kdevdocumentation>
   <kdevfileview>
-    <groups/>
+    <groups>
+      <hidenonprojectfiles>false</hidenonprojectfiles>
+      <hidenonlocation>false</hidenonlocation>
+    </groups>
     <tree>
       <hidepatterns>*.o,*.lo,CVS</hidepatterns>
       <hidenonprojectfiles>false</hidenonprojectfiles>
@@ -121,7 +124,7 @@
     </tree>
   </kdevfileview>
   <ctagspart>
-    <customArguments></customArguments>
+    <customArguments/>
     <customTagfilePath>/home/prices/devel/HUGnet/Scripts/tags</customTagfilePath>
     <activeTagsFiles/>
   </ctagspart>

@@ -153,11 +153,12 @@ class endpoint extends endpointBase
      *
      * @return int
      */
-    function checkPacket($pkt) 
+    function checkPacket($pkt)
     {
         if (is_array($pkt)) {
             $this->stats->incStat("Pkts Received");
             $pkt["Type"] = $Type = plog::packetType($pkt);
+            $this->stats->setStat("Last".$pkt["Type"], time());
             // Add it to the debug log
             $lpkt = plog::packetLogSetup($pkt, $this->myInfo, $Type);
             $this->plog->add($lpkt);
@@ -171,7 +172,7 @@ class endpoint extends endpointBase
                 if ($v) print " - To Me! ";
                 $this->checkPacketToMe($pkt);
             }
-            if ($v) print "\r\n";
+            if ($v) print " Type: ".$pkt["Type"]."\r\n";
 
         }
     }
@@ -221,10 +222,12 @@ class endpoint extends endpointBase
             $pk = array(
                 'to' => $p['PacketTo'],
                 'command' => $p['sendCommand'],
-                'data' => $p['RawData'],
-           );
-            print "Snt Pkt: F:".$this->DeviceID." - T:".$p['PacketTo']." C:".$p['sendCommand']." Id:".$p["id"]."\n";
+                'data' => $p['RawData'],            
+            );
+            $pk["Type"] = plog::packetType($pk);
+            print "Snt Pkt: F:".$this->DeviceID." - T:".$p['PacketTo']." C:".$p['sendCommand']." Id:".$p["id"]." Type:".$pk["Type"]."\n";
             $packet = $this->endpoint->packet->sendPacket($this->config, array($pk));
+            $this->stats->setStat("Last".$pk["Type"], time());
             $this->stats->incStat("Sent User Packet");
             if (is_array($packet)) {
                 foreach ($packet as $pkt) {
@@ -232,6 +235,7 @@ class endpoint extends endpointBase
                     $lpkt["id"] = $p["id"];
                     $this->plog->update($lpkt);
                     print "Got Pkt: F:".$lpkt["PacketFrom"]." - T:".$lpkt["PacketTo"]. " C:".$lpkt["Command"]." Id:".$lpkt["id"]." RTime:".$lpkt["ReplyTime"]."\n";
+                    $this->stats->setStat("Last".plog::packetType($pkt), time());
                 }
                 $this->stats->incStat("Sent Packet Success");
             }

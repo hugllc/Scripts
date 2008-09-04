@@ -31,7 +31,8 @@
  * @version    SVN: $Id: endpoint.php 1445 2008-06-17 22:25:17Z prices $    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-
+ 
+require_once "epScheduler.php";
 /**
  * Class for checking on things to make sure they are working correctly
  *
@@ -43,101 +44,37 @@
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */ 
-class epAlarm
+class epAnalysis extends epScheduler
 {
+    /** String This specifies what the plugin directory is. */
+    protected $pluginDir = "analysisPluginDir";
+    /** int The number of seconds to pause before trying again */
+    protected $wait = 600;
+
+    /** array This is the stuff to check...  */
+    protected $check = array(
+                             "H_1" => "hourlyPre",
+                             "H" => "hourly",
+                             "H_3" => "hourlyPost",
+                             "d_1" => "dailyPre",
+                             "d" => "daily",
+                             "d_3" => "dailyPost",
+                             "W_1" => "weeklyPre",
+                             "W" => "weekly",
+                             "W_3" => "weeklyPost",
+                             "m_1" => "monthlyPre",
+                             "m" => "monthly",
+                             "m_3" => "monthlyPost",
+                             "Y_1" => "yearlyPre",
+                             "Y" => "yearly",
+                             "Y_3" => "yearlyPost",
+                            );
     /**
      *
      */    
     function __construct($config = array()) 
     {
-        
-        unset($config["servers"]);
-        unset($config["table"]);
-        $config["partNum"] = CONFIG_PARTNUMBER;
-        $this->config = $config;
-
-        $this->uproc =& HUGnetDB::getInstance("Process", $config); 
-        $this->uproc->createTable();
-
-        unset($config["table"]);
-        $this->stats =& HUGnetDB::getInstance("ProcStats", $config); 
-        $this->stats->createTable();
-        $this->stats->clearStats();        
-        $this->stats->setStat('start', time());
-        $this->stats->setStat('PID', $this->uproc->me['PID']);
-
-
-        $this->test = $config["test"];
-        $this->verbose = $config["verbose"];
-
-        unset($config["table"]);
-        $this->plog = & HUGnetDB::getInstance("Plog", $config); 
-        $this->plog->createTable();
-
-        unset($config["table"]);
-        $this->device =& HUGnetDB::getInstance("Device", $config);
-    
-        $this->getPlugins($config["alarmPluginDir"]);
-
+        parent::__construct($config);      
     }
-    /**
-     * This is the main routine that should be called by the script
-     *
-     * @return int The error code, if any
-     */
-    function main()
-    {
-        $this->checkHourly();
-        $this->sleep();      
-    
-        return 0;
-    }
-    
-    /**
-    * sleeps
-    *
-    * @return null
-    */
-    function sleep()
-    {
-        if ($this->test) return;      
-        $wait = 600;
-        if ($this->verbose) print "Waiting $wait Seconds";            
-        sleep($wait);
-    }
-
-    
-    /**
-    * This checks the hourly scripts
-    *
-    * @return int The error code, if any
-    */
-    function checkHourly()
-    {
-        static $lastHour;
-        if (date("H") != $lastHour) {
-            if ($this->verbose) print "Running Hourly Scrips:\n";         
-            $this->plugins->runFilter(&$this, "hourly");
-        }         
-    }
-    
-    /**
-     * Registers plugins
-     *
-     * @return null
-     */
-    function getPlugins ()
-    {
-        $this->plugins = new Plugins($this->config["alarmPluginDir"], "inc.php", dirname(__FILE__)."/plugins", null, $this->verbose);
-        if ($this->verbose) {
-            if (is_array($this->plugins->plugins["Functions"])) {
-                foreach ($this->plugins->plugins["Functions"] as $plugName => $plugDir) {
-                    foreach ($plugDir as $plug) {
-                        print "Found $plugName Plugin: ".$plug["Title"]." (".$plug["Name"].")\r\n";
-                    }
-                }
-            }
-        }
-    }       
 }
 ?>

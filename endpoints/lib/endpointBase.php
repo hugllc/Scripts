@@ -135,7 +135,7 @@ class endpointBase
             // Add it to the debug log
             $lpkt = plog::packetLogSetup($pkt, $this->myInfo, $Type);
             $this->plog->add($lpkt);
-            if ($pkt['isGateway']) {
+            if ($pkt['isGateway'] && method_exists($this, "gwCheck")) {
                 $this->gwCheck[hexdec($pkt["From"])] = date("Y-m-d H:i:s");
             }
             // Do some printing if we are not otherwise working
