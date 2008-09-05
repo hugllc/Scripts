@@ -56,7 +56,7 @@ function checkLastPoll(&$obj)
     $old = $obj->device->getWhere("LastPoll < ? AND GatewayKey = ?", array($cutoff, $obj->config["script_gatewaykey"]));
     $current = $obj->device->getWhere("LastPoll >= ? AND GatewayKey = ?", array($cutoff, $obj->config["script_gatewaykey"]));
 
-    if (count($current) == 0) $obj->criticalError("checkLastPoll", "No devices with current config", "All devices on this controller are more than an hour old!");
+    if (count($current) == 0) $obj->criticalError("checkLastPoll", "No devices with current poll", "The last poll was more than an hour ago!");
     
 }
 
