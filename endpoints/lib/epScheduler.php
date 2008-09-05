@@ -184,6 +184,7 @@ class epScheduler
         if (!is_array($this->check)) return;
         foreach ($this->check as $key => $name) {            
             if (date($key) != $this->last[$key]) {
+                print "Doing ".$key."\n";
                 $this->plugins->runFilter(&$this, $name);
                 $this->last[$key] = date($key);
             }
