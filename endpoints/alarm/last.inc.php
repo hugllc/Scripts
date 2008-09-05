@@ -38,8 +38,8 @@
  */
 function checkLastSensorRead(&$obj)
 {
-    $last = $obj->stats->getWhere("sname = 'LastSENSORREAD'");
-    if (((int)$last[0]["svalue"]) < (time() - 1800)) $obj->criticalError("checkLastSensorRead", "Last sensor read too old", "The last sensor read happened more than 30 minutes ago at ".date("Y-m-d H:i:s", $last[0]["svalue"])."!");
+    $value = $obj->stats->getStat("LastSENSORREAD", "endpoint.php");
+    if (strtotime($value) < (time() - 1800)) $obj->criticalError("checkLastSensorRead", "Last sensor read too old", "The last sensor read happened more than 30 minutes ago at ".$value."!");
 }
 
 $this->registerFunction("checkLastSensorRead", "hourly", "Last Sensor Read");

@@ -158,7 +158,7 @@ class endpoint extends endpointBase
         if (is_array($pkt)) {
             $this->stats->incStat("Pkts Received");
             $pkt["Type"] = $Type = plog::packetType($pkt);
-            $this->stats->setStat("Last".$pkt["Type"], time());
+            $this->stats->setStat("Last".$pkt["Type"], date("Y-m-d H:i:s"));
             // Add it to the debug log
             $lpkt = plog::packetLogSetup($pkt, $this->myInfo, $Type);
             $this->plog->add($lpkt);
@@ -227,15 +227,16 @@ class endpoint extends endpointBase
             $pk["Type"] = plog::packetType($p);
             print "Snt Pkt: F:".$this->DeviceID." - T:".$p['PacketTo']." C:".$p['sendCommand']." Id:".$p["id"]." Type:".$pk["Type"]."\n";
             $packet = $this->endpoint->packet->sendPacket($this->config, array($pk));
-            $this->stats->setStat("Last".$pk["Type"], time());
+            $this->stats->setStat("Last".$pk["Type"], date("Y-m-d H:i:s"));
             $this->stats->incStat("Sent User Packet");
             if (is_array($packet)) {
                 foreach ($packet as $pkt) {
                     $lpkt = plog::packetLogSetup($pkt, $p, "REPLY");
+                    $pkt["Type"] = plog::packetType($pkt);
                     $lpkt["id"] = $p["id"];
                     $this->plog->update($lpkt);
-                    print "Got Pkt: F:".$lpkt["PacketFrom"]." - T:".$lpkt["PacketTo"]. " C:".$lpkt["Command"]." Id:".$lpkt["id"]." RTime:".$lpkt["ReplyTime"]."\n";
-                    $this->stats->setStat("Last".plog::packetType($pkt), time());
+                    print "Got Pkt: F:".$lpkt["PacketFrom"]." - T:".$lpkt["PacketTo"]. " C:".$lpkt["Command"]." Id:".$lpkt["id"]." RTime:".$lpkt["ReplyTime"]." Type:".$pkt["Type"]."\n";
+                    $this->stats->setStat("Last".$pkt["Type"], date("Y-m-d H:i:s"));
                 }
                 $this->stats->incStat("Sent Packet Success");
             }

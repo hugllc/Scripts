@@ -225,8 +225,8 @@ class epPoll extends EndpointBase
     function wait() 
     {
         $sleep = mt_rand(1, 6);
-        sleep($sleep); 
-    }
+        sleep($sleep);
+}
 
     /**
      * Deals with packets to me.

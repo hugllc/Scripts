@@ -233,6 +233,7 @@ class epUpdatedb extends endpointBase
         if ($this->verbose) print  "[".$this->uproc->me["PID"]."] Pausing...\n";
 //        $cnt = 0;
 //        while((date("i") == $this->lastminute) && ($cnt++ < 2)) {
+//          $this->endpoint->packet->monitor($this->config, $sleep);
             sleep(2);
 //        }
 //        sleep(10);
