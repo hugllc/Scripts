@@ -90,7 +90,10 @@ class epScheduler
 
         unset($config["table"]);
         $this->device =& HUGnetDB::getInstance("Device", $config);
-    
+
+        $this->error =& HUGnetDB::getInstance("Error", $config);
+        $this->error->createTable();
+              
         $this->getPlugins($config[$this->pluginDir]);
 
     }
