@@ -53,7 +53,7 @@ class epAlarm extends epScheduler
      */    
     function __construct($config = array()) 
     {
-        parent::__construct($config);   
+        parent::__construct($config);
     }
    
 }

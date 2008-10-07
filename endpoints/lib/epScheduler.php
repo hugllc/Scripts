@@ -67,7 +67,6 @@ class epScheduler
         
         unset($config["servers"]);
         unset($config["table"]);
-        $config["partNum"] = CONFIG_PARTNUMBER;
         $this->config = $config;
 
         $this->uproc =& HUGnetDB::getInstance("Process", $config); 
@@ -96,6 +95,8 @@ class epScheduler
               
         $this->getPlugins($config[$this->pluginDir]);
 
+        $this->id = rand(0, 0xFFFFFFFF);
+              
     }
     /**
      * This is the main routine that should be called by the script
@@ -104,13 +105,13 @@ class epScheduler
      */
     function main()
     {
+        $this->clearErrors();
         do {
             if ($this->config["loop"]) $this->sleep();
-            $this->clearErrors();
             $this->check();
             $this->errorHandler();
         } while ($this->config["loop"]);
-            return 0;
+        return 0;
     }
     
     /**
@@ -131,8 +132,28 @@ class epScheduler
     */
     function clearErrors()
     {
-        $this->error = array();
+        $this->error->removeWhere("id = ?", array($this->id));
     }
+    
+   /**
+    * This checks the hourly scripts
+    *
+    * @return int The error code, if any
+        */
+    function markErrorsSent()
+    {
+        $this->markErrors("SENT");
+    }
+   /**
+    * This checks the hourly scripts
+    *
+    * @return int The error code, if any
+   */
+    function markErrors($mark="OLD")
+    {
+        $this->error->updateWhere(array("status" => $mark), "id = ?", array($this->id));
+    }
+
     /**
     * Handles the errors that might happen
     *
@@ -140,9 +161,13 @@ class epScheduler
     */
     function errorHandler()
     {
-        if (!empty($this->error["critical"])) $this->sendErrorEmail();
-        $this->error = array();
-        return;            
+        $crit = $this->getError("critical", "NEW");
+        
+        if (count($crit) > 0) {
+            $this->sendErrorEmail();
+            $this->markErrorsSent();
+        }         
+        return;
     }
     
      /**
@@ -153,17 +178,12 @@ class epScheduler
     function sendErrorEmail()
     {
         if (empty($this->config["admin_email"])) return;
-        $errors = array("critical" => "Critical Errors", "error" => "Errors", "warning" => "Warnings");
+        $errors = $this->getError();
         $msg = "";
        
-        foreach ($errors as $name => $text) {
-            if (count($this->error[$name]) > 0) {
-                $msg .= "\n".$text.":\n";
-                foreach ($this->error[$name] as $code => $err) {
-                    $msg .= $err["Date"]." => ".$code."\n\t".$err["Message"]."\n";
-                }
-            }
-        }        
+        foreach ($errors as $err) {
+            $msg .= $err["errorDate"]." => ".$err["err"]."\n\t".$err["msg"]."\n";
+        }
         mail($this->config["admin_email"], "Critical Error on ".`hostname`, $msg);
         return;
     }
@@ -187,7 +207,7 @@ class epScheduler
         if (!is_array($this->check)) return;
         foreach ($this->check as $key => $name) {            
             if (date($key) != $this->last[$key]) {
-                print "Doing ".$key."\n";
+                print "Doing ".$key." ".date("Y-m-d H:i:s")."\n";
                 $this->plugins->runFilter(&$this, $name);
                 $this->last[$key] = date($key);
             }
@@ -225,12 +245,54 @@ class epScheduler
      */
     function setError($type, $plugin, $err, $errMsg)
     {
-        $this->error[$type][$err] = array("Message" => $errMsg, "Date" => date("Y-m-d H:i:s"), "Plugin" => $plugin);
-        $this->daily[$type][$err]["Message"] = $errMsg;
-        $this->daily[$type][$err]["Date"][] = date("Y-m-d H:i:s");
-        $this->daily[$type][$err]["Plugin"] = $plugin;
+        $info = array(
+                       'id' => $this->id,               
+                       'err' => $err,               
+                       'msg' => $errMsg,
+                       'errorDate' => date("Y-m-d H:i:s"),
+                       'program' => $plugin,
+                       'type' => $type,
+                     );               
+        $this->error->add($info);
     }
 
+    /**
+    * This function creates a critical alarm
+    *
+    * @param string $type   The type of error
+    * @param string $plugin The name of the plugin that created the alarm
+    * @param string $err    The error (short description)
+    * @param string $errMsg The long error message
+    *
+    * @return null
+    */
+    function getError($type=null, $status=null, $err=null, $program=null)
+    {
+        $where = array();
+        $data = array();            
+        if (!empty($type)) {
+            $where[] = "type = ?";
+            $data[] = $type;
+        }
+        if (!empty($status)) {
+            $where[] = "status = ?";
+            $data[] = $status;
+        }
+        if (!empty($err)) {
+            $where[] = "err = ?";
+            $data[] = $err;
+        }
+        if (!empty($program)) {
+            $where[] = "program = ?";
+            $data[] = $program;
+        }
+        $where[] = "id = ?";
+        $data[] = $this->id;            
+        $where = implode(" AND ", $where);      
+        return $this->error->getWhere($where, $data);
+    }
+   
+    
    /**
     * This function creates a critical error
     *

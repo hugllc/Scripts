@@ -52,6 +52,7 @@ print 'analysis.php Version '.ANALYSIS_SVN."\n";
 print "Starting...\n";
 
 if (empty($hugnet_config["analysisPluginDir"])) $hugnet_config["analysisPluginDir"] = dirname(__FILE__)."/analysis/";
+$hugnet_config["partNum"] = ANALYSIS_PARTNUMBER;
 
 $epAnalysis = new epAnalysis($hugnet_config);
 

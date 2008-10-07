@@ -53,6 +53,7 @@ print "Starting...\n";
 
 
 if (empty($hugnet_config["pluginDir"])) $hugnet_config["alarmPluginDir"] = dirname(__FILE__)."/alarm/";
+$hugnet_config["partNum"] = ALARM_PARTNUMBER;
 
 $epAlarm = new epAlarm($hugnet_config);
 
