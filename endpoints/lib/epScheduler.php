@@ -182,7 +182,7 @@ class epScheduler
         $msg = "";
        
         foreach ($errors as $err) {
-            $msg .= $err["errorDate"]." => ".$err["err"]."\n\t".$err["msg"]."\n";
+            $msg .= $err["errorLastSeen"]." => ".$err["err"]." First seen ".$err["errorDate"]." Seen ".$err["errorCount"]." times\n\t".$err["msg"]."\n";
         }
         mail($this->config["admin_email"], "Critical Error on ".`hostname`, $msg);
         return;
@@ -207,7 +207,7 @@ class epScheduler
         if (!is_array($this->check)) return;
         foreach ($this->check as $key => $name) {            
             if (date($key) != $this->last[$key]) {
-                print "Doing ".$key." ".date("Y-m-d H:i:s")."\n";
+                print "Doing ".$key." ".date("Y-m-d H:i:s")."s\n";
                 $this->plugins->runFilter(&$this, $name);
                 $this->last[$key] = date($key);
             }
@@ -247,7 +247,7 @@ class epScheduler
     {
         $info = array(
                        'id' => $this->id,               
-                       'err' => $err,               
+                       'err' => (int)$err,               
                        'msg' => $errMsg,
                        'errorDate' => date("Y-m-d H:i:s"),
                        'program' => $plugin,

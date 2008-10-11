@@ -39,7 +39,7 @@
 function checkLastSensorRead(&$obj)
 {
     $value = $obj->stats->getStat("LastSENSORREAD", "endpoint.php");
-    if (strtotime($value) < (time() - 1800)) $obj->criticalError("checkLastSensorRead", "Last sensor read too old", "The last sensor read happened more than 30 minutes ago at ".$value."!");
+    if (strtotime($value) < (time() - 1800)) $obj->criticalError("checkLastSensorRead", HUGNET_ERROR_OLD_SENSOR_READ, "The last sensor read happened more than 30 minutes ago at ".$value."!");
 }
 
 $this->registerFunction("checkLastSensorRead", "hourly", "Last Sensor Read");
@@ -56,7 +56,7 @@ function checkLastPoll(&$obj)
     $old = $obj->device->getWhere("LastPoll < ? AND GatewayKey = ?", array($cutoff, $obj->config["script_gatewaykey"]));
     $current = $obj->device->getWhere("LastPoll >= ? AND GatewayKey = ?", array($cutoff, $obj->config["script_gatewaykey"]));
 
-    if (count($current) == 0) $obj->criticalError("checkLastPoll", "No devices with current poll", "The last poll was more than an hour ago!");
+    if (count($current) == 0) $obj->criticalError("checkLastPoll", HUGNET_ERROR_OLD_POLL, "The last poll was more than an hour ago!");
     
 }
 
@@ -74,7 +74,7 @@ function checkLastConfig(&$obj)
     $old = $obj->device->getWhere("LastConfig < ? AND GatewayKey = ?", array($cutoff, $obj->config["script_gatewaykey"]));
     $current = $obj->device->getWhere("LastConfig >= ? AND GatewayKey = ?", array($cutoff, $obj->config["script_gatewaykey"]));
 
-    if (count($current) == 0) $obj->criticalError("checkLastConfig", "No devices with current config", "All devices on this controller are more than two days old!");
+    if (count($current) == 0) $obj->criticalError("checkLastConfig", HUGNET_ERROR_OLD_CONFIG, "All devices on this controller are more than two days old!");
     
 }
 
