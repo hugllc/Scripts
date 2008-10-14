@@ -54,6 +54,8 @@ class epAlarm extends epScheduler
     function __construct($config = array()) 
     {
         parent::__construct($config);
+        // This removes all the old bugs      
+        $this->error->removeWhere("program LIKE 'alarm.php%' AND errorLastSeen < ?", array(date("Y-m-d H:i:s", time() - (86400 * 7))));
     }
    
 }
