@@ -48,6 +48,16 @@ if (!(bool)$hugnet_config["analysis_enable"]) {
     die();
 }
 
+for ($i = 0; $i < count($newArgv); $i++) {
+    switch($newArgv[$i]) {
+        // Gateway IP address
+        case "-D":
+            $i++;
+            $hugnet_config["forceStart"] = $newArgv[$i];
+            break;
+    }
+}
+
 print 'analysis.php Version '.ANALYSIS_SVN."\n";
 print "Starting...\n";
 

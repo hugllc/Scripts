@@ -65,8 +65,6 @@ class epScheduler
     function __construct($config = array()) 
     {
         
-        unset($config["servers"]);
-        unset($config["table"]);
         $this->config = $config;
 
         $this->uproc =& HUGnetDB::getInstance("Process", $config); 
@@ -221,8 +219,8 @@ class epScheduler
      */
     function getPlugins ()
     {
-        $this->plugins = new Plugins($this->config[$this->pluginDir], "inc.php", dirname(__FILE__)."/plugins", null, $this->verbose);
-        if (!$this->verbose) return;
+        $this->plugins = new Plugins($this->config[$this->pluginDir], "inc.php", dirname(__FILE__)."/plugins", null, $this->config["verbose"]);
+        if (!$this->config["verbose"]) return;
         if (is_array($this->plugins->plugins["Functions"])) {
             foreach ($this->plugins->plugins["Functions"] as $plugName => $plugDir) {
                 if (array_search($plugName, $this->check) === false) print "Plugin type ".$plugName." is not a supported type!\n";

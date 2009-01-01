@@ -1,0 +1,191 @@
+<?php
+/**
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * HUGnetLib is a library of HUGnet code
+ * Copyright (C) 2007 Hunt Utilities Group, LLC
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Analysis
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$    
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ */
+/**
+ * Doing the averages
+ *
+ * @param array &$stuff  Here
+ * @param array &$device The devInfo array for the device
+ *
+ * @return null
+ */
+function analysis_averages(&$stuff, &$device) 
+{
+    $sTime = microtime(true);
+    $verbose = $stuff->config["verbose"];
+    
+    $day = 7 * (int)date("w");
+    $unixTime = mktime(6, 0, 0, (int)date(M), $day, (int)date("Y"));
+
+    if ($verbose > 1) print "analysis_averages start\r\n";
+
+    $data = &$stuff->historyCache;
+
+    $average_table = $stuff->endpoint->getAverageTable($device);
+    $history_table = $stuff->endpoint->getHistoryTable($device);
+
+    $fifteen = array();
+    $arrayKeys = array();
+    $insert = array();
+    foreach ($data as $row) {
+
+        $time = strtotime($row["Date"]);
+        if (date("i",$time) < 15) {
+            $hour = date("Y-m-d H:00:00", $time);
+        } else if (date("i",$time) < 30) {
+            $hour = date("Y-m-d H:15:00", $time);
+        } else if (date("i",$time) < 45) {
+            $hour = date("Y-m-d H:30:00", $time);
+        } else {
+            $hour = date("Y-m-d H:45:00", $time);
+        }
+        $fifteen[$hour]["Count"]++;
+        $fifteen[$hour]["DeviceKey"] = $device["DeviceKey"];
+        $fifteen[$hour]["Date"] = $hour;
+        $fifteen[$hour]["Type"] = "15MIN";
+        $fifteen[$hour]["Input"] = $key;
+        
+        foreach ($row as $key => $val) {
+            if (!is_array($val)) {
+                if (strtolower(substr($key, 0, 4)) == "data") {
+                    $tKey = (int) substr($key, 4);
+                    $fifteen[$hour][$key] += $val;
+                    $arrayKeys[$tKey] = $key;
+                }
+            }
+        }
+    }
+    $fifteenTotal = $fifteen;
+    
+    $hourly = array();
+    foreach ($fifteen as $min => $row) {
+        $time = strtotime($row["Date"]);
+        $hour = date("Y-m-d H:00:00", $time);
+        $hourly[$hour]["Count"] += $row["Count"];
+        $hourly[$hour]["DeviceKey"] = $device["DeviceKey"];
+        $hourly[$hour]["Date"] = $hour;
+        $hourly[$hour]["Type"] = "HOURLY";
+        foreach ($arrayKeys as $tKey => $key) {
+            $val = $row[$key];
+            if (!$device['doTotal'][$tKey]) {
+                $fifteen[$min][$key] = $val/$row["Count"];
+            }
+            $hourly[$hour][$key] += $val;
+        }
+        if (analysis_averages_check_type("15MIN", $device["MinAverage"])) $insert[] = $fifteen[$min];
+    }
+
+    $hourlyTotal = $hourly;
+    $daily = array();
+    $daily["Data"] = array();
+    foreach ($hourly as $hour => $row) {
+        $time = strtotime($row["Date"]);
+        $day = date("Y-m-d 5:00:00", $time);
+        $daily["Count"] += $row["Count"];
+        $daily["DeviceKey"] = $device["DeviceKey"];
+        $daily["Date"] = $day;
+        $daily["Type"] = "DAILY";
+        $colCnt = 0;
+        foreach ($arrayKeys as $tKey => $key) {
+            $val = $row[$key];
+            if (!$device['doTotal'][$key]) {
+                $hourly[$hour]["Data"][$key] = $val / $row["Count"];
+            }
+            $daily["Data"][$key] += $val;
+        }
+        if (analysis_averages_check_type("HOURLY", $device["MinAverage"])) $insert[] = $hourly[$min];
+    }
+
+    if ($verbose) print " Saving Averages: ";
+
+    if (analysis_averages_check_type("DAILY", $device["MinAverage"]))
+        {
+        // Average
+        $lasterrror = "";
+        foreach ($arrayKeys as $tKey => $key) {
+            $val = $row[$key];
+            if (!$device['doTotal'][$tKey]) {
+                $daily[$key] = $val / $daily["Count"];
+            }
+        }
+        $insert[] = $daily;
+        
+
+    }
+
+    // Save all of the averages
+    if ($verbose) print " Saving... ";
+    $qtime = microtime(true);
+
+    $stuff->average->addArray($insert, true);
+
+    $dTime = microtime(true) - $sTime;
+
+    if ($verbose > 1) print "analysis_averages end (".$dTime."s) \r\n";
+}
+
+$this->registerFunction("analysis_averages", "Analysis");
+
+
+/**
+ * helps insert an average row
+ *
+ * @param string $type    The type setting
+ * @param string $minType The minimum Type setting.
+ *
+ * @return array
+ */
+function analysis_averages_check_type($type, $minType)
+{
+    if ($minType == "15MIN") return true;
+    if ($minType == "HOURLY") {
+        if ($type == "15MIN") return false;
+        return true;
+    }
+    if ($minType == "DAILY") {
+        if ($type == "15MIN") return false;
+        if ($type == "HOURLY") return false;
+        return true;
+    }
+    if ($minType == "MONTHLY") {
+        if ($type == "MONTHLY") return true;
+        if ($type == "YEARLY") return true;
+        return false;
+    }
+    if ($minType == "YEARLY") {
+        if ($type == "YEARLY") return true;
+        return false;
+    }
+    return false;  
+}
+?>
