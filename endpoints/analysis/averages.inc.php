@@ -34,6 +34,17 @@
 /**
  * Doing the averages
  *
+ *
+ * Notes on the 15 minute average:
+ *
+ * The ratio in this takes into account the fact that a value might
+ * cross the boundry between 15 minute samples.  For instance, if we
+ * are on 5 minute reads and a read happens at minute 14, we would put
+ * 20% of the value into the minute 15 average, and 80% of it into the
+ * minute 30 average.  We would then increment both counters by the
+ * ratio of how much they got.  The first in this example would be .2,
+ * the second would be .8.
+ *
  * @param array &$stuff  Here
  * @param array &$device The devInfo array for the device
  *
@@ -57,19 +68,32 @@ function analysis_averages(&$stuff, &$device)
     $fifteen = array();
     $arrayKeys = array();
     $insert = array();
+    $pollInt = ($device["PollInterval"] != 0) ? $device["PollInterval"] : 1 ;  
+    
     foreach ($data as $row) {
 
         $time = strtotime($row["Date"]);
-        if (date("i",$time) < 15) {
+        $min = date("i", $time);
+        if ($min < 15) {
             $hour = date("Y-m-d H:00:00", $time);
-        } else if (date("i",$time) < 30) {
+            $hour2 = date("Y-m-d H:15:00", $time);
+            $ratio = (15 - $min) / $pollInt;
+        } else if ($min < 30) {
             $hour = date("Y-m-d H:15:00", $time);
-        } else if (date("i",$time) < 45) {
+            $hour2 = date("Y-m-d H:30:00", $time);
+            $ratio = (30 - $min) / $pollInt;
+        } else if ($min < 45) {
             $hour = date("Y-m-d H:30:00", $time);
+            $hour2 = date("Y-m-d H:45:00", $time);
+            $ratio = (45 - $min) / $pollInt;
         } else {
             $hour = date("Y-m-d H:45:00", $time);
+            $hour2 = date("Y-m-d H:00:00", ($time + 3600));
+            $ratio = (60 - $min) / $pollInt;
         }
-        $fifteen[$hour]["Count"]++;
+        if ($ratio > 1) $ratio = 1;
+        $fifteen[$hour]["Count"] += $ratio;
+        $fifteen[$hour2]["Count"] += (1 - $ratio);
         $fifteen[$hour]["DeviceKey"] = $device["DeviceKey"];
         $fifteen[$hour]["Date"] = $hour;
         $fifteen[$hour]["Type"] = "15MIN";
@@ -79,7 +103,8 @@ function analysis_averages(&$stuff, &$device)
             if (!is_array($val)) {
                 if (strtolower(substr($key, 0, 4)) == "data") {
                     $tKey = (int) substr($key, 4);
-                    $fifteen[$hour][$key] += $val;
+                    $fifteen[$hour][$key] += $val * $ratio;
+                    $fifteen[$hour2][$key] += $val * (1- $ratio);
                     $arrayKeys[$tKey] = $key;
                 }
             }
@@ -98,7 +123,7 @@ function analysis_averages(&$stuff, &$device)
         foreach ($arrayKeys as $tKey => $key) {
             $val = $row[$key];
             if (!$device['doTotal'][$tKey]) {
-                $fifteen[$min][$key] = $val/$row["Count"];
+                if ($row["Count"] > 0) $fifteen[$min][$key] = $val/$row["Count"];
             }
             $hourly[$hour][$key] += $val;
         }
@@ -119,7 +144,7 @@ function analysis_averages(&$stuff, &$device)
         foreach ($arrayKeys as $tKey => $key) {
             $val = $row[$key];
             if (!$device['doTotal'][$key]) {
-                $hourly[$hour]["Data"][$key] = $val / $row["Count"];
+                if ($row["Count"] > 0) $hourly[$hour]["Data"][$key] = $val / $row["Count"];
             }
             $daily["Data"][$key] += $val;
         }
@@ -135,7 +160,7 @@ function analysis_averages(&$stuff, &$device)
         foreach ($arrayKeys as $tKey => $key) {
             $val = $row[$key];
             if (!$device['doTotal'][$tKey]) {
-                $daily[$key] = $val / $daily["Count"];
+                if ($daily["Count"] > 0) $daily[$key] = $val / $daily["Count"];
             }
         }
         $insert[] = $daily;
