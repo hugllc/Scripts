@@ -133,7 +133,6 @@ class epAnalysis extends epScheduler
         $start = 0;
         $devInfo['date'] = $res;
         $lastpoll = strtotime($devInfo['LastPoll']);
-        
         $config = $this->config;
         $config = array("Type" => "history");
         $this->history =& $this->endpoint->getHistoryInstance($config, $devInfo);
@@ -175,7 +174,8 @@ class epAnalysis extends epScheduler
                 'DeviceKey' => $devInfo["DeviceKey"],
                 'LastAnalysis' => date("Y-m-d H:i:s", $devInfo["date"]),
                            );
-            $this->device->update($update);            
+            // Don't update for tomorrow, which it will get to.
+            if ($devInfo['date'] < time()) $this->device->update($update);
             print " Done \r\n";
         }
         unset($this->history);
