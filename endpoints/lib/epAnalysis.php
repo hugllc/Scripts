@@ -94,9 +94,9 @@ class epAnalysis extends epScheduler
             foreach ($this->devInfo as $dev) {
                 $this->checkDevice($dev);
             }
-//            if ($this->config["loop"]) $this->sleep();
+            if (!$this->config["loop"]) $this->sleep();
                         
-        } while ($this->config["loop"]);
+        } while (!$this->config["loop"]);
         return 0;
     }
 
