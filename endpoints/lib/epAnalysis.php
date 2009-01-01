@@ -123,7 +123,7 @@ class epAnalysis extends epScheduler
             $where = "Date >= ? AND DeviceKey = ?";
             $data = array($devInfo['LastAnalysis'], $devInfo["DeviceKey"]);
             $res = $this->rawHistory->getWhere($where, $data, 1, 0, $orderby);
-            if (count($res) == 0) continue;
+            if (count($res) == 0) return;
             $res = strtotime($res[0]['Date']);
         }
         foreach (array("Y", "m", "d") as $val) {
@@ -167,9 +167,15 @@ class epAnalysis extends epScheduler
             $count = count($this->historyCache);
             $rawcount = count($this->rawHistoryCache);
             print 'found: '.$count." Raw: ".$rawcount;
-    
-            $this->plugins->runFilter(&$this, "Analysis", &$devInfo);
-        //                print " Processed ".$processed." records\r\n";
+
+            for ($i = 0; $i < 10; $i++) {
+                $this->plugins->runFilter(&$this, "Analysis".$i, &$devInfo);
+            }
+            $update = array(
+                'DeviceKey' => $devInfo["DeviceKey"],
+                'LastAnalysis' => date("Y-m-d H:i:s", $devInfo["date"]),
+                           );
+            $this->device->update($update);            
             print " Done \r\n";
         }
         unset($this->history);

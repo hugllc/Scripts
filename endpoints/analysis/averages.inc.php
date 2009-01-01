@@ -154,7 +154,7 @@ function analysis_averages(&$stuff, &$device)
     if ($verbose > 1) print "analysis_averages end (".$dTime."s) \r\n";
 }
 
-$this->registerFunction("analysis_averages", "Analysis");
+$this->registerFunction("analysis_averages", "Analysis5");
 
 
 /**
