@@ -143,29 +143,28 @@ function analysis_averages(&$stuff, &$device)
         $colCnt = 0;
         foreach ($arrayKeys as $tKey => $key) {
             $val = $row[$key];
-            if (!$device['doTotal'][$key]) {
-                if ($row["Count"] > 0) $hourly[$hour]["Data"][$key] = $val / $row["Count"];
+            if (!$device['doTotal'][$tKey]) {
+                if ($row["Count"] > 0) $hourly[$hour][$key] = $val / $row["Count"];
             }
-            $daily["Data"][$key] += $val;
+            $daily[$key] += $val;
         }
-        if (analysis_averages_check_type("HOURLY", $device["MinAverage"])) $insert[] = $hourly[$min];
+        if (analysis_averages_check_type("HOURLY", $device["MinAverage"])) $insert[] = $hourly[$hour];
     }
 
     if ($verbose) print " Saving Averages: ";
-
+    
     if (analysis_averages_check_type("DAILY", $device["MinAverage"]))
         {
         // Average
         $lasterrror = "";
         foreach ($arrayKeys as $tKey => $key) {
-            $val = $row[$key];
+            $val = $daily[$key];
             if (!$device['doTotal'][$tKey]) {
                 if ($daily["Count"] > 0) $daily[$key] = $val / $daily["Count"];
             }
         }
         $insert[] = $daily;
         
-
     }
 
     // Save all of the averages
