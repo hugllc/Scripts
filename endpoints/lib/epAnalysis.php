@@ -4,8 +4,9 @@
  * PHP Version 5
  *
  * <pre>
- * HUGnetLib is a library of HUGnet code
- * Copyright (C) 2007 Hunt Utilities Group, LLC
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2009 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
