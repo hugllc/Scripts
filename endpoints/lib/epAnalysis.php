@@ -53,10 +53,20 @@ class epAnalysis extends epScheduler
     protected $wait = 600;
 
     /** bool Whether to go in depth on one endpoint or not */
-    protected $deep = false;
+    public $deep = false;
              
     /** array This is the stuff to check...  */
-    protected $check = array("Analysis" => "Analysis"
+    protected $check = array(
+                            "Analysis0" => "Analysis0",
+                            "Analysis1" => "Analysis1",
+                            "Analysis2" => "Analysis2",
+                            "Analysis3" => "Analysis3",
+                            "Analysis4" => "Analysis4",
+                            "Analysis5" => "Analysis5",
+                            "Analysis6" => "Analysis6",
+                            "Analysis7" => "Analysis7",
+                            "Analysis8" => "Analysis8",
+                            "Analysis9" => "Analysis9",
                             );
     /**
      *
@@ -76,6 +86,8 @@ class epAnalysis extends epScheduler
 
         $this->devInfo = $this->device->getWhere($where, $data);    
         $this->rawHistory = & HUGnetDB::getInstance("RawHistory", $config);
+        $this->analysis = & HUGnetDB::getInstance("Analysis", $config);
+        $this->plog = & HUGnetDB::getInstance("plog", $config);
     }
 
     /**
@@ -104,16 +116,16 @@ class epAnalysis extends epScheduler
     /**
     * Runs the plugins for a single device
     *
-    * @param array $devInfo The devInfo array
+    * @param array &$devInfo The devInfo array
     *
     * @return null
     */                  
-    function checkDevice($devInfo)
+    function checkDevice(&$devInfo)
     {
         // If this is an unassigned device don't do any analysis on it
         if ($devInfo['GatewayKey'] == 0) return;
 
-        $orderby = " ORDER BY Date ASC ";
+        $devInfo["orderby"] = " ORDER BY Date ASC ";
         print "Working with device ".$devInfo['DeviceID']."\r\n";
 
         if ($this->deep) $devInfo['LastAnalysis'] = '0000-00-00 00:00:00';
@@ -123,7 +135,7 @@ class epAnalysis extends epScheduler
         } else {
             $where = "Date >= ? AND DeviceKey = ?";
             $data = array($devInfo['LastAnalysis'], $devInfo["DeviceKey"]);
-            $res = $this->rawHistory->getWhere($where, $data, 1, 0, $orderby);
+            $res = $this->rawHistory->getWhere($where, $data, 1, 0, $devInfo["orderby"]);
             if (count($res) == 0) return;
             $res = strtotime($res[0]['Date']);
         }
@@ -143,21 +155,9 @@ class epAnalysis extends epScheduler
         
         for ($day = 0; ($devInfo['date'] < time()) && ($devInfo['date'] < $lastpoll); $day++) {
             $devInfo['date'] = mktime(0, 0, 0, $startdate['m'], $startdate['d']+$day, $startdate['Y']);
-            $devInfo['daystart'] = date("Y-m-d 00:00:00", $devInfo['date']);
-            $devInfo['dayend'] = date("Y-m-d 23:59:59", $devInfo['date']);
-            $datewhere = "(Date >= ? AND Date <= ?)";
-            $datedata = array($devInfo['daystart'], $devInfo['dayend']);
-            
-            $devInfo['datewhere'] = $datewhere;
-            $devInfo['datedata'] = $datedata;
-
-            $where = $datewhere." AND DeviceKey = ?";
-            $data = $datedata;
-            $data[] = $devInfo["DeviceKey"];                           
-            
             print "Looking up ".date("Y-m-d", $devInfo['date'])." Records... ";
-            $this->rawHistoryCache = $this->rawHistory->getWhere($where, $data, null, null, $orderby);
-            $this->historyCache = $this->history->getWhere($where, $data, null, null, $orderby);
+            $this->setupHistory($devInfo);
+            $this->cacheHistory($devInfo);
 
             if ($this->historyCache === false) break;
             $this->analysisOut = array(
@@ -177,10 +177,54 @@ class epAnalysis extends epScheduler
                            );
             // Don't update for tomorrow, which it will get to.
             if ($devInfo['date'] < time()) $this->device->update($update);
+            $this->analysis->add($this->analysisOut, true);
+            
             print " Done \r\n";
         }
         unset($this->history);
                     
-    }      
+    }
+    /**
+    * Runs the plugins for a single device
+    *
+    * @param array &$devInfo The devInfo array
+    *
+    * @return null
+    */
+    function cacheHistory(&$devInfo)
+    {
+        $this->rawHistoryCache = $this->rawHistory->getWhere($devInfo["where"], $devInfo["whereData"], null, null, $devInfo["orderby"]);
+        $this->historyCache = $this->history->getWhere($devInfo["where"], $devInfo["whereData"], null, null, $devInfo["orderby"]);
+        $this->plogCache = $this->plog->getWhere($devInfo["where"], $devInfo["whereData"], null, null, $devInfo["orderby"]);
+    
+
+    }
+
+    /**
+    * Runs the plugins for a single device
+    *
+    * @param array &$devInfo The devInfo array
+    *
+    * @return null
+    */
+    function setupHistory(&$devInfo)
+    {
+        $devInfo['daystart'] = date("Y-m-d 00:00:00", $devInfo['date']);
+        $devInfo['dayend'] = date("Y-m-d 23:59:59", $devInfo['date']);
+        $datewhere = "(Date >= ? AND Date <= ?)";
+        $datedata = array($devInfo['daystart'], $devInfo['dayend']);
+            
+        $devInfo['datewhere'] = $datewhere;
+        $devInfo['datedata'] = $datedata;
+
+        $where = $datewhere." AND DeviceKey = ?";
+        $data = $datedata;
+        $data[] = $devInfo["DeviceKey"];
+                     
+        $devInfo["where"] = $where;
+        $devInfo["whereData"] = $data;
+    
+    }
+
 }
 ?>

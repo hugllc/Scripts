@@ -47,7 +47,6 @@ function analysis_polling(&$analysis, &$devInfo)
     global $verbose;
 
     if ($verbose > 0) print "analysis_polling start\r\n";
-
     $analysis->analysisOut["AveragePollTime"] = 0;
     $analysis->analysisOut["Polls"] = 0;
     $analysis->analysisOut['AverageReplyTime'] = 0;

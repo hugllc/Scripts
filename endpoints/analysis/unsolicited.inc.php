@@ -37,60 +37,42 @@
 /**
  * Gets interesting information out of the packet logs
  *
- * @param array &$stuff Here
- * @param array &$dev   The devInfo array for the device
+ * @param array &$analysis->analysisOut Here
+ * @param array &$devInfo   The devInfo array for the device
  *
  * @return null
  */
-function analysis_unsolicited(&$stuff, &$dev) {
+function analysis_unsolicited(&$analysis, &$devInfo) {
     $sTime = microtime(true);
-    global $verbose;
 
-    if ($verbose > 1) print "analysis_unsolicited start\r\n";
-    global $endpoint;
+    if ($analysis->verbose > 1) print "analysis_unsolicited start\r\n";
 
-    $data = &$_SESSION['rawHistoryCache'];
-    $stuff = &$_SESSION['analysisOut'];
-
-    $stuff["Powerups"] = 0;
-    $stuff["Boredom"] = 0;
-    $stuff["Reconfigs"] = 0;
-
-//        $plog = new container("", "PacketLog", "HUGNet");
-//        $plog->AutoSETS();
-//        $plog->SetRange("Date", $device["RangeStart"], $device["RangeEnd"]);
-//        $plog->lookup($device["DeviceKey"], "DeviceKey");
-
-
-//        $res = $endpoint->db->;
-    $query = "SELECT * FROM ".$endpoint->packet_log_table." WHERE ".
-             " DeviceKey= ".$dev['DeviceKey']." AND (".$dev['datewhere'].")";
-    $res = $endpoint->db->getArray($query);
-
-    if (is_array($res)) {
-        foreach ($res as $log) {
-            switch($log["Command"]) {
-                case "5D":
-                    $stuff["Reconfigs"]++;
-                    break;
-                case "5E":
-                    $stuff["Powerups"]++;
-                    break;
-                case "5F";
-                    $stuff["Boredom"]++;
-                    break;
-                default:
-                    break;
-            }
+    $analysis->analysisOut["Powerups"] = 0;
+    $analysis->analysisOut["Boredom"] = 0;
+    $analysis->analysisOut["Reconfigs"] = 0;
+    
+    foreach ($analysis->plogCache as $log) {
+        switch($log["Command"]) {
+            case "5D":
+                $analysis->analysisOut["Reconfigs"]++;
+                break;
+            case "5E":
+                $analysis->analysisOut["Powerups"]++;
+                break;
+            case "5F";
+                $analysis->analysisOut["Boredom"]++;
+                break;
+            default:
+                break;
         }
     }        
     
     $dTime = microtime(true) - $sTime;
-    if ($verbose > 1) print "analysis_unsolicited end (".$dTime."s)\r\n";
+    if ($analysis->verbose > 1) print "analysis_unsolicited end (".$dTime."s)\r\n";
 
 }
 
 
-$this->registerFunction("analysis_unsolicited", "Analysis");
+$this->registerFunction("analysis_unsolicited", "Analysis9");
 
 ?>
