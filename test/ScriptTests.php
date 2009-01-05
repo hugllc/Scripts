@@ -61,12 +61,22 @@ require_once 'endpoints/ScriptEndpointTests.php';
  */
 class ScriptTests
 {
+    /**
+    * The main function to run
+    *
+    * @return null
+    */
     public static function main()
     {
         PHPUnit_Util_Filter::addDirectoryToFilter(HUGNET_INCLUDE_PATH, '.php');
         PHPUnit_TextUI_TestRunner::run(self::suite());
     }
- 
+
+    /**
+    * This function is defines the test suite
+    *
+    * @return object The test suite
+    */
     public static function suite()
     {
         PHPUnit_Util_Filter::addDirectoryToFilter(dirname(__FILE__), '.php');

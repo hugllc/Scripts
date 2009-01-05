@@ -1,6 +1,6 @@
 <?php
 /**
- * This runs all of the tests associated with HUGnetLib.
+ * This tests epPoll
  *
  * PHP Version 5
  *
@@ -34,10 +34,6 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
- // Call epPollTest::main() if this source file is executed directly.
-if (!defined('PHPUnit_MAIN_METHOD')) {
-    define('PHPUnit_MAIN_METHOD', 'epPollTest::main');
-}
 
 require_once 'PHPUnit/Framework.php';
 
@@ -57,38 +53,41 @@ require_once dirname(__FILE__).'/../../../HUGnetLib/hugnet.inc.php';
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class epPollTest extends PHPUnit_Framework_TestCase
+class EpPollTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * Runs the test methods of this class.
-     *
-     * @access public
-     * @static
-     */
+    * Runs the test methods of this class.
+    *
+    * @access public
+    * @static
+    * @return null;
+    */
     public static function main()
     {
-        require_once 'PHPUnit/TextUI/TestRunner.php';
+        include_once 'PHPUnit/TextUI/TestRunner.php';
 
         $suite  = new PHPUnit_Framework_TestSuite('epPollTest');
         $result = PHPUnit_TextUI_TestRunner::run($suite);
     }
 
     /**
-     * Sets up the fixture, for example, opens a network connection.
-     * This method is called before a test is executed.
-     *
-     * @access protected
-     */
+    * Sets up the fixture, for example, opens a network connection.
+    * This method is called before a test is executed.
+    *
+    * @access protected
+    * @return null;
+    */
     protected function setUp() 
     {
     }
 
     /**
-     * Tears down the fixture, for example, closes a network connection.
-     * This method is called after a test is executed.
-     *
-     * @access protected
-     */
+    * Tears down the fixture, for example, closes a network connection.
+    * This method is called after a test is executed.
+    *
+    * @access protected
+    * @return null;
+    */
     protected function tearDown() 
     {
     }
@@ -381,8 +380,4 @@ class epPollTest extends PHPUnit_Framework_TestCase
     }
 }
 
-// Call epPollTest::main() if this source file is executed directly.
-if (PHPUnit_MAIN_METHOD == 'epPollTest::main') {
-    epPollTest::main();
-}
 ?>

@@ -1,5 +1,6 @@
 <?php
 /**
+ * Checks the interpretation of packets.
  *
  * PHP Version 5
  *
@@ -23,7 +24,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  * </pre>
  *
- *
  * @category   Scripts
  * @package    Scripts
  * @subpackage Test
@@ -34,7 +34,7 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-require_once(dirname(__FILE__).'/../../head.inc.php');
+require_once dirname(__FILE__).'/../../head.inc.php';
 
 if (empty($argv[1])) {
     die("DeviceID must be specified!\r\n");    
@@ -43,20 +43,20 @@ if (empty($argv[1])) {
 $rCount = 2;
 for ($i = 0; $i < count($newArgv); $i++) {
     switch($newArgv[$i]) {
-        // Gateway IP address
-        case "-D":
-            $i++;
-            $forceStart = $newArgv[$i];
-            break;
-        case "-C":
-            $i++;
-            $rCount = $newArgv[$i];
-            break;
+    // Gateway IP address
+    case "-D":
+        $i++;
+        $forceStart = $newArgv[$i];
+        break;
+    case "-C":
+        $i++;
+        $rCount = $newArgv[$i];
+        break;
     }
 }
 $endpoint =& HUGnetDriver::getInstance($hugnet_config);
 
-$Info = $endpoint->getDevice($DeviceID, "ID");
+$Info    = $endpoint->getDevice($DeviceID, "ID");
 $history =& $endpoint->getHistoryInstance(array("Type" => "raw"));
 
 $query .= " DeviceKey = ?";
@@ -69,14 +69,15 @@ if (!is_null($forceStart)) {
      $query .= " AND Date < ? ";
      $data[] = $forceStart;
 }
-$query .= " AND Status='GOOD' ";
+$query  .= " AND Status='GOOD' ";
 $orderby = " ORDER BY Date DESC ";
 var_dump($query);
 $rHist = $history->getWhere($query, $data, $rCount, 0, $orderby);
 
 
 $packet = $endpoint->InterpSensors($Info, $rHist);
-$endpoint->modifyUnits($packet, $Info, 2, $Info['params']['dType'], $Info['params']['Units']);
+$endpoint->modifyUnits($packet, $Info, 2, $Info['params']['dType'],
+                       $Info['params']['Units']);
 
 var_dump($packet);
 ?>

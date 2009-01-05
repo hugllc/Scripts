@@ -1,5 +1,6 @@
 <?php
 /**
+ * Checks a sesor driver to see if it is functioning properly 
  *
  * PHP Version 5
  *
@@ -33,7 +34,7 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-$required = array(
+$required  = array(
     "longName" => "Long Name",
     "unitType" => "Unit Type",
     "storageUnit" => "Storage Unit",
@@ -42,14 +43,14 @@ $suggested = array(
     "function" => "Decoding Function",
     "checkFunction" => "Record checking function",
 );
-$other = array(
+$other     = array(
     "mult" => "Multiplier",
     "doTotal" => "Total",
     "extraText" => "Extra Text",
     "extraDefault" => "Extra Default",
 );
 
-require_once(dirname(__FILE__).'/../head.inc.php');
+require_once dirname(__FILE__).'/../head.inc.php';
 
 if (is_array($endpoint->sensors->sensors)) {
     foreach ($endpoint->sensors->sensors as &$class) {
@@ -81,7 +82,8 @@ if (is_array($endpoint->sensors->sensors)) {
                                 print "---> ".$name.": '".$s[$key]."'\n";
                                 unset($s[$key]);
                             } else {
-                                print "---> ".$key." is not defined. (This is okay)\n";
+                                print "---> ".$key;
+                                print " is not defined. (This is okay)\n";
                             }
                         }
                     }

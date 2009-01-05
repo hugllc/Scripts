@@ -35,10 +35,6 @@
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
 
-if (!defined('PHPUnit_MAIN_METHOD')) {
-    define('PHPUnit_MAIN_METHOD', 'ScriptEndpointTests::main');
-}
-
 require_once 'PHPUnit/Framework.php';
 require_once 'PHPUnit/TextUI/TestRunner.php';
 
@@ -60,11 +56,21 @@ require_once 'epUpdatedbTest.php';
  */
 class ScriptEndpointTests
 {
+    /**
+    * The main function to run
+    *
+    * @return null
+    */
     public static function main()
     {
         PHPUnit_TextUI_TestRunner::run(self::suite());
     }
  
+    /**
+    * This function is defines the test suite
+    *
+    * @return object The test suite
+    */
     public static function suite()
     {
         $suite = new PHPUnit_Framework_TestSuite('HUGnetLib');
@@ -76,7 +82,4 @@ class ScriptEndpointTests
     }
 }
  
-if (PHPUnit_MAIN_METHOD == 'ScriptEndpointTests::main') {
-    ScriptEndpointTests::main();
-}
 ?>

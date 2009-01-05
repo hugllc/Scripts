@@ -1,5 +1,6 @@
 <?php
 /**
+ * Gets the sensor reading of an endpoint
  *
  * PHP Version 5
  *
@@ -33,7 +34,7 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-require_once(dirname(__FILE__).'/../../head.inc.php');
+require_once dirname(__FILE__).'/../../head.inc.php';
 $endpoint->packet->SNCheck(false);
 
 
@@ -43,10 +44,11 @@ if (empty($DeviceID)) {
 
 $dev = $endpoint->getDevice($DeviceID, "ID");
 
-$dev["GatewayIP"] = $GatewayIP;
+$dev["GatewayIP"]   = $GatewayIP;
 $dev["GatewayPort"] = $GatewayPort;
 
 $endpoint->packet->verbose = $verbose;
+
 $pkt = $endpoint->readSensors($dev);
 
 //    $config = $endpoint->InterpConfig($pkt);

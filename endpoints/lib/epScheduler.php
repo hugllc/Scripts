@@ -1,5 +1,6 @@
 <?php
 /**
+ * Base class for scheduled tasks
  *
  * PHP Version 5
  *
@@ -27,7 +28,8 @@
  * @package    Scripts
  * @subpackage Endpoints
  * @author     Scott Price <prices@hugllc.com>
- * @copyright  2008 Hunt Utilities Group, LLC
+ * @copyright  2008-2009 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @version    SVN: $Id: endpoint.php 1445 2008-06-17 22:25:17Z prices $    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
@@ -40,11 +42,12 @@
  * @package    Scripts
  * @subpackage Endpoints
  * @author     Scott Price <prices@hugllc.com>
- * @copyright  2008 Hunt Utilities Group, LLC
+ * @copyright  2008-2009 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */ 
-class epScheduler
+class EpScheduler
 {
     /** String This specifies what the plugin directory is. */
     protected $pluginDir = "pluginDir";
@@ -61,7 +64,9 @@ class epScheduler
                             "Y" => "yearly",
                             );                     
     /**
+     * The constructor
      *
+     * @param array $config The configuration array
      */
     function __construct($config = array()) 
     {
@@ -79,7 +84,7 @@ class epScheduler
         $this->stats->setStat('PID', $this->uproc->me['PID']);
 
 
-        $this->test = $config["test"];
+        $this->test    = $config["test"];
         $this->verbose = $config["verbose"];
 
         unset($config["table"]);
@@ -106,7 +111,9 @@ class epScheduler
     {
         $this->clearErrors();
         do {
-            if ($this->config["loop"]) $this->sleep();
+            if ($this->config["loop"]) {
+                $this->sleep();
+            }
             $this->check();
             $this->errorHandler();
         } while ($this->config["loop"]);
@@ -120,8 +127,12 @@ class epScheduler
     */
     function sleep()
     {
-        if ($this->test) return;      
-        if ($this->verbose) print "Waiting ".$this->wait." Seconds\n";
+        if ($this->test) {
+            return;
+        }         
+        if ($this->verbose) {
+            print "Waiting ".$this->wait." Seconds\n";
+        }         
         sleep($this->wait);
     }
     /**
@@ -134,23 +145,26 @@ class epScheduler
         $this->error->removeWhere("id = ?", array($this->id));
     }
     
-   /**
+    /**
     * This checks the hourly scripts
     *
     * @return int The error code, if any
-        */
+    */
     function markErrorsSent()
     {
         $this->markErrors("SENT");
     }
-   /**
-    * This checks the hourly scripts
+    /**
+    * This marks error as different from "NEW"
+    *
+    * @param string $mark What to mark the errors with
     *
     * @return int The error code, if any
-   */
+    */
     function markErrors($mark="OLD")
     {
-        $this->error->updateWhere(array("status" => $mark), "id = ?", array($this->id));
+        $this->error->updateWhere(array("status" => $mark),
+                                  "id = ?", array($this->id));
     }
 
     /**
@@ -176,12 +190,16 @@ class epScheduler
      */
     function sendErrorEmail()
     {
-        if (empty($this->config["admin_email"])) return;
+        if (empty($this->config["admin_email"])) {
+            return;
+        }         
         $errors = $this->getError();
-        $msg = "";
+        $msg    = "";
        
         foreach ($errors as $err) {
-            $msg .= $err["errorLastSeen"]." => ".$err["err"]." First seen ".$err["errorDate"]." Seen ".$err["errorCount"]." times\n\t".$err["msg"]."\n";
+            $msg .= $err["errorLastSeen"]." => ".$err["err"];
+            $msg .= " First seen ".$err["errorDate"]." Seen ";
+            $msg .= $err["errorCount"]." times\n\t".$err["msg"]."\n";
         }
         mail($this->config["admin_email"], "Critical Error on ".`hostname`, $msg);
         return;
@@ -203,7 +221,9 @@ class epScheduler
     */
     function check()
     {
-        if (!is_array($this->check)) return;
+        if (!is_array($this->check)) {
+            return;
+        }         
         foreach ($this->check as $key => $name) {            
             if (date($key) != $this->last[$key]) {
                 print "Doing ".$key." ".date("Y-m-d H:i:s")."s\n";
@@ -220,13 +240,21 @@ class epScheduler
      */
     function getPlugins ()
     {
-        $this->plugins = new Plugins($this->config[$this->pluginDir], "inc.php", dirname(__FILE__)."/plugins", null, $this->config["verbose"]);
-        if (!$this->config["verbose"]) return;
+        $this->plugins = new Plugins($this->config[$this->pluginDir],
+                                     "inc.php", dirname(__FILE__)."/plugins",
+                                      null,
+                                      $this->config["verbose"]);
+        if (!$this->config["verbose"]) {
+            return;
+        }         
         if (is_array($this->plugins->plugins["Functions"])) {
             foreach ($this->plugins->plugins["Functions"] as $plugName => $plugDir) {
-                if (array_search($plugName, $this->check) === false) print "Plugin type ".$plugName." is not a supported type!\n";
+                if (array_search($plugName, $this->check) === false) {
+                    print "Plugin type ".$plugName." is not a supported type!\n";
+                }               
                 foreach ($plugDir as $plug) {
-                    print "Found $plugName Plugin: ".$plug["Title"]." (".$plug["Name"].")\r\n";
+                    print "Found $plugName Plugin: ";
+                    print $plug["Title"]." (".$plug["Name"].")\r\n";
                 }
             }
         }
@@ -258,41 +286,41 @@ class epScheduler
     /**
     * This function creates a critical alarm
     *
-    * @param string $type   The type of error
-    * @param string $plugin The name of the plugin that created the alarm
-    * @param string $err    The error (short description)
-    * @param string $errMsg The long error message
+    * @param string $type    The type of error
+    * @param string $status  The error status to get
+    * @param string $err     The error (short description)
+    * @param string $program The program the error was from
     *
     * @return null
     */
     function getError($type=null, $status=null, $err=null, $program=null)
     {
         $where = array();
-        $data = array();            
+        $data  = array();            
         if (!empty($type)) {
             $where[] = "type = ?";
-            $data[] = $type;
+            $data[]  = $type;
         }
         if (!empty($status)) {
             $where[] = "status = ?";
-            $data[] = $status;
+            $data[]  = $status;
         }
         if (!empty($err)) {
             $where[] = "err = ?";
-            $data[] = $err;
+            $data[]  = $err;
         }
         if (!empty($program)) {
             $where[] = "program = ?";
-            $data[] = $program;
+            $data[]  = $program;
         }
         $where[] = "id = ?";
-        $data[] = $this->id;            
-        $where = implode(" AND ", $where);      
+        $data[]  = $this->id;            
+        $where   = implode(" AND ", $where);      
         return $this->error->getWhere($where, $data);
     }
    
     
-   /**
+    /**
     * This function creates a critical error
     *
     * @param string $plugin The name of the plugin that created the alarm
@@ -320,7 +348,7 @@ class epScheduler
         $this->setError("warning", $plugin, $err, $errMsg);
     }
    
-   /**
+    /**
     * This function creates an error
     *
     * @param string $plugin The name of the plugin that created the alarm
@@ -328,7 +356,7 @@ class epScheduler
     * @param string $errMsg The long error message
     *
     * @return null
-   */
+    */
     function error($plugin, $err, $errMsg)
     {
         $this->setError("error", $plugin, $err, $errMsg);

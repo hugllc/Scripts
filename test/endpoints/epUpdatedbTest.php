@@ -1,6 +1,6 @@
 <?php
 /**
- * This runs all of the tests associated with HUGnetLib.
+ * This runs tests on epUpdatedb.
  *
  * PHP Version 5
  *
@@ -35,10 +35,6 @@
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
 // Call epUpdatedbTest::main() if this source file is executed directly.
-if (!defined('PHPUnit_MAIN_METHOD')) {
-    define('PHPUnit_MAIN_METHOD', 'epUpdatedbTest::main');
-}
-
 require_once 'PHPUnit/Framework.php';
 
 require_once dirname(__FILE__).'/../../endpoints/lib/epUpdatedb.php';
@@ -56,37 +52,41 @@ require_once dirname(__FILE__).'/../../endpoints/lib/epUpdatedb.php';
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class epUpdatedbTest extends PHPUnit_Framework_TestCase
+class EpUpdatedbTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * Runs the test methods of this class.
-     *
-     * @access public
-     * @static
-     */
-    public static function main() {
-        require_once 'PHPUnit/TextUI/TestRunner.php';
+    * Runs the test methods of this class.
+    *
+    * @access public
+    * @static
+    * @return null;
+    */
+    public static function main()
+    {
+        include_once 'PHPUnit/TextUI/TestRunner.php';
 
         $suite  = new PHPUnit_Framework_TestSuite('epUpdatedbTest');
         $result = PHPUnit_TextUI_TestRunner::run($suite);
     }
 
     /**
-     * Sets up the fixture, for example, opens a network connection.
-     * This method is called before a test is executed.
-     *
-     * @access protected
-     */
+    * Sets up the fixture, for example, opens a network connection.
+    * This method is called before a test is executed.
+    *
+    * @access protected
+    * @return null;
+    */
     protected function setUp() 
     {
     }
 
     /**
-     * Tears down the fixture, for example, closes a network connection.
-     * This method is called after a test is executed.
-     *
-     * @access protected
-     */
+    * Tears down the fixture, for example, closes a network connection.
+    * This method is called after a test is executed.
+    *
+    * @access protected
+    * @return null;
+    */
     protected function tearDown() 
     {
     }
@@ -144,8 +144,4 @@ class epUpdatedbTest extends PHPUnit_Framework_TestCase
     }
 }
 
-// Call epUpdatedbTest::main() if this source file is executed directly.
-if (PHPUnit_MAIN_METHOD == 'epUpdatedbTest::main') {
-    epUpdatedbTest::main();
-}
 ?>

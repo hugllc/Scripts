@@ -1,5 +1,6 @@
 <?php
 /**
+ * Checks to see if a driver is functioning properly.
  *
  * PHP Version 5
  *
@@ -36,15 +37,15 @@
 
 $dfportal_no_session = true;
 
-include_once("blankhead.inc.php");
-include_once("hugnetservers.inc.php");
+require_once "blankhead.inc.php";
+require_once "hugnetservers.inc.php";
 
-$mhistory = new history_raw();
+$mhistory                = new history_raw();
 $mhistory->DefaultSortBy = "Date desc";
 
 $mhistory->lookup($argv[1], "DeviceKey");
 print "Found ".count($lhistory->lookup)." records\n";
-$packet=$mhistory->lookup[0];
+$packet = $mhistory->lookup[0];
 $endpoint->device->lookup($packet["DeviceKey"], "DeviceKey");
 
 $packet = array_merge($packet, $endpoint->device->lookup[0]);

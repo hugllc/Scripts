@@ -1,5 +1,6 @@
 <?php
 /**
+ * Reads the configuration of an endpoint
  *
  * PHP Version 5
  *
@@ -33,12 +34,13 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-require_once(dirname(__FILE__).'/../../head.inc.php');
-    $endpoint->packet->SNCheck(false);
+require_once dirname(__FILE__).'/../../head.inc.php';
+
+$endpoint->packet->SNCheck(false);
 
 $dev = $endpoint->getDevice($DeviceID, "ID");
 
-$dev["GatewayIP"] = $GatewayIP;
+$dev["GatewayIP"]   = $GatewayIP;
 $dev["GatewayPort"] = $GatewayPort;
 
 $endpoint->packet->verbose = $verbose;

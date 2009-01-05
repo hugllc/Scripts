@@ -1,5 +1,6 @@
 <?php
 /**
+ * This actually carries out the alarm functions
  *
  * PHP Version 5
  *
@@ -27,7 +28,8 @@
  * @package    Scripts
  * @subpackage Endpoints
  * @author     Scott Price <prices@hugllc.com>
- * @copyright  2008 Hunt Utilities Group, LLC
+ * @copyright  2008-2009 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @version    SVN: $Id: endpoint.php 1445 2008-06-17 22:25:17Z prices $    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
@@ -41,24 +43,33 @@ require_once "epScheduler.php";
  * @package    Scripts
  * @subpackage Endpoints
  * @author     Scott Price <prices@hugllc.com>
- * @copyright  2008 Hunt Utilities Group, LLC
+ * @copyright  2008-2009 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */ 
-class epAlarm extends epScheduler
+class EpAlarm extends EpScheduler
 {
+    /** @var string The plugin directory */
     protected $pluginDir = "alarmPluginDir";
        
     /**
-     *
-     */    
+    *  Construction
+    *
+    * @param array $config Configuration
+    *
+    * @return null
+    */
     function __construct($config = array()) 
     {
         unset($config["servers"]);
         unset($config["table"]);
         parent::__construct($config);
-        // This removes all the old bugs      
-        $this->error->removeWhere("program LIKE 'alarm.php%' AND errorLastSeen < ?", array(date("Y-m-d H:i:s", time() - (86400 * 7))));
+                
+        $where = "program LIKE 'alarm.php%' AND errorLastSeen < ?";
+        $data  = array(date("Y-m-d H:i:s", time() - (86400 * 7)));
+        
+        $this->error->removeWhere($where, $data);
     }
    
 }

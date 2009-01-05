@@ -1,5 +1,6 @@
 <?php
 /**
+ * Tests php5's directio for use with HUGnet 
  *
  * PHP Version 5
  *
@@ -47,12 +48,11 @@ dio_tcsetattr($fd, array(
 
 print "Starting...\r\n";
 while (1) {
+    $data = dio_read($fd, 256);
 
-  $data = dio_read($fd, 256);
-
-  if ($data) {
-     echo $data;
-  }
+    if ($data) {
+        echo $data;
+    }
 }
 
 

@@ -1,6 +1,7 @@
 #!/usr/bin/php-cli
 <?php
 /**
+ * This script does the polling of endpoints
  *
  * PHP Version 5
  *
@@ -36,17 +37,16 @@
  */
 
 define("POLL_PARTNUMBER", "0039-26-01-P");  //0039-26-01-P
-define("POLL_SVN", '$Id$');
 
 $GatewayKey = false;
-$testMode = false;
+$testMode   = false;
 
 $database_driver = "sqlite";
 
-require_once(dirname(__FILE__).'/../head.inc.php');
-require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
-require_once(HUGNET_INCLUDE_PATH.'/database/Process.php');
-require_once('lib/epPoll.php');
+require_once dirname(__FILE__).'/../head.inc.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Plog.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Process.php';
+require_once 'lib/epPoll.php';
 
 if (!(bool)$hugnet_config["poll_enable"]) {
     print "Poll disabled... Sleeping\n";
@@ -54,22 +54,26 @@ if (!(bool)$hugnet_config["poll_enable"]) {
     die();
 }
 
-print 'poll.php Version '.POLL_SVN."\n";
 print "Starting...\n";
 
 define("CONTROLLER_CHECK", 10);
 
-if (empty($GatewayKey)) die("You must supply a gateway key\n");
+if (empty($GatewayKey)) {
+    die("You must supply a gateway key\n");
+}
+
 print "Using GatewayKey ".$GatewayKey."\n";
 unset($hugnet_config["servers"]);
 $hugnet_config['GatewayIP']   = $GatewayIP;
 $hugnet_config['GatewayPort'] = $GatewayPort;
 $hugnet_config['GatewayName'] = $GatewayIP;
 $hugnet_config['GatewayKey']  = $GatewayKey;
-$hugnet_config['socketType'] = "db";
+$hugnet_config['socketType']  = "db";
 $hugnet_config['socketTable'] = "PacketLog";
-if (!empty($DeviceID)) $hugnet_config['DeviceID']  = $DeviceID;
 
+if (!empty($DeviceID)) {
+    $hugnet_config['DeviceID'] = $DeviceID;
+}
 $poll = new epPoll($hugnet_config);
 
 $poll->main();

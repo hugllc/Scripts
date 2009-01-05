@@ -1,5 +1,6 @@
 <?php
 /**
+ * Nothing here yet.
  *
  * PHP Version 5
  *
@@ -33,7 +34,7 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-require("packet.inc.php");
+require "packet.inc.php";
 
 
 

@@ -1,5 +1,10 @@
 <?php
 /**
+ * This code acts as an endpoint.
+ *
+ * This relays all of the packets from the other endpoint functions
+ * to the HUGnet network.  It also acts as an endpoint so it will
+ * respond to queries and such just like any other endpoint.
  *
  * PHP Version 5
  *
@@ -7,17 +12,17 @@
  * Scripts related to HUGnet
  * Copyright (C) 2007-2009 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -30,7 +35,7 @@
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version    SVN: $Id$    
+ * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 /** This is our base class */
@@ -53,83 +58,86 @@ require_once HUGNET_INCLUDE_PATH.'/database/ProcStats.php';
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
- */ 
-class endpoint extends endpointBase
+ */
+class Endpoint extends EndpointBase
 {
-
+    /** @var int The last minute we did anything (0-59) */
     var $lastminute = 0;
-    
+    /** @var int Seconds.  The number of seconds before gateways get removed */
     var $gwRemove = 360;
+    /** @var bool Test mode */
     var $test = false;
-    
+    /** @var bool Whether to exit or not */
     public $exit = false;
 
     /** List of gateways to check */
     public $gwCheck = array();
     /**
-     * Construction
-     *
-     * @param array $config Configuration
-     *
-     * @return null
-     */    
-    function __construct($config = array()) 
+    * Construction
+    *
+    * @param array $config Configuration
+    *
+    * @return null
+    */
+    function __construct($config = array())
     {
         unset($config["servers"]);
         unset($config["table"]);
         $config["partNum"] = ENDPOINT_PARTNUMBER;
         $config["Retries"] = 1;
-        $this->config = $config;
+        $this->config      = $config;
 
-        $this->uproc =& HUGnetDB::getInstance("Process", $config); //new process();
+        $this->uproc =& HUGnetDB::getInstance("Process", $config);
         $this->uproc->createTable();
-        
+
         unset($config["table"]);
-        $this->stats =& HUGnetDB::getInstance("ProcStats", $config); //new process(); new ProcStats();
+        $this->stats =& HUGnetDB::getInstance("ProcStats", $config);
         $this->stats->createTable();
-        $this->stats->clearStats();        
+        $this->stats->clearStats();
         $this->stats->setStat('start', time());
         $this->stats->setStat('PID', $this->uproc->me['PID']);
 
 
-        $this->test = (bool) $config["test"];
-        $this->verbose = (bool) $config["verbose"];
-        $this->cutoffdate = date("Y-m-d H:i:s", (time() - (86400 * $this->cutoffdays)));
-        $this->endpoint =& HUGnetDriver::getInstance($config);
+        $this->test       = (bool) $config["test"];
+        $this->verbose    = (bool) $config["verbose"];
+        $cutoff           = time() - (86400 * $this->cutoffdays);
+        $this->cutoffdate = date("Y-m-d H:i:s", $cutoff);
+        $this->endpoint   =& HUGnetDriver::getInstance($config);
         $this->endpoint->packet->getAll(true);
 
         unset($config["table"]);
-        $this->plog = & HUGnetDB::getInstance("Plog", $config); //new plog();
+        $this->plog = & HUGnetDB::getInstance("Plog", $config);
         $this->plog->createTable();
 
         unset($config["table"]);
-        $this->device =& HUGnetDB::getInstance("Device", $config); // new device($file);
-        $this->lastContactTime = time();
+        $this->device             =& HUGnetDB::getInstance("Device", $config);
+        $this->lastContactTime    = time();
         $this->lastContactAttempt = time();
-        $this->gateway =& HUGnetDB::getInstance("Gateway", $config); // new gateway($file);
-        
+        $this->gateway            =& HUGnetDB::getInstance("Gateway", $config);
+
         $config["table"] = "DebugPacketLog";
-        $this->debugplog =& HUGnetDB::getInstance("Plog", $config); //new process(); = new plog($db, "DebugPacketLog");
+        $this->debugplog =& HUGnetDB::getInstance("Plog", $config);
         $this->debugplog->createTable();
-        
+
         $config["table"] = "PacketSend";
-        $this->psend =& HUGnetDB::getInstance("Plog", $config); // new plog($file, "PacketSend");
+        $this->psend     =& HUGnetDB::getInstance("Plog", $config);
         $this->psend->createTable("PacketSend");
         $this->packet = &$this->endpoint->packet;
 
         parent::__construct($config);
-     }
-    
+    }
+
     /**
      * Main routine
-     * 
+     *
      * @return none
-     */    
-    function main() 
+     */
+    function main()
     {
         $this->powerup();
         $this->packet->packetSetCallBack('checkPacket', $this);
-    
+        $config =& $this->config;
+
         while ($GLOBALS["exit"] !== true) {
             declare(ticks = 1);
             if ($lastminute != date("i")) {
@@ -137,25 +145,35 @@ class endpoint extends endpointBase
                 $this->checkAllGW();
                 $this->setupMyInfo();
                 $this->stats->setStat("PacketSN", substr($this->DeviceID, 0, 6));
-                $this->stats->setStat("GatewayKey", (int)$this->config["GatewayKey"]);
-                $this->stats->setStat("GatewayIP", (string)$this->config["GatewayIP"]);
-                $this->stats->setStat("GatewayPort", (int)$this->config["GatewayPort"]);
+                $this->stats->setStat("GatewayKey", (int)$config["GatewayKey"]);
+                $this->stats->setStat("GatewayIP", (string)$config["GatewayIP"]);
+                $this->stats->setStat("GatewayPort", (int)$config["GatewayPort"]);
             }
             $lastminute = date("i");
-            if ($GLOBALS["exit"] == true) break;
+            if ($GLOBALS["exit"] == true) {
+                break;
+            }
             $packet = $this->checkPacketQ();
-            if ($GLOBALS["exit"] == true) break;
-            if ($packet === false) $packet = $this->endpoint->packet->monitor($this->config, 1);
-            if ($GLOBALS["exit"] == true) break;
+            if ($GLOBALS["exit"] == true) {
+                break;
+            }
+            if ($packet === false) {
+                $packet = $this->endpoint->packet->monitor($config, 1);
+            }
+            if ($GLOBALS["exit"] == true) {
+                break;
+            }
         }
-    
+
     }
-        
+
     /**
-     * Returns random timeout
-     *
-     * @return int
-     */
+    * Returns random timeout
+    *
+    * @param array $pkt The packet array
+    *
+    * @return int
+    */
     function checkPacket($pkt)
     {
         if (is_array($pkt)) {
@@ -169,14 +187,22 @@ class endpoint extends endpointBase
                 $this->gwCheck[hexdec($pkt["From"])] = date("Y-m-d H:i:s");
             }
             // Do some printing if we are not otherwise working
-            if ($this->myInfo['doPoll'] !== true) $v = true;
-            if ($v) print "Got Pkt:".$pkt["id"]." F:".$pkt["From"]." - T:".$pkt["To"]." C:".$pkt["Command"];
+            if ($this->myInfo['doPoll'] !== true) {
+                $v = true;
+            }
+            if ($v) {
+                print "Got Pkt:".$pkt["id"]." F:".$pkt["From"];
+                print " - T:".$pkt["To"]." C:".$pkt["Command"];
+            }
             if ($pkt['toMe']) {
-                if ($v) print " - To Me! ";
+                if ($v) {
+                    print " - To Me! ";
+                }
                 $this->checkPacketToMe($pkt);
             }
-            if ($v) print " Type: ".$pkt["Type"]."\r\n";
-
+            if ($v) {
+                print " Type: ".$pkt["Type"]."\r\n";
+            }
         }
     }
 
@@ -192,11 +218,11 @@ class endpoint extends endpointBase
     {
         $this->stats->incStat("To Me");
         $Command = trim(strtoupper($pkt['Command']));
-        $sent = true;
+        $sent    = true;
         switch($Command) {
         case PACKET_COMMAND_GETSETUP:
-            // Get our setup            
-            $ret = $this->packet->sendReply($pkt, $pkt['From'], e00392601::getConfigStr($this->myInfo));
+            $configStr = e00392601::getConfigStr($this->myInfo);
+            $ret       = $this->packet->sendReply($pkt, $pkt['From'], $configStr);
             break;
         case PACKET_COMMAND_ECHOREQUEST:
         case PACKET_COMMAND_FINDECHOREQUEST:
@@ -207,38 +233,44 @@ class endpoint extends endpointBase
             $sent = false;
             break;
         }
-        if ($sent) print "\r\nSnt Pkt: F:".$this->DeviceID." - T:".$pkt['From']." C:01 - From Me!";
-        if ($sent) $this->stats->incStat("From Me");
-    
+        if ($sent) {
+            print "\r\nSnt Pkt: F:".$this->DeviceID;
+            print " - T:".$pkt['From']." C:01 - From Me!";
+            $this->stats->incStat("From Me");
+        }
     }
     /**
      * Check packets to send out
      *
      * @return bool
      */
-    function checkPacketQ() 
+    function checkPacketQ()
     {
-        $now = date("Y-m-d H:i:s");
+        $now     = date("Y-m-d H:i:s");
         $packets = $this->plog->getWhere("Type='OUTGOING'", array());
         foreach ($packets as $p) {
-            $from = $p["PacketFrom"];
-            $pk = array(
-                'to' => $p['PacketTo'],
+            $from       = $p["PacketFrom"];
+            $pk         = array(
+                'to'      => $p['PacketTo'],
                 'command' => $p['sendCommand'],
-                'data' => $p['RawData'],            
+                'data'    => $p['RawData'],
             );
             $pk["Type"] = plog::packetType($p);
-            print "Snt Pkt: F:".$this->DeviceID." - T:".$p['PacketTo']." C:".$p['sendCommand']." Id:".$p["id"]." Type:".$pk["Type"]."\n";
+            print "Snt Pkt: F:".$this->DeviceID." - T:".$p['PacketTo'];
+            print " C:".$p['sendCommand']." Id:".$p["id"]." Type:".$pk["Type"]."\n";
             $packet = $this->endpoint->packet->sendPacket($this->config, array($pk));
             $this->stats->setStat("Last".$pk["Type"], date("Y-m-d H:i:s"));
             $this->stats->incStat("Sent User Packet");
             if (is_array($packet)) {
                 foreach ($packet as $pkt) {
-                    $lpkt = plog::packetLogSetup($pkt, $p, "REPLY");
+                    $lpkt        = plog::packetLogSetup($pkt, $p, "REPLY");
                     $pkt["Type"] = plog::packetType($pkt);
-                    $lpkt["id"] = $p["id"];
+                    $lpkt["id"]  = $p["id"];
                     $this->plog->update($lpkt);
-                    print "Got Pkt: F:".$lpkt["PacketFrom"]." - T:".$lpkt["PacketTo"]. " C:".$lpkt["Command"]." Id:".$lpkt["id"]." RTime:".$lpkt["ReplyTime"]." Type:".$pkt["Type"]."\n";
+                    print "Got Pkt: F:".$lpkt["PacketFrom"];
+                    print " - T:".$lpkt["PacketTo"];
+                    print " C:".$lpkt["Command"]." Id:".$lpkt["id"];
+                    print " RTime:".$lpkt["ReplyTime"]." Type:".$pkt["Type"]."\n";
                     $this->stats->setStat("Last".$pkt["Type"], date("Y-m-d H:i:s"));
                 }
                 $this->stats->incStat("Sent Packet Success");
@@ -249,8 +281,11 @@ class endpoint extends endpointBase
             }
         }
         $this->last = $now;
+
         // This removes the packets from more than an hour ago.
-        $this->plog->removeWhere("`Date` < ? AND Checked < 10", array(date("Y-m-d H:i:s", time() - 3600)));
+        $where = "`Date` < ? AND Checked < 10";
+        $data  = array(date("Y-m-d H:i:s", time() - 3600));
+        $this->plog->removeWhere($where, $data);
         return (bool) count($packets);
     }
 
@@ -263,10 +298,11 @@ class endpoint extends endpointBase
      */
     function findDev($id)
     {
-        $dev = $this->config;
-        $dev["DeviceID"] = $id; 
-        print "Snt Pkt: F:".$this->DeviceID." - T:".$dev['DeviceID']." C:".PACKET_COMMAND_FINDECHOREQUEST." - From Me!\n";
-        $ret = $this->endpoint->packet->ping($dev, true, false);        
+        $dev             = $this->config;
+        $dev["DeviceID"] = $id;
+        print "Snt Pkt: F:".$this->DeviceID." - T:".$dev['DeviceID'];
+        print " C:".PACKET_COMMAND_FINDECHOREQUEST." - From Me!\n";
+        $ret = $this->endpoint->packet->ping($dev, true, false);
         return $ret;
     }
     /**
@@ -274,33 +310,49 @@ class endpoint extends endpointBase
      *
      * @return bool
      */
-    function checkAllGW() 
+    function checkAllGW()
     {
         $this->_checkAllGWdb();
-        if (!is_array($this->gwCheck)) return;
+        if (!is_array($this->gwCheck)) {
+            return;
+        }
         foreach ($this->gwCheck as $gw => $val) {
-            $b = $this->gw->getWhere("`DeviceID` = ?", array(devInfo::hexify($gw, 6)));
-            if (is_array($p[0])) $p = $p[0];
-            if (!isset($p["DeviceID"])) $p["DeviceID"] = devInfo::hexify($gw, 6);
-            if (!isset($p["GatewayKey"])) $p["GatewayKey"] = $this->config["GatewayKey"];
+            $where = "`DeviceID` = ?";
+            $data  = array(devInfo::hexify($gw, 6));
+            $b     = $this->gw->getWhere($where, $data);
+            if (is_array($p[0])) {
+                $p = $p[0];
+            }
+            if (!isset($p["DeviceID"])) {
+                $p["DeviceID"] = devInfo::hexify($gw, 6);
+            }
+            if (!isset($p["GatewayKey"])) {
+                $p["GatewayKey"] = $this->config["GatewayKey"];
+            }
             print "Force check of gateway ".$p["DeviceID"]."\n";
             $this->checkGW($p);
         }
         $this->gwCheck = array();
-        
+
     }
     /**
      * Checks other gateways
      *
      * @return bool
      */
-    private function _checkAllGWdb() 
+    private function _checkAllGWdb()
     {
         // This gets rid of old stuff
-        $this->gw->removeWhere("LastContact < ?", array(date("Y-m-d H:i:s", (time() - $this->gwRemove))));
+        $where = "LastContact < ?";
+        $data  =  array(date("Y-m-d H:i:s", (time() - $this->gwRemove)));
+        $this->gw->removeWhere($where, $data);
         // This gets everything
-        $ret = $this->gw->getWhere("`Job` = ? AND `Name` <> ?", array($this->myInfo["Job"], $this->myInfo["Name"]));
-        if (!is_array($ret)) return;
+        $where = "`Job` = ? AND `Name` <> ?";
+        $data  = array($this->myInfo["Job"], $this->myInfo["Name"]);
+        $ret   = $this->gw->getWhere($where, $data);
+        if (!is_array($ret)) {
+            return;
+        }
         foreach ($ret as $gw) {
             print "Checking gateway ".$gw["DeviceID"]."\n";
             $this->checkGW($gw);
@@ -313,20 +365,25 @@ class endpoint extends endpointBase
      *
      * @return bool
      */
-    function checkGW($gw) 
+    function checkGW($gw)
     {
-        if (empty($gw["DeviceID"])) continue;
-
+        if (empty($gw["DeviceID"])) {
+            return;
+        }
         $pkt = $this->packet->buildPacket($gw['DeviceID'], PACKET_COMMAND_GETSETUP);
         $this->stats->incStat("From Me");
-        print "Snt Pkt: F:".$this->DeviceID." - T:".$pkt['To']." C:".$pkt["Command"]." - From Me!\r\n";
+        print "Snt Pkt: F:".$this->DeviceID." - T:".$pkt['To'];
+        print " C:".$pkt["Command"]." - From Me!\r\n";
         $reply = $this->packet->sendPacket($this->config, array($pkt), true, 2);
-        if (!is_array($reply)) return;
-        foreach($reply as $p) {
-            $this->stats->incStat("To Me");
-            print "Got Pkt: F:".$p["From"]." - T:".$p['To']." C:".$p["Command"]." - To Me!\r\n";
+        if (!is_array($reply)) {
+            return;
         }
-        $config = $this->interpConfig($reply);
+        foreach ($reply as $p) {
+            $this->stats->incStat("To Me");
+            print "Got Pkt: F:".$p["From"]." - T:".$p['To'];
+            print " C:".$p["Command"]." - To Me!\r\n";
+        }
+        $config                = $this->interpConfig($reply);
         $config["LastContact"] = date("Y-m-d H:i:s");
         if ($this->gw->replace($config)) {
             print "Gateway ".$gw["DeviceID"]." config saved\n";

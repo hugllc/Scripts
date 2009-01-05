@@ -1,6 +1,7 @@
 #!/usr/bin/php-cli
 <?php
 /**
+ * Runs the endpoint control functions
  *
  * PHP Version 5
  *
@@ -36,16 +37,14 @@
  */
 
 define("CONTROL_PARTNUMBER", "0039-26-05-P");  //0039-26-01-P
-define("CONTROL_SVN", '$Id$');
 
 $GatewayKey = false;
-$testMode = false;
+$testMode   = false;
 
-require_once(dirname(__FILE__).'/../head.inc.php');
-require_once(HUGNET_INCLUDE_PATH.'/plog.inc.php');
-require_once(HUGNET_INCLUDE_PATH.'/process.inc.php');
+require_once dirname(__FILE__).'/../head.inc.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Plog.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Process.php';
 
-print 'control.php Version '.CONTROL_SVN."\n";
 print "Starting...\n";
 
 while (1) {

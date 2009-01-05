@@ -1,6 +1,7 @@
 #!/usr/bin/php-cli
 <?php
 /**
+ * Syncs the local sqlite database and the remote database.
  *
  * PHP Version 5
  *
@@ -49,7 +50,7 @@ $hugnet_config['GatewayIP']   = $GatewayIP;
 $hugnet_config['GatewayPort'] = $GatewayPort;
 $hugnet_config['GatewayName'] = $GatewayIP;
 $hugnet_config['GatewayKey']  = $GatewayKey;
-$hugnet_config['socketType'] = "db";
+$hugnet_config['socketType']  = "db";
 $hugnet_config['socketTable'] = "PacketLog";
 
 $refreshdev = true;

@@ -1,5 +1,7 @@
 <?php
 /**
+ * This file does the meat of the command line stuff.  It gets any script that
+ * is called from the command line ready to go.
  *
  * PHP Version 5
  *
@@ -40,7 +42,8 @@ define("SCRIPTS_PARTNUMBER", "0039-26-00-P");  //0039-26-00-P
 if (!@include_once '/etc/hugnet/config.inc.php') {
     if (!@include_once HUGNET_FS_DIR.'/config/config.inc.php') {
         echo "No config file found.  \n";
-        echo "Checked /etc/hugnet/config.inc.php, ".HUGNET_FS_DIR."/config/config.inc.php\n";
+        echo "Checked /etc/hugnet/config.inc.php, ";
+        echo HUGNET_FS_DIR."/config/config.inc.php\n";
         echo "Waiting 60 seconds then dying.\n";
         sleep(60);
         die();
@@ -56,62 +59,68 @@ if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
 require_once HUGNET_INCLUDE_PATH.'/lib/plugins.inc.php';
 
 $GatewayKey = $hugnet_config["script_gatewaykey"];
+
 $hugnet_config["loop"] = 1;
 
-if (!isset($GatewayIP)) $GatewayIP = (empty($hugnet_config["gatewayIP"])) ? "127.0.0.1" : $hugnet_config["gatewayIP"];
-if (!isset($GatewayPort)) $GatewayPort = (empty($hugnet_config["gatewayPort"])) ? "2000" : $hugnet_config["gatewayPort"];
-
+if (!isset($GatewayIP)) {
+    $GatewayIP = (empty($hugnet_config["gatewayIP"])) ?
+            "127.0.0.1" : $hugnet_config["gatewayIP"];
+}
+if (!isset($GatewayPort)) {
+    $GatewayPort = (empty($hugnet_config["gatewayPort"])) ?
+            "2000" : $hugnet_config["gatewayPort"];
+}
 $newArgv = array();
 for ($i = 1; $i < count($argv); $i++) {
     switch($argv[$i]) {
     // Gateway IP address
     case "-a":
         $i++;
-        $GatewayIP = $argv[$i];
+        $GatewayIP                  = $argv[$i];
         $hugnet_config["GatewayIP"] = $argv[$i];      
         break;
     // Packet Command
     case "-c":
         $i++;
-        $pktCommand = $argv[$i];
+        $pktCommand                  = $argv[$i];
         $hugnet_config["pktCommand"] = $argv[$i];
         break;
     // Packet Data
     case "-d":
         $i++;
-        $pktData = $argv[$i];
+        $pktData                  = $argv[$i];
         $hugnet_config["pktData"] = $argv[$i];
         break;
     // Gateway Key
     case "-g":
         $i++;
-        $GatewayKey = $argv[$i];
+        $GatewayKey                         = $argv[$i];
         $hugnet_config["script_gatewaykey"] = $argv[$i];
         break;
     // DeviceID
     case "-i":
         $i++;
-        $DeviceID = $argv[$i];
+        $DeviceID                  = $argv[$i];
         $hugnet_config["DeviceID"] = $argv[$i];
         break;
         
     // DeviceKey
     case "-k":
         $i++;
-        $DeviceKey = $argv[$i];
+        $DeviceKey                  = $argv[$i];
         $hugnet_config["DeviceKey"] = $argv[$i];
         break;
     // Gateway Port
     case "-p":
         $i++;
-        $GatewayPort = $argv[$i];
+        $GatewayPort                  = $argv[$i];
         $hugnet_config["GatewayPort"] = $argv[$i];
         break;
         
     // Packet Serial Number to use
     case "-s":
         $i++;
-        $SerialNum = $argv[$i];
+        $SerialNum                  = $argv[$i];
         $hugnet_config["SerialNum"] = $argv[$i];
         break;
     // Packet Serial Number to use

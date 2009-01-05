@@ -1,6 +1,7 @@
 #!/usr/bin/php-cli
 <?php
 /**
+ * This runs the alarm functions on the core
  *
  * PHP Version 5
  *
@@ -36,12 +37,11 @@
  */
  
 define("ALARM_PARTNUMBER", "0039-26-03-P");  //0039-26-01-P
-define("ALARM_SVN", '$Id$');
 
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
-require_once(HUGNET_INCLUDE_PATH.'/database/Process.php');
-require_once('lib/epAlarm.php');
+require_once HUGNET_INCLUDE_PATH.'/database/Plog.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Process.php';
+require_once 'lib/epAlarm.php';
 
 if (!(bool)$hugnet_config["alarm_enable"]) {
     print "Alarm disabled... Sleeping\n";
@@ -49,12 +49,13 @@ if (!(bool)$hugnet_config["alarm_enable"]) {
     die();
 }
 
-print 'alarm.php Version '.ALARM_SVN."\n";
 print "Starting...\n";
 
 
 
-if (empty($hugnet_config["pluginDir"])) $hugnet_config["alarmPluginDir"] = dirname(__FILE__)."/alarm/";
+if (empty($hugnet_config["pluginDir"])) {
+    $hugnet_config["alarmPluginDir"] = dirname(__FILE__)."/alarm/";
+}   
 $hugnet_config["partNum"] = ALARM_PARTNUMBER;
 
 $epAlarm = new epAlarm($hugnet_config);

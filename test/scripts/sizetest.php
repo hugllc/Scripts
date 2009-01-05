@@ -1,5 +1,6 @@
 <?php
 /**
+ * Tries longer and longer packets until it doesn't get anymore replies.
  *
  * PHP Version 5
  *
@@ -33,15 +34,15 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-require("packet.inc.php");
+require "packet.inc.php";
 
 if (empty($argv[1])) {
     die("DeviceID must be specified!\r\n");    
 }
-$pkt = array();
+$pkt              = array();
 $Info["DeviceID"] = $argv[1];
-$pkt["To"] = $argv[1];
-$pkt["Command"] = "02";
+$pkt["To"]        = $argv[1];
+$pkt["Command"]   = "02";
 
 
 if (isset($argv[2])) {
@@ -55,14 +56,14 @@ if (isset($argv[3])) {
     $Info["GatewayPort"] = 1200;
 }
 $Info["GatewayKey"] = 1;
+
 $packet = new EPacket($Info, true);
 
 $index = 0;
 do {
-//        $pkt["Data"] .= str_pad(dechex($index++), 2, "0", STR_PAD_LEFT);
     $pkt["Data"] = str_repeat("00", $index++);
-    $return = $packet->SendPacket($Info, $pkt);        
-} while($return !== false);
+    $return      = $packet->SendPacket($Info, $pkt);
+} while ($return !== false);
 $index--;
 print "Died at ".$index." Length\r\n";
 $packet->socket->Close();

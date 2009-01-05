@@ -1,5 +1,6 @@
 <?php
 /**
+ * Checks for the last sensor read, poll and config
  *
  * PHP Version 5
  *
@@ -34,14 +35,22 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 /**
- * Checks to see when the last sensor read was.  It it was mroe than an hour ago it creates an alarm.
+ * Checks to see when the last sensor read was.  It it was mroe than an
+ * hour ago it creates an alarm.
  *
- * @param object $obj The alarm object to play with
+ * @param object &$obj The alarm object to play with
+ *
+ * @return none
  */
 function checkLastSensorRead(&$obj)
 {
     $value = $obj->stats->getStat("LastSENSORREAD", "endpoint.php");
-    if (strtotime($value) < (time() - 1800)) $obj->criticalError("alarm.php:checkLastSensorRead", HUGNET_ERROR_OLD_SENSOR_READ, "The last sensor read happened more than 30 minutes ago at ".$value."!");
+    $msg   = "The last sensor read happened more than 30 minutes ago at ".$value."!";
+    if (strtotime($value) < (time() - 1800)) {
+        $obj->criticalError("alarm.php:checkLastSensorRead",
+                            HUGNET_ERROR_OLD_SENSOR_READ,
+                            $msg);
+    }      
 }
 
 $this->registerFunction("checkLastSensorRead", "hourly", "Last Sensor Read");
@@ -50,16 +59,22 @@ $this->registerFunction("checkLastSensorRead", "hourly", "Last Sensor Read");
 /**
  * Checks to see when the last poll was in the database.
  *
- * @param object $obj The alarm object to play with
+ * @param object &$obj The alarm object to play with
+ *
+ * @return none
  */
 function checkLastPoll(&$obj)
 {
-    $cutoff = date("Y-m-d H:i:s", time() - 3600);
-    $old = $obj->device->getWhere("LastPoll < ? AND GatewayKey = ?", array($cutoff, $obj->config["script_gatewaykey"]));
-    $current = $obj->device->getWhere("LastPoll >= ? AND GatewayKey = ?", array($cutoff, $obj->config["script_gatewaykey"]));
-
-    if (count($current) == 0) $obj->criticalError("alarm.php:checkLastPoll", HUGNET_ERROR_OLD_POLL, "The last poll was more than an hour ago!");
-    
+    $cutoff  = date("Y-m-d H:i:s", time() - 3600);
+    $data    = array($cutoff, $obj->config["script_gatewaykey"]);
+    $old     = $obj->device->getWhere("LastPoll < ? AND GatewayKey = ?", $data);
+    $current = $obj->device->getWhere("LastPoll >= ? AND GatewayKey = ?", $data);
+    $msg     = "The last poll was more than an hour ago!";
+    if (count($current) == 0) {
+        $obj->criticalError("alarm.php:checkLastPoll",
+                            HUGNET_ERROR_OLD_POLL,
+                            $msg);
+    }
 }
 
 $this->registerFunction("checkLastPoll", "hourly", "Last Poll");
@@ -68,16 +83,23 @@ $this->registerFunction("checkLastPoll", "hourly", "Last Poll");
 /**
  * Checks to see when the last poll was in the database.
  *
- * @param object $obj The alarm object to play with
+ * @param object &$obj The alarm object to play with
+ *
+ * @return none
  */
 function checkLastConfig(&$obj)
 {
-    $cutoff = date("Y-m-d H:i:s", time() - 3600*48);   
-    $old = $obj->device->getWhere("LastConfig < ? AND GatewayKey = ?", array($cutoff, $obj->config["script_gatewaykey"]));
-    $current = $obj->device->getWhere("LastConfig >= ? AND GatewayKey = ?", array($cutoff, $obj->config["script_gatewaykey"]));
-
-    if (count($current) == 0) $obj->criticalError("alarm.php:checkLastConfig", HUGNET_ERROR_OLD_CONFIG, "All devices on this controller are more than two days old!");
+    $cutoff  = date("Y-m-d H:i:s", time() - 3600*48);
+    $data    = array($cutoff, $obj->config["script_gatewaykey"]);
+    $old     = $obj->device->getWhere("LastConfig < ? AND GatewayKey = ?", $data);
+    $current = $obj->device->getWhere("LastConfig >= ? AND GatewayKey = ?", $data);
+    $msg     = "All devices on this controller are more than two days old!";
     
+    if (count($current) == 0) {
+        $obj->criticalError("alarm.php:checkLastConfig",
+                            HUGNET_ERROR_OLD_CONFIG,
+                            $msg);
+    }
 }
 
 $this->registerFunction("checkLastConfig", "hourly", "Last Config");
