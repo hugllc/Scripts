@@ -36,43 +36,41 @@
 /**
  * Analysis plugin
  *
- * @param array &$here   Here
- * @param array &$device The devInfo array for the device
+ * @param array &$analysis Here
+ * @param array &$devInfo   The devInfo array for the device
  *
  * @return null
  */
-function analysis_polling(&$here, &$device) 
+function analysis_polling(&$analysis, &$devInfo)
 {
     $sTime = microtime(true);
     global $verbose;
 
-    if ($verbose > 1) print "analysis_polling start\r\n";
+    if ($verbose > 0) print "analysis_polling start\r\n";
 
-    $data = &$_SESSION['rawHistoryCache'];
-    $stuff = &$_SESSION['analysisOut'];
-    $stuff["AveragePollTime"] = 0;
-    $stuff["Polls"] = 0;
-    $stuff['AverageReplyTime'] = 0;
-    $stuff['Replies'] = 0;
+    $analysis->analysisOut["AveragePollTime"] = 0;
+    $analysis->analysisOut["Polls"] = 0;
+    $analysis->analysisOut['AverageReplyTime'] = 0;
+    $analysis->analysisOut['Replies'] = 0;
     $lastpoll = 0;
-    foreach ($data as $key => $row) {
+    foreach ($analysis->rawHistoryCache as $key => $row) {
         if ($row["Status"] == "GOOD") {
             if ($lastpoll != 0) {
-                   $stuff["Polls"]++;
-                $stuff["AveragePollTime"] += (strtotime($row["Date"]) - $lastpoll)/60;
+                   $analysis->analysisOut["Polls"]++;
+                $analysis->analysisOut["AveragePollTime"] += (strtotime($row["Date"]) - $lastpoll)/60;
             }
         }
         $lastpoll = strtotime($row["Date"]);
         if ($row['ReplyTime'] > 0) {
-            $stuff['AverageReplyTime'] += $row['ReplyTime'];
-            $stuff['Replies']++;
+            $analysis->analysisOut['AverageReplyTime'] += $row['ReplyTime'];
+            $analysis->analysisOut['Replies']++;
         }
     }
-    if ($stuff["Polls"] > 0) {
-        $stuff["AveragePollTime"] /= $stuff["Polls"];
+    if ($analysis->analysisOut["Polls"] > 0) {
+        $analysis->analysisOut["AveragePollTime"] /= $analysis->analysisOut["Polls"];
     }
-    if ($stuff['Replies'] > 0) {
-        $stuff['AverageReplyTime'] /= $stuff['Replies'];
+    if ($analysis->analysisOut['Replies'] > 0) {
+        $analysis->analysisOut['AverageReplyTime'] /= $analysis->analysisOut['Replies'];
     }
     $dTime = microtime(true) - $sTime;
     if ($verbose > 1) print "analysis_polling end (".$dTime."s) \r\n";
@@ -80,6 +78,6 @@ function analysis_polling(&$here, &$device)
 }
 
 
-$this->registerFunction("analysis_polling", "Analysis");
+$this->registerFunction("analysis_polling", "Analysis9");
 
 ?>
