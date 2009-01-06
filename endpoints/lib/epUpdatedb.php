@@ -177,12 +177,12 @@ class EpUpdatedb extends EndpointBase
 
     }
     /**
-     * Check to see if any error is higher than the value given
-     *
-     * @param int $value The value
-     *
-     * @return bool
-     */
+    * Check to see if any error is higher than the value given
+    *
+    * @param int $value The value
+    *
+    * @return bool
+    */
     function checkErrors ($value)
     {
         if (!is_array($this->errors)) {
@@ -197,10 +197,13 @@ class EpUpdatedb extends EndpointBase
     }
 
     /**
-     * Gets all devices from the remote database and stores them in the
-     * local database.
-      */
-    function getAllDevices() {
+    * Gets all devices from the remote database and stores them in the
+    * local database.
+    *
+    * @return bool
+    */
+    function getAllDevices()
+    {
         // Regenerate our endpoint information
         if (((time() - $this->lastdev) > 120) || (count($this->ep) < 1)) {
             $this->lastdev = time();
@@ -212,11 +215,12 @@ class EpUpdatedb extends EndpointBase
                 print "found ".count($res)."";
                 $this->stats->setStat('Devices', count($res));
                 $this->oldep = $this->ep;
-                $this->ep = array();
+                $this->ep    = array();
                 foreach ($res as $key => $val) {
-                    $dev = $this->endpoint->DriverInfo($val);
-                    $dev['params'] = device::decodeParams($dev['params']);
+                    $dev             = $this->endpoint->DriverInfo($val);
+                    $dev['params']   = device::decodeParams($dev['params']);
                     $val['DeviceID'] = trim(strtoupper($val['DeviceID']));
+
                     $this->ep[$val['DeviceID']] = $dev;
                 }
             } else {
@@ -228,63 +232,76 @@ class EpUpdatedb extends EndpointBase
     }
 
     /**
-     * Waits for a time when there is nothing to do.  This is so we don't eat
-     * all of the processing time.
-      */
-    function wait() {
-        if ($this->verbose) print  "[".$this->uproc->me["PID"]."] Pausing...\n";
-//        $cnt = 0;
-//        while((date("i") == $this->lastminute) && ($cnt++ < 2)) {
-//          $this->endpoint->packet->monitor($this->config, $sleep);
-            sleep(2);
-//        }
-//        sleep(10);
-        $this->lastminute = date(i);
+    * Waits for a time when there is nothing to do.  This is so we don't eat
+    * all of the processing time.
+    *
+    * @return bool
+    */
+    function wait()
+    {
+        if ($this->verbose) {
+            print  "[".$this->uproc->me["PID"]."] Pausing...\n";
+        }
+        sleep(2);
+        $this->lastminute = date("i");
 
     }
 
     /**
-     * Update the remote database from the local one.
-      */
-    function updatedb() {
+    * Update the remote database from the local one.
+    *
+    * @return bool
+    */
+    function updatedb()
+    {
         $res = $this->plog->getWhere("Checked > 10", array(), 50);
-        if ($this->verbose) print "[".$this->uproc->me["PID"]."] Found ".count($res)." Packets\n";
-        if (!is_array($res)) return;
+        if ($this->verbose) {
+            print "[".$this->uproc->me["PID"]."] Found ".count($res)." Packets\n";
+        }
+        if (!is_array($res)) {
+            return;
+        }
         foreach ($res as $packet) {
             $this->stats->incStat("Packets");
 
-            print "[".$this->uproc->me["PID"]."] ".$packet["PacketFrom"]." ".$packet["sendCommand"];
-            if (empty($packet["PacketFrom"])) $packet["Type"] = BAD;
-            if ($this->endpoint->packet->isGateway($packet["PacketFrom"])) $packet["Type"] = BAD;
-
+            print "[".$this->uproc->me["PID"]."]";
+            print " ".$packet["PacketFrom"];
+            print " ".$packet["sendCommand"];
+            if (empty($packet["PacketFrom"])) {
+                $packet["Type"] = BAD;
+            }
+            if ($this->endpoint->packet->isGateway($packet["PacketFrom"])) {
+                $packet["Type"] = BAD;
+            }
             $DeviceID = trim(strtoupper($packet['PacketFrom']));
             if (is_array($this->ep[$DeviceID])) {
                 $packet = array_merge($this->ep[$DeviceID], $packet);
             }
             $packet["remove"] == false;
-            $this->updatedbUnsolicited($packet);
-            $this->updatedbReply($packet);
-            $this->updatedbConfig($packet);
-            $this->updatedbPoll($packet);
-            $this->updatedbUnknown($packet);
-            $this->updatedbRemove($packet);
+            $this->_updatedbUnsolicited($packet);
+            $this->_updatedbReply($packet);
+            $this->_updatedbConfig($packet);
+            $this->_updatedbPoll($packet);
+            $this->_updatedbUnknown($packet);
+            $this->_updatedbRemove($packet);
             print "\r\n";
 
         }
     }
 
     /**
-     * Function to deal with unsolicited packets
-     *
-     * @param array $packet the packet array
-     *
-     * @return none
-     */
-    private function updatedbUnsolicited(&$packet) {
+    * Function to deal with unsolicited packets
+    *
+    * @param array &$packet the packet array
+    *
+    * @return null
+    */
+    private function _updatedbUnsolicited(&$packet)
+    {
         if ($packet['Type'] == 'UNSOLICITED') {
             $packet["Checked"] = true;
             $this->stats->incStat("Unsolicited");
-            $pkt = $this->plog->packetLogSetup($packet, $packet);
+            $pkt    = $this->plog->packetLogSetup($packet, $packet);
             $return = $this->plogRemote->add($pkt);
             if ($return) {
                 print " - Inserted ".$packet['sendCommand']."";
@@ -295,15 +312,17 @@ class EpUpdatedb extends EndpointBase
         }
     }
     /**
-     * Function to deal with unsolicited packets
-     *
-     * @param array $packet the packet array
-     */
-    private function updatedbReply(&$packet) {
+    * Function to deal with unsolicited packets
+    *
+    * @param array &$packet the packet array
+    *
+    * @return null
+    */
+    private function _updatedbReply(&$packet)
+    {
         if ($packet['Type'] == 'REPLY') {
             $packet["Checked"] = true;
             $this->stats->incStat("Reply");
-//            $return = $this->endpoint->db->AutoExecute("PacketSend", $packet, 'INSERT');
             if ($return) {
                 print " - Inserted into PacketSend ".$packet['sendCommand']."";
                 $packet["remove"] = true;
@@ -314,18 +333,21 @@ class EpUpdatedb extends EndpointBase
         }
     }
     /**
-     * Function to deal with unsolicited packets
-     *
-     * @param array $packet the packet array
-     */
-    private function updatedbConfig(&$packet) {
+    * Function to deal with unsolicited packets
+    *
+    * @param array &$packet the packet array
+    *
+    * @return null
+    */
+    private function _updatedbConfig(&$packet)
+    {
         if ($packet['Type'] == 'CONFIG') {
             $packet["Checked"] = true;
             $this->stats->incStat("Config");
             $return = $this->plogRemote->add($packet);
             if ($return) {
                 print " - Moved ";
-                $packet["remove"] = true;
+                $packet["remove"]               = true;
                 $this->errors["updatedbConfig"] = 0;
             } else {
                 print " - Move Failed ";
@@ -337,17 +359,18 @@ class EpUpdatedb extends EndpointBase
                 print " - Updated ";
             } else {
                 print " - Update Failed ";
-
-//                        $return = $this->endpoint->db->AutoExecute($this->endpoint->device_table, $packet, 'INSERT');
             }
         }
     }
     /**
-     * Function to deal with unsolicited packets
-     *
-     * @param array $packet the packet array
-     */
-    private function updatedbPoll(&$packet) {
+    * Function to deal with unsolicited packets
+    *
+    * @param array &$packet the packet array
+    *
+    * @return null
+    */
+    private function _updatedbPoll(&$packet)
+    {
         if ($packet['Type'] == 'POLL') {
             $packet["Checked"] = true;
             $this->stats->incStat("Poll");
@@ -356,28 +379,30 @@ class EpUpdatedb extends EndpointBase
             $packet = $packet[0];
             print " ".$packet["Date"];
             print " - decoded ".$packet['sendCommand']." ";
-            if ($this->updatedbPollDuplicate($packet)) {
+            if ($this->_updatedbPollDuplicate($packet)) {
                 print "Duplicate";
                 $packet["remove"] = true;
             } else {
 
-                if ($this->updatedbPollRawHistory(&$packet)) {
+                if ($this->_updatedbPollRawHistory(&$packet)) {
                     $packet["remove"] = true;
-                    $this->updatedbPollHistory($packet);
+                    $this->_updatedbPollHistory($packet);
                 }
             }
         }
     }
     /**
-     * Checks if this is a duplicate or not.
-     *
-     * @param array $packet the packet array
-     */
-    private function updatedbPollHistory(&$packet)
+    * Checks if this is a duplicate or not.
+    *
+    * @param array &$packet the packet array
+    *
+    * @return bool
+    */
+    private function _updatedbPollHistory(&$packet)
     {
-        $set = array(
-            "DeviceKey" => $packet["DeviceKey"],
-            "LastPoll" => $packet["Date"],
+        $set  = array(
+            "DeviceKey"  => $packet["DeviceKey"],
+            "LastPoll"   => $packet["Date"],
             "GatewayKey" => $packet['GatewayKey'],
         );
         $hist = $this->endpoint->saveSensorData($packet, array($packet));
@@ -401,11 +426,13 @@ class EpUpdatedb extends EndpointBase
 
     }
     /**
-     * Checks if this is a duplicate or not.
-     *
-     * @param array $packet the packet array
-     */
-    private function updatedbPollRawHistory(&$packet)
+    * Checks if this is a duplicate or not.
+    *
+    * @param array &$packet the packet array
+    *
+    * @return bool
+    */
+    private function _updatedbPollRawHistory(&$packet)
     {
         $ret = $this->rawHistory->add($packet);
         if ($ret) {
@@ -421,16 +448,20 @@ class EpUpdatedb extends EndpointBase
 
     }
     /**
-     * Checks if this is a duplicate or not.
-     *
-     * @param array $packet the packet array
-     *
-     * @return bool
-     */
-    private function updatedbPollDuplicate(&$packet)
+    * Checks if this is a duplicate or not.
+    *
+    * @param array &$packet the packet array
+    *
+    * @return bool
+    */
+    private function _updatedbPollDuplicate(&$packet)
     {
         if (isset($packet['DataIndex'])) {
-            $data = array($packet["DeviceKey"], $packet["sendCommand"], $packet["Date"]);
+            $data  = array(
+                $packet["DeviceKey"],
+                $packet["sendCommand"],
+                $packet["Date"]
+            );
             $query = " DeviceKey= ? " .
                      " AND " .
                      " sendCommand= ? ".
@@ -450,11 +481,14 @@ class EpUpdatedb extends EndpointBase
 
     }
     /**
-     * Function to deal with unsolicited packets
-     *
-     * @param array $packet the packet array
-     */
-    private function updatedbUnknown(&$packet) {
+    * Function to deal with unsolicited packets
+    *
+    * @param array &$packet the packet array
+    *
+    * @return null
+    */
+    private function _updatedbUnknown(&$packet)
+    {
         if ($packet['Checked'] !== true) {
             print " - Unknown ";
             $this->stats->incStat("Unknown");
@@ -462,42 +496,49 @@ class EpUpdatedb extends EndpointBase
         }
     }
     /**
-     * Gets error info
-     *
-     * @return int error number
-     */
+    * Gets error info
+    *
+    * @return int error number
+    */
     function getDbError()
     {
         if (is_object($this->endpoint->db)) {
             return $this->endpoint->db->errorInfo();
         } else {
-            return FALSE;
+            return false;
         }
     }
     /**
-     * Function to deal with unsolicited packets
-     *
-     * @param array $packet the packet array
-     * @param string $msg Generic message to print if specific failures can't be found
-     * @param string $stat Generic stat to increment if specific failures can't be found
-     */
+    * Function to deal with unsolicited packets
+    *
+    * @param array  &$packet the packet array
+    * @param string $msg     Generic message to print if specific
+    *                            failures can't be found
+    * @param string $stat    Generic stat to increment if specific
+    *                            failures can't be found
+    *
+    * @return null
+    */
     function updatedbError(&$packet, $msg, $stat)
     {
         $this->errors[$this->rawHistory->metaError]++;
-        if ($this->rawHistory->metaError == HUGnetDB_META_ERROR_DUPLICATE) {
+        if ($this->rawHistory->metaError == HUGNETDB_META_ERROR_DUPLICATE) {
             print " Duplicate ".$packet['Date']." ";
             $packet["remove"] = true;
         } else {
             print " - ".$msg;
-           $this->stats->incStat($stat);
+            $this->stats->incStat($stat);
         }
     }
     /**
-     * Function to deal with unsolicited packets
-     *
-     * @param array $packet the packet array
-     */
-    private function updatedbRemove(&$packet) {
+    * Function to deal with unsolicited packets
+    *
+    * @param array &$packet the packet array
+    *
+    * @return null
+    */
+    private function _updatedbRemove(&$packet)
+    {
         if ($packet["remove"]) {
             if ($this->plog->remove($packet["id"])) {
                 print " - local deleted";

@@ -1,5 +1,6 @@
 <?php
 /**
+ * Loads a program into a controller board
  *
  * PHP Version 5
  *
@@ -7,17 +8,17 @@
  * Scripts related to HUGnet
  * Copyright (C) 2007-2009 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -30,53 +31,52 @@
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version    SVN: $Id$    
+ * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
 
-require_once(dirname(__FILE__).'/../head.inc.php');
-define("LOADPROG_SVN", '$Id$');
+require_once dirname(__FILE__).'/../head.inc.php';
 
-print 'loadprog.php Version '.LOADPROG_SVN."\n";
 print "Starting...\n";
 
 
 for ($i = 0; $i < count($newArgv); $i++) {
     switch($newArgv[$i]) {
-        // Gateway IP address
-        case "-P":
-            $i++;
-            $program = $newArgv[$i];
-            break;
-        // Gateway IP address
-        case "-V":
-            $i++;
-            $version = $newArgv[$i];
-            break;
+    // Gateway IP address
+    case "-P":
+        $i++;
+        $program = $newArgv[$i];
+        break;
+    // Gateway IP address
+    case "-V":
+        $i++;
+        $version = $newArgv[$i];
+        break;
     }
 }
 
 $endpoint->packet->SNCheck(false);
 
-$dev = $endpoint->getDevice($DeviceID, "ID");
+$dev    = $endpoint->getDevice($DeviceID, "ID");
+$driver =& $endpoint->drivers[$dev['Driver']];
 
-$dev["GatewayIP"] = $GatewayIP;
+$dev["GatewayIP"]   = $GatewayIP;
 $dev["GatewayPort"] = $GatewayPort;
 
 $endpoint->packet->verbose = $verbose;
-if (is_object($endpoint->drivers[$dev['Driver']]->firmware)) {
+if (is_object($driver->firmware)) {
     if (empty($program)) {
-        $cfg = $endpoint->readConfig($dev);
-        $return = $endpoint->drivers[$dev['Driver']]->checkProgram($dev, $cfg, true);        
+        $cfg    = $endpoint->readConfig($dev);
+        $return = $driver->checkProgram($dev, $cfg, true);
     } else {
 
-        $res = $endpoint->drivers[$dev['Driver']]->firmware->getFirmware($program, $version);
+        $res = $driver->firmware->getFirmware($program, $version);
         if (is_array($res)) {
             print " found v".$res[0]['FirmwareVersion']."\r\n";
 
-            $return = $endpoint->drivers[$dev['Driver']]->RunBootloader($dev);
-            $return = $endpoint->drivers[$dev['Driver']]->loadProgram($dev, $dev, $res[0]['FirmwareKey']);
+            $return = $drivers->RunBootloader($dev);
+            $return = $drivers->loadProgram($dev, $dev, $res[0]['FirmwareKey']);
         }
     }
 } else {

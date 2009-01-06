@@ -1,5 +1,6 @@
 <?php
 /**
+ * Programs an endpoint using firmware from the database
  *
  * PHP Version 5
  *
@@ -7,17 +8,17 @@
  * Scripts related to HUGnet
  * Copyright (C) 2007-2009 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -30,20 +31,18 @@
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version    SVN: $Id$    
+ * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-require_once(dirname(__FILE__).'/../head.inc.php');
-define("PROGRAMEP_SVN", '$Id$');
+require_once dirname(__FILE__).'/../head.inc.php';
 
-print 'programEP.php Version '.PROGRAMEP_SVN."\n";
 print "Starting...\n";
 
-require_once('firmware.inc.php');
+require_once 'firmware.inc.php';
 
 if (empty($argv[1])) {
-    die("Usage: ".$argv[0]." <firmwarePart> [ <clean> [ <parallel port> ] ]\n"); 
+    die("Usage: ".$argv[0]." <firmwarePart> [ <clean> [ <parallel port> ] ]\n");
 }
 if (empty($argv[3])) {
     $pPort = '/dev/parport0';
@@ -53,7 +52,7 @@ if (empty($argv[3])) {
 
 if (trim(strtolower($argv[1])) == 'clean') {
     unlink('/tmp/uisp*');
-    die();    
+    die();
 }
 
 
@@ -67,10 +66,12 @@ if ((trim(strtolower($argv[2])) != 'clean') && file_exists("/tmp/uisp".$argv[1])
 }
 if (!isset($ret['FirmwareCode'])) {
     print "Reading information from database: ";
+
     $dsn = "mysql://Portal:".urlencode("Por*tal")."@floyd.int.hugllc.com/HUGNet";
-    $db = NewADOConnection($dsn);
+
+    $db       = NewADOConnection($dsn);
     $firmware = new firmware($db);
-    $ret = $firmware->GetLatestFirmware($argv[1]);
+    $ret      = $firmware->GetLatestFirmware($argv[1]);
 
     print "  Found Version: ".$ret['FirmwareVersion']."\n";
 
@@ -83,12 +84,11 @@ if (!isset($ret['FirmwareCode'])) {
 }
 
 if (!is_null($ret)) {
-    //    $Prog = 'uisp -dprog=dapa -v -dpart='.$ret['Target'].' -dlpt='.$pPort.' -dvoltage=5.0';
     $Prog = 'avrdude -c avrisp2 -p '.$ret['Target'].' -P usb ';
 
     // Program the flash
     $tempname = tempnam("/tmp", "uisp");
-    
+
     $fp = fopen($tempname, "w");
     fwrite($fp, $ret['FirmwareCode']);
     fclose($fp);
@@ -100,7 +100,7 @@ if (!is_null($ret)) {
 
     // Program the E2
     $tempname = tempnam("/tmp", "uisp");
-    
+
     $fp = fopen($tempname, "w");
     fwrite($fp, $ret['FirmwareData']);
     fclose($fp);

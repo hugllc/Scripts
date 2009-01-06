@@ -1,6 +1,7 @@
 #!/usr/bin/php-cli
 <?php
 /**
+ * This routine acts like an endpoint
  *
  * PHP Version 5
  *
@@ -8,17 +9,17 @@
  * Scripts related to HUGnet
  * Copyright (C) 2007-2009 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -31,39 +32,41 @@
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version    SVN: $Id$    
+ * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
 define("ENDPOINT_PARTNUMBER", "0039-26-04-P");  //0039-26-01-P
-define("ENDPOINT_SVN", '$Id$');
 
 $GatewayKey = false;
-$testMode = false;
+$testMode   = false;
 
 $database_driver = "sqlite";
 
-require_once(dirname(__FILE__).'/../head.inc.php');
-require_once(HUGNET_INCLUDE_PATH.'/database/Plog.php');
-require_once(HUGNET_INCLUDE_PATH.'/database/Process.php');
-require_once('lib/endpoint.php');
+require_once dirname(__FILE__).'/../head.inc.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Plog.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Process.php';
+require_once 'lib/endpoint.php';
 
-print 'endpoint.php Version '.ENDPOINT_SVN."\n";
 print "Starting...\n";
 
-if (empty($GatewayKey)) die("You must supply a gateway key\n");
+if (empty($GatewayKey)) {
+    die("You must supply a gateway key\n");
+}
 print "Using GatewayKey ".$GatewayKey."\n";
 
 $hugnet_config['GatewayIP']   = $GatewayIP;
 $hugnet_config['GatewayPort'] = $GatewayPort;
 $hugnet_config['GatewayName'] = $GatewayIP;
 $hugnet_config['GatewayKey']  = $GatewayKey;
-if (!empty($DeviceID)) $hugnet_config['DeviceID']  = $DeviceID;
-
+if (!empty($DeviceID)) {
+    $hugnet_config['DeviceID'] = $DeviceID;
+}
 // Make sure we only go with the sqlite driver.
 $hugnet_config["driver"] = "sqlite";
 
-print "Using hardware connection at ".$hugnet_config["GatewayIP"].":".$hugnet_config["GatewayPort"]."\n";
+print "Using hardware connection at ";
+print $hugnet_config["GatewayIP"].":".$hugnet_config["GatewayPort"]."\n";
 
 $ep = new endpoint($hugnet_config);
 $ep->uproc->register();

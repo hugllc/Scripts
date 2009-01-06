@@ -1,5 +1,6 @@
 <?php
 /**
+ * Tests and serializes endpoints
  *
  * PHP Version 5
  *
@@ -7,17 +8,17 @@
  * Scripts related to HUGnet
  * Copyright (C) 2007-2009 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -30,29 +31,25 @@
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version    SVN: $Id$    
+ * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
- *
  */
 
-$GatewayKey=3;
+$GatewayKey = 3;
 define("EPTEST_PARTNUMBER", "0039-26-04-P");  //0039-26-04-P
-define("EPTEST_SVN", '$Id$');
 
-
-print 'eptest.php Version '.EPTEST_SVN."\n";
 print "Starting...\n";
 
-require_once(dirname(__FILE__).'/../head.inc.php');
-require_once(HUGNET_INCLUDE_PATH.'/plog.inc.php');
+require_once dirname(__FILE__).'/../head.inc.php';
+require_once HUGNET_INCLUDE_PATH.'/plog.inc.php';
 for ($i = 0; $i < count($newArgv); $i++) {
     switch($newArgv[$i]) {
-        // Gateway IP address
-        case "-P":
-            print "Programming Only\n";
-            $programOnly = true;
-            break;
-        // Packet Command
+    // Gateway IP address
+    case "-P":
+        print "Programming Only\n";
+        $programOnly = true;
+        break;
+    // Packet Command
     }
 }
 
@@ -64,7 +61,7 @@ $endpoint->socket->Retries = 2;
 $endpoint->socket->PacketTimeout = 6;
 $firmware = new firmware($endpoint->db);
 
-$query = "SELECT * FROM endpoints WHERE Obsolete=0";      
+$query = "SELECT * FROM endpoints WHERE Obsolete=0";
 $res = $endpoint->db->getArray($query);
 
 while (empty($tester)) {
@@ -150,7 +147,7 @@ if ($programOnly !== true) {
 while (1) {
 //          $Prog = 'uisp -dprog=dapa -v=0 -dpart='.$hwPart['Param']['cpu'].' -dlpt=/dev/parport0';
     $Prog = 'avrdude -p '.$hwPart['Param']['cpu'].' -c avrisp2 -P usb ';
-    
+
     // Start the device Info array
     $DeviceID = strtoupper(dechex($SN));
     $DeviceID = str_pad($DeviceID, 6, '0', STR_PAD_LEFT);
@@ -165,10 +162,10 @@ while (1) {
 
     $input = fgets(STDIN);
     if (trim(strtolower($input)) == "q") break;
-    $testStart = time();        
+    $testStart = time();
 
 
-    
+
     // SET the fuses
     print "Setting Fuses...";
     $fuse = ' -U hfuse:w:'.$hwPart['Param']['fusehigh'].':m';
@@ -187,7 +184,7 @@ while (1) {
         exec($Prog.$fuse, $out, $pass['FuseExtended']);
         print " Extended ";
     }
-/*        
+/*
     if (isset($hwPart['Param']['lockbits'])) {
         $fuse = ' -U lock:w:'.$hwPart['Param']['lockbits'].':m';
         if ($verbose) print "\nUsing: ".$Prog.$fuse."\n";
@@ -200,7 +197,7 @@ while (1) {
 
     // Program the flash
     $tempname = tempnam("/tmp", "uisp");
-    
+
     $fp = fopen($tempname, "w");
     fwrite($fp, $fwPart['FirmwareCode']);
     fclose($fp);
@@ -214,7 +211,7 @@ while (1) {
 
     // Program the E2
     $tempname = tempnam("/tmp", "uisp");
-    
+
     $fp = fopen($tempname, "w");
     fwrite($fp, $fwPart['FirmwareData']);
     fclose($fp);
@@ -230,7 +227,7 @@ while (1) {
     // Write the serial Number
     print "Writing Serial Number 0x".$DeviceID."...";
     $tempname = writeSREC($SN, $hwPart['HWPartNum']);
-    
+
     $eeprom = ' -U eeprom:w:'.$tempname;
     if ($verbose) print "\nUsing: ".$Prog.$eeprom."\n";
     exec($Prog.$eeprom, $out, $pass['Serialnum']);
@@ -245,13 +242,13 @@ while (1) {
         print "Pinging ".$dev["DeviceID"]." ";
         $pkt = $endpoint->packet->ping($dev, true);
         print "Done \r\n";
-        
+
         print "Checking the configuration of ".$dev["DeviceID"]." ";
         $pkt = $endpoint->readConfig($dev);
         if ($pkt !== false) {
             $newConfig = $endpoint->InterpConfig($pkt);
-            if (is_array($newConfig)) { 
-                $dev = array_merge($dev, $newConfig);    
+            if (is_array($newConfig)) {
+                $dev = array_merge($dev, $newConfig);
                 $pass['Configuration'] = 0;
             }
         } else {
@@ -276,7 +273,7 @@ while (1) {
                 $failed = true;
             }
             $results .= "\n";
-        }        
+        }
 
         print "Saving Test Log...";
         $log = array(
@@ -297,7 +294,7 @@ while (1) {
         print "\n".$results;
     }
 
-    
+
 
     if ($failed) {
         print "\n\nTHIS DEVICE FAILED.  PLEASE REMOVE IT AND REWORK IT!\n\n";
@@ -308,7 +305,7 @@ while (1) {
         print "Updating Database...";
         $return = $endpoint->db->AutoExecute($endpoint->device_table, $dev, 'INSERT');
         if ($return) {
-            print " Done ";                    
+            print " Done ";
         } else {
             print " Failed ";
         }
@@ -318,7 +315,7 @@ while (1) {
         $SN++;
     }
 
-}    
+}
 
 print "Finished\n";
 exit    (0);
@@ -333,7 +330,7 @@ function getControllers() {
         foreach ($pkt as $p) {
             $c = $endpoint->InterpConfig(array($p));
             $cfg = $endpoint->readConfig($c);
-        
+
             $config = $endpoint->InterpConfig($cfg);
             $cont[$p['From']] = $config;
                if (method_exists($endpoint->drivers[$config['Driver']], "checkProgram")) {
@@ -366,7 +363,7 @@ function writeSREC($sn, $pn, $file="/tmp/uispsn") {
     $let = substr($hexpn, strlen($hexpn)-1, 1);
     $hexpn = substr($hexpn, 0, strlen($hexpn)-1);
     $hexpn .= dechex(ord($let));
-    
+
     $hexpn = str_pad(trim($hexpn), 10, '0', STR_PAD_LEFT);
     $hexpn = substr($hexpn, 0, 10);
 
