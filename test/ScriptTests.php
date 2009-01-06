@@ -34,11 +34,6 @@
  * @version    SVN: $Id$    
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-
-if (!defined('PHPUnit_MAIN_METHOD')) {
-    define('PHPUnit_MAIN_METHOD', 'ScriptTests::main');
-}
-
 require_once dirname(__FILE__)."/../../HUGnetLib/hugnet.inc.php";
 
 require_once 'PHPUnit/Framework.php';
@@ -90,7 +85,4 @@ class ScriptTests
     }
 }
  
-if (PHPUnit_MAIN_METHOD == 'ScriptTests::main') {
-    ScriptTests::main();
-}
 ?>
