@@ -328,46 +328,8 @@ class EpPoll extends EndpointBase
                     print " -> ".date("Y-m-d H:i:s", $devInfo["PollTime"]);
                     // print  " [".$dev["GatewayName"]."] ->";
                     $sensorRead = $this->endpoint->readSensors($dev);
-                    $gotReply   = false;
-                    if (is_array($sensorRead) && (count($sensorRead) > 0)) {
-                        foreach ($sensorRead as $sensors) {
-                            if ($sensors['Reply'] == true) {
-                                $gotReply = true;
-                                if (is_array($sensors) &&
-                                    (count($sensors) > 0) &&
-                                    isset($sensors['RawData'])) {
+                    $gotReply   = $this->_pollSensorData($devInfo, $sensorRead);
 
-                                    $sensors['DeviceKey'] = $dev['DeviceKey'];
-                                    $devInfo["failures"]  = 0;
-                                    if (!isset($sensors['DataIndex']) ||
-                                        ($devInfo['DataIndex'] != $sensors["DataIndex"])) {
-
-                                        $job     = (20+$this->myInfo["Job"]);
-                                        $sensors = plog::packetLogSetup($sensors, $dev, "POLL", $job);
-                                        $ret     = $this->plog->add($sensors);
-
-                                        if ($ret) {
-                                            print " Success (".number_format($sensors["ReplyTime"], 2).")";
-                                            $devInfo['DataIndex'] = $sensors["DataIndex"];
-                                            $dev['LastPoll']      = $devInfo["LastPoll"] = $sensors['Date'];
-                                            $this->GetNextPoll($key);
-                                            $this->lastContactTime = time();
-                                        } else {
-                                            $DevCount++;
-                                            print " Failed to store data \r\n";
-                                            $this->stats->incStat("Poll Store Failed");
-                                            //print strip_tags(get_stuff($history));
-                                        }
-                                    } else {
-                                        $this->stats->incStat("Poll Data Index Ident");
-                                        print " Data Index (".$sensors['DataIndex'].")";
-                                        print "Identical (".number_format($sensors["ReplyTime"], 2).")";
-                                        $this->GetNextPoll($key, 1);
-                                    }
-                                }
-                            }
-                        }
-                    }
                     if ($gotReply === false) {
                         $devInfo["failures"]++;
                         $this->GetNextPoll($key);
@@ -386,6 +348,61 @@ class EpPoll extends EndpointBase
         return $count;
     }
 
+    /**
+    * This function deals with the polling data
+    *
+    * @param array &$devInfo   The devInfo array for the device
+    * @param array $sensorRead The data from the sensor read
+    *
+    * @return bool Whether a valid reply was received
+    */
+    private function _pollSensorData(&$devInfo, $sensorRead)
+    {
+        if (!is_array($sensorRead) || (count($sensorRead) == 0)) {
+            return false;
+        }
+        foreach ($sensorRead as $sensors) {
+            if ($sensors['Reply'] != true) {
+                continue;
+            }
+            $gotReply = true;
+            if (is_array($sensors) &&
+                (count($sensors) > 0) &&
+                isset($sensors['RawData'])) {
+
+                $sensors['DeviceKey'] = $dev['DeviceKey'];
+                $devInfo["failures"]  = 0;
+                if (!isset($sensors['DataIndex']) ||
+                    ($devInfo['DataIndex'] != $sensors["DataIndex"])) {
+
+                    $job     = (20+$this->myInfo["Job"]);
+                    $sensors = plog::packetLogSetup($sensors, $dev, "POLL", $job);
+                    $ret     = $this->plog->add($sensors);
+
+                    if ($ret) {
+                        print " Success ";
+                        print "(".number_format($sensors["ReplyTime"], 2).")";
+                        $devInfo['DataIndex'] = $sensors["DataIndex"];
+                        $dev['LastPoll']      = $sensors['Date'];
+                        $devInfo["LastPoll"]  = $sensors['Date'];
+                        $this->GetNextPoll($key);
+                        $this->lastContactTime = time();
+                    } else {
+                        $DevCount++;
+                        print " Failed to store data \r\n";
+                        $this->stats->incStat("Poll Store Failed");
+                                    //print strip_tags(get_stuff($history));
+                    }
+                } else {
+                    $this->stats->incStat("Poll Data Index Ident");
+                    print " Data Index (".$sensors['DataIndex'].")";
+                    print "Identical (".number_format($sensors["ReplyTime"], 2).")";
+                    $this->GetNextPoll($key, 1);
+                }
+            }
+        }
+        return $gotReply;
+    }
 }
 
 ?>
