@@ -46,9 +46,7 @@ if (empty($argv[1]) || !file_exists($argv[2]) || !file_exists($argv[3])) {
     die();
 }
 
-$firmware = new firmware($prefs['servers'],
-                         HUGNET_DATABASE,
-                         array("dbWrite" => true));
+$firmware = HUGnetDB::getInstance("firmware", $hugnet_config);
 
 $Info["FirmwareVersion"]  = $argv[1];
 $Info["FirmwareCode"]     = implode("", file($argv[2]));
@@ -61,7 +59,7 @@ $Info["FirmwareStatus"]   = $argv[7];
 $Info["FirmwareCVSTag"]   = $argv[8];
 $Info["Target"]           = $argv[9];
 
-$return = $endpoint->db->AutoExecute('firmware', $Info, 'INSERT');
+$return = $firmware->add($Info);
 if ($return) {
     print "Successfully Added\r\n";
     return(0);
