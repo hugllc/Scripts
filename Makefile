@@ -2,7 +2,7 @@ PHPUNIT=`which phpunit`
 PHPDOC=`which phpdoc`
 DOXYGEN=`which doxygen`
 PHPCS=`which phpcs`
-BASE_DIR=../
+BASE_DIR=./
 
 UItest: UItest-CoreUI
 

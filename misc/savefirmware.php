@@ -45,8 +45,9 @@ if (empty($argv[1]) || !file_exists($argv[2]) || !file_exists($argv[3])) {
     print "<status> <cvstag></cvstag>\r\n";
     die();
 }
-
-$firmware = HUGnetDB::getInstance("firmware", $hugnet_config);
+$hugnet_config["verbose"] = 4;
+$firmware =& HUGnetDB::getInstance("Firmware", $hugnet_config);
+var_dump($firmware);
 
 $Info["FirmwareVersion"]  = $argv[1];
 $Info["FirmwareCode"]     = implode("", file($argv[2]));
