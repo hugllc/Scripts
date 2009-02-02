@@ -41,7 +41,7 @@ define("EPTEST_PARTNUMBER", "0039-26-04-P");  //0039-26-04-P
 print "Starting...\n";
 
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once HUGNET_INCLUDE_PATH.'/plog.inc.php';
+
 for ($i = 0; $i < count($newArgv); $i++) {
     switch($newArgv[$i]) {
     // Gateway IP address
@@ -52,17 +52,24 @@ for ($i = 0; $i < count($newArgv); $i++) {
     // Packet Command
     }
 }
-
+$endpoint =& HUGnetDriver::getInstance($hugnet_config);
 //    $endpoint->packet->_getAll = true;
 $endpoint->packet->SNCheck(false);
 
 //Only try twice per server.
 $endpoint->socket->Retries = 2;
 $endpoint->socket->PacketTimeout = 6;
-$firmware = new firmware($endpoint->db);
+$firmware =& HUGnetDB::getInstance("firmware", $hugnet_config); //new firmware($endpoint->db);
+$config = $hugnet_config;
+$config["table"] = "endpoints";
+$ep =& HUGnetDB::getInstance("HUGnetDB", $config); //new firmware($endpoint->db);
+$config = $hugnet_config;
+$config["table"] = "testLog";
+$testLog =& HUGnetDB::getInstance("HUGnetDB", $config); //new firmware($endpoint->db);
 
-$query = "SELECT * FROM endpoints WHERE Obsolete=0";
-$res = $endpoint->db->getArray($query);
+
+$where = "Obsolete=0";
+$res = $ep->getWhere($where);
 
 while (empty($tester)) {
     fwrite(STDOUT, "Please enter your name:  ");
@@ -117,7 +124,7 @@ if (!isset($hwPart['Param']['firmware'])) {
         $hwPart = "";
     }
 } else {
-    $fwPart = $firmware->    GetLatestFirmware($hwPart['Param']['firmware']);
+    $fwPart = $firmware->GetLatestFirmware($hwPart['Param']['firmware']);
 }
 print "Using firmware part number '".$fwPart['FWPartNum']."' v".$fwPart['FirmwareVersion']."\n";
 while (empty($startSN)) {
@@ -138,9 +145,9 @@ if ($programOnly !== true) {
     print " Done \n";
     print "Checking the Controller(s)... ";
 
-    $cont = getControllers();
-    if (count($cont) > 0) {
-        print implode(" ", array_keys($cont));
+    $cont = getControllers($hugnet_config);
+    if (count($cont) > 0 && is_array($cont)) {
+        print implode(array_keys($cont), " ");
     }
     print " Done \n";
 }
@@ -288,8 +295,8 @@ while (1) {
             $log['Log'] .= "SN: ".$dev['DeviceID']."\n";
         }
         $log['Log'] .= "Time: ".(time() - $testStart)."\n";
-        $return = $endpoint->db->AutoExecute('testLog', $log, 'INSERT');
-
+        //$return = $endpoint->db->AutoExecute('testLog', $log, 'INSERT');
+        $testLog->add($log);
 
         print "\n".$results;
     }
@@ -303,7 +310,8 @@ while (1) {
     } else {
         // UPdate the database
         print "Updating Database...";
-        $return = $endpoint->db->AutoExecute($endpoint->device_table, $dev, 'INSERT');
+//        $return = $endpoint->db->AutoExecute($endpoint->device_table, $dev, 'INSERT');
+        $endpoint->device->add($dev);
         if ($return) {
             print " Done ";
         } else {
@@ -320,11 +328,11 @@ while (1) {
 print "Finished\n";
 exit    (0);
 
-function getControllers() {
-    global $endpoint;
+function getControllers($hugnet_config) {
+    $endpoint =& HUGnetDriver::getInstance($hugnet_config);
 
     $cPkt = array("to" => "FFFFFF", "command" => "DC");
-       $pkt = $endpoint->packet->SendPacket($pInfo, $cPkt);
+    $pkt = $endpoint->packet->SendPacket($pInfo, $cPkt);
     $cont = array();
     if (is_array($pkt)) {
         foreach ($pkt as $p) {
