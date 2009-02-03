@@ -36,10 +36,6 @@
  */
 require_once dirname(__FILE__).'/../../head.inc.php';
 
-if (empty($argv[1])) {
-    die("DeviceID must be specified!\r\n");    
-}
-
 $rCount = 2;
 for ($i = 0; $i < count($newArgv); $i++) {
     switch($newArgv[$i]) {
@@ -52,29 +48,44 @@ for ($i = 0; $i < count($newArgv); $i++) {
         $i++;
         $rCount = $newArgv[$i];
         break;
+    case "-f":
+        $i++;
+        $csvFile = $newArgv[$i];
+        break;
     }
 }
-$endpoint =& HUGnetDriver::getInstance($hugnet_config);
 
-$Info    = $endpoint->getDevice($DeviceID, "ID");
-$history =& $endpoint->getHistoryInstance(array("Type" => "raw"));
+if (empty($csvFile)) {
+    if (empty($argv[1])) {
+        die("DeviceID must be specified!\r\n");    
+    }
+    $endpoint =& HUGnetDriver::getInstance($hugnet_config);
+    $history =& $endpoint->getHistoryInstance(array("Type" => "raw"));
+    $Info    = $endpoint->getDevice($DeviceID, "ID");
 
-$query .= " DeviceKey = ?";
-$data[] = $Info["DeviceKey"];
-if (!is_null($pktCommand)) {
-    $query .= " AND sendCommand= ? ";
-    $data[] = $pktCommand;
+    
+    $query .= " DeviceKey = ?";
+    $data[] = $Info["DeviceKey"];
+    if (!is_null($pktCommand)) {
+        $query .= " AND sendCommand= ? ";
+        $data[] = $pktCommand;
+    }
+    if (!is_null($forceStart)) {
+        $query .= " AND Date < ? ";
+        $data[] = $forceStart;
+    }
+    $query  .= " AND Status='GOOD' ";
+    $orderby = " ORDER BY Date DESC ";
+    var_dump($query);
+    $rHist = $history->getWhere($query, $data, $rCount, 0, $orderby);
+} else {
+    $endpoint =& HUGnetDriver::getInstance(array());
+    $history =& $endpoint->getHistoryInstance(array("Type" => "raw"));
+    $f = file($csvFile);
+    $rHist = $history->fromCSV($f);
+var_dump($rHist);
 }
-if (!is_null($forceStart)) {
-     $query .= " AND Date < ? ";
-     $data[] = $forceStart;
-}
-$query  .= " AND Status='GOOD' ";
-$orderby = " ORDER BY Date DESC ";
-var_dump($query);
-$rHist = $history->getWhere($query, $data, $rCount, 0, $orderby);
-
-
+var_dump($rHist);
 $packet = $endpoint->InterpSensors($Info, $rHist);
 $endpoint->modifyUnits($packet, $Info, 2, $Info['params']['dType'],
                        $Info['params']['Units']);

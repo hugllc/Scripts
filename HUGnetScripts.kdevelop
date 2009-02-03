@@ -12,7 +12,7 @@
     <absoluteprojectpath>false</absoluteprojectpath>
     <description>This is the scripts that run the HUGnet system.  They collect data nad allow debugging, and other things.</description>
     <defaultencoding/>
-    <versioncontrol/>
+    <versioncontrol>kdevsubversion</versioncontrol>
   </general>
   <kdevscriptproject>
     <general>
