@@ -81,11 +81,11 @@ if (empty($csvFile)) {
 } else {
     $endpoint =& HUGnetDriver::getInstance(array());
     $history =& $endpoint->getHistoryInstance(array("Type" => "raw"));
+    $history->createTable();
     $f = file($csvFile);
     $rHist = $history->fromCSV($f);
-var_dump($rHist);
+    $Info = $endpoint->InterpConfig($rHist[0]);
 }
-var_dump($rHist);
 $packet = $endpoint->InterpSensors($Info, $rHist);
 $endpoint->modifyUnits($packet, $Info, 2, $Info['params']['dType'],
                        $Info['params']['Units']);
