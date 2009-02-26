@@ -36,7 +36,7 @@
  */
 
 $GatewayKey = 3;
-define("EPTEST_PARTNUMBER", "0039-26-04-P");  //0039-26-04-P
+define("EPTEST_PARTNUMBER", "0039-26-07-P");
 
 print "Starting...\n";
 
