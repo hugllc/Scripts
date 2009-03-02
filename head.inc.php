@@ -9,17 +9,17 @@
  * Scripts related to HUGnet
  * Copyright (C) 2007-2009 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -32,7 +32,7 @@
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version    SVN: $Id$    
+ * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 define('HUGNET_FS_DIR', dirname(__FILE__));
@@ -53,7 +53,11 @@ if (!@include_once '/etc/hugnet/config.inc.php') {
 if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
     include_once "/home/hugnet/HUGnetLib/hugnet.inc.php";
 } else {
-    include_once "hugnet.inc.php";
+    if (!@include_once($hugnet_config["HUGnetLib_dir"]."/hugnet.inc.php")) {
+        if (!@include_once("HUGnetLib/hugnet.inc.php")) {
+            include_once "hugnet.inc.php";
+        }
+    }
 }
 
 require_once HUGNET_INCLUDE_PATH.'/lib/plugins.inc.php';
@@ -77,7 +81,7 @@ for ($i = 1; $i < count($argv); $i++) {
     case "-a":
         $i++;
         $GatewayIP                  = $argv[$i];
-        $hugnet_config["GatewayIP"] = $argv[$i];      
+        $hugnet_config["GatewayIP"] = $argv[$i];
         break;
     // Packet Command
     case "-c":
@@ -103,7 +107,7 @@ for ($i = 1; $i < count($argv); $i++) {
         $DeviceID                  = $argv[$i];
         $hugnet_config["DeviceID"] = $argv[$i];
         break;
-        
+
     // DeviceKey
     case "-k":
         $i++;
@@ -116,7 +120,7 @@ for ($i = 1; $i < count($argv); $i++) {
         $GatewayPort                  = $argv[$i];
         $hugnet_config["GatewayPort"] = $argv[$i];
         break;
-        
+
     // Packet Serial Number to use
     case "-s":
         $i++;
@@ -140,7 +144,7 @@ for ($i = 1; $i < count($argv); $i++) {
         $hugnet_config["loop"] = 0;
         print "One Shot mode enabled\n";
         break;
-      
+
     // Go into an array that can be sorted by the program
     default:
         $newArgv[] = $argv[$i];
