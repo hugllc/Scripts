@@ -157,7 +157,7 @@ for ($i = 1; $i < count($argv); $i++) {
 if ($phpunit) {
     print "PHPUnit installed and ready.\n";
 }
-print 'HUGnet Scripts Version '.SCRIPTS_VERSION."\n";
-print 'HUGnet Lib Version '.HUGNET_LIB_VERSION."\n";
-
+print "HUGnet Scripts Version ".SCRIPTS_VERSION."\n";
+print "HUGnet Lib Version ".HUGNET_LIB_VERSION."\n";
+print "All script times are in UTC\n";
 ?>
