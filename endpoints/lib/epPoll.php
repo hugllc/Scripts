@@ -118,7 +118,7 @@ class EpPoll extends EndpointBase
 
         unset($config["table"]);
         $this->device  =& HUGnetDB::getInstance("Device", $config);
-        $this->gateway =& HUGnetDB::getInstance("Gateway", $config);
+$this->gateway =& HUGnetDB::getInstance("Gateway", $config);
 
         $config["table"] = "DebugPacketLog";
         $this->debugplog =& HUGnetDB::getInstance("Plog", $config);
@@ -341,7 +341,10 @@ class EpPoll extends EndpointBase
                     print " Next:".date("Y-m-d H:i:s", $devInfo["PollTime"]);
                 } else {
                     $t = round(($devInfo["PollTime"] - time())/60, 2);
-                    print " Waiting ($t minutes)...";
+                    print " Waiting ($t/".$dev["PollInterval"]." minutes)...";
+                    if ($devInfo["failures"] > 0) {
+                        print " ".$devInfo["failures"]." failures ";
+                    }
                 }
                 print "\n";
             }

@@ -118,6 +118,7 @@ class EpConfig extends EndpointBase
 
         unset($config["table"]);
         $this->device             =& HUGnetDB::getInstance("Device", $config);
+        $this->device->addField("configCache", "TEXT", "", false);
         $this->lastContactTime    = time();
         $this->lastContactAttempt = time();
         $this->gateway            =& HUGnetDB::getInstance("Gateway", $config);
