@@ -321,11 +321,11 @@ class EpPoll extends EndpointBase
             $dev     =& $this->ep[$key];
             $devInfo =& $this->_devInfo[$key];
             if ($dev["PollInterval"] > 0) {
+                print $dev["DeviceID"]." (".$dev["Driver"].")";
+                print " -> ".date("Y-m-d H:i:s", $devInfo["PollTime"]);
                 if ($devInfo["PollTime"] <= time()) {
                     $count ++;
                     $this->stats->incStat("Polls");
-                    print $dev["DeviceID"]." (".$dev["Driver"].")";
-                    print " -> ".date("Y-m-d H:i:s", $devInfo["PollTime"]);
                     // print  " [".$dev["GatewayName"]."] ->";
                     $sensorRead = $this->endpoint->readSensors($dev);
                     $gotReply   = $this->_pollSensorData($devInfo, $sensorRead);
@@ -338,8 +338,12 @@ class EpPoll extends EndpointBase
                     } else {
                         $this->stats->incStat("Poll Success");
                     }
-                    print " Next:".date("Y-m-d H:i:s", $devInfo["PollTime"])."\n";
+                    print " Next:".date("Y-m-d H:i:s", $devInfo["PollTime"]);
+                } else {
+                    $t = round(($devInfo["PollTime"] - time())/60, 2);
+                    print " Waiting ($t minutes)...";
                 }
+                print "\n";
             }
             if ($this->lastminute != date("i")) {
                 break;
