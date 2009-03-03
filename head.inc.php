@@ -39,6 +39,9 @@ define('HUGNET_FS_DIR', dirname(__FILE__));
 define('SCRIPTS_VERSION', "0.5.2");
 define("SCRIPTS_PARTNUMBER", "0039-26-00-P");  //0039-26-00-P
 
+// This forces the timezone to UTC
+putenv("TZ=UTC");
+
 if (!@include_once '/etc/hugnet/config.inc.php') {
     if (!@include_once HUGNET_FS_DIR.'/config/config.inc.php') {
         echo "No config file found.  \n";
