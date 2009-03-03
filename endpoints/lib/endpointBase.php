@@ -8,17 +8,17 @@
  * Scripts related to HUGnet
  * Copyright (C) 2007-2009 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -31,7 +31,7 @@
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version    SVN: $Id$    
+ * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 /** Packet log include stuff */
@@ -52,7 +52,7 @@ require_once HUGNET_INCLUDE_PATH.'/database/ProcStats.php';
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
- */ 
+ */
 class EndpointBase
 {
 
@@ -66,8 +66,8 @@ class EndpointBase
      * @param array $config Configuration
      *
      * @return null
-     */    
-    function __construct($config = array()) 
+     */
+    function __construct($config = array())
     {
 
         $this->gw =& HUGnetDB::getInstance("Gateway", $config);
@@ -84,7 +84,7 @@ class EndpointBase
      *
      * @return null
      */
-    function powerup() 
+    function powerup()
     {
         // Send a powerup packet.
         $pkt = array(
@@ -123,7 +123,7 @@ class EndpointBase
     *
     * @return int
     */
-    function getUnsolicited() 
+    function getUnsolicited()
     {
         $where                 = "Type = 'UNSOLICITED' and `Date` >= ?";
         $check                 = $this->lastUnsolicited;
@@ -131,9 +131,9 @@ class EndpointBase
         $pkts                  = $this->plog->getWhere($where, array($check));
         if (!is_array($pkts)) {
             return array();
-        }         
+        }
         return $pkts;
-    }            
+    }
     /**
     * Returns random timeout
     *
@@ -141,7 +141,7 @@ class EndpointBase
     *
     * @return int
     */
-    function checkPacket($pkt) 
+    function checkPacket($pkt)
     {
         if (is_array($pkt)) {
             $pkt["Type"] = $Type = plog::packetType($pkt);
@@ -154,15 +154,15 @@ class EndpointBase
             // Do some printing if we are not otherwise working
             if ($this->myInfo['doPoll'] !== true) {
                 $v = true;
-            }            
+            }
             if ($v) {
                 print "Got Pkt:".$pkt["id"]." F:".$pkt["From"];
                 print " - T:".$pkt["To"]." C:".$pkt["Command"];
-            }            
+            }
             if ($pkt['toMe']) {
                 if ($v) {
                     print " - To Me! ";
-                }               
+                }
                 $this->checkPacketToMe($pkt);
             }
             if ($v) {
@@ -186,7 +186,7 @@ class EndpointBase
         $sent    = true;
         switch($Command) {
         case PACKET_COMMAND_GETSETUP:
-            // Get our setup            
+            // Get our setup
             $ret = $this->packet->sendReply($pkt,
                                             $pkt['From'],
                                             e00392601::getConfigStr($this->myInfo));
@@ -210,14 +210,14 @@ class EndpointBase
      *
      * @return none
      */
-    function setupMyInfo() 
+    function setupMyInfo()
     {
         $this->myInfo['DeviceID']          = $this->endpoint->packet->SN;
         $this->DeviceID                    = $this->myInfo['DeviceID'];
         $this->myInfo['SerialNum']         = hexdec($this->endpoint->packet->SN);
         $this->myInfo['HWPartNum']         = $this->config["partNum"];
         $this->myInfo['FWPartNum']         = $this->config["partNum"];
-        $this->myInfo['FWVersion']         = SCRIPTS_VERSION;    
+        $this->myInfo['FWVersion']         = SCRIPTS_VERSION;
         $this->myInfo['GatewayKey']        = $this->config["GatewayKey"];
         $this->myInfo['CurrentGatewayKey'] = $this->config["GatewayKey"];
         if (empty($this->myInfo["Priority"])) {
@@ -236,16 +236,19 @@ class EndpointBase
         }
         $this->myInfo['IP']          = $netInfo["inet addr"];
         $this->myInfo['LastContact'] = date("Y-m-d H:i:s");
- 
+
         $this->myInfo['Name'] = trim($this->uproc->me['Host']);
         if (!empty($this->uproc->me['Domain'])) {
             $this->myInfo['Name'] .= ".".trim($this->uproc->me['Domain']);
-        }         
+        }
         $this->myInfo["RawSetup"] = e00392601::getConfigStr($this->myInfo);
 
         $this->myInfo["Local"] = 1;
-        
+
         $g = $this->gw->getWhere("Local = 1");
+        // Clear out the old values
+        $this->myInfo["Priorities"] = array();
+
         foreach ($g as $gw) {
             $this->myInfo["Priorities"][$gw["Job"]] = $gw["Priority"];
         }
@@ -261,19 +264,19 @@ class EndpointBase
      *
      * @return bool
      */
-    function getOtherPriorities() 
+    function getOtherPriorities()
     {
         $where = "Local = 0 AND CurrentGatewayKey = ?";
         $data  = array($this->config["GatewayKey"]);
         $g     = $this->gw->getWhere($where, $data);
+        // Clear out the old priorities
+        $this->gwPriorities = array();
         foreach ($g as $gw) {
             e00392601::interpConfig($gw);
             if (is_array($gw["Priorities"])) {
                 $this->gwPriorities[$gw["DeviceID"]] = $gw["Priorities"];
-            } else {            
-                $this->gwPriorities[$gw["DeviceID"]] = array();
             }
-        }         
+        }
     }
     /**
     * Returns true if we are the highest priority program of our job.  Returns the
@@ -284,7 +287,7 @@ class EndpointBase
     *
     * @return bool
     */
-    function checkPriority(&$id, &$priority) 
+    function checkPriority(&$id, &$priority)
     {
         foreach ($this->gwPriorities as $i => $p) {
             if ($p[$this->myInfo["Job"]] > $this->myInfo["Priority"]) {
@@ -295,7 +298,7 @@ class EndpointBase
         }
         return true;
     }
-    
+
     /**
      * Check packets to send out
      *
@@ -303,7 +306,7 @@ class EndpointBase
      *
      * @return bool
      */
-    function interpConfig($pkt) 
+    function interpConfig($pkt)
     {
         if (!is_array($pkt)) {
             return;
@@ -318,7 +321,7 @@ class EndpointBase
             $newConfig['ConfigExpireDate'] = date("Y-m-d H:i:s",
                                                   $newConfig['ConfigExpire']);
 
-            $DeviceID = $newConfig["DeviceID"];                     
+            $DeviceID = $newConfig["DeviceID"];
             $send     = array(
                           "FWVersion",
                           "Priority",
@@ -333,14 +336,14 @@ class EndpointBase
             if (!is_array($this->otherGW[$DeviceID])) {
                 $this->otherGW[$DeviceID] = $newConfig;
             } else {
-                $this->otherGW[$DeviceID] =                  
+                $this->otherGW[$DeviceID] =
                         array_merge($this->otherGW[$DeviceID], $newConfig);
             }
         }
-        
+
         return $newConfig;
     }
-    
+
     /**
      * Sets a critical failure
      *
@@ -348,15 +351,15 @@ class EndpointBase
      *
      * @return null
      */
-    function criticalFailure($reason) 
+    function criticalFailure($reason)
     {
         $last = (int) $this->stats->getStat("LastCriticalError",
                                             $this->uproc->me['Program']);
-        
+
         if (is_null($last)) {
             $last = $this->last;
         }
-        if ((time() - $last) > ($this->critTime * 60)) { 
+        if ((time() - $last) > ($this->critTime * 60)) {
             $to      = "hugnet@hugllc.com";
             $from    = "".$this->uproc->me['Host']."<noreply@hugllc.com>";
             $subject = "HUGnet Critical Failure on ".`hostname`."!";
@@ -375,16 +378,16 @@ class EndpointBase
  * Handles signals
  *
  * @param int $signo The signal number
- *    
+ *
  * @return none
  */
 function Endpoint_Sig_kill($signo)
 {
     print "Shutting Down\n";
-    $GLOBALS["exit"] = true;    
+    $GLOBALS["exit"] = true;
 }
 
 if (function_exists("pcntl_signal")) {
     pcntl_signal(SIGINT, "Endpoint_Sig_kill");
-}   
+}
 ?>
