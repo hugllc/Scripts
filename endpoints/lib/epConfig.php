@@ -293,36 +293,35 @@ class EpConfig extends EndpointBase
         if ($pkt !== false) {
             $newConfig = $this->interpConfig($pkt);
             foreach ($pkt as $p) {
-                if ($p !== false) {
-                    if ($p["Reply"]) {
-                        if (!isset($p['DeviceKey'])) {
-                            $p['DeviceKey'] = $dev['DeviceKey'];
-                        }
-                        if (empty($dev['GatewayKey'])) {
-                            $dev['GatewayKey'] = $this->GatewayKey;
-                        }
-                        $job    = (20+$this->myInfo["Job"]);
-                        $logpkt = plog::packetLogSetup($p, $dev, "CONFIG", $job);
-                        if ($this->plog->add($logpkt)) {
-                            print " Done (".number_format($p["ReplyTime"], 2).")";
-                            $gotConfig                    = true;
-                            $now                          = date("Y-m-d H:i:s");
-                            $this->ep[$key]["LastConfig"] = $now;
-                            if ($this->_devInfo[$key]["Controller"]) {
-                                $next = $this->ccTimeout;
-                            } else {
-                                $this->configInterval;
-                            }
-                            $this->_devInfo[$key]["nextCheck"]  = time() + $next;
-                            $this->_devInfo[$key]["LastConfig"] = $now;
-                            $this->_devInfo[$key]["GetConfig"]  = false;
-                            $this->_devInfo[$key]['LastCheck']  = time();
-                            unset($this->_devInfo[$key]['failedCheck']);
-                            $this->lastContactTime = time();
-                        } else {
-                            //print "Error: ".$this->plog->_sqlite->lastError();
-                        }
+                if (!is_array($p) || ($p["Reply"] != true)) {
+                    continue;
+                }
+                if (!isset($p['DeviceKey'])) {
+                    $p['DeviceKey'] = $dev['DeviceKey'];
+                }
+                if (empty($dev['GatewayKey'])) {
+                    $dev['GatewayKey'] = $this->GatewayKey;
+                }
+                $job    = (20+$this->myInfo["Job"]);
+                $logpkt = plog::packetLogSetup($p, $dev, "CONFIG", $job);
+                if ($this->plog->add($logpkt)) {
+                    print " Done (".number_format($p["ReplyTime"], 2).")";
+                    $gotConfig                    = true;
+                    $now                          = date("Y-m-d H:i:s");
+                    $this->ep[$key]["LastConfig"] = $now;
+                    if ($this->_devInfo[$key]["Controller"]) {
+                        $next = $this->ccTimeout;
+                    } else {
+                        $next = $this->configInterval;
                     }
+                    $this->_devInfo[$key]["nextCheck"]  = time() + $next;
+                    $this->_devInfo[$key]["LastConfig"] = $now;
+                    $this->_devInfo[$key]["GetConfig"]  = false;
+                    $this->_devInfo[$key]['LastCheck']  = time();
+                    unset($this->_devInfo[$key]['failedCheck']);
+                    $this->lastContactTime = time();
+                } else {
+                    //print "Error: ".$this->plog->_sqlite->lastError();
                 }
             }
             if ($gotConfig) {
