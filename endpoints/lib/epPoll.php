@@ -118,7 +118,7 @@ class EpPoll extends EndpointBase
 
         unset($config["table"]);
         $this->device  =& HUGnetDB::getInstance("Device", $config);
-$this->gateway =& HUGnetDB::getInstance("Gateway", $config);
+        $this->gateway =& HUGnetDB::getInstance("Gateway", $config);
 
         $config["table"] = "DebugPacketLog";
         $this->debugplog =& HUGnetDB::getInstance("Plog", $config);
@@ -328,16 +328,8 @@ $this->gateway =& HUGnetDB::getInstance("Gateway", $config);
                     $this->stats->incStat("Polls");
                     // print  " [".$dev["GatewayName"]."] ->";
                     $sensorRead = $this->endpoint->readSensors($dev);
-                    $gotReply   = $this->_pollSensorData($devInfo, $sensorRead);
+                    $gotReply   = $this->_pollSensorData($key, $sensorRead);
 
-                    if ($gotReply === false) {
-                        $devInfo["failures"]++;
-                        $this->GetNextPoll($key);
-                        $DevCount++;
-                        print " No data returned (".$devInfo["failures"].")";
-                    } else {
-                        $this->stats->incStat("Poll Success");
-                    }
                     print " Next:".date("Y-m-d H:i:s", $devInfo["PollTime"]);
                 } else {
                     $t = round(($devInfo["PollTime"] - time())/60, 2);
@@ -358,24 +350,23 @@ $this->gateway =& HUGnetDB::getInstance("Gateway", $config);
     /**
     * This function deals with the polling data
     *
-    * @param array &$devInfo   The devInfo array for the device
-    * @param array $sensorRead The data from the sensor read
+    * @param string $key        The devInfo array key for the device
+    * @param array  $sensorRead The data from the sensor read
     *
     * @return bool Whether a valid reply was received
     */
-    private function _pollSensorData(&$devInfo, $sensorRead)
+    private function _pollSensorData($key, $sensorRead)
     {
-        if (!is_array($sensorRead) || (count($sensorRead) == 0)) {
-            return false;
-        }
-        foreach ($sensorRead as $sensors) {
-            if ($sensors['Reply'] != true) {
-                continue;
-            }
-            $gotReply = true;
-            if (is_array($sensors) &&
-                (count($sensors) > 0) &&
-                isset($sensors['RawData'])) {
+        $dev     =& $this->ep[$key];
+        $devInfo =& $this->_devInfo[$key];
+        $gotReply = false;
+        if (is_array($sensorRead)) {
+
+            foreach ($sensorRead as $sensors) {
+                if (($sensors['Reply'] != true) || !isset($sensors["RawData"])) {
+                    continue;
+                }
+                $gotReply = true;
 
                 $sensors['DeviceKey'] = $dev['DeviceKey'];
                 $devInfo["failures"]  = 0;
@@ -393,12 +384,12 @@ $this->gateway =& HUGnetDB::getInstance("Gateway", $config);
                         $dev['LastPoll']      = $sensors['Date'];
                         $devInfo["LastPoll"]  = $sensors['Date'];
                         $this->GetNextPoll($key);
+                        $this->stats->incStat("Poll Success");
                         $this->lastContactTime = time();
                     } else {
                         $DevCount++;
                         print " Failed to store data \r\n";
                         $this->stats->incStat("Poll Store Failed");
-                                    //print strip_tags(get_stuff($history));
                     }
                 } else {
                     $this->stats->incStat("Poll Data Index Ident");
@@ -407,6 +398,12 @@ $this->gateway =& HUGnetDB::getInstance("Gateway", $config);
                     $this->GetNextPoll($key, 1);
                 }
             }
+        }
+        if (!$gotReply) {
+            $this->GetNextPoll($key);
+            $devInfo["failures"]++;
+            print " No data returned (".$devInfo["failures"].")";
+            return false;
         }
         return $gotReply;
     }
