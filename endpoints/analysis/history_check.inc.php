@@ -187,7 +187,7 @@ function Analysis_History_check(&$analysis, &$devInfo)
 }
 
 
-$this->registerFunction("Analysis_History_check", "Analysis0");
+//$this->registerFunction("Analysis_History_check", "Analysis0");
 
 
 ?>
