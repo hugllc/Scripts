@@ -289,7 +289,7 @@ class EpConfig extends EndpointBase
         print "Checking ".$dev["DeviceID"]." ";
         $this->stats->incStat("Device Checked");
         $pkt       = $this->endpoint->readConfig($dev);
-        if (!$this->checkConfigRet($pkt)) {
+        if (!$this->checkConfigRet($key, $pkt)) {
             $this->_devInfo[$key]['nextCheck'] = time()+300;
             print " - Next Check ";
             print date("Y-m-d H:i:s", $this->_devInfo[$key]['nextCheck']);
@@ -301,11 +301,12 @@ class EpConfig extends EndpointBase
     /**
     * Sets up all of the times that we record for this endpoint
     *
-    * @param string $key The key to the array to use
+    * @param string $key This is the array key in the device cache to check
+    * @param array  $pkt The packets recieved
     *
     * @return int
     */
-    function checkConfigRet(&$pkt)
+    function checkConfigRet($key, &$pkt)
     {
         if (!is_array($pkt)) {
             print " Nothing Returned";
