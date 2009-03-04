@@ -289,73 +289,109 @@ class EpConfig extends EndpointBase
         print "Checking ".$dev["DeviceID"]." ";
         $this->stats->incStat("Device Checked");
         $pkt       = $this->endpoint->readConfig($dev);
-        $gotConfig = false;
-        if ($pkt !== false) {
-            $newConfig = $this->interpConfig($pkt);
-            foreach ($pkt as $p) {
-                if (!is_array($p) || ($p["Reply"] != true)) {
-                    continue;
-                }
-                if (!isset($p['DeviceKey'])) {
-                    $p['DeviceKey'] = $dev['DeviceKey'];
-                }
-                if (empty($dev['GatewayKey'])) {
-                    $dev['GatewayKey'] = $this->GatewayKey;
-                }
-                $job    = (20+$this->myInfo["Job"]);
-                $logpkt = plog::packetLogSetup($p, $dev, "CONFIG", $job);
-                if ($this->plog->add($logpkt)) {
-                    print " Done (".number_format($p["ReplyTime"], 2).")";
-                    $gotConfig                    = true;
-                    $now                          = date("Y-m-d H:i:s");
-                    $this->ep[$key]["LastConfig"] = $now;
-                    if ($this->_devInfo[$key]["Controller"]) {
-                        $next = $this->ccTimeout;
-                    } else {
-                        $next = $this->configInterval;
-                    }
-                    $this->_devInfo[$key]["nextCheck"]  = time() + $next;
-                    $this->_devInfo[$key]["LastConfig"] = $now;
-                    $this->_devInfo[$key]["GetConfig"]  = false;
-                    $this->_devInfo[$key]['LastCheck']  = time();
-                    unset($this->_devInfo[$key]['failedCheck']);
-                    $this->lastContactTime = time();
-                } else {
-                    //print "Error: ".$this->plog->_sqlite->lastError();
-                }
-            }
-            if ($gotConfig) {
-                // If it is a controller board check the program
-                $this->stats->incStat("Device Checked Success");
-                $driver =&  $this->endpoint->drivers[$newConfig['Driver']];
-                if (method_exists($driver, "checkProgram")) {
-                    $this->stats->incStat("Check Program");
-                    print " Checking Program ";
-                    $ret = $driver->checkProgram($newConfig, $pkt, true);
-                    if ($ret) {
-                        $this->stats->incStat("Check Program Success");
-                        print " Done ";
-                    } else {
-                        print " Failed ";
-                    }
-                }
-            } else {
-                   print " Failed ";
-                   $this->_devInfo[$key]['nextCheck'] = time()+120;
-                   print " - Next Check ";
-                   print date("Y-m-d H:i:s", $this->_devInfo[$key]['nextCheck']);
-            }
-
-        } else {
-            print " Nothing Returned";
+        if (!$this->checkConfigRet($pkt)) {
             $this->_devInfo[$key]['nextCheck'] = time()+300;
             print " - Next Check ";
             print date("Y-m-d H:i:s", $this->_devInfo[$key]['nextCheck']);
-
         }
         print "\r\n";
 
     }
+
+    /**
+    * Sets up all of the times that we record for this endpoint
+    *
+    * @param string $key The key to the array to use
+    *
+    * @return int
+    */
+    function checkConfigRet(&$pkt)
+    {
+        if (!is_array($pkt)) {
+            print " Nothing Returned";
+            return false;
+        }
+        $gotConfig = false;
+        $newConfig = $this->interpConfig($pkt);
+        foreach ($pkt as $p) {
+            if (!is_array($p) || ($p["Reply"] != true)) {
+                continue;
+            }
+            if (!isset($p['DeviceKey'])) {
+                $p['DeviceKey'] = $dev['DeviceKey'];
+            }
+            if (empty($dev['GatewayKey'])) {
+                $dev['GatewayKey'] = $this->GatewayKey;
+            }
+            $job    = (20+$this->myInfo["Job"]);
+            $logpkt = plog::packetLogSetup($p, $dev, "CONFIG", $job);
+            if ($this->plog->add($logpkt)) {
+                print " Done (".number_format($p["ReplyTime"], 2).")";
+                $gotConfig = true;
+                $this->setTimes($key);
+            } else {
+                //print "Error: ".$this->plog->_sqlite->lastError();
+            }
+        }
+        if ($gotConfig) {
+            // If it is a controller board check the program
+            $this->stats->incStat("Device Checked Success");
+            $this->programCheck($newConfig);
+            return true;
+        } else {
+            print " Failed ";
+            return false;
+        }
+
+    }
+    /**
+    * Sets up all of the times that we record for this endpoint
+    *
+    * @param string $key The key to the array to use
+    *
+    * @return int
+    */
+    function setTimes($key)
+    {
+        $now                          = date("Y-m-d H:i:s");
+        $this->ep[$key]["LastConfig"] = $now;
+        if ($this->_devInfo[$key]["Controller"]) {
+            $next = $this->ccTimeout;
+        } else {
+            $next = $this->configInterval;
+        }
+        $this->_devInfo[$key]["nextCheck"]  = time() + $next;
+        $this->_devInfo[$key]["LastConfig"] = $now;
+        $this->_devInfo[$key]["GetConfig"]  = false;
+        $this->_devInfo[$key]['LastCheck']  = time();
+        unset($this->_devInfo[$key]['failedCheck']);
+        $this->lastContactTime = time();
+    }
+
+    /**
+     * Checks to see if the program is up to date
+     *
+     * @param array &$config The devInfo array
+     *
+     * @return int
+     */
+    function programCheck(&$config)
+    {
+        $driver =&  $this->endpoint->drivers[$config['Driver']];
+        if (method_exists($driver, "checkProgram")) {
+            $this->stats->incStat("Check Program");
+            print " Checking Program ";
+            $ret = $driver->checkProgram($config, $pkt, true);
+            if ($ret) {
+                $this->stats->incStat("Check Program Success");
+                print " Done ";
+            } else {
+                print " Failed ";
+            }
+        }
+
+    }
+
 
     /**
      * Check all of the configurations
