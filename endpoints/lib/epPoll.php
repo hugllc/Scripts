@@ -192,8 +192,10 @@ class EpPoll extends EndpointBase
         if (!isset($devInfo["gwIndex"])) {
             $devInfo["gwIndex"] = 0;
         }
-        if (($devInfo['failures'] > $this->failureLimit) || !empty($forceInterval)) {
+        if (!empty($forceInterval)) {
             $time = time();
+        } else if ($devInfo['failures'] > $this->failureLimit) {
+            $time = $devInfo["LastPollTry"];
         } else if (empty($devInfo["LastPoll"])) {
             $time = strtotime($dev["LastPoll"]);
         } else {
@@ -326,6 +328,7 @@ class EpPoll extends EndpointBase
                 if ($devInfo["PollTime"] <= time()) {
                     $count ++;
                     $this->stats->incStat("Polls");
+                    $devInfo["LastPollTry"] = time();
                     // print  " [".$dev["GatewayName"]."] ->";
                     $sensorRead = $this->endpoint->readSensors($dev);
                     $gotReply   = $this->_pollSensorData($key, $sensorRead);
