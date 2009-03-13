@@ -60,16 +60,18 @@ $endpoint->packet->SNCheck(false);
 $endpoint->socket->Retries = 2;
 $endpoint->socket->PacketTimeout = 6;
 $firmware =& HUGnetDB::getInstance("firmware", $hugnet_config); //new firmware($endpoint->db);
-$config = $hugnet_config;
-$config["table"] = "endpoints";
-$ep =& HUGnetDB::getInstance("HUGnetDB", $config); //new firmware($endpoint->db);
+//$config = $hugnet_config;
+//$config["table"] = "endpoints";
+//$ep =& HUGnetDB::getInstance("HUGnetDB", $config); //new firmware($endpoint->db);
 $config = $hugnet_config;
 $config["table"] = "testLog";
 $testLog =& HUGnetDB::getInstance("HUGnetDB", $config); //new firmware($endpoint->db);
 
-
+/*
 $where = "Obsolete=0";
 $res = $ep->getWhere($where);
+*/
+$res = $endpoint->getHardwareTypes(0);
 
 while (empty($tester)) {
     fwrite(STDOUT, "Please enter your name:  ");
