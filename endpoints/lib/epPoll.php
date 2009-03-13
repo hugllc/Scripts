@@ -188,10 +188,15 @@ class EpPoll extends EndpointBase
         if ($dev["PollInterval"] <= 0) {
             return;
         }
-
         if (!isset($devInfo["gwIndex"])) {
             $devInfo["gwIndex"] = 0;
         }
+        if ($devInfo["LastPollTry"] < strtotime($dev["LastConfig"])) {
+            // If we got a config since our last poll try we should again try to
+            // get the poll.
+            $devInfo['failures'] = 0;
+        }
+
         if (!empty($forceInterval)) {
             $time = time();
         } else if ($devInfo['failures'] > $this->failureLimit) {
