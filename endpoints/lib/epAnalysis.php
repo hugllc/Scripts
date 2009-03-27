@@ -8,17 +8,17 @@
  * Scripts related to HUGnet
  * Copyright (C) 2007-2009 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -30,10 +30,10 @@
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2008 Hunt Utilities Group, LLC
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version    SVN: $Id: endpoint.php 1445 2008-06-17 22:25:17Z prices $    
+ * @version    SVN: $Id: endpoint.php 1445 2008-06-17 22:25:17Z prices $
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
- 
+
 require_once "epScheduler.php";
 /**
  * Class for checking on things to make sure they are working correctly
@@ -45,7 +45,7 @@ require_once "epScheduler.php";
  * @copyright  2008 Hunt Utilities Group, LLC
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
- */ 
+ */
 class EpAnalysis extends EpScheduler
 {
     /** String This specifies what the plugin directory is. */
@@ -55,7 +55,7 @@ class EpAnalysis extends EpScheduler
 
     /** bool Whether to go in depth on one endpoint or not */
     public $deep = false;
-             
+
     /** array This is the stuff to check...  */
     protected $check = array(
                             "Analysis0" => "Analysis0",
@@ -74,20 +74,23 @@ class EpAnalysis extends EpScheduler
     *
     * @param array $config The configuration array
     */
-    function __construct($config = array()) 
-    {        
+    function __construct($config = array())
+    {
         parent::__construct($config);
         $this->endpoint =& HUGnetDriver::getInstance($this->config);
         $this->device   =& HUGnetDB::getInstance("Device", $config);
         $where          = "1";
         if (!empty($config["DeviceID"])) {
             $where      = " DeviceID = ?";
-            $data       = array($config["DeviceID"]);       
+            $data       = array($config["DeviceID"]);
             $this->deep = true;
-    
-        }
 
-        $this->devInfo    = $this->device->getWhere($where, $data);    
+        }
+        if ($config["deep"]) {
+            print "Enabling Deep Mode\n";
+            $this->deep = true;
+        }
+        $this->devInfo    = $this->device->getWhere($where, $data);
         $this->rawHistory =& HUGnetDB::getInstance("RawHistory", $config);
         $this->analysis   =& HUGnetDB::getInstance("Analysis", $config);
         $this->plog       =& HUGnetDB::getInstance("plog", $config);
@@ -104,7 +107,7 @@ class EpAnalysis extends EpScheduler
         if (empty($this->devInfo)) {
             print "No devices!\n";
             return 1;
-        }                                 
+        }
         $this->clearErrors();
         do {
             foreach ($this->devInfo as $dev) {
@@ -112,7 +115,7 @@ class EpAnalysis extends EpScheduler
             }
             if (!$this->config["loop"]) {
                 $this->sleep();
-            }        
+            }
         } while (!$this->config["loop"]);
         return 0;
     }
@@ -123,7 +126,7 @@ class EpAnalysis extends EpScheduler
     * @param array &$devInfo The devInfo array
     *
     * @return null
-    */                  
+    */
     function checkDevice(&$devInfo)
     {
         // If this is an unassigned device don't do any analysis on it
@@ -148,7 +151,7 @@ class EpAnalysis extends EpScheduler
                                                  $devInfo["orderby"]);
             if (count($res) == 0) {
                 return;
-            }            
+            }
             $res = strtotime($res[0]['Date']);
         }
         foreach (array("Y", "m", "d") as $val) {
@@ -163,8 +166,8 @@ class EpAnalysis extends EpScheduler
         $this->history   =& $this->endpoint->getHistoryInstance($config, $devInfo);
         $config          = array("Type" => "15MIN");
         $this->average   =& $this->endpoint->getHistoryInstance($config, $devInfo);
-        
-        
+
+
         for ($day = 0; $devInfo['date'] < time(); $day++) {
             $devInfo['date'] = mktime(0, 0, 0,
                                       $startdate['m'],
@@ -181,7 +184,7 @@ class EpAnalysis extends EpScheduler
 
             if ($this->historyCache === false) {
                 break;
-            }            
+            }
             $this->analysisOut = array(
                                        "DeviceKey" => $devInfo['DeviceKey'],
                                        "Date" => date("Y-m-d", $devInfo['date']),
@@ -200,13 +203,13 @@ class EpAnalysis extends EpScheduler
             // Don't update for tomorrow, which it will get to.
             if ($devInfo['date'] < time()) {
                 $this->device->update($update);
-            }            
+            }
             $this->analysis->add($this->analysisOut, true);
-            
+
             print " Done \r\n";
         }
         unset($this->history);
-                    
+
     }
     /**
     * Runs the plugins for a single device
@@ -232,7 +235,7 @@ class EpAnalysis extends EpScheduler
                                                        null,
                                                        null,
                                                        $devInfo["orderby"]);
-    
+
 
     }
 
@@ -249,17 +252,17 @@ class EpAnalysis extends EpScheduler
         $devInfo['dayend']   = date("Y-m-d 23:59:59", $devInfo['date']);
         $datewhere           = "(Date >= ? AND Date <= ?)";
         $datedata            = array($devInfo['daystart'], $devInfo['dayend']);
-            
+
         $devInfo['datewhere'] = $datewhere;
         $devInfo['datedata']  = $datedata;
 
         $where  = $datewhere." AND DeviceKey = ?";
         $data   = $datedata;
         $data[] = $devInfo["DeviceKey"];
-                     
+
         $devInfo["where"]     = $where;
         $devInfo["whereData"] = $data;
-    
+
     }
 
 }

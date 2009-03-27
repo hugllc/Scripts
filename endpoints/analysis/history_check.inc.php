@@ -177,7 +177,7 @@ function Analysis_History_check(&$analysis, &$devInfo)
     }
 
     if (count($chHist) > 0) {
-        $analysis->average->addArray($chHist, true);
+        $analysis->history->addArray($chHist, true);
         $analysis->cacheHistory($devInfo);
     }
     $dTime = microtime(true) - $sTime;
@@ -187,7 +187,7 @@ function Analysis_History_check(&$analysis, &$devInfo)
 }
 
 
-//$this->registerFunction("Analysis_History_check", "Analysis0");
+$this->registerFunction("Analysis_History_check", "Analysis0");
 
 
 ?>
