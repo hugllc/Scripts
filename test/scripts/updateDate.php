@@ -54,7 +54,7 @@ $types = array(
     "e00392800_average",
 );
 $totalFail = 0;
-$order = "ORDER BY `Date` DESC";
+$order = "ORDER BY `HistoryRawKey` DESC";
 foreach ($types as $table) {
     print "Using ".$table."\n";
     $hugnet_config["table"] = $table;
@@ -63,48 +63,59 @@ foreach ($types as $table) {
     } else {
         $history =& HUGnetDB::getInstance("RawHistory", $hugnet_config);
     }
+//    $history->verbose(2);
     $start = 0;
-    $limit = 1000;
-    foreach (array(2009, 2008, 2007, 2006, 2005, 2004, 2003) as $year) {
-        print "Doing $year\n";
-        while (1) {
-            $res = $history->getWhere("UTCOffset <> ? AND `Date` > ? AND `Date` <= ?", array(0, $year.'-01-01 00:00:00', ($year+1).'-01-01 00:00:00'), $limit, $start, $order);
-            if ((count($res) == 0) || !is_array($res)) {
-                break;
-            }
-            $fails = 0;
-            print "Row ".$start."\n";
-            foreach ($res as $row) {
-    //            var_dump($row);
-                if (isset($row["HistoryRawKey"])) {
-                    $where = "HistoryRawKey = ".$row["HistoryRawKey"];
-                } else {
-                    $where  = "`DeviceKey` = ".$row["DeviceKey"];
-                    $where .= " AND `Date` = '".$row["Date"]."'";
-                    if (!empty($row["Type"])) {
-                        if ($Type == "DAILY") continue;
-                        $where .= " AND `Type` = '".$row["Type"]."'";
-                }
-                }
-                $ndate  = strtotime($row["Date"]);
-                $ndate += 3600 * 6;
-                $dst    = date("I", $row["Date"]);
-                $ndate -= 3600 * $dst;
-                $info   = array(
-                    "Date" => date("Y-m-d H:i:s", $ndate),
-                    "UTCOffset" => 0,
-                );
-                $u = $history->updateWhere($info, $where);
-                if (!$u) {
-                    $fails ++;
-                }
-            }
-            if ($fails > 0) {
-                print $fails ." Failed\n";
-                $totalFail += $fails;
-            }
-            $start += $limit;
+    $limit = 10000;
+    while (1) {
+        print "Reading Database...\n";
+        $res = $history->getWhere("UTCOffset <> ?", array(0), $limit, $start, $order);
+        if ((count($res) == 0) || !is_array($res)) {
+            break;
         }
+        $fails = 0;
+        $skipped = 0;
+        print "Row ".$start."\n";
+        foreach ($res as $row) {
+//            var_dump($row);
+            if ($row["UTCOffset"] == 0) {
+                $skipped ++;
+                continue;
+            }
+            if (isset($row["HistoryRawKey"])) {
+                $where = "HistoryRawKey = ".$row["HistoryRawKey"];
+            } else {
+                $where  = "`DeviceKey` = ".$row["DeviceKey"];
+                $where .= " AND `Date` = '".$row["Date"]."'";
+                if (!empty($row["Type"])) {
+                    if ($Type == "DAILY") continue;
+                    $where .= " AND `Type` = '".$row["Type"]."'";
+            }
+            }
+            $ndate  = strtotime($row["Date"]);
+            $ndate += 3600 * 6;
+            $dst    = date("I", $row["Date"]);
+            $ndate -= 3600 * $dst;
+            $info   = array(
+                "Date" => date("Y-m-d H:i:s", $ndate),
+                "UTCOffset" => 0,
+            );
+//            $history->verbose(2);
+            $u = $history->updateWhere($info, $where);
+            if (!$u) {
+                $fails ++;
+//                $history->verbose(2);
+//                $history->printError();
+//                $history->verbose(0);
+            }
+        }
+        if ($fails > 0) {
+            print $fails ." Failed\n";
+            $totalFail += $fails;
+        }
+        if ($skipped > 0) {
+            print $skipped ." Skipped\n";
+        }
+        $start += $limit;
     }
 }
 
