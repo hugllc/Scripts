@@ -74,6 +74,7 @@ foreach ($types as $table) {
         }
         $fails = 0;
         $skipped = 0;
+        $done = 0;
         print "Row ".$start."\n";
         foreach ($res as $row) {
 //            var_dump($row);
@@ -106,8 +107,11 @@ foreach ($types as $table) {
 //                $history->verbose(2);
 //                $history->printError();
 //                $history->verbose(0);
+            } else {
+                $done ++;
             }
         }
+        print "Last Date: ".$row["Date"]." (".date("Y-m-d H:i:s", $ndate).")\n";
         if ($fails > 0) {
             print $fails ." Failed\n";
             $totalFail += $fails;
@@ -115,6 +119,7 @@ foreach ($types as $table) {
         if ($skipped > 0) {
             print $skipped ." Skipped\n";
         }
+        print $done." Done\n";
         $start += $limit;
     }
 }
