@@ -266,7 +266,8 @@ while (1) {
         print "Done \r\n";
         if (method_exists($endpoint->drivers[$dev['Driver']], "loadProgram")) {
             print "Loading program...\n";
-            $pass['Load Program'] = !(bool)($endpoint->drivers[$dev['Driver']]->loadProgram($dev, $dev, $fwPart['FirmwareKey']));
+            $res = $firmware->GetLatestFirmware('0039-20-01-C');
+            $pass['Load Program'] = !(bool)($endpoint->drivers[$dev['Driver']]->loadProgram($dev, $dev, $res["FirmwareKey"]));
             print "Done\r\n";
         }
 
