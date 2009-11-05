@@ -134,6 +134,21 @@ class EpUpdatedb extends EndpointBase
      *
      * @return null
      */
+    function updateCache()
+    {
+        print "Updating Caches... ";
+        print " Firmware ";
+        $this->firmware->getAll();
+        print " Gateway ";
+        $this->gateway->getAll();
+        print "\n";
+    }
+
+    /**
+     * The main loop
+     *
+     * @return null
+     */
     function main()
     {
         $this->uproc->register();
@@ -151,6 +166,7 @@ class EpUpdatedb extends EndpointBase
                 $lastminute = date("i");
             }
 
+            $this->updateCache();
             $this->getAllDevices();
             if (count($this->ep) == 0) {
                 die("No devices found");
