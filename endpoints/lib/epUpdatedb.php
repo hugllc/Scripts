@@ -278,6 +278,9 @@ class EpUpdatedb extends EndpointBase
             return;
         }
         foreach ($res as $packet) {
+            if ($GLOBALS["exit"] === true) {
+                break;
+            }
             $this->stats->incStat("Packets");
 
             print "[".$this->uproc->me["PID"]."]";
