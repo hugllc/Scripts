@@ -126,8 +126,9 @@ class EndpointBase
     function getUnsolicited()
     {
         $where                 = "Type = 'UNSOLICITED' and `Date` >= ?";
+        $now                   = date("Y-m-d H:i:s");
         $check                 = $this->lastUnsolicited;
-        $this->lastUnsolicited = date("Y-m-d H:i:s");
+        $this->lastUnsolicited = $now;
         $pkts                  = $this->plog->getWhere($where, array($check));
         if (!is_array($pkts)) {
             return array();

@@ -192,7 +192,7 @@ class EpConfig extends EndpointBase
             foreach ($res as $key => $val) {
                 if ($val['DeviceID'] !== "000000") {
                     $dev          = $this->endpoint->DriverInfo($val);
-                    $k            = $val['DeviceID'];
+                    $k            = strtoupper($val['DeviceID']);
                     $this->ep[$k] = $dev;
                     if ($this->endpoint->isController($dev)) {
                         $this->_devInfo[$k]["Controller"] = true;
@@ -250,15 +250,25 @@ class EpConfig extends EndpointBase
         $pkts = $this->getUnsolicited();
         foreach ($pkts as $p) {
             print "Unsolicited packet from ".$p["PacketFrom"];
-            print " command ".$p["Command"]."\n";
+            print " command ".$p["Command"];
+            $k = strtoupper($p["PacketFrom"]);
             switch ($p["Command"]) {
             case PACKET_COMMAND_RECONFIG:
             case PACKET_COMMAND_POWERUP:
-                $this->_devInfo[$p["PacketFrom"]]['nextCheck'] = 0;
+                if (isset($this->ep[$k])) {
+                    print " Setting last poll to 0 ";
+                    $this->_devInfo[$k]['nextCheck'] = 0;
+                } else {
+                    print " New device set up";
+                    $this->ep[$k] = array(
+                        "DeviceID" => $k,
+                    );
+                }
                 break;
             default:
                 break;
             }
+            print "\n";
         }
 
     }
@@ -416,6 +426,7 @@ class EpConfig extends EndpointBase
             }
             if (empty($dev['DeviceID'])) {
                 unset($this->ep[$key]);
+                continue;
             }
             if ($this->_devInfo[$key]['nextCheck'] < time()) {
                 $checked++;
