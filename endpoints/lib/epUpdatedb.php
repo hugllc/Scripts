@@ -63,6 +63,8 @@ class EpUpdatedb extends EndpointBase
     var $ep = array();
     /** @var bool/int Verbosity level.  False or 0 for none */
     var $verbose = false;
+    /** @var bool/int Verbosity level.  False or 0 for none */
+    private $pLogRemovalTime = 600;
 
     /**
     * Constructor
@@ -270,7 +272,11 @@ class EpUpdatedb extends EndpointBase
     */
     function updatedb()
     {
-        $res = $this->plog->getWhere("Checked > 10", array(), 50);
+        $res = $this->plog->getWhere(
+            "((Checked > 10) OR (`Date` < ?))",
+            array(date("Y-m-d H:i:s", time() - $this->pLogRemovalTime)),
+            50
+        );
         if ($this->verbose) {
             print "[".$this->uproc->me["PID"]."] Found ".count($res)." Packets\n";
         }
@@ -305,6 +311,8 @@ class EpUpdatedb extends EndpointBase
             $this->_updatedbRemove($packet);
             print "\r\n";
 
+
+
         }
     }
 
@@ -318,6 +326,7 @@ class EpUpdatedb extends EndpointBase
     private function _updatedbUnsolicited(&$packet)
     {
         if ($packet['Type'] == 'UNSOLICITED') {
+            $date = strtotime($packet["Date"]);
             $packet["Checked"] = true;
             $this->stats->incStat("Unsolicited");
             $pkt    = $this->plog->packetLogSetup($packet, $packet);
@@ -342,13 +351,6 @@ class EpUpdatedb extends EndpointBase
         if ($packet['Type'] == 'REPLY') {
             $packet["Checked"] = true;
             $this->stats->incStat("Reply");
-            if ($return) {
-                print " - Inserted into PacketSend ".$packet['sendCommand']."";
-                $packet["remove"] = true;
-            } else {
-                print " - Failed ";
-                $this->stats->incStat("Reply Failed");
-            }
         }
     }
     /**
@@ -509,7 +511,8 @@ class EpUpdatedb extends EndpointBase
     private function _updatedbUnknown(&$packet)
     {
         if ($packet['Checked'] !== true) {
-            print " - Unknown ";
+            $date = strtotime($packet["Date"]);
+            print " ".$packet["Date"]." - Unknown (".$packet["Command"].") ";
             $this->stats->incStat("Unknown");
             $packet["remove"] = true;
         }

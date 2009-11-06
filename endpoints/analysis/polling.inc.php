@@ -59,11 +59,13 @@ function Analysis_polling(&$analysis, &$devInfo)
 
     foreach ($analysis->rawHistoryCache as $key => $row) {
         $date = strtotime($row["Date"]);
-        if (($row["Status"] == "GOOD") && ($lastPoll != 0)) {
+        if (($row["Status"] == "GOOD")) {
+            if ($lastPoll != 0) {
+                $analysisOut["AveragePollTime"] += ($date - $lastPoll)/60;
+            }
             $analysisOut["Polls"]++;
-            $analysisOut["AveragePollTime"] += ($date - $lastpoll)/60;
+            $lastPoll = $date;
         }
-        $lastpoll = $date;
         if ($row['ReplyTime'] > 0) {
             $analysisOut['AverageReplyTime'] += $row['ReplyTime'];
             $analysisOut['Replies']++;
