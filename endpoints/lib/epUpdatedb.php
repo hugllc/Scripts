@@ -166,7 +166,6 @@ class EpUpdatedb extends EndpointBase
                 $lastminute = date("i");
             }
 
-            $this->updateCache();
             $this->getAllDevices();
             if (count($this->ep) == 0) {
                 die("No devices found");
@@ -222,6 +221,7 @@ class EpUpdatedb extends EndpointBase
     {
         // Regenerate our endpoint information
         if (((time() - $this->lastdev) > 120) || (count($this->ep) < 1)) {
+            $this->updateCache();
             $this->lastdev = time();
 
             print "Getting endpoints:  ";

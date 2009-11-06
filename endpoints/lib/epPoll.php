@@ -163,6 +163,7 @@ class EpPoll extends EndpointBase
                 }
                 $this->lastminute = date("i");
             }
+            $this->checkUnsolicitedPackets();
             $count = $this->poll();
 
             if ($count == 0) {
@@ -197,8 +198,9 @@ class EpPoll extends EndpointBase
             $devInfo['failures'] = 0;
         }
 
-        if (!empty($forceInterval)) {
-            $time = time();
+        if (!is_null($forceInterval)) {
+            $devInfo["PollTime"] = time()+ (60 * $forceInterval);
+            return;
         } else if ($devInfo['failures'] > $this->failureLimit) {
             $time = $devInfo["LastPollTry"];
         } else if (empty($devInfo["LastPoll"])) {
@@ -211,15 +213,11 @@ class EpPoll extends EndpointBase
         if ($mult > 25) {
             $mult = 25;
         }
-        if (empty($forceInterval)) {
-            $Interval = $this->ep[$key]["PollInterval"];
-        } else {
-            $Interval = $forceInterval;
-        }
+        $Interval = $this->ep[$key]["PollInterval"];
         // Poll interval is in minutes that is where the 60 comes from
         $newtime = $time + (60 * $mult * $Interval);
 
-        if ($devInfo["PollTime"] < $newtime) {
+        if (($devInfo["PollTime"] < $newtime)) {
             $devInfo["PollTime"] = $newtime;
         }
     }
@@ -247,7 +245,7 @@ class EpPoll extends EndpointBase
             foreach ($res as $key => $val) {
                 if ($val['DeviceID'] !== "000000") {
                     $dev            = $this->endpoint->DriverInfo($val);
-                    $key            = $val['DeviceID'];
+                    $key            = strtoupper($val['DeviceID']);
                     $this->ep[$key] = $dev;
                     $this->getNextPoll($key);
                 }
@@ -302,6 +300,34 @@ class EpPoll extends EndpointBase
             break;
         default:
             break;
+        }
+
+    }
+    /**
+    * Deals with packets to me.
+    *
+    * @return null
+    */
+    public function checkUnsolicitedPackets()
+    {
+        $pkts = $this->getUnsolicited();
+        foreach ($pkts as $p) {
+            print "Unsolicited packet from ".$p["PacketFrom"];
+            print " command ".$p["Command"];
+            $k = strtoupper($p["PacketFrom"]);
+            switch ($p["Command"]) {
+            case PACKET_COMMAND_RECONFIG:
+            case PACKET_COMMAND_POWERUP:
+                if (isset($this->ep[$k])) {
+                    print " Setting failures to 0 ";
+                    $this->_devInfo[$k]['failures'] = 0;
+                    $this->GetNextPoll($k, 0); // Poll immediately
+                }
+                break;
+            default:
+                break;
+            }
+            print "\n";
         }
 
     }
