@@ -55,7 +55,6 @@ function Analysis_unsolicited(&$analysis, &$devInfo)
     $analysis->analysisOut["Reconfigs"] = 0;
 
     foreach ($analysis->plogCache as $log) {
-var_dump($log["Command"]);
         switch($log["Command"]) {
         case "5D":
             $analysis->analysisOut["Reconfigs"]++;
@@ -70,7 +69,6 @@ var_dump($log["Command"]);
             break;
         }
     }
-    var_dump($analysis->analysisOut);
     $dTime = microtime(true) - $sTime;
     if ($analysis->verbose > 1) {
         print "analysis_unsolicited end (".$dTime."s)\r\n";
