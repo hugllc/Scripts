@@ -110,7 +110,6 @@ class EpPoll extends EndpointBase
         $cutoff           = time() - (86400 * $this->cutoffdays);
         $this->cutoffdate = date("Y-m-d H:i:s", $cutoff);
         $this->endpoint   =& HUGnetDriver::getInstance($config);
-        $this->endpoint->packet->getAll(true);
 
         unset($config["table"]);
         $this->plog = & HUGnetDB::getInstance("Plog", $config);
@@ -119,7 +118,7 @@ class EpPoll extends EndpointBase
         unset($config["table"]);
         $this->device  =& HUGnetDB::getInstance("Device", $config);
         $this->gateway =& HUGnetDB::getInstance("Gateway", $config);
-
+/*
         $config["table"] = "DebugPacketLog";
         $this->debugplog =& HUGnetDB::getInstance("Plog", $config);
         $this->debugplog->createTable();
@@ -127,8 +126,8 @@ class EpPoll extends EndpointBase
         $config["table"] = "PacketSend";
         $this->psend     =& HUGnetDB::getInstance("Plog", $config);
         $this->psend->createTable("PacketSend");
+*/
         $this->packet =& $this->endpoint->packet;
-
         parent::__construct($config);
     }
 
@@ -142,7 +141,6 @@ class EpPoll extends EndpointBase
         $this->powerup();
         $this->packet->packetSetCallBack('checkPacket', $this);
         $this->uproc->register();
-
         while ($GLOBALS["exit"] !== true) {
             declare(ticks = 1);
             if ($this->lastminute != date("i")) {

@@ -302,12 +302,18 @@ class EpUpdatedb extends EndpointBase
             if (is_array($this->ep[$DeviceID])) {
                 $packet = array_merge($this->ep[$DeviceID], $packet);
             }
+            if (empty($packet["DeviceKey"])) {
+                $key = strtoupper($packet["PacketFrom"]);
+                if (isset($this->ep[$key]["DeviceKey"])) {
+                    $packet["DeviceKey"] = $this->ep[$key]["DeviceKey"];
+                }
+            }
             $packet["remove"] == false;
             $this->_updatedbUnsolicited($packet);
-            $this->_updatedbReply($packet);
             $this->_updatedbConfig($packet);
             $this->_updatedbPoll($packet);
             $this->_updatedbUnknown($packet);
+            $this->_updatedbReply($packet);
             $this->_updatedbRemove($packet);
             print "\r\n";
 
@@ -326,11 +332,11 @@ class EpUpdatedb extends EndpointBase
     private function _updatedbUnsolicited(&$packet)
     {
         if ($packet['Type'] == 'UNSOLICITED') {
+            print " ".$packet["Date"]." Unsolicited ";
             $date = strtotime($packet["Date"]);
             $packet["Checked"] = true;
             $this->stats->incStat("Unsolicited");
-            $pkt    = $this->plog->packetLogSetup($packet, $packet);
-            $return = $this->plogRemote->add($pkt);
+            $return = $this->plogRemote->add($packet);
             if ($return) {
                 print " - Inserted ".$packet['sendCommand']."";
                 $packet["remove"] = true;
@@ -351,6 +357,7 @@ class EpUpdatedb extends EndpointBase
         if ($packet['Type'] == 'REPLY') {
             $packet["Checked"] = true;
             $this->stats->incStat("Reply");
+            $packet["remove"] = true;
         }
     }
     /**
