@@ -273,7 +273,7 @@ class EpUpdatedb extends EndpointBase
     function updatedb()
     {
         $res = $this->plog->getWhere(
-            "((Checked > 10) OR (`Date` < ?))",
+            "((Checked > 10) OR ((`Date` < ?) AND (Type = 'UNSOLICITED')))",
             array(date("Y-m-d H:i:s", time() - $this->pLogRemovalTime)),
             50
         );
