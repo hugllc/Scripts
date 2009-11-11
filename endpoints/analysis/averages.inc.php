@@ -58,7 +58,7 @@ function Analysis_averages(&$analysis, &$device)
     $verbose = $analysis->config["verbose"];
 
     $day      = 7 * (int)date("w");
-    $unixTime = mktime(6, 0, 0, (int)date(M), $day, (int)date("Y"));
+    $unixTime = mktime(12, 0, 0, (int)date(M), $day, (int)date("Y"));
 
     if ($verbose > 1) {
         print "analysis_averages start\r\n";
@@ -76,6 +76,9 @@ function Analysis_averages(&$analysis, &$device)
     foreach ($data as $row) {
 
         $time = strtotime($row["Date"]);
+        if (empty($time)) {
+            continue;
+        }
         $min  = date("i", $time);
         if ($min < 15) {
             $hour  = date("Y-m-d H:00:00", $time);
@@ -92,13 +95,19 @@ function Analysis_averages(&$analysis, &$device)
         } else {
             $hour  = date("Y-m-d H:45:00", $time);
             $hour2 = date("Y-m-d H:00:00", ($time + 3600));
+            // This removes the one record from the next day at the very end.
+            if (date("d", $time) != date("d", ($time +3600))) {
+                $hour2 = 0;
+            }
             $ratio = (60 - $min) / $pollInt;
         }
         if ($ratio > 1) {
             $ratio = 1;
         }
         $fifteen[$hour]["Count"]    += $ratio;
-        $fifteen[$hour2]["Count"]   += (1 - $ratio);
+        if (!empty($hour2)) {
+            $fifteen[$hour2]["Count"]   += (1 - $ratio);
+        }
         $fifteen[$hour]["DeviceKey"] = $device["DeviceKey"];
         $fifteen[$hour]["Date"]      = $hour;
         $fifteen[$hour]["Type"]      = "15MIN";
@@ -109,7 +118,9 @@ function Analysis_averages(&$analysis, &$device)
                 if (strtolower(substr($key, 0, 4)) == "data") {
                     $tKey                   = (int) substr($key, 4);
                     $fifteen[$hour][$key]  += $val * $ratio;
-                    $fifteen[$hour2][$key] += $val * (1- $ratio);
+                    if (!empty($hour2)) {
+                        $fifteen[$hour2][$key] += $val * (1- $ratio);
+                    }
                     $arrayKeys[$tKey]       = $key;
                 }
             }
@@ -121,7 +132,6 @@ function Analysis_averages(&$analysis, &$device)
     foreach ($fifteen as $min => $row) {
         $time = strtotime($row["Date"]);
         $hour = date("Y-m-d H:00:00", $time);
-
         $hourly[$hour]["Count"]    += $row["Count"];
         $hourly[$hour]["DeviceKey"] = $device["DeviceKey"];
         $hourly[$hour]["Date"]      = $hour;
@@ -142,10 +152,9 @@ function Analysis_averages(&$analysis, &$device)
 
     $hourlyTotal   = $hourly;
     $daily         = array();
-    $daily["Data"] = array();
     foreach ($hourly as $hour => $row) {
         $time = strtotime($row["Date"]);
-        $day  = date("Y-m-d 5:00:00", $time);
+        $day  = date("Y-m-d 12:00:00", $time);
 
         $daily["Count"]    += $row["Count"];
         $daily["DeviceKey"] = $device["DeviceKey"];
