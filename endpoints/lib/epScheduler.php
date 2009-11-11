@@ -123,6 +123,7 @@ class EpScheduler
                 }
                 $this->check();
                 $this->errorHandler();
+                $this->wait();
             } while ($this->config["loop"]);
         } else {
             $do = trim($this->config["do"]);
@@ -141,6 +142,16 @@ class EpScheduler
 
         }
         return 0;
+    }
+    /**
+    * Waits a random amount of time.
+    *
+    * @return null
+    */
+    function wait()
+    {
+        $sleep = mt_rand(1, 120);
+        sleep($sleep);
     }
 
     /**
