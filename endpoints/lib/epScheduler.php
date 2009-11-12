@@ -115,6 +115,7 @@ class EpScheduler
      */
     function main()
     {
+        $this->uproc->register();
         $this->clearErrors();
         if (empty($this->config["do"])) {
             do {
@@ -141,6 +142,7 @@ class EpScheduler
             }
 
         }
+        $this->uproc->unregister();
         return 0;
     }
     /**
