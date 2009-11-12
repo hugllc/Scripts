@@ -58,11 +58,12 @@ function Analysis_averages(&$analysis, &$device)
     $verbose = $analysis->config["verbose"];
 
     $day      = 7 * (int)date("w");
-    $unixTime = mktime(12, 0, 0, (int)date(M), $day, (int)date("Y"));
+    $unixTime = gmmktime(12, 0, 0, (int)date(M), $day, (int)date("Y"));
 
     if ($verbose > 1) {
         print "analysis_averages start\r\n";
     }
+
     $data = &$analysis->historyCache;
 
     $average_table = $analysis->endpoint->getAverageTable($device);
@@ -198,7 +199,17 @@ function Analysis_averages(&$analysis, &$device)
     }
     $qtime = microtime(true);
 
-    $analysis->average->addArray($insert, true);
+    $time = strtotime($daily["Date"]);
+    // Delete the old records.
+    $analysis->average->removeWhere(
+        "((`Date` > ?) AND (`Date` < ?) AND DeviceKey = ?)",
+        array(
+            date("Y-m-d 00:00:00", $time),
+            date("Y-m-d 23:59:59", $time),
+            $device["DeviceKey"],
+        )
+    );
+    $analysis->average->addArray($insert);
 
     $dTime = microtime(true) - $sTime;
 
