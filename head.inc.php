@@ -151,6 +151,7 @@ for ($i = 1; $i < count($argv); $i++) {
     // Go into an array that can be sorted by the program
     default:
         $newArgv[] = $argv[$i];
+        $newArgc++;
         break;
     }
 }

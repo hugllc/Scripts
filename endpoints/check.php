@@ -44,9 +44,13 @@ require_once HUGNET_INCLUDE_PATH.'/database/Process.php';
 require_once 'lib/epCheck.php';
 
 
-foreach ($newArgv as $arg) {
-    if (substr($arg, 0, 2) == "-r") {
-        $hugnet_config["do"] = trim(substr($arg, 2));
+for ($i = 0; $i < count($newArgv); $i++) {
+    if (trim($newArgv[$i]) == "-r") {
+        $i++;
+        $hugnet_config["do"] = trim($newArgv[$i]);
+        if ($verbose) {
+            print "Doing ".$hugnet_config["do"]."\n";
+        }
     }
 }
 

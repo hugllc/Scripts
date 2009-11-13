@@ -264,6 +264,7 @@ class EpScheduler
             print $this->_dailyReport;
             print "\n\n";
         }
+        $this->_dailyReport = "";
         return;
     }
 
@@ -277,6 +278,9 @@ class EpScheduler
     */
     function dailyReportOutput($text, $title = "")
     {
+        if (!empty($title)) {
+            $this->_dailyReport .= strtoupper($title)."\n\n";
+        }
         $this->_dailyReport .= $text;
     }
     /**
@@ -294,6 +298,9 @@ class EpScheduler
                 print "Doing ".$key." ".date("Y-m-d H:i:s")."s\n";
                 $this->plugins->runFilter(&$this, $name);
                 $this->last[$key] = date($key);
+                if ($key == "d") {
+                    $this->dailyReport();
+                }
             }
         }
     }
