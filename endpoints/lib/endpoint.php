@@ -392,7 +392,6 @@ class Endpoint extends EndpointBase
         }
     }
 
-
 }
 
 ?>

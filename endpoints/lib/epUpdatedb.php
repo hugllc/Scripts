@@ -126,7 +126,6 @@ class EpUpdatedb extends EndpointBase
         $this->stats->setStat('HWPartNum', UPDATEDB_PARTNUMBER);
         $this->stats->setStat('FWPartNum', UPDATEDB_PARTNUMBER);
 
-
         parent::__construct($config);
 
     }
@@ -144,6 +143,7 @@ class EpUpdatedb extends EndpointBase
         print " Gateway ";
         $this->gateway->getAll();
         print "\n";
+        $this->updateGatewayIP();
     }
 
     /**
@@ -576,5 +576,28 @@ class EpUpdatedb extends EndpointBase
             }
         }
     }
+
+    /**
+     * Checks other gateways
+     *
+     * @return bool
+     */
+    function updateGatewayIP()
+    {
+        $netInfo = HUGnetMisc::getNetInfo();
+        $IP   = $netInfo["inet addr"];
+        $me   = $this->uproc->getMyInfo();
+        $name = $me["Host"];
+        $key  = $this->config["script_gatewaykey"];
+        $gw   = $this->gateway->get($key);
+        $gw   = $gw[0];
+
+        if (!is_array($gw["GatewayIP"])) {
+            $gw["GatewayIP"] = array();
+        }
+        $gw["GatewayIP"][$name] = $IP;
+        $this->gateway->update($gw);
+    }
+
 }
 ?>
