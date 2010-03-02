@@ -89,19 +89,19 @@ class EpUpdatedb extends EndpointBase
         print("Creating Gateway Cache...\n");
         unset($config["table"]);
         $this->gateway =& HUGnetDB::getInstance("Gateway", $config);
-        $this->gateway->createCache(HUGNET_LOCAL_DATABASE);
+        $this->gateway->createCache($config["file"]);
         $this->gateway->getAll();
 
         print("Creating Device Cache...\n");
         unset($config["table"]);
         $this->device =& HUGnetDB::getInstance("Device", $config);
-        $this->device->createCache(HUGNET_LOCAL_DATABASE);
+        $this->device->createCache($config["file"]);
         $this->device->getAll();
 
         print("Creating Firmware Cache...\n");
         unset($config["table"]);
         $this->firmware =& HUGnetDB::getInstance("Firmware", $config);
-        $this->firmware->createCache(HUGNET_LOCAL_DATABASE);
+        $this->firmware->createCache($config["file"]);
         $this->firmware->getAll();
 
         unset($config["table"]);
