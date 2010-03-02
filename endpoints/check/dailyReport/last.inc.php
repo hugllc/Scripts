@@ -54,7 +54,7 @@ function dailyReportLast(&$obj)
         "LastHistory" => "Last History",
         "LastAnalysis" => "Last Analysis",
     );
-    $days = array("0.5", "1", "3", "7", "14", "many");
+    $days = array("0.04", "0.25", "0.5", "1", "3", "10", "many");
     $stats = array();
     foreach ($res as $row) {
         foreach ($types as $key => $type) {
