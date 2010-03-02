@@ -81,7 +81,11 @@ function dailyReportLast(&$obj)
             if (empty($cnt)) {
                 $cnt = 0;
             }
-            $text .= $d." days old:  ".$cnt."\n";
+            if ($d < 1) {
+                $text .= round($d*24)." hour(s) old: ".$cnt."\r\n";
+            } else {
+                $text .= $d." day(s) old:  ".$cnt."\r\n";
+            }
         }
         $text .= "\n\n";
         $obj->dailyReportOutput($text, $title);
