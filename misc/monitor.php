@@ -38,45 +38,26 @@
 /** HUGnet code */
 require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once HUGNET_INCLUDE_PATH.'/database/Plog.php';
-define("MONITOR_SVN", '$Id$');
+require_once HUGNET_INCLUDE_PATH.'/containers/PacketContainer.php';
 
-print 'monitor.php Version '.MONITOR_SVN."\n";
+print "monitor.php\n";
 print "Starting...\n";
 
 print "Using GatewayKey ".$GatewayKey."\n";
 
-unset($hugnet_config["servers"]);
-$hugnet_config['GatewayIP']     = $GatewayIP;
-$hugnet_config['GatewayPort']   = $GatewayPort;
-$hugnet_config['GatewayName']   = $GatewayIP;
-$hugnet_config['GatewayKey']    = $GatewayKey;
-$hugnet_config['socketType']    = "db";
-$hugnet_config['socketTable']   = "PacketLog";
-$hugnet_config['packetSNCheck'] = false;
-
-$endpoint =& HUGnetDriver::getInstance($hugnet_config);
-
+ConfigContainer::config("/etc/hugnet/config.inc.php");
 while (1) {
-
-    $packets = $endpoint->packet->monitor();
-    foreach ($packets as $pkt) {
-        if (!is_array($pkt)) {
-            continue;
-        }
-        print "From: ".$pkt['From'];
-        print " -> To: ".$pkt['To'];
-        if (empty($pkt["Command"])) {
-            print "  Command: ".$pkt['sendCommand'];
-        } else {
-            print "  Command: ".$pkt['Command'];
-        }
+    $pkt = &PacketContainer::monitor();
+    if (is_object($pkt)) {
+        print "From: ".$pkt->From;
+        print " -> To: ".$pkt->To;
+        print "  Command: ".$pkt->Command;
+        print "  Type: ".$pkt->Type;
         print "\r\n";
-        if (!empty($pkt['RawData'])) {
-            print "Data: ".$pkt['RawData']."\r\n";
+        if (!empty($pkt->Data)) {
+            print "Data: ".$pkt->Data."\r\n";
         }
     }
-    $last = $now;
     sleep(1);
 }
 

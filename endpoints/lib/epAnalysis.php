@@ -194,7 +194,7 @@ class EpAnalysis extends EpScheduler
             print 'found: '.$count." Raw: ".$rawcount;
 
             for ($i = 0; $i < 10; $i++) {
-                $this->plugins->runFilter(&$this, "Analysis".$i, &$devInfo);
+                $this->plugins->runFilter($this, "Analysis".$i, $devInfo);
             }
             $update = array(
                 'DeviceKey' => $devInfo["DeviceKey"],

@@ -412,7 +412,7 @@ class EpUpdatedb extends EndpointBase
                 $packet["remove"] = true;
             } else {
 
-                if ($this->_updatedbPollRawHistory(&$packet)) {
+                if ($this->_updatedbPollRawHistory($packet)) {
                     $packet["remove"] = true;
                     $this->_updatedbPollHistory($packet);
                 }

@@ -130,7 +130,7 @@ class EpScheduler
             $do = trim($this->config["do"]);
             if (isset($this->check[$do])) {
                 print "Doing ".$this->check[$do]." run\n";
-                $this->plugins->runFilter(&$this, $this->check[$do]);
+                $this->plugins->runFilter($this, $this->check[$do]);
                 print "Done\n";
             } if (isset($this->otherCheck[$do])) {
                 $method = $this->otherCheck[$do];
@@ -251,7 +251,7 @@ class EpScheduler
         if (empty($this->config["admin_email"])) {
             return;
         }
-        $this->plugins->runFilter(&$this, "dailyReport");
+        $this->plugins->runFilter($this, "dailyReport");
         if (!$this->config["test"]) {
             mail(
                 $this->config["admin_email"],
@@ -296,7 +296,7 @@ class EpScheduler
         foreach ($this->check as $key => $name) {
             if (date($key) != $this->last[$key]) {
                 print "Doing ".$key." ".date("Y-m-d H:i:s")."s\n";
-                $this->plugins->runFilter(&$this, $name);
+                $this->plugins->runFilter($this, $name);
                 $this->last[$key] = date($key);
                 if ($key == "d") {
                     $this->dailyReport();

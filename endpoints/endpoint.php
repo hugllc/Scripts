@@ -38,42 +38,38 @@
 
 define("ENDPOINT_PARTNUMBER", "0039-26-04-P");  //0039-26-01-P
 
-$GatewayKey = false;
-$testMode   = false;
-
-$database_driver = "sqlite";
-
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once HUGNET_INCLUDE_PATH.'/database/Plog.php';
-require_once HUGNET_INCLUDE_PATH.'/database/Process.php';
-require_once 'lib/endpoint.php';
+require_once HUGNET_INCLUDE_PATH.'/processes/PacketRouter.php';
 
-print "Starting...\n";
+// Set up our configuration
+$config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
+$config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
-if (empty($GatewayKey)) {
-    die("You must supply a gateway key\n");
+$DeviceID = $config->sockets->deviceID();
+// This sets us up as a device
+$me = new DeviceContainer(
+    array(
+        "DeviceID"   => $DeviceID,
+        "SerialNum"  => (int)"0x".$DeviceID,
+        "DriverInfo" => array(
+            "Job" => 4,
+            "IP" => gethostbyname(gethostname()),
+        ),
+        "GatewayKey" => $config->script_gateway,
+        "HWPartNum"  => constant("ENDPOINT_PARTNUMBER"),
+        "FWPartNum"  => constant("ENDPOINT_PARTNUMBER"),
+        "FWVersion"  => constant("SCRIPTS_VERSION"),
+    )
+);
+$me->insertRow(true);
+print "Starting... (".$me->DeviceID.")\n";
+
+$router = new PacketRouter(array(), $me);
+$router->powerup();
+while ($GLOBALS["exit"] !== true) {
+    $router->route();
+    usleep(1000);
 }
-print "Using GatewayKey ".$GatewayKey."\n";
-
-$hugnet_config['GatewayIP']   = $GatewayIP;
-$hugnet_config['GatewayPort'] = $GatewayPort;
-$hugnet_config['GatewayName'] = $GatewayIP;
-$hugnet_config['GatewayKey']  = $GatewayKey;
-if (!empty($DeviceID)) {
-    $hugnet_config['DeviceID'] = $DeviceID;
-}
-// Make sure we only go with the sqlite driver.
-$hugnet_config["driver"] = "sqlite";
-
-print "Using hardware connection at ";
-print $hugnet_config["GatewayIP"].":".$hugnet_config["GatewayPort"]."\n";
-
-$ep = new endpoint($hugnet_config);
-$ep->uproc->register();
-
-$ep->main();
-
-$ep->uproc->unregister();
 
 print "Finished\n";
 

@@ -50,7 +50,7 @@ $other     = array(
     "extraDefault" => "Extra Default",
 );
 
-require_once dirname(__FILE__).'/../head.inc.php';
+require_once dirname(__FILE__).'/../../head.inc.php';
 
 if (is_array($endpoint->sensors->sensors)) {
     foreach ($endpoint->sensors->sensors as &$class) {

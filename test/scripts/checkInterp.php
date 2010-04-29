@@ -93,7 +93,7 @@ if (empty($csvFile)) {
 $packet = $endpoint->InterpSensors($Info, $rHist);
 $endpoint->modifyUnits($packet, $Info, 2, $Info['params']['dType'],
                        $Info['params']['Units']);
-
+var_dump($Info);
 if (is_null($inputNum)) {
     var_dump($packet);
 } else {

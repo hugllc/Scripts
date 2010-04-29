@@ -37,53 +37,29 @@
  */
 $pktData = "";
 require_once dirname(__FILE__).'/../head.inc.php';
+/** Packet log include stuff */
+require_once HUGNET_INCLUDE_PATH.'/containers/PacketContainer.php';
 
 if (empty($DeviceID)) {
     die("DeviceID must be specified!\r\n");
 }
+$config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
+$config->verbose($hugnet_config["verbose"]);
 
-$pkt              = array();
-$Info["DeviceID"] = $DeviceID;
-$pkt["To"]        = strtoupper($DeviceID);
+$pkt = new PacketContainer(
+    array(
+        "To" => $DeviceID,
+        "Command" => isset($pktCommand) ? $pktCommand : "02",
+        "Data" => $pktData,
+        "GetReply" => true,
+        "group" => "default",
+    )
+);
 
-if (isset($pktCommand)) {
-    $pkt["Command"] = $pktCommand;
+$pkt->send();
+if (is_object($pkt)) {
+    var_dump($pkt->toArray());
 } else {
-    $pkt["Command"] = "02";
+     print "No Return";
 }
-$pkt["Data"] = $pktData;
-
-print "Using GatewayKey ".$GatewayKey."\n";
-
-unset($hugnet_config["servers"]);
-$hugnet_config['GatewayIP']     = $GatewayIP;
-$hugnet_config['GatewayPort']   = $GatewayPort;
-$hugnet_config['GatewayName']   = $GatewayIP;
-$hugnet_config['GatewayKey']    = $GatewayKey;
-$hugnet_config['socketType']    = "db";
-$hugnet_config['socketTable']   = "PacketLog";
-$hugnet_config['packetSNCheck'] = false;
-
-$endpoint =& HUGnetDriver::getInstance($hugnet_config);
-
-$pkt = $endpoint->packet->SendPacket($Info, $pkt);
-
-if (is_array($pkt)) {
-    foreach ($pkt as $p) {
-        if (($p["From"] == $p["SentTo"]) || $p["group"]) {
-            print_r($p);
-            if (is_array($p["Data"])) {
-                foreach ($p["Data"] as $key => $val) {
-                    print $key ."\t=> ".$val."\t=> ".dechex($val);
-                    print "\t=> ".str_pad(decbin($val), 8, "0", STR_PAD_LEFT)."\n";
-                }
-            }
-        }
-    }
-} else {
-    print "Nothing Returned\r\n";
-}
-$endpoint->packet->Close($Info);
-die();
-
 ?>

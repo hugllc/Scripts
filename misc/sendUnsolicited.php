@@ -1,7 +1,6 @@
-#!/usr/bin/php-cli
 <?php
 /**
- * Retrieves the configuration for endpoints
+ * Sends a packet
  *
  * PHP Version 5
  *
@@ -27,50 +26,40 @@
  *
  * @category   Scripts
  * @package    Scripts
- * @subpackage Poll
+ * @subpackage Test
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
  */
-
-define("CONFIG_PARTNUMBER", "0039-26-06-P");  //0039-26-01-P
-
+$pktData = "";
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once HUGNET_INCLUDE_PATH.'/processes/DeviceConfig.php';
+/** Packet log include stuff */
+require_once HUGNET_INCLUDE_PATH.'/containers/PacketContainer.php';
 
-// Set up our configuration
+if (empty($DeviceID)) {
+    die("DeviceID must be specified!\r\n");
+}
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
-$config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
-
-$DeviceID = $config->sockets->deviceID();
-// This sets us up as a device
-$me = new DeviceContainer(
+$config->verbose($hugnet_config["verbose"]);
+$config->sockets->forceDeviceID($DeviceID);
+$pkt = new PacketContainer(
     array(
-        "DeviceID"   => $DeviceID,
-        "SerialNum"  => (int)"0x".$DeviceID,
-        "DriverInfo" => array(
-            "Job" => 6,
-            "IP" => gethostbyname(gethostname()),
-        ),
-        "GatewayKey" => $config->script_gateway,
-        "HWPartNum"  => constant("CONFIG_PARTNUMBER"),
-        "FWPartNum"  => constant("CONFIG_PARTNUMBER"),
-        "FWVersion"  => constant("SCRIPTS_VERSION"),
+        "To" => "000000",
+        "Command" => PacketContainer::COMMAND_POWERUP,
+        "Data" => $pktData,
+        "GetReply" => false,
+        "group" => "default",
     )
 );
-$me->insertRow(true);
-print "Starting... (".$me->DeviceID.")\n";
 
-$devConfig = new DeviceConfig(array(), $me);
-$devConfig->powerup();
-while ($GLOBALS["exit"] !== true) {
-    $devConfig->config();
-     $devConfig->wait();
+$pkt->send();
+if (is_object($pkt)) {
+    var_dump($pkt->toArray());
+} else {
+     print "No Return";
 }
-
-print "Finished\n";
-
 ?>
