@@ -1,7 +1,7 @@
 #!/usr/bin/php-cli
 <?php
 /**
- * This routine acts like an endpoint
+ * Retrieves the configuration for endpoints
  *
  * PHP Version 5
  *
@@ -36,10 +36,10 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-define("ENDPOINT_PARTNUMBER", "0039-26-04-P");  //0039-26-01-P
+define("SYNC_PARTNUMBER", "0039-26-02-P");  //0039-26-01-P
 
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once HUGNET_INCLUDE_PATH.'/processes/PacketRouter.php';
+require_once HUGNET_INCLUDE_PATH.'/processes/PeriodicPlugins.php';
 
 // Set up our configuration
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
@@ -52,26 +52,32 @@ $me = new DeviceContainer(
         "DeviceID"   => $DeviceID,
         "SerialNum"  => hexdec($DeviceID),
         "DriverInfo" => array(
-            "Job" => 4,
-            "IP" => PacketRouter::getIP(),
+            "Job" => 2,
+            "IP" => PeriodicPlugins::getIP(),
         ),
         "GatewayKey" => $config->script_gateway,
-        "HWPartNum"  => constant("ENDPOINT_PARTNUMBER"),
-        "FWPartNum"  => constant("ENDPOINT_PARTNUMBER"),
+        "HWPartNum"  => constant("SYNC_PARTNUMBER"),
+        "FWPartNum"  => constant("SYNC_PARTNUMBER"),
         "FWVersion"  => constant("SCRIPTS_VERSION"),
     )
 );
 $me->insertRow(true);
-print "Starting... (".$me->DeviceID.")\n";
 
-$router = new PacketRouter(array(), $me);
-$router->powerup();
-while ($router->loop) {
-    $router->route();
-    usleep(1000);
+
+$sync = new PeriodicPlugins(
+    array(
+        "PluginDir" => dirname(__FILE__)."/plugins/sync",
+    ),
+    $me
+);
+$sync->powerup();
+// Run the main loop
+print "Starting... (".$me->DeviceID.")\n";
+while ($sync->loop === true) {
+    $sync->main();
+    $sync->wait();
 }
 
 print "Finished\n";
-
 
 ?>

@@ -50,10 +50,10 @@ $DeviceID = $config->sockets->deviceID();
 $me = new DeviceContainer(
     array(
         "DeviceID"   => $DeviceID,
-        "SerialNum"  => (int)"0x".$DeviceID,
+        "SerialNum"  => hexdec($DeviceID),
         "DriverInfo" => array(
             "Job" => 6,
-            "IP" => gethostbyname(gethostname()),
+            "IP" => DeviceConfig::getIP(),
         ),
         "GatewayKey" => $config->script_gateway,
         "HWPartNum"  => constant("CONFIG_PARTNUMBER"),
@@ -62,13 +62,22 @@ $me = new DeviceContainer(
     )
 );
 $me->insertRow(true);
-print "Starting... (".$me->DeviceID.")\n";
 
 $devConfig = new DeviceConfig(array(), $me);
 $devConfig->powerup();
-while ($GLOBALS["exit"] !== true) {
+// Get the configuration of the devices with loadable firmware
+// This is done twice incase they need to be reloaded with
+// a new version of firmware.  If all is fine this will add
+// very little startup time.
+print "Checking loadable devices\n";
+$devConfig->config(true);
+$devConfig->config(true);
+
+// Run the main loop
+print "Starting... (".$me->DeviceID.")\n";
+while ($devConfig->loop) {
     $devConfig->config();
-     $devConfig->wait();
+    $devConfig->wait();
 }
 
 print "Finished\n";
