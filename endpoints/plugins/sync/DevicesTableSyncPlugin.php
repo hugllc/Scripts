@@ -100,15 +100,16 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
                 "`DeviceID` = ?",
                 array($remote[$k]->DeviceID)
             );
-            if ($ret) {
+            if ($this->device->gateway()) {
+                // Don't want to update gateways
+                continue;
+            } else if ($ret) {
                 $this->_updateLocal($this->device, $remote[$k]);
                 $this->_updateRemote($this->device, $remote[$k]);
-            } else {
-                if ($remote[$k]->GatewayKey == $this->gatewayKey) {
-                    DevicesTable::insertDeviceID(
-                        $remote[$k]->toDB()
-                    );
-                }
+            } else if ($remote[$k]->GatewayKey == $this->gatewayKey) {
+                DevicesTable::insertDeviceID(
+                    $remote[$k]->toDB()
+                );
             }
         }
         $this->last = time();
