@@ -39,7 +39,7 @@ require_once dirname(__FILE__)."/../../HUGnetLib/hugnet.inc.php";
 require_once 'PHPUnit/Framework.php';
 require_once 'PHPUnit/TextUI/TestRunner.php';
 
-require_once 'endpoints/ScriptEndpointTests.php';
+//require_once 'endpoints/ScriptEndpointTests.php';
 
 /**
  *  This class runs all of the tests.  This must be done with no errors
@@ -81,7 +81,7 @@ class ScriptTests
 
         //$suite->addTestSuite('otherTest');
 
-        $suite->addTest(ScriptEndpointTests::suite());
+        //$suite->addTest(ScriptEndpointTests::suite());
 
         return $suite;
     }
