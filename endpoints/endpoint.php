@@ -45,8 +45,10 @@ require_once HUGNET_INCLUDE_PATH.'/processes/PacketRouter.php';
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
 $config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
-$DeviceID = $config->sockets->deviceID();
+print "Finding my DeviceID...\n";
+$DeviceID = $config->sockets->deviceID(array(), 4);
 // This sets us up as a device
+print "Setting up my device...\n";
 $me = new DeviceContainer(
     array(
         "DeviceID"   => $DeviceID,
@@ -55,6 +57,8 @@ $me = new DeviceContainer(
             "Job" => 4,
             "IP" => PacketRouter::getIP(),
         ),
+        "DeviceName" => "Router Process",
+        "DeviceLocation" => PacketRouter::getIP(),
         "GatewayKey" => $config->script_gateway,
         "HWPartNum"  => constant("ENDPOINT_PARTNUMBER"),
         "FWPartNum"  => constant("ENDPOINT_PARTNUMBER"),
@@ -67,8 +71,8 @@ print "Starting... (".$me->DeviceID.")\n";
 $router = new PacketRouter(array(), $me);
 $router->powerup();
 while ($router->loop) {
+    // No wait here because it waits for packets to come in and that is enough pause
     $router->route();
-    usleep(1000);
 }
 
 print "Finished\n";

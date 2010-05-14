@@ -1,7 +1,7 @@
 #!/usr/bin/php-cli
 <?php
 /**
- * This runs the check functions on the core
+ * Retrieves the configuration for endpoints
  *
  * PHP Version 5
  *
@@ -27,7 +27,7 @@
  *
  * @category   Scripts
  * @package    Scripts
- * @subpackage Alarm
+ * @subpackage Poll
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
@@ -36,43 +36,57 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
 
-define("CHECK_PARTNUMBER", "0039-26-03-P");  //0039-26-01-P
+define("CHECK_PARTNUMBER", "0039-26-07-P");  //0039-26-01-P
 
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once HUGNET_INCLUDE_PATH.'/database/Plog.php';
-require_once HUGNET_INCLUDE_PATH.'/database/Process.php';
-require_once 'lib/epCheck.php';
+require_once HUGNET_INCLUDE_PATH.'/processes/PeriodicCheck.php';
 
+// Set up our configuration
+$config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
+$config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
-for ($i = 0; $i < count($newArgv); $i++) {
-    if (trim($newArgv[$i]) == "-r") {
-        $i++;
-        $hugnet_config["do"] = trim($newArgv[$i]);
-        if ($verbose) {
-            print "Doing ".$hugnet_config["do"]."\n";
-        }
-    }
-}
-
-if (!(bool)$hugnet_config["check_enable"] && !isset($hugnet_config["do"])) {
-    print "Alarm disabled... Sleeping\n";
-    sleep(60);
+if ($config->check["enable"] === false) {
+    print "Check Disabled...\n";
     die();
 }
 
-print "Starting...\n";
+print "Finding my DeviceID...\n";
+$DeviceID = $config->sockets->deviceID(array(), 7);
+// This sets us up as a device
+print "Setting up my device...\n";
+$me = new DeviceContainer(
+    array(
+        "DeviceID"   => $DeviceID,
+        "SerialNum"  => hexdec($DeviceID),
+        "DriverInfo" => array(
+            "Job" => 7,
+            "IP" => PeriodicPlugins::getIP(),
+        ),
+        "DeviceName" => "Check Process",
+        "DeviceLocation" => PeriodicPlugins::getIP(),
+        "GatewayKey" => $config->script_gateway,
+        "HWPartNum"  => constant("CHECK_PARTNUMBER"),
+        "FWPartNum"  => constant("CHECK_PARTNUMBER"),
+        "FWVersion"  => constant("SCRIPTS_VERSION"),
+    )
+);
+$me->insertRow(true);
 
 
-
-if (empty($hugnet_config["pluginDir"])) {
-    $hugnet_config["checkPluginDir"] = dirname(__FILE__)."/check/";
+$check = new PeriodicCheck(
+    array(
+        "PluginDir" => dirname(__FILE__)."/plugins/check",
+    ),
+    $me
+);
+$check->powerup();
+// Run the main loop
+print "Starting... (".$me->DeviceID.")\n";
+while ($check->loop === true) {
+    $check->main();
+    $check->wait();
 }
-$hugnet_config["partNum"] = CHECK_PARTNUMBER;
 
-$epAlarm = new epCheck($hugnet_config);
-
-$epAlarm->main();
-
-print "Exiting...\n";
+print "Finished\n";
 
 ?>

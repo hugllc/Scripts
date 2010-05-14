@@ -45,8 +45,16 @@ require_once HUGNET_INCLUDE_PATH.'/processes/DeviceConfig.php';
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
 $config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
-$DeviceID = $config->sockets->deviceID();
+// Check to make sure this is enabled
+if ($config->config["enable"] === false) {
+    print "Config Disabled...\n";
+    die();
+}
+
+print "Finding my DeviceID...\n";
+$DeviceID = $config->sockets->deviceID(array(), 6);
 // This sets us up as a device
+print "Setting up my device...\n";
 $me = new DeviceContainer(
     array(
         "DeviceID"   => $DeviceID,
@@ -55,6 +63,8 @@ $me = new DeviceContainer(
             "Job" => 6,
             "IP" => DeviceConfig::getIP(),
         ),
+        "DeviceName" => "Config Process",
+        "DeviceLocation" => DeviceConfig::getIP(),
         "GatewayKey" => $config->script_gateway,
         "HWPartNum"  => constant("CONFIG_PARTNUMBER"),
         "FWPartNum"  => constant("CONFIG_PARTNUMBER"),

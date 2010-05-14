@@ -39,14 +39,16 @@
 define("SYNC_PARTNUMBER", "0039-26-02-P");  //0039-26-01-P
 
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once HUGNET_INCLUDE_PATH.'/processes/PeriodicPlugins.php';
+require_once HUGNET_INCLUDE_PATH.'/processes/PeriodicSync.php';
 
 // Set up our configuration
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
 $config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
-$DeviceID = $config->sockets->deviceID();
+print "Finding my DeviceID...\n";
+$DeviceID = $config->sockets->deviceID(array(), 2);
 // This sets us up as a device
+print "Setting up my device...\n";
 $me = new DeviceContainer(
     array(
         "DeviceID"   => $DeviceID,
@@ -55,6 +57,8 @@ $me = new DeviceContainer(
             "Job" => 2,
             "IP" => PeriodicPlugins::getIP(),
         ),
+        "DeviceName" => "Sync Process",
+        "DeviceLocation" => PeriodicPlugins::getIP(),
         "GatewayKey" => $config->script_gateway,
         "HWPartNum"  => constant("SYNC_PARTNUMBER"),
         "FWPartNum"  => constant("SYNC_PARTNUMBER"),
@@ -64,7 +68,7 @@ $me = new DeviceContainer(
 $me->insertRow(true);
 
 
-$sync = new PeriodicPlugins(
+$sync = new PeriodicSync(
     array(
         "PluginDir" => dirname(__FILE__)."/plugins/sync",
     ),
