@@ -39,7 +39,7 @@ require_once dirname(__FILE__).'/../head.inc.php';
 
 print "Starting...\n";
 
-require_once 'firmware.inc.php';
+require_once HUGNET_INCLUDE_PATH.'/database/Firmware.php';
 
 if (empty($argv[1])) {
     die("Usage: ".$argv[0]." <firmwarePart> [ <clean> [ <parallel port> ] ]\n");
