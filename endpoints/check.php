@@ -54,24 +54,18 @@ print "Finding my DeviceID...\n";
 $DeviceID = $config->sockets->deviceID(array(), 7);
 // This sets us up as a device
 print "Setting up my device...\n";
-$me = new DeviceContainer(
-    array(
-        "DeviceID"   => $DeviceID,
-        "SerialNum"  => hexdec($DeviceID),
-        "DriverInfo" => array(
-            "Job" => 7,
-            "IP" => PeriodicPlugins::getIP(),
-        ),
-        "DeviceName" => "Check Process",
-        "DeviceLocation" => PeriodicPlugins::getIP(),
-        "GatewayKey" => $config->script_gateway,
-        "HWPartNum"  => constant("CHECK_PARTNUMBER"),
-        "FWPartNum"  => constant("CHECK_PARTNUMBER"),
-        "FWVersion"  => constant("SCRIPTS_VERSION"),
-    )
+$me = array(
+    "id"         => hexdec($DeviceID),
+    "DeviceID"   => $DeviceID,
+    "DriverInfo" => array(
+        "Job" => 7,
+        "IP" => PeriodicPlugins::getIP(),
+    ),
+    "DeviceName" => "Check Process",
+    "HWPartNum"  => constant("CHECK_PARTNUMBER"),
+    "FWPartNum"  => constant("CHECK_PARTNUMBER"),
+    "FWVersion"  => constant("SCRIPTS_VERSION"),
 );
-$me->insertRow(true);
-
 
 $check = new PeriodicCheck(
     array(

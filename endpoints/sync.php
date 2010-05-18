@@ -49,24 +49,18 @@ print "Finding my DeviceID...\n";
 $DeviceID = $config->sockets->deviceID(array(), 2);
 // This sets us up as a device
 print "Setting up my device...\n";
-$me = new DeviceContainer(
-    array(
-        "DeviceID"   => $DeviceID,
-        "SerialNum"  => hexdec($DeviceID),
-        "DriverInfo" => array(
-            "Job" => 2,
-            "IP" => PeriodicPlugins::getIP(),
-        ),
-        "DeviceName" => "Sync Process",
-        "DeviceLocation" => PeriodicPlugins::getIP(),
-        "GatewayKey" => $config->script_gateway,
-        "HWPartNum"  => constant("SYNC_PARTNUMBER"),
-        "FWPartNum"  => constant("SYNC_PARTNUMBER"),
-        "FWVersion"  => constant("SCRIPTS_VERSION"),
-    )
+$me = array(
+    "id"         => hexdec($DeviceID),
+    "DeviceID"   => $DeviceID,
+    "DriverInfo" => array(
+        "Job" => 2,
+        "IP" => PeriodicPlugins::getIP(),
+    ),
+    "DeviceName" => "Sync Process",
+    "HWPartNum"  => constant("SYNC_PARTNUMBER"),
+    "FWPartNum"  => constant("SYNC_PARTNUMBER"),
+    "FWVersion"  => constant("SCRIPTS_VERSION"),
 );
-$me->insertRow(true);
-
 
 $sync = new PeriodicSync(
     array(
@@ -76,7 +70,7 @@ $sync = new PeriodicSync(
 );
 $sync->powerup();
 // Run the main loop
-print "Starting... (".$me->DeviceID.")\n";
+print "Starting... (".$DeviceID.")\n";
 while ($sync->loop === true) {
     $sync->main();
     $sync->wait();

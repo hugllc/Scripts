@@ -2,18 +2,18 @@ PHPUNIT=`which phpunit`
 PHPDOC=`which phpdoc`
 DOXYGEN=`which doxygen`
 PHPCS=`which phpcs`
-BASE_DIR=./
+BASE_DIR=${PWD}/
+GIT=`which git`
 
-UItest: UItest-CoreUI
+test: clean doc-clean Documentation/test
+	cd test; ${PHPUNIT} --coverage-html ${BASE_DIR}Documentation/test/codecoverage/ \
+		--log-junit ${BASE_DIR}Documentation/test/log.xml \
+		--testdox-html ${BASE_DIR}Documentation/test/testdox.html \
+		.| tee ${BASE_DIR}Documentation/test/testoutput.txt
 
-test:
+Documentation/test:
 	mkdir -p ${BASE_DIR}Documentation/test
-	${PHPUNIT} --report ${BASE_DIR}Documentation/test/codecoverage/ \
-                --log-xml ${BASE_DIR}Documentation/test/log.xml \
-                --testdox-html ${BASE_DIR}Documentation/test/testdox.html \
-                --log-pmd ${BASE_DIR}Documentation/test/pmd.xml \
-                --log-metrics ${BASE_DIR}Documentation/test/metrics.xml \
-                HUGnetTests | tee ${BASE_DIR}Documentation/test/testoutput.txt	
+
 
 doc:
 	rm -Rf ${BASE_DIR}Documentation/Scripts
@@ -21,11 +21,16 @@ doc:
 	echo Building Scripts Docs
 	${PHPDOC} -c phpdoc.ini  | tee ${BASE_DIR}Documentation/Scripts.build.txt
 
-clean:
+doc-clean:
 	rm -Rf ${BASE_DIR}Documentation/Scripts
+
+clean:
+	rm -Rf *~ */*~ */*/*~ */*/*/*~
 
 
 style:
 	mkdir -p ${BASE_DIR}Documentation/Scripts
 	${PHPCS} --standard=PHPCS --report=full --standard=Pear .
 	
+UItest: UItest-CoreUI
+

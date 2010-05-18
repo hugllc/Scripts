@@ -49,24 +49,19 @@ print "Finding my DeviceID...\n";
 $DeviceID = $config->sockets->deviceID(array(), 4);
 // This sets us up as a device
 print "Setting up my device...\n";
-$me = new DeviceContainer(
-    array(
-        "DeviceID"   => $DeviceID,
-        "SerialNum"  => hexdec($DeviceID),
-        "DriverInfo" => array(
-            "Job" => 4,
-            "IP" => PacketRouter::getIP(),
-        ),
-        "DeviceName" => "Router Process",
-        "DeviceLocation" => PacketRouter::getIP(),
-        "GatewayKey" => $config->script_gateway,
-        "HWPartNum"  => constant("ENDPOINT_PARTNUMBER"),
-        "FWPartNum"  => constant("ENDPOINT_PARTNUMBER"),
-        "FWVersion"  => constant("SCRIPTS_VERSION"),
-    )
+$me = array(
+    "id"         => hexdec($DeviceID),
+    "DeviceID"   => $DeviceID,
+    "DriverInfo" => array(
+        "Job" => 4,
+        "IP" => PacketRouter::getIP(),
+    ),
+    "DeviceName" => "Router Process",
+    "HWPartNum"  => constant("ENDPOINT_PARTNUMBER"),
+    "FWPartNum"  => constant("ENDPOINT_PARTNUMBER"),
+    "FWVersion"  => constant("SCRIPTS_VERSION"),
 );
-$me->insertRow(true);
-print "Starting... (".$me->DeviceID.")\n";
+print "Starting... (".$DeviceID.")\n";
 
 $router = new PacketRouter(array(), $me);
 $router->powerup();

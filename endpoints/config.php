@@ -55,23 +55,18 @@ print "Finding my DeviceID...\n";
 $DeviceID = $config->sockets->deviceID(array(), 6);
 // This sets us up as a device
 print "Setting up my device...\n";
-$me = new DeviceContainer(
-    array(
-        "DeviceID"   => $DeviceID,
-        "SerialNum"  => hexdec($DeviceID),
-        "DriverInfo" => array(
-            "Job" => 6,
-            "IP" => DeviceConfig::getIP(),
-        ),
-        "DeviceName" => "Config Process",
-        "DeviceLocation" => DeviceConfig::getIP(),
-        "GatewayKey" => $config->script_gateway,
-        "HWPartNum"  => constant("CONFIG_PARTNUMBER"),
-        "FWPartNum"  => constant("CONFIG_PARTNUMBER"),
-        "FWVersion"  => constant("SCRIPTS_VERSION"),
-    )
+$me = array(
+    "id"         => hexdec($DeviceID),
+    "DeviceID"   => $DeviceID,
+    "DriverInfo" => array(
+        "Job" => 6,
+        "IP" => DeviceConfig::getIP(),
+    ),
+    "DeviceName" => "Config Process",
+    "HWPartNum"  => constant("CONFIG_PARTNUMBER"),
+    "FWPartNum"  => constant("CONFIG_PARTNUMBER"),
+    "FWVersion"  => constant("SCRIPTS_VERSION"),
 );
-$me->insertRow(true);
 
 $devConfig = new DeviceConfig(array(), $me);
 $devConfig->powerup();
@@ -84,7 +79,7 @@ $devConfig->config(true);
 $devConfig->config(true);
 
 // Run the main loop
-print "Starting... (".$me->DeviceID.")\n";
+print "Starting... (".$DeviceID.")\n";
 while ($devConfig->loop) {
     $devConfig->config();
     $devConfig->wait();

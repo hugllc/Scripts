@@ -55,32 +55,27 @@ print "Finding my DeviceID...\n";
 $DeviceID = $config->sockets->deviceID(array(), 1);
 // This sets us up as a device
 print "Setting up my device...\n";
-$me = new DeviceContainer(
-    array(
-        "DeviceID"   => $DeviceID,
-        "SerialNum"  => hexdec($DeviceID),
-        "DriverInfo" => array(
-            "Job" => 1,
-            "IP" => DevicePoll::getIP(),
-        ),
-        "DeviceName" => "Poll Process",
-        "DeviceLocation" => DevicePoll::getIP(),
-        "GatewayKey" => $config->script_gateway,
-        "HWPartNum"  => constant("POLL_PARTNUMBER"),
-        "FWPartNum"  => constant("POLL_PARTNUMBER"),
-        "FWVersion"  => constant("SCRIPTS_VERSION"),
-    )
+$me = array(
+    "id"         => hexdec($DeviceID),
+    "DeviceID"   => $DeviceID,
+    "DriverInfo" => array(
+        "Job" => 1,
+        "IP" => DevicePoll::getIP(),
+    ),
+    "DeviceName" => "Poll Process",
+    "HWPartNum"  => constant("POLL_PARTNUMBER"),
+    "FWPartNum"  => constant("POLL_PARTNUMBER"),
+    "FWVersion"  => constant("SCRIPTS_VERSION"),
 );
-$me->insertRow(true);
 
 $devPoll = new DevicePoll(array(), $me);
 $devPoll->powerup();
 
 // Run the main loop
-print "Starting... (".$me->DeviceID.")\n";
+print "Starting... (".$DeviceID.")\n";
 while ($devPoll->loop) {
     $devPoll->poll();
-    $devPoll->wait(10);
+    $devPoll->wait();
 }
 
 print "Finished\n";
