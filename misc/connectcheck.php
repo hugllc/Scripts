@@ -1,7 +1,6 @@
-#!/usr/bin/php-cli
 <?php
 /**
- * Retrieves the configuration for endpoints
+ * Monitors incoming packets
  *
  * PHP Version 5
  *
@@ -27,60 +26,45 @@
  *
  * @category   Scripts
  * @package    Scripts
- * @subpackage Poll
+ * @subpackage Misc
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
  */
-
-define("CHECK_PARTNUMBER", "0039-26-07-P");  //0039-26-01-P
-
+/** HUGnet code */
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once HUGNET_INCLUDE_PATH.'/processes/PeriodicCheck.php';
+/** Packet log include stuff */
+require_once HUGNET_INCLUDE_PATH.'/containers/ConfigContainer.php';
 
-// Set up our configuration
+print "connectcheck.php\n";
+print "Starting...\n";
+
+print "Using GatewayKey ".$GatewayKey."\n";
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
-$config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
-
-if ($config->check["enable"] === false) {
-    print "Check Disabled...\n";
-    die();
+print "Checking database connections...\n";
+foreach ($config->servers->groups() as $group) {
+    print $group." => ";
+    if ($config->servers->available($group)) {
+        print "Pass";
+    } else {
+        print "Fail";
+    }
+    print "\n";
 }
-
-print "Finding my DeviceID...\n";
-$DeviceID = $config->sockets->deviceID(array(), 7);
-// This sets us up as a device
-print "Setting up my device...\n";
-$me = array(
-    "id"         => hexdec($DeviceID),
-    "DeviceID"   => $DeviceID,
-    "DriverInfo" => array(
-        "Job" => 7,
-        "IP" => PeriodicPlugins::getIP(),
-    ),
-    "DeviceName" => "Check Process",
-    "HWPartNum"  => constant("CHECK_PARTNUMBER"),
-    "FWPartNum"  => constant("CHECK_PARTNUMBER"),
-    "FWVersion"  => constant("SCRIPTS_VERSION"),
-);
-
-$check = new PeriodicCheck(
-    array(
-        "PluginDir" => dirname(__FILE__)."/plugins/check",
-    ),
-    $me
-);
-$check->powerup();
-// Run the main loop
-print "Starting... (".$DeviceID.")\n";
-while ($check->loop === true) {
-    $check->main();
-    $check->wait();
+print "Checking socket connections...\n";
+foreach ($config->sockets->groups() as $group) {
+    print $group." => ";
+    if ($config->sockets->available($group)) {
+        print "Pass";
+    } else {
+        print "Fail";
+    }
+    print "\n";
 }
-
 print "Finished\n";
 
 ?>
