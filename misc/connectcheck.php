@@ -45,6 +45,8 @@ print "Starting...\n";
 
 print "Using GatewayKey ".$GatewayKey."\n";
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
+$config->verbose($hugnet_config["verbose"]);
+var_dump($config->verbose);
 print "Checking database connections...\n";
 foreach ($config->servers->groups() as $group) {
     print $group." => ";
