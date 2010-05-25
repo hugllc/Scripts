@@ -104,7 +104,7 @@ class FirmwareSyncPlugin extends PeriodicPluginBase
                 // Load the firmware
                 $this->firmware->fromFile($file, $path);
                 // Insert it.
-                $this->firmware->insertRow();
+                $this->firmware->insertRow(true);
             }
         }
         $this->last = time();

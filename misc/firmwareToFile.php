@@ -49,17 +49,22 @@ $config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
 print "Using GatewayKey ".$GatewayKey."\n";
 // This sets us up as a device
-$firmware = new FirmwareTable();
+$firmware = new FirmwareTable(array("group" => "firmware"));
 
 
 // Get the devices
 $ret = $firmware->selectInto(1);
 // Go through the devices
 while ($ret) {
-    $dir = sys_get_temp_dir()."/firmware/".$firmware->RelStatus;
+    $firmware->setDefault("group");
+    $firmware->CodeCRC = crc32($firmware->Code);
+    $firmware->DataCRC = crc32($firmware->Data);
+    //$firmware->updateRow();
+    $dir = sys_get_temp_dir()."/firmware/";
     @mkdir($dir, 0777, true);
     print $firmware->FWPartNum." ".$firmware->Version."\n";
-    $firmware->saveToFile($dir);
+    $firmware->toFile($dir);
+    $firmware->group = "firmware";
     $ret = $firmware->nextInto();
 }
 

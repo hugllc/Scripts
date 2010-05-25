@@ -51,13 +51,8 @@ if ($config->config["enable"] === false) {
     die();
 }
 
-print "Finding my DeviceID...\n";
-$DeviceID = $config->sockets->deviceID(array(), 6);
 // This sets us up as a device
-print "Setting up my device...\n";
 $me = array(
-    "id"         => hexdec($DeviceID),
-    "DeviceID"   => $DeviceID,
     "DriverInfo" => array(
         "Job" => 6,
         "IP" => DeviceConfig::getIP(),
@@ -79,7 +74,6 @@ $devConfig->config(true);
 $devConfig->config(true);
 
 // Run the main loop
-print "Starting... (".$DeviceID.")\n";
 while ($devConfig->loop) {
     $devConfig->config();
     $devConfig->wait();
