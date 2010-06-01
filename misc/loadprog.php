@@ -47,10 +47,14 @@ print "Starting...\n";
 
 print "Using GatewayKey ".$GatewayKey."\n";
 
-ConfigContainer::config("/etc/hugnet/config.inc.php");
+$config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
+$config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
+
 $dev = new DeviceContainer();
 $dev->getRow(hexdec($DeviceID));
+$dev->readConfig();
 var_dump($dev->writeProgram());
+$dev->readConfig();
 
 print "Finished\n";
 ?>
