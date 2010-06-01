@@ -1,6 +1,6 @@
 <?php
 /**
- * Loads a program into a controller board
+ * Monitors incoming packets
  *
  * PHP Version 5
  *
@@ -26,7 +26,7 @@
  *
  * @category   Scripts
  * @package    Scripts
- * @subpackage Test
+ * @subpackage Misc
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
@@ -35,7 +35,6 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-
 /** HUGnet code */
 require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
@@ -50,7 +49,8 @@ print "Using GatewayKey ".$GatewayKey."\n";
 ConfigContainer::config("/etc/hugnet/config.inc.php");
 $dev = new DeviceContainer();
 $dev->getRow(hexdec($DeviceID));
-var_dump($dev->writeProgram());
+var_dump($dev->toArray());
 
 print "Finished\n";
+
 ?>

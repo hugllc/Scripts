@@ -1,6 +1,6 @@
 <?php
 /**
- * Loads a program into a controller board
+ * Sends a packet
  *
  * PHP Version 5
  *
@@ -35,22 +35,28 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-
-/** HUGnet code */
+$pktData = "";
 require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
 require_once HUGNET_INCLUDE_PATH.'/containers/PacketContainer.php';
-require_once HUGNET_INCLUDE_PATH.'/containers/DeviceContainer.php';
 
-print "monitor.php\n";
-print "Starting...\n";
+if (empty($DeviceID)) {
+    die("DeviceID must be specified!\r\n");
+}
+$config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
+$config->verbose($hugnet_config["verbose"]);
 
-print "Using GatewayKey ".$GatewayKey."\n";
-
-ConfigContainer::config("/etc/hugnet/config.inc.php");
-$dev = new DeviceContainer();
-$dev->getRow(hexdec($DeviceID));
-var_dump($dev->writeProgram());
-
-print "Finished\n";
+for ($i = 0; $i < 100; $i++) {
+    $pkt = new PacketContainer(
+        array(
+            "To" => $DeviceID,
+            "Command" => isset($pktCommand) ? $pktCommand : "02",
+            "Data" => $pktData,
+            "GetReply" => true,
+            "group" => "default",
+            "Timeout" => 1,
+        )
+    );
+    $pkt->send();
+}
 ?>
