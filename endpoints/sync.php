@@ -60,6 +60,7 @@ $me = array(
 $sync = new PeriodicSync(
     array(
         "PluginDir" => dirname(__FILE__)."/plugins/sync",
+        "PluginType" => "sync",
     ),
     $me
 );

@@ -49,6 +49,7 @@ if ($config->check["enable"] === false) {
     print "Check Disabled...\n";
     die();
 }
+
 // This sets us up as a device
 $me = array(
     "DriverInfo" => array(
@@ -64,6 +65,7 @@ $me = array(
 $check = new PeriodicCheck(
     array(
         "PluginDir" => dirname(__FILE__)."/plugins/check",
+        "PluginType" => "check",
     ),
     $me
 );

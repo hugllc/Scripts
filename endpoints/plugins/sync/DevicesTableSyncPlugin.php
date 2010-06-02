@@ -55,7 +55,7 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
     /** @var This is to register the class */
     public static $registerPlugin = array(
         "Name" => "DevicesTableSync",
-        "Type" => "periodic",
+        "Type" => "sync",
         "Class" => "DevicesTableSyncPlugin",
     );
     /** @var This is when we were created */
