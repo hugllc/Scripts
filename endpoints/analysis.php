@@ -39,7 +39,7 @@
 define("ANALYSIS_PARTNUMBER", "0039-26-03-P");  //0039-26-01-P
 
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once HUGNET_INCLUDE_PATH.'/processes/PeriodicAnalysis.php';
+require_once HUGNET_INCLUDE_PATH.'/processes/DeviceAnalysis.php';
 
 // Set up our configuration
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
@@ -49,7 +49,7 @@ $config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 $me = array(
     "DriverInfo" => array(
         "Job" => 3,
-        "IP" => PeriodicPlugins::getIP(),
+        "IP" => DeviceAnalysis::getIP(),
     ),
     "DeviceName" => "Analysis Process",
     "HWPartNum"  => constant("ANALYSIS_PARTNUMBER"),
@@ -57,7 +57,7 @@ $me = array(
     "FWVersion"  => constant("SCRIPTS_VERSION"),
 );
 
-$analysis = new PeriodicAnalysis(
+$analysis = new DeviceAnalysis(
     array(
         "PluginDir" => dirname(__FILE__)."/plugins/analysis",
         "PluginType" => "analysis",

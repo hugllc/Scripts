@@ -98,23 +98,26 @@ class CriticalErrorCheckPlugin extends PeriodicPluginBase
     */
     public function main()
     {
+        $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
         // State we are looking for errors
         self::vprint(
-            "Checking for new critical errors",
+            "Checking for new critical errors.  Last Check: "
+            .date("Y-m-d H:i:s", $last),
             HUGnetClass::VPRINT_NORMAL
         );
         $this->_body = "";
-        $last = time();
+        $now = time();
         $this->errors = $this->error->select(
             "severity >= ? AND Date >= ?",
-            array(ErrorTable::SEVERITY_CRITICAL, $this->last)
+            array(ErrorTable::SEVERITY_CRITICAL, $last)
         );
         $this->critical();
         if (!empty($this->_body)) {
             $ret = $this->control->mail($this->_subject, $this->_body);
         }
         unset($this->errors);
-        $this->last = $last;
+        $this->last = $now;
+        $last = $now;
     }
 
     /**
