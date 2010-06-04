@@ -164,7 +164,7 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
         $stats = array();
         foreach ((array)$this->devs as $row) {
             foreach ($types as $key => $type) {
-                $date = $row->$key;
+                $date = $row->params->DriverInfo[$key];
                 $done = false;
                 foreach ($days as $d) {
                     if ($d == "many") {
@@ -180,7 +180,7 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
             }
         }
         $title = "Last Records";
-        $text = "\t\t\t".implode("\t\t", $types)."\r\n";
+        $text = "\t\t\t".implode("\t", $types)."\r\n";
         foreach ($days as $d) {
             if ($d == "many") {
                 $text .= "Way Old:\t\t";
@@ -194,7 +194,7 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
                 if (empty($cnt)) {
                     $cnt = 0;
                 }
-                $text .= $cnt."\t\t";
+                $text .= $cnt."\t";
             }
             $text .= "\r\n";
         }

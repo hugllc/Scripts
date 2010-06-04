@@ -1,6 +1,6 @@
 <?php
 /**
- * Saves firmware to the database
+ * Sends a ping to an endpoint
  *
  * PHP Version 5
  *
@@ -26,49 +26,39 @@
  *
  * @category   Scripts
  * @package    Scripts
- * @subpackage Misc
+ * @subpackage Test
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2007-2009 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
- *
  */
-/** HUGnet code */
+$pktData = "";
 require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once HUGNET_INCLUDE_PATH.'/tables/FirmwareTable.php';
+require_once HUGNET_INCLUDE_PATH.'/containers/PacketContainer.php';
 
-print "monitor.php\n";
-print "Starting...\n";
-
-// Set up our configuration
+if (empty($DeviceID)) {
+    die("DeviceID must be specified!\r\n");
+}
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
-$config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
+$config->verbose($hugnet_config["verbose"]);
 
 
-$Code = implode("", file($argv[2]));
-$Data = implode("", file($argv[3]));
-// This sets us up as a device
-$firmware = new FirmwareTable(array(
-    "group"     => "firmware",
-    "Version"   => $argv[1],
-    "Code"      => $Code,
-    "CodeHash"  => md5($Code),
-    "Data"      => $Data,
-    "DataHash"  => md5($Data),
-    "FWPartNum" => $argv[5],
-    "HWPartNum" => $argv[6],
-    "Date"      => time(),
-    "FileType"  => $argv[4],
-    "RelStatus" => $argv[7],
-    "Tag"       => $argv[8],
-    "Target"    => $argv[9],
-));
-
-var_dump($firmware->toArray());
-
-$firmware->toFile(".");
+do {
+    $pktData .= "00";
+    $pkt = new PacketContainer(
+        array(
+            "To" => $DeviceID,
+            "Command" => isset($pktCommand) ? $pktCommand : "02",
+            "Data" => $pktData,
+            "GetReply" => true,
+            "group" => "default",
+        )
+    );
+    $pkt->send();
+    print strlen($pktData)."\n";
+} while (is_object($pkt->Reply));
 
 ?>

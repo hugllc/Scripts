@@ -34,30 +34,32 @@
  * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
-require_once "../head.inc.php";
+$pktData = "";
+require_once dirname(__FILE__).'/../head.inc.php';
+/** Packet log include stuff */
+require_once HUGNET_INCLUDE_PATH.'/containers/PacketContainer.php';
 
-print "Starting...\n";
-
-$Info["DeviceID"]   = $DeviceID;
-$Info["GatewayKey"] = 1;
-
-if (isset($GatewayIP)) {
-    $Info["GatewayIP"] = $GatewayIP;
-} else {
-    $Info["GatewayIP"] = "127.0.0.1";
+if (empty($DeviceID)) {
+    die("DeviceID must be specified!\r\n");
 }
-if (isset($GatewayPort)) {
-    $Info["GatewayPort"] = $GatewayPort;
-} else {
-    $Info["GatewayPort"] = 1200;
-}
-$Info["GatewayKey"] = 1;
-$verbose            = true;
-$packet             = new EPacket($Info, $verbose);
+$config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
+$config->verbose($hugnet_config["verbose"]);
 
-$pkt = $packet->Ping($Info, true);
-print_r($pkt);
-$packet->close($Info['GatewayKey']);
-die();
+$pkt = new PacketContainer(
+    array(
+        "To" => $DeviceID,
+        "Command" => isset($pktCommand) ? $pktCommand : "03",
+        "Data" => $pktData,
+        "GetReply" => true,
+        "group" => "default",
+    )
+);
+
+$pkt->send();
+if (is_object($pkt)) {
+    var_dump($pkt->toArray());
+} else {
+    print "No Return";
+}
 
 ?>
