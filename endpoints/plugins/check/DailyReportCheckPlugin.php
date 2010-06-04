@@ -35,6 +35,8 @@
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  *
  */
+/** Require the stuff we need */
+require_once HUGNET_INCLUDE_PATH."/base/PeriodicPluginBase.php";
 /**
  * Base class for all other classes
  *
@@ -111,9 +113,10 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
             array($this->gatewayKey)
         );
         $this->last();
-        $this->send();
+        $ret = $this->send();
         unset($this->devs);
         $this->last = time();
+        return $ret;
     }
 
     /**
@@ -137,16 +140,18 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
     protected function send()
     {
         if ($this->control->myConfig->test) {
-            print "Test Mode.  Email not sent.\n";
-            print "Email text as follows: \n\n";
-            print "To:  ".$this->_to."\r\n";
-            print "Subject:  ".$this->_subject."\r\n";
-            print $this->_body;
-            print "\n\n";
-        } else {
-            mail($this->_to, $this->_subject, $this->_body);
+            $output = array(
+                "To" => $this->_to,
+                "Subject" => $this->_subject,
+                "Body" => $this->_body,
+            );
+            return $output;
         }
+        // @codeCoverageIgnoreStart
+        // Can't test this.
+        mail($this->_to, $this->_subject, $this->_body);
     }
+    // @codeCoverageIgnoreEnd
     /**
     * This checks the hourly scripts
     *
@@ -212,7 +217,7 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
     protected function output($text, $title = "")
     {
         if (!empty($title)) {
-            $this->_body .= strtoupper($title)."\n\r";
+            $this->_body .= strtoupper($title)."\r\n";
         }
         $this->_body .= $text;
     }
