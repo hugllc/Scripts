@@ -51,6 +51,7 @@ if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
     }
 }
 require_once HUGNET_INCLUDE_PATH."/containers/ConfigContainer.php";
+PHPUnit_Util_Filter::addDirectoryToFilter(HUGNET_INCLUDE_PATH);
 
 /**
  * Test class for filter.
