@@ -35,6 +35,8 @@
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  *
  */
+/** Stuff we need */
+require_once HUGNET_INCLUDE_PATH."/tables/ErrorTable.php";
 /**
  * Base class for all other classes
  *
@@ -109,7 +111,7 @@ class CriticalErrorCheckPlugin extends PeriodicPluginBase
         $now = time();
         $this->errors = $this->error->select(
             "severity >= ? AND Date >= ?",
-            array(ErrorTable::SEVERITY_CRITICAL, $last)
+            array(ErrorTable::SEVERITY_CRITICAL, (int)$last)
         );
         $this->critical();
         if (!empty($this->_body)) {
@@ -118,6 +120,7 @@ class CriticalErrorCheckPlugin extends PeriodicPluginBase
         unset($this->errors);
         $this->last = $now;
         $last = $now;
+        return $ret;
     }
 
     /**
