@@ -214,11 +214,8 @@ class CriticalErrorCheckPluginTest extends CheckPluginTestBase
     /**
     * test the constructor
     *
-    * @param array  $config     The configuration to use
-    * @param array  $device     The device array to use
-    * @param bool   $enable     Whether the plugin should be enabled
-    * @param int    $gatewayKey The gateway key to expect
-    * @param string $to         The 'To' to expect
+    * @param int  $last   The date to set as the last run
+    * @param bool $expect The expected return value
     *
     * @return null
     *

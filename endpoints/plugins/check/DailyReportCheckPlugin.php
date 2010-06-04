@@ -209,7 +209,7 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
     /**
     * This checks the hourly scripts
     *
-    * @param string $text The text to add to the dailyReport
+    * @param string $text  The text to add to the dailyReport
     * @param string $title The title of the area of the dailyReport
     *
     * @return int The error code, if any
