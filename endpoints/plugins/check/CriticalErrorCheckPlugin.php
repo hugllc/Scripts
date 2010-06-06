@@ -36,6 +36,7 @@
  *
  */
 /** Stuff we need */
+require_once HUGNET_INCLUDE_PATH."/base/PeriodicPluginBase.php";
 require_once HUGNET_INCLUDE_PATH."/tables/ErrorTable.php";
 /**
  * Base class for all other classes
@@ -57,7 +58,7 @@ class CriticalErrorCheckPlugin extends PeriodicPluginBase
     /** @var This is to register the class */
     public static $registerPlugin = array(
         "Name" => "CriticalErrorCheckPlugin",
-        "Type" => "check",
+        "Type" => "periodic",
         "Class" => "CriticalErrorCheckPlugin",
     );
     /** @var This is the array of devices in our gateway */

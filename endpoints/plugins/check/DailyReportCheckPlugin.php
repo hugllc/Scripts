@@ -37,6 +37,7 @@
  */
 /** Require the stuff we need */
 require_once HUGNET_INCLUDE_PATH."/base/PeriodicPluginBase.php";
+require_once HUGNET_INCLUDE_PATH."/containers/DeviceContainer.php";
 /**
  * Base class for all other classes
  *
@@ -57,7 +58,7 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
     /** @var This is to register the class */
     public static $registerPlugin = array(
         "Name" => "DailyReportCheckPlugin",
-        "Type" => "check",
+        "Type" => "periodic",
         "Class" => "DailyReportCheckPlugin",
     );
     /** @var This is the array of devices in our gateway */

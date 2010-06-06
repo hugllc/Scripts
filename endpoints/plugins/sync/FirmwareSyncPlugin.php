@@ -55,7 +55,7 @@ class FirmwareSyncPlugin extends PeriodicPluginBase
     /** @var This is to register the class */
     public static $registerPlugin = array(
         "Name" => "FirwareSync",
-        "Type" => "sync",
+        "Type" => "periodic",
         "Class" => "FirmwareSyncPlugin",
     );
     /** @var This is when we were created */
