@@ -134,7 +134,7 @@ class DevicesHistoryTableSyncPlugin extends PeriodicPluginBase
     public function ready()
     {
         // Run every minute
-        return (time() >= ($this->last + 60));
+        return (time() >= ($this->last + 300));
     }
 
 }
