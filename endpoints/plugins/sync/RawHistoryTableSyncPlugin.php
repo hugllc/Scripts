@@ -49,14 +49,14 @@
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class DevicesTableSyncPlugin extends PeriodicPluginBase
+class RawHistoryTableSyncPlugin extends PeriodicPluginBase
     implements PeriodicPluginInterface
 {
     /** @var This is to register the class */
     public static $registerPlugin = array(
-        "Name" => "DevicesTableSync",
+        "Name" => "RawHistoryTableSync",
         "Type" => "periodic",
-        "Class" => "DevicesTableSyncPlugin",
+        "Class" => "RawHistoryTableSyncPlugin",
     );
     /** @var This is when we were created */
     protected $firmware = 0;
@@ -78,9 +78,10 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
         if (!$this->enable) {
             return;
         }
-        $this->remoteDevice = new DeviceContainer(array("group" => "remote"));
-        $this->device = new DeviceContainer();
-        $this->gatewayKey = $this->control->myConfig->script_gateway;
+        $this->local = new RawHistoryTable();
+        $this->remote = new RawHistoryTable(array("group" => "remote"));
+        // We don't want more than 1000 records at a time;
+        $this->local->sqlLimit = 1000;
         // State we are here
         self::vprint(
             "Registed class ".self::$registerPlugin["Class"],
@@ -94,30 +95,48 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
     */
     public function main()
     {
-        // State we are looking for firmware
-        self::vprint(
-            "Synchronizing remote and local devices",
-            HUGnetClass::VPRINT_NORMAL
-        );
+        $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
+
         // Get the devices
-        $devs = $this->device->selectIDs(
-            "GatewayKey = ?",
-            array($this->gatewayKey)
+        $rows = $this->local->select(
+            "`Date` > ?",
+            array((int)$last)
         );
-        shuffle($devs);
-        // Go through the devices
-        foreach ($devs as $key) {
-            $this->device->getRow($key);
-            if ($this->device->gateway()) {
-                // Don't want to update gateways
-                continue;
-            } else if ($this->device->id < 0xFD0000) {
-                $this->remoteDevice->fromArray($this->device->toDB());
-                // Replace the row
-                $this->remoteDevice->insertRow(true);
+        $count = 0;
+        // Go through the records
+        foreach (array_keys((array)$rows) as $key) {
+            $now = $rows[$key]->Date;
+            $this->remote->clearData();
+            $this->remote->group = "remote";
+            $this->remote->fromArray($rows[$key]->toDB());
+            if ($this->remote->insertRow(false)) {
+                $count++;
             }
         }
-        $this->last = time();
+        unset($rows);
+        if ($count > 0) {
+            // State we did some uploading
+            self::vprint(
+                "Uploaded $count raw history records",
+                HUGnetClass::VPRINT_NORMAL
+            );
+        }
+        if (!empty($now)) {
+            $this->last = (int)$now;
+            $last = (int)$now;
+        }
+    }
+    /**
+    * This function checks to see if it is ready to run again
+    *
+    * The default is to run every 24 hours.
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    public function ready()
+    {
+        // Run every minute
+        return (time() >= ($this->last + 60));
     }
 
 }
