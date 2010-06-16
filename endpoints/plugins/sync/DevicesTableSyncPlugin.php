@@ -99,8 +99,18 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
             "Synchronizing remote and local devices",
             HUGnetClass::VPRINT_NORMAL
         );
-        $remote = $this->remoteDevice->select(1);
-        foreach (array_keys((array)$remote) as $k) {
+        // Get the devices
+        $devs = $this->device->selectIDs(
+            "GatewayKey = ? AND Active = ? AND id <> ?",
+            array($this->GatewayKey, 1, $this->myDevice->id)
+        );
+        shuffle($devs);
+        // Go through the devices
+        foreach ($devs as $key) {
+            if (!$this->loop()) {
+                return;
+            }
+            $this->remoteDevice->getRow($key);
             $this->device->clearData();
             $ret = $this->device->selectOneInto(
                 "`DeviceID` = ?",

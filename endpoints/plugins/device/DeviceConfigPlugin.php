@@ -75,6 +75,7 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
     {
         parent::__construct($config, $obj);
         $this->enable = $this->control->myConfig->config["enable"];
+        $this->deactivate = $this->control->myConfig->config["deactivate"];
         if (!$this->enable) {
             return;
         }
@@ -142,8 +143,8 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
             );
         }
         // for 100 failures mark the device inactive
-        if (($dev->gateway() && ($dev->params->DriverInfo["ConfigFail"] > 10))
-            || ($dev->params->DriverInfo["ConfigFail"] > 100)
+        if (($dev->gateway() && ($dev->params->DriverInfo["ConfigFail"] >= 10))
+            || ($dev->params->DriverInfo["ConfigFail"] >= $this->deactivate)
         ) {
             $dev->Active = 0;
             $dev->ControllerKey = 0;
