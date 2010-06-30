@@ -50,13 +50,8 @@ if ($config->check["enable"] === false) {
     die();
 }
 
-print "Finding my DeviceID...\n";
-$DeviceID = $config->sockets->deviceID(array(), 7);
 // This sets us up as a device
-print "Setting up my device...\n";
 $me = array(
-    "id"         => hexdec($DeviceID),
-    "DeviceID"   => $DeviceID,
     "DriverInfo" => array(
         "Job" => 7,
         "IP" => PeriodicPlugins::getIP(),
@@ -70,12 +65,12 @@ $me = array(
 $check = new PeriodicCheck(
     array(
         "PluginDir" => dirname(__FILE__)."/plugins/check",
+        "PluginType" => "check",
     ),
     $me
 );
 $check->powerup();
 // Run the main loop
-print "Starting... (".$DeviceID.")\n";
 while ($check->loop === true) {
     $check->main();
     $check->wait();

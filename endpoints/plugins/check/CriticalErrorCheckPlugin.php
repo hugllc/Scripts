@@ -35,6 +35,9 @@
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  *
  */
+/** Stuff we need */
+require_once HUGNET_INCLUDE_PATH."/base/PeriodicPluginBase.php";
+require_once HUGNET_INCLUDE_PATH."/tables/ErrorTable.php";
 /**
  * Base class for all other classes
  *
@@ -49,17 +52,23 @@
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class FirmwareSyncPlugin extends PeriodicPluginBase
+class CriticalErrorCheckPlugin extends PeriodicPluginBase
     implements PeriodicPluginInterface
 {
     /** @var This is to register the class */
     public static $registerPlugin = array(
-        "Name" => "FirwareSync",
+        "Name" => "CriticalErrorCheckPlugin",
         "Type" => "periodic",
-        "Class" => "FirmwareSyncPlugin",
+        "Class" => "CriticalErrorCheckPlugin",
     );
-    /** @var This is when we were created */
-    protected $firmware = 0;
+    /** @var This is the array of devices in our gateway */
+    protected $errors = null;
+    /** @var This is the array of devices in our gateway */
+    protected $error = null;
+    /** @var This is the array of devices in our gateway */
+    private $_subject = null;
+    /** @var This says if we are enabled or not */
+    protected $enabled = true;
     /**
     * This function sets up the driver object, and the database object.  The
     * database object is taken from the driver object.
@@ -72,7 +81,13 @@ class FirmwareSyncPlugin extends PeriodicPluginBase
     public function __construct($config, PeriodicPlugins &$obj)
     {
         parent::__construct($config, $obj);
-        $this->firmware = new FirmwareTable();
+        $this->enable = !empty($this->control->myConfig->admin_email);
+        if (!$this->enable) {
+            return;
+        }
+        $this->_subject = "Critical Error on ".`hostname`;
+        $this->error = new ErrorTable();
+        $this->gatewayKey = $this->control->myConfig->script_gateway;
         // State we are here
         self::vprint(
             "Registed class ".self::$registerPlugin["Class"],
@@ -86,30 +101,72 @@ class FirmwareSyncPlugin extends PeriodicPluginBase
     */
     public function main()
     {
-        $path  = $this->control->myConfig->sync["downloads"]."/";
-        $path .= $this->control->myConfig->sync["firmware"];
-        // State we are looking for firmware
+        $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
+        // State we are looking for errors
         self::vprint(
-            "Checking for new firmware at ".trim($path),
+            "Checking for new critical errors.  Last Check: "
+            .date("Y-m-d H:i:s", $last),
             HUGnetClass::VPRINT_NORMAL
         );
-        $files = file($path."/manifest");
-        foreach ((array)$files as $file) {
-            if (!$this->firmware->checkFile($file)) {
-                // State we found some new firmware
-                self::vprint(
-                    "Found ".trim($file),
-                    HUGnetClass::VPRINT_NORMAL
-                );
-                // Load the firmware
-                $this->firmware->fromFile($file, $path);
-                // Insert it.
-                $this->firmware->insertRow(true);
-            }
+        $this->_body = "";
+        $now = time();
+        $this->errors = $this->error->select(
+            "severity >= ? AND Date >= ?",
+            array(ErrorTable::SEVERITY_CRITICAL, (int)$last)
+        );
+        $this->critical();
+        if (!empty($this->_body)) {
+            $ret = $this->control->mail($this->_subject, $this->_body);
         }
-        $this->last = time();
+        unset($this->errors);
+        $this->last = $now;
+        $last = $now;
+        return $ret;
     }
 
+    /**
+    * This function checks to see if it is ready to run again
+    *
+    * Check every 10 minutes
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    public function ready()
+    {
+        return (time() >= ($this->last + 600)) && $this->enable;
+    }
+    /**
+    * This checks the hourly scripts
+    *
+    * @return int The error code, if any
+    */
+    protected function critical()
+    {
+        if (count($this->errors) == 0) {
+            return;
+        }
+        $text = "  #\t\tDate\t\t\tMessage\r\n";
+        foreach ($this->errors as $error) {
+            $text .= $error->errno."\t\t".date("Y-m-d H:i:s", $error->Date)."\t";
+            $text .= $error->error."\r\n";
+        }
+        $this->output($text, "Critical Errors");
+    }
+    /**
+    * This checks the hourly scripts
+    *
+    * @param string $text  The text to add to the dailyReport
+    * @param string $title The title of the area of the dailyReport
+    *
+    * @return int The error code, if any
+    */
+    protected function output($text, $title = "")
+    {
+        if (!empty($title)) {
+            $this->_body .= strtoupper($title)."\n\r";
+        }
+        $this->_body .= $text;
+    }
 }
 
 

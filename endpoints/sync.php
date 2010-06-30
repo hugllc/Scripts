@@ -45,13 +45,8 @@ require_once HUGNET_INCLUDE_PATH.'/processes/PeriodicSync.php';
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
 $config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
-print "Finding my DeviceID...\n";
-$DeviceID = $config->sockets->deviceID(array(), 2);
 // This sets us up as a device
-print "Setting up my device...\n";
 $me = array(
-    "id"         => hexdec($DeviceID),
-    "DeviceID"   => $DeviceID,
     "DriverInfo" => array(
         "Job" => 2,
         "IP" => PeriodicPlugins::getIP(),
@@ -65,12 +60,12 @@ $me = array(
 $sync = new PeriodicSync(
     array(
         "PluginDir" => dirname(__FILE__)."/plugins/sync",
+        "PluginType" => "sync",
     ),
     $me
 );
 $sync->powerup();
 // Run the main loop
-print "Starting... (".$DeviceID.")\n";
 while ($sync->loop === true) {
     $sync->main();
     $sync->wait();

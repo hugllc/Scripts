@@ -71,15 +71,6 @@ require_once HUGNET_INCLUDE_PATH.'/lib/plugins.inc.php';
 $GatewayKey = $hugnet_config["script_gatewaykey"];
 
 $hugnet_config["loop"] = 1;
-
-if (!isset($GatewayIP)) {
-    $GatewayIP = (empty($hugnet_config["gatewayIP"])) ?
-            "127.0.0.1" : $hugnet_config["gatewayIP"];
-}
-if (!isset($GatewayPort)) {
-    $GatewayPort = (empty($hugnet_config["gatewayPort"])) ?
-            "2000" : $hugnet_config["gatewayPort"];
-}
 $newArgv = array();
 for ($i = 1; $i < count($argv); $i++) {
     switch($argv[$i]) {

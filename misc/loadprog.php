@@ -36,50 +36,25 @@
  *
  */
 
+/** HUGnet code */
 require_once dirname(__FILE__).'/../head.inc.php';
+/** Packet log include stuff */
+require_once HUGNET_INCLUDE_PATH.'/containers/PacketContainer.php';
+require_once HUGNET_INCLUDE_PATH.'/containers/DeviceContainer.php';
 
+print "monitor.php\n";
 print "Starting...\n";
 
+print "Using GatewayKey ".$GatewayKey."\n";
 
-for ($i = 0; $i < count($newArgv); $i++) {
-    switch($newArgv[$i]) {
-    // Gateway IP address
-    case "-P":
-        $i++;
-        $program = $newArgv[$i];
-        break;
-    // Gateway IP address
-    case "-V":
-        $i++;
-        $version = $newArgv[$i];
-        break;
-    }
-}
+$config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
+$config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
-$endpoint->packet->SNCheck(false);
+$dev = new DeviceContainer();
+$dev->getRow(hexdec($DeviceID));
+$dev->readConfig();
+var_dump($dev->writeProgram());
+$dev->readConfig();
 
-$dev    = $endpoint->getDevice($DeviceID, "ID");
-$driver =& $endpoint->drivers[$dev['Driver']];
-
-$dev["GatewayIP"]   = $GatewayIP;
-$dev["GatewayPort"] = $GatewayPort;
-
-$endpoint->packet->verbose = $verbose;
-if (is_object($driver->firmware)) {
-    if (empty($program)) {
-        $cfg    = $endpoint->readConfig($dev);
-        $return = $driver->checkProgram($dev, $cfg, true);
-    } else {
-
-        $res = $driver->firmware->getFirmware($program, $version);
-        if (is_array($res)) {
-            print " found v".$res[0]['FirmwareVersion']."\r\n";
-
-            $return = $drivers->RunBootloader($dev);
-            $return = $drivers->loadProgram($dev, $dev, $res[0]['FirmwareKey']);
-        }
-    }
-} else {
-    print "Not a loadable device\r\n";
-}
+print "Finished\n";
 ?>

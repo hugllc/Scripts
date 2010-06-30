@@ -49,17 +49,19 @@
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class FirmwareSyncPlugin extends PeriodicPluginBase
+class RawHistoryTableSyncPlugin extends PeriodicPluginBase
     implements PeriodicPluginInterface
 {
     /** @var This is to register the class */
     public static $registerPlugin = array(
-        "Name" => "FirwareSync",
+        "Name" => "RawHistoryTableSync",
         "Type" => "periodic",
-        "Class" => "FirmwareSyncPlugin",
+        "Class" => "RawHistoryTableSyncPlugin",
     );
     /** @var This is when we were created */
     protected $firmware = 0;
+    /** @var This says if we are enabled or not */
+    protected $enabled = true;
     /**
     * This function sets up the driver object, and the database object.  The
     * database object is taken from the driver object.
@@ -72,7 +74,14 @@ class FirmwareSyncPlugin extends PeriodicPluginBase
     public function __construct($config, PeriodicPlugins &$obj)
     {
         parent::__construct($config, $obj);
-        $this->firmware = new FirmwareTable();
+        $this->enable = $this->control->myConfig->servers->available("remote");
+        if (!$this->enable) {
+            return;
+        }
+        $this->local = new RawHistoryTable();
+        $this->remote = new RawHistoryTable(array("group" => "remote"));
+        // We don't want more than 1000 records at a time;
+        $this->local->sqlLimit = 1000;
         // State we are here
         self::vprint(
             "Registed class ".self::$registerPlugin["Class"],
@@ -86,28 +95,48 @@ class FirmwareSyncPlugin extends PeriodicPluginBase
     */
     public function main()
     {
-        $path  = $this->control->myConfig->sync["downloads"]."/";
-        $path .= $this->control->myConfig->sync["firmware"];
-        // State we are looking for firmware
-        self::vprint(
-            "Checking for new firmware at ".trim($path),
-            HUGnetClass::VPRINT_NORMAL
+        $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
+
+        // Get the devices
+        $rows = $this->local->select(
+            "`Date` > ?",
+            array((int)$last)
         );
-        $files = file($path."/manifest");
-        foreach ((array)$files as $file) {
-            if (!$this->firmware->checkFile($file)) {
-                // State we found some new firmware
-                self::vprint(
-                    "Found ".trim($file),
-                    HUGnetClass::VPRINT_NORMAL
-                );
-                // Load the firmware
-                $this->firmware->fromFile($file, $path);
-                // Insert it.
-                $this->firmware->insertRow(true);
+        $count = 0;
+        // Go through the records
+        foreach (array_keys((array)$rows) as $key) {
+            $now = $rows[$key]->Date;
+            $this->remote->clearData();
+            $this->remote->group = "remote";
+            $this->remote->fromArray($rows[$key]->toDB());
+            if ($this->remote->insertRow(false)) {
+                $count++;
             }
         }
-        $this->last = time();
+        unset($rows);
+        if ($count > 0) {
+            // State we did some uploading
+            self::vprint(
+                "Uploaded $count raw history records",
+                HUGnetClass::VPRINT_NORMAL
+            );
+        }
+        if (!empty($now)) {
+            $this->last = (int)$now;
+            $last = (int)$now;
+        }
+    }
+    /**
+    * This function checks to see if it is ready to run again
+    *
+    * The default is to run every 24 hours.
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    public function ready()
+    {
+        // Run every minute
+        return (time() >= ($this->last + 300));
     }
 
 }

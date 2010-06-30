@@ -51,13 +51,8 @@ if ($config->poll["enable"] === false) {
     die();
 }
 
-print "Finding my DeviceID...\n";
-$DeviceID = $config->sockets->deviceID(array(), 1);
 // This sets us up as a device
-print "Setting up my device...\n";
 $me = array(
-    "id"         => hexdec($DeviceID),
-    "DeviceID"   => $DeviceID,
     "DriverInfo" => array(
         "Job" => 1,
         "IP" => DevicePoll::getIP(),
@@ -72,7 +67,6 @@ $devPoll = new DevicePoll(array(), $me);
 $devPoll->powerup();
 
 // Run the main loop
-print "Starting... (".$DeviceID.")\n";
 while ($devPoll->loop) {
     $devPoll->poll();
     $devPoll->wait();

@@ -99,105 +99,25 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
             "Synchronizing remote and local devices",
             HUGnetClass::VPRINT_NORMAL
         );
-        $remote = $this->remoteDevice->select(1);
-        foreach (array_keys((array)$remote) as $k) {
-            $this->device->clearData();
-            $ret = $this->device->selectOneInto(
-                "`DeviceID` = ?",
-                array($remote[$k]->DeviceID)
-            );
+        // Get the devices
+        $devs = $this->device->selectIDs(
+            "GatewayKey = ?",
+            array($this->gatewayKey)
+        );
+        shuffle($devs);
+        // Go through the devices
+        foreach ($devs as $key) {
+            $this->device->getRow($key);
             if ($this->device->gateway()) {
                 // Don't want to update gateways
                 continue;
-            } else if ($ret) {
-                $this->_updateLocal($this->device, $remote[$k]);
-                $this->_updateRemote($this->device, $remote[$k]);
-            } else if ($remote[$k]->GatewayKey == $this->gatewayKey) {
-                DevicesTable::insertDeviceID(
-                    $remote[$k]->toDB()
-                );
+            } else if ($this->device->id < 0xFD0000) {
+                $this->remoteDevice->fromArray($this->device->toDB());
+                // Replace the row
+                $this->remoteDevice->insertRow(true);
             }
         }
         $this->last = time();
-    }
-    /**
-    * This function checks to see if any new firmware has been uploaded
-    *
-    * @param DeviceContainer &$dev    The local device
-    * @param DeviceContainer &$remote The remove device
-    *
-    * @return bool True if ready to return, false otherwise
-    */
-    private function _updateLocal(DeviceContainer &$dev, DeviceContainer &$remote)
-    {
-        $columns = array(
-            "DeviceName"     => "DeviceName",
-            "DeviceJob"      => "DeviceJob",
-            "DeviceLocation" => "DeviceLocation",
-            "PollInterval"   => "PollInterval",
-            "ActiveSensors"  => "ActiveSensors",
-            "params"         => "params",
-            "sensors"        => "sensors",
-            "RawSetup"       => "RawSetup",
-        );
-        foreach ($columns as $c => $col) {
-            if (empty($dev->$col)) {
-                $dev->$col = $remote->$col;
-            } else {
-                unset($columns[$c]);
-            }
-        }
-        if (!empty($columns)) {
-            $dev->params->DriverInfo["lastSync"] = time();
-            $dev->updateRow($columns);
-        }
-
-    }
-    /**
-    * This function checks to see if any new firmware has been uploaded
-    *
-    * @param DeviceContainer &$dev    The local device
-    * @param DeviceContainer &$remote The remove device
-    *
-    * @return bool True if ready to return, false otherwise
-    */
-    private function _updateRemote(DeviceContainer &$dev, DeviceContainer &$remote)
-    {
-        $columns = array(
-            "LastPoll"        => "LastPoll",
-            "LastConfig"      => "LastConfig",
-            "LastHistory"     => "LastHistory",
-            "LastAnalysis"    => "LastAnalysis",
-            "FWVersion"       => "FWVersion",
-            "FWPartNum"       => "FWPartNum",
-            "HWPartNum"       => "HWPartNum",
-            "SerialNum"       => "SerialNum",
-            "Active"          => "Active",
-            "RawSetup"        => "RawSetup",
-            "GatewayKey"      => "GatewayKey",
-            "ControllerKey"   => "ControllerKey",
-            "ControllerIndex" => "ControllerIndex",
-            "Driver"          => "Driver",
-            "DeviceGroup"     => "DeviceGroup",
-            "GatewayKey"      => "GatewayKey",
-        );
-        foreach ($columns as $c => $col) {
-            $remote->$col = $dev->$col;
-        }
-        $remote->params->DriverInfo["lastSync"] = time();
-        $remote->updateRow($columns);
-    }
-    /**
-    * This function checks to see if it is ready to run again
-    *
-    * The default is to run every 10 minutes
-    *
-    * @return bool True if ready to return, false otherwise
-    */
-    public function ready()
-    {
-        // Run every 24 hours
-        return (time() >= ($this->last + 600)) && $this->enable;
     }
 
 }

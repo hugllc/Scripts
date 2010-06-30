@@ -35,37 +35,40 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-
+/** HUGnet code */
 require_once dirname(__FILE__).'/../head.inc.php';
+/** Packet log include stuff */
+require_once HUGNET_INCLUDE_PATH.'/tables/FirmwareTable.php';
+
+print "monitor.php\n";
 print "Starting...\n";
 
-if (empty($argv[1]) || !file_exists($argv[2]) || !file_exists($argv[3])) {
-    print "Usage: ".$argv[0]." <version> <Code File>";
-    print "<Data File> <file Type> <firmwarePart> <hardwarePart>";
-    print "<status> <cvstag></cvstag>\r\n";
-    die();
-}
-$hugnet_config["verbose"] = 4;
-$firmware =& HUGnetDB::getInstance("Firmware", $hugnet_config);
-var_dump($firmware);
+// Set up our configuration
+$config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
+$config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
-$Info["FirmwareVersion"]  = $argv[1];
-$Info["FirmwareCode"]     = implode("", file($argv[2]));
-$Info["FirmwareData"]     = implode("", file($argv[3]));
-$Info["FWPartNum"]        = $argv[5];
-$Info["HWPartNum"]        = $argv[6];
-$Info["Date"]             = date("Y-m-d H:i:s");
-$Info["FirmwareFileType"] = $argv[4];
-$Info["FirmwareStatus"]   = $argv[7];
-$Info["FirmwareCVSTag"]   = $argv[8];
-$Info["Target"]           = $argv[9];
 
-$return = $firmware->add($Info);
-if ($return) {
-    print "Successfully Added\r\n";
-    return(0);
-} else {
-    print "Error (".$firmware->Errno."):  ".$firmware->Error."\r\n";
-    return($firmware->Errno);
-}
+$Code = implode("", file($argv[2]));
+$Data = implode("", file($argv[3]));
+// This sets us up as a device
+$firmware = new FirmwareTable(array(
+    "group"     => "firmware",
+    "Version"   => $argv[1],
+    "Code"      => $Code,
+    "CodeHash"  => md5($Code),
+    "Data"      => $Data,
+    "DataHash"  => md5($Data),
+    "FWPartNum" => $argv[5],
+    "HWPartNum" => $argv[6],
+    "Date"      => time(),
+    "FileType"  => $argv[4],
+    "RelStatus" => $argv[7],
+    "Tag"       => $argv[8],
+    "Target"    => $argv[9],
+));
+
+var_dump($firmware->toArray());
+
+$firmware->toFile(".");
+
 ?>
