@@ -96,7 +96,8 @@ class DevicesTableUpgradePlugin extends PeriodicPluginBase
     {
         // State we are looking for firmware
         self::vprint(
-            "Synchronizing remote and local devices",
+            "Upgrading the database from the old system. "
+            ." This should only run once.",
             HUGnetClass::VPRINT_NORMAL
         );
         // Get the devices
@@ -106,7 +107,6 @@ class DevicesTableUpgradePlugin extends PeriodicPluginBase
             array($this->gatewayKey)
         );
         // Go through the devices
-//        foreach ($devs as $key) {
         do {
             print $this->remoteDevice->DeviceID."\n";
             if ($this->remoteDevice->gateway()) {
@@ -118,7 +118,8 @@ class DevicesTableUpgradePlugin extends PeriodicPluginBase
                 $this->device->insertRow(true);
             }
         } while ($this->remoteDevice->nextInto());
-        $this->last = time();
+        // This should only run once.
+        $this->control->myDevice->params->ProcessInfo[__CLASS__] = time();
     }
     /**
     * This function checks to see if it is ready to run again
@@ -130,7 +131,8 @@ class DevicesTableUpgradePlugin extends PeriodicPluginBase
     public function ready()
     {
         // Run every 24 hours
-        return (time() >= ($this->last + 600)) && $this->enable;
+        return empty($this->control->myDevice->params->ProcessInfo[__CLASS__]
+            && $this->enable;
     }
 
 }
