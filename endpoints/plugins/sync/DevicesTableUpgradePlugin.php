@@ -131,7 +131,7 @@ class DevicesTableUpgradePlugin extends PeriodicPluginBase
     public function ready()
     {
         // Run every 24 hours
-        return empty($this->control->myDevice->params->ProcessInfo[__CLASS__]
+        return empty($this->control->myDevice->params->ProcessInfo[__CLASS__])
             && $this->enable;
     }
 
