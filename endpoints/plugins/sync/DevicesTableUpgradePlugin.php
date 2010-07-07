@@ -96,110 +96,30 @@ class DevicesTableUpgradePlugin extends PeriodicPluginBase
     {
         // State we are looking for firmware
         self::vprint(
-            "Synchronizing remote and local devices",
+            "Upgrading the database from the old system. "
+            ." This should only run once.",
             HUGnetClass::VPRINT_NORMAL
         );
         // Get the devices
-        $devs = $this->device->selectIDs(
-            "GatewayKey = ? AND Active = ? AND id <> ?",
-            array($this->GatewayKey, 1, $this->myDevice->id)
+        $this->remoteDevice->group = "old";
+        $this->remoteDevice->selectInto(
+            "GatewayKey = ?",
+            array($this->gatewayKey)
         );
-        shuffle($devs);
         // Go through the devices
-        foreach ($devs as $key) {
-            if (!$this->loop()) {
-                return;
-            }
-            $this->device->getRow($key);
-            $this->remoteDevice->clearData();
-            $this->remoteDevice->group = "old";
-            $ret = $this->remoteDevice->selectOneInto(
-                "`DeviceID` = ?",
-                array($remote[$k]->DeviceID)
-            );
-            if ($this->device->gateway()) {
+        do {
+            print $this->remoteDevice->DeviceID."\n";
+            if ($this->remoteDevice->gateway()) {
                 // Don't want to update gateways
                 continue;
-            } else if ($ret) {
-                $this->_updateLocal($this->device, $this->remoteDevice);
-                $this->_updateRemote($this->device, $this->remoteDevice);
-            } else if ($this->remoteDevice->GatewayKey == $this->gatewayKey) {
-            /*
-                $stuff =  $this->device->toDB();
-                DevicesTable::insertDeviceID(
-                    $this->[$k]->toDB()
-                );
-            */
+            } else if ($this->device->id < 0xFD0000) {
+                $this->device->fromArray($this->remoteDevice->toDB());
+                // Replace the row
+                $this->device->insertRow(true);
             }
-        }
-        $this->last = time();
-    }
-    /**
-    * This function checks to see if any new firmware has been uploaded
-    *
-    * @param DeviceContainer &$dev    The local device
-    * @param DeviceContainer &$remote The remove device
-    *
-    * @return bool True if ready to return, false otherwise
-    */
-    private function _updateLocal(DeviceContainer &$dev, DeviceContainer &$remote)
-    {
-        $columns = array(
-            "DeviceName"     => "DeviceName",
-            "DeviceJob"      => "DeviceJob",
-            "DeviceLocation" => "DeviceLocation",
-            "PollInterval"   => "PollInterval",
-            "ActiveSensors"  => "ActiveSensors",
-            "params"         => "params",
-            "sensors"        => "sensors",
-            "RawSetup"       => "RawSetup",
-        );
-        foreach ($columns as $c => $col) {
-            if (empty($dev->$col)) {
-                $dev->$col = $remote->$col;
-            } else {
-                unset($columns[$c]);
-            }
-        }
-        if (!empty($columns)) {
-            $dev->params->DriverInfo["lastSync"] = time();
-            $dev->updateRow($columns);
-        }
-
-    }
-    /**
-    * This function checks to see if any new firmware has been uploaded
-    *
-    * @param DeviceContainer &$dev    The local device
-    * @param DeviceContainer &$remote The remove device
-    *
-    * @return bool True if ready to return, false otherwise
-    */
-    private function _updateRemote(DeviceContainer &$dev, DeviceContainer &$remote)
-    {
-        $columns = array(
-            "LastPoll"        => "LastPoll",
-            "LastConfig"      => "LastConfig",
-            "LastHistory"     => "LastHistory",
-            "LastAnalysis"    => "LastAnalysis",
-            "FWVersion"       => "FWVersion",
-            "FWPartNum"       => "FWPartNum",
-            "HWPartNum"       => "HWPartNum",
-            "SerialNum"       => "SerialNum",
-            "Active"          => "Active",
-            "RawSetup"        => "RawSetup",
-            "GatewayKey"      => "GatewayKey",
-            "ControllerKey"   => "ControllerKey",
-            "ControllerIndex" => "ControllerIndex",
-            "Driver"          => "Driver",
-            "DeviceGroup"     => "DeviceGroup",
-            "GatewayKey"      => "GatewayKey",
-        );
-        foreach ($columns as $c => $col) {
-            $remote->$col = $dev->$col;
-        }
-        $remote->params->DriverInfo["Updated"] = time();
-        $remote->updateRow($columns);
+        } while ($this->remoteDevice->nextInto());
+        // This should only run once.
+        $this->control->myDevice->params->ProcessInfo[__CLASS__] = time();
     }
     /**
     * This function checks to see if it is ready to run again
@@ -211,10 +131,10 @@ class DevicesTableUpgradePlugin extends PeriodicPluginBase
     public function ready()
     {
         // Run every 24 hours
-        return (time() >= ($this->last + 600)) && $this->enable;
+        return empty($this->control->myDevice->params->ProcessInfo[__CLASS__])
+            && $this->enable;
     }
 
 }
-
 
 ?>

@@ -57,9 +57,10 @@ if (!@include_once '/etc/hugnet/config.inc.php') {
 if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
     include_once "/home/hugnet/HUGnetLib/hugnet.inc.php";
 } else {
-    if (!@include_once $hugnet_config["HUGnetLib_dir"]."/hugnet.inc.php") {
-        if (!@include_once "HUGnetLib/hugnet.inc.php") {
-	    if (!@include_once dirname(__FILE__)."/../HUGnetLib/hugnet.inc.php") {
+
+    if (!@include_once($hugnet_config["HUGnetLib_dir"]."/hugnet.inc.php")) {
+        if (!@include_once(dirname(__FILE__)."/../HUGnetLib/hugnet.inc.php")) {
+            if (!@include_once("HUGnetLib/hugnet.inc.php")) {
                 include_once "hugnet.inc.php";
             }
         }
