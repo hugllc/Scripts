@@ -61,6 +61,7 @@ class DevicePollPlugin extends DeviceProcessPluginBase
         "Name" => "DevicePoll",
         "Type" => "deviceProcess",
         "Class" => "DevicePollPlugin",
+        "Priority" => 50,
     );
     /**
     * This function sets up the driver object, and the database object.  The
@@ -96,7 +97,7 @@ class DevicePollPlugin extends DeviceProcessPluginBase
     */
     public function main(DeviceContainer &$dev)
     {
-        if ($dev->isEmpty()) {
+        if ($dev->isEmpty() || !$this->ready($dev)) {
             return; // Can't do anything with an empty device
         }
         // Be verbose ;)

@@ -61,6 +61,7 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
         "Name" => "DeviceConfig",
         "Type" => "deviceProcess",
         "Class" => "DeviceConfigPlugin",
+        "Priority" => 0,
     );
     /**
     * This function sets up the driver object, and the database object.  The
@@ -97,7 +98,7 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
     */
     public function main(DeviceContainer &$dev)
     {
-        if ($dev->isEmpty()) {
+        if ($dev->isEmpty() || !$this->ready($dev)) {
             return; // Can't do anything with an empty device
         }
         // Be verbose ;)
@@ -112,7 +113,38 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
         // Read the setup
         if (!$dev->readSetup()) {
             $this->_checkFail($dev);
+            return false;
         }
+        return true;
+    }
+    /**
+    * This function does the stuff in the class.
+    *
+    * @param DeviceContainer &$dev The device to check
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    public function pre(DeviceContainer &$dev)
+    {
+        if ($dev->isEmpty() || !$dev->controller()) {
+            return; // Looking for only controller boards here
+        }
+        // Be verbose ;)
+        self::vprint(
+            "Checking Controller ".$dev->DeviceID." LastConfig: ".
+            date(
+                "Y-m-d H:i:s",
+                $dev->params->DriverInfo["LastConfig"]
+            ),
+            HUGnetClass::VPRINT_NORMAL
+        );
+        // Read the setup
+        if (!$dev->readSetup()) {
+            $this->_checkFail($dev);
+            return false;
+        }
+        $dev->readSetup();
+        return true;
     }
     /**
     * This function should be used to wait between config attempts
@@ -216,5 +248,7 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
         return $dev->readSetupTime()
             && $this->enable;
     }
+
+
 }
 ?>

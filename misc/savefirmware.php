@@ -52,7 +52,7 @@ $Code = implode("", file($argv[2]));
 $Data = implode("", file($argv[3]));
 // This sets us up as a device
 $firmware = new FirmwareTable(array(
-    "group"     => "firmware",
+    "group"     => "default",
     "Version"   => $argv[1],
     "Code"      => $Code,
     "CodeHash"  => md5($Code),
@@ -65,6 +65,7 @@ $firmware = new FirmwareTable(array(
     "RelStatus" => $argv[7],
     "Tag"       => $argv[8],
     "Target"    => $argv[9],
+    "Active"    => 1,
 ));
 
 var_dump($firmware->toArray());

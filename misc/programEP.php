@@ -39,58 +39,41 @@ require_once dirname(__FILE__).'/../head.inc.php';
 
 print "Starting...\n";
 
-require_once HUGNET_INCLUDE_PATH.'/database/Firmware.php';
+require_once HUGNET_INCLUDE_PATH.'/tables/FirmwareTable.php';
+require_once HUGNET_INCLUDE_PATH.'/containers/ConfigContainer.php';
+$config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
 
 if (empty($argv[1])) {
-    die("Usage: ".$argv[0]." <firmwarePart> [ <clean> [ <parallel port> ] ]\n");
-}
-if (empty($argv[3])) {
-    $pPort = '/dev/parport0';
-} else {
-    $pPort = $argv[3];
+    die("Usage: ".$argv[0]." <firmwarePart> <hardwarePart> [ <clean> ]\n");
 }
 
-if (trim(strtolower($argv[1])) == 'clean') {
+if (trim(strtolower($argv[2])) == 'clean') {
     unlink('/tmp/uisp*');
     die();
 }
 
 
-if ((trim(strtolower($argv[2])) != 'clean') && file_exists("/tmp/uisp".$argv[1])) {
-    print "Reading information from cache: ";
-    $ret = file("/tmp/uisp".$argv[1]);
-    $ret = implode("", $ret);
-    $ret = trim($ret);
-    $ret = unserialize($ret);
-    print "  Found Version: ".$ret['FirmwareVersion']."\n";
-}
-if (!isset($ret['FirmwareCode'])) {
-    print "Reading information from database: ";
+print "Reading information from database: ";
 
-    $dsn = "mysql://Portal:".urlencode("Por*tal")."@floyd.int.hugllc.com/HUGNet";
+$firmware = new FirmwareTable();
+$firmware->fromArray(
+    array(
+        "FWPartNum" => $argv[1],
+    )
+);
+$firmware->getLatest();
 
-    $db       = NewADOConnection($dsn);
-    $firmware = new firmware($db);
-    $ret      = $firmware->GetLatestFirmware($argv[1]);
+print "  Found Version: ".$firmware->Version."\n";
 
-    print "  Found Version: ".$ret['FirmwareVersion']."\n";
 
-    print "Caching...";
-    @unlink("/tmp/uisp".$ret["FWPartNum"]);
-    $fp = fopen("/tmp/uisp".$ret["FWPartNum"], 'w');
-    fwrite($fp, serialize($ret));
-    fclose($fp);
-    print "Done\n";
-}
-
-if (!is_null($ret)) {
-    $Prog = 'avrdude -c avrisp2 -p '.$ret['Target'].' -P usb ';
+if (!empty($firmware->id)) {
+    $Prog = 'avrdude -c avrisp2 -p '.$firmware->Target.' -P usb ';
 
     // Program the flash
     $tempname = tempnam("/tmp", "uisp");
 
     $fp = fopen($tempname, "w");
-    fwrite($fp, $ret['FirmwareCode']);
+    fwrite($fp, $firmware->Code);
     fclose($fp);
     //    $flash = ' --segment=flash --erase --upload --verify if='.$tempname;
     $flash = ' -e -U flash:w:'.$tempname.':s';
@@ -102,7 +85,7 @@ if (!is_null($ret)) {
     $tempname = tempnam("/tmp", "uisp");
 
     $fp = fopen($tempname, "w");
-    fwrite($fp, $ret['FirmwareData']);
+    fwrite($fp, $firmware->Data);
     fclose($fp);
     //        $eeprom = ' --segment=eeprom --upload --verify if='.$tempname;
     $eeprom = ' -V -U eeprom:w:'.$tempname.':s';
