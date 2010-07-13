@@ -44,7 +44,7 @@ require_once HUGNET_INCLUDE_PATH.'/containers/ConfigContainer.php';
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
 
 if (empty($argv[1])) {
-    die("Usage: ".$argv[0]." <firmwarePart> <hardwarePart> [ <clean> ]\n");
+    die("Usage: ".$argv[0]." <firmwarePart> [ <clean> ] [-d <EEPROM DATA> ]\n");
 }
 
 if (trim(strtolower($argv[2])) == 'clean') {
@@ -84,9 +84,13 @@ if (!empty($firmware->id)) {
     // Program the E2
     $tempname = tempnam("/tmp", "uisp");
 
-    $fp = fopen($tempname, "w");
-    fwrite($fp, $firmware->Data);
-    fclose($fp);
+    if (!empty($pktData)) {
+        writeSREC($pktData, $tempname);
+    } else {
+        $fp = fopen($tempname, "w");
+        fwrite($fp, $firmware->Data);
+        fclose($fp);
+    }
     //        $eeprom = ' --segment=eeprom --upload --verify if='.$tempname;
     $eeprom = ' -V -U eeprom:w:'.$tempname.':s';
 
@@ -101,4 +105,34 @@ if (!empty($firmware->id)) {
 /**
  * @endcond
  */
+function writeSREC($data, $file) {
+
+
+    $len = strlen($data)/2;
+    $hexlen = strtoupper(dechex($len));
+    $hexlen = str_pad($hexlen, 2, '0', STR_PAD_LEFT);
+    $hexlen = substr(trim($hexlen), 0, 2);
+
+    $string = $hexlen."0000".$data;
+    $csum = 0;
+    for ($i = 0; $i < $len; $i++) {
+        $csum += hexdec(substr($string, $i*2, 2));
+    }
+    $csum = (~$csum) & 0xFF;
+    $csum = strtoupper(dechex($csum));
+    $csum = str_pad($csum, 2, '0', STR_PAD_LEFT);
+    $csum = substr(trim($csum), 0, 2);
+    $string .= $csum;
+
+    @unlink($file);
+    $fp = fopen($file, 'w');
+    fwrite($fp, "S0090000736E2E656570AD\r\n");
+    fwrite($fp, "S1".$string."\r\n");
+    fwrite($fp, "S9030000FC\r\n");
+    fclose($fp);
+
+    return $file;
+
+}
+
 ?>
