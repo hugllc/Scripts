@@ -76,7 +76,7 @@ if (!empty($firmware->id)) {
     fwrite($fp, $firmware->Code);
     fclose($fp);
     //    $flash = ' --segment=flash --erase --upload --verify if='.$tempname;
-    $flash = ' -e -U flash:w:'.$tempname.':s';
+    $flash = ' -e -U flash:w:'.$tempname;
     print "Using: ".$Prog.$flash."\n";
     passthru($Prog.$flash);
     unlink($tempname);
@@ -84,20 +84,30 @@ if (!empty($firmware->id)) {
     // Program the E2
     $tempname = tempnam("/tmp", "uisp");
 
-    if (!empty($pktData)) {
-        writeSREC($pktData, $tempname);
-    } else {
-        $fp = fopen($tempname, "w");
-        fwrite($fp, $firmware->Data);
-        fclose($fp);
-    }
+    $fp = fopen($tempname, "w");
+    fwrite($fp, $firmware->Data);
+    fclose($fp);
     //        $eeprom = ' --segment=eeprom --upload --verify if='.$tempname;
-    $eeprom = ' -V -U eeprom:w:'.$tempname.':s';
+    $eeprom = ' -V -U eeprom:w:'.$tempname;
 
     print "Using: ".$Prog.$eeprom."\n";
     passthru($Prog.$eeprom);
 
     unlink($tempname);
+
+    if (!empty($pktData)) {
+        // Program the user data
+        $tempname = tempnam("/tmp", "uisp");
+        writeSREC($pktData, $tempname);
+
+        $eeprom = ' -V -U eeprom:w:'.$tempname;
+
+        print "Using: ".$Prog.$eeprom."\n";
+        passthru($Prog.$eeprom);
+
+        unlink($tempname);
+    }
+
 } else {
     print "Firmware not found. \n";
 }
@@ -108,7 +118,7 @@ if (!empty($firmware->id)) {
 function writeSREC($data, $file) {
 
 
-    $len = strlen($data)/2;
+    $len = strlen($data)/2 + 3;
     $hexlen = strtoupper(dechex($len));
     $hexlen = str_pad($hexlen, 2, '0', STR_PAD_LEFT);
     $hexlen = substr(trim($hexlen), 0, 2);
