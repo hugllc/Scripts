@@ -76,7 +76,7 @@ $devProcess->powerup();
 // Run the main loop
 while ($devProcess->loop) {
     $devProcess->main();
-    $devProcess->wait();
+    $devProcess->wait(30);
 }
 
 print "Finished\n";

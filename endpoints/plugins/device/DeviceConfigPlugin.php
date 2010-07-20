@@ -139,7 +139,7 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
     */
     public function pre(DeviceContainer &$dev)
     {
-        if ($dev->isEmpty() || !$dev->controller()) {
+        if ($dev->isEmpty() || !$dev->controller() || ($dev->Active == 0)) {
             return; // Looking for only controller boards here
         }
         // Be verbose ;)
