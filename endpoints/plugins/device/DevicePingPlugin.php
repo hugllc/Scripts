@@ -54,14 +54,14 @@ require_once HUGNET_INCLUDE_PATH."/interfaces/PacketConsumerInterface.php";
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class DevicePollPlugin extends DeviceProcessPluginBase
+class DevicePingPlugin extends DeviceProcessPluginBase
 {
     /** @var This is to register the class */
     public static $registerPlugin = array(
-        "Name" => "DevicePoll",
+        "Name" => "DevicePing",
         "Type" => "deviceProcess",
-        "Class" => "DevicePollPlugin",
-        "Priority" => 50,
+        "Class" => "DevicePingPlugin",
+        "Priority" => 0,
     );
     /**
     * This function sets up the driver object, and the database object.  The
@@ -75,11 +75,6 @@ class DevicePollPlugin extends DeviceProcessPluginBase
     public function __construct($config, DeviceProcess &$obj)
     {
         parent::__construct($config, $obj);
-        $this->enable = $this->control->myConfig->poll["enable"];
-        if (!$this->enable) {
-            return;
-        }
-        $this->unsolicited = new DeviceContainer();
         $this->gatewayKey = $this->control->myConfig->script_gateway;
         // State we are here
         self::vprint(
@@ -102,29 +97,31 @@ class DevicePollPlugin extends DeviceProcessPluginBase
         }
         // Be verbose ;)
         self::vprint(
-            "Polling ".$dev->DeviceID." Last Poll: ".
+            "Pinging ".$dev->DeviceID." Last Contact: ".
             date(
-                "Y-m-d H:i:s", $dev->params->DriverInfo["LastPoll"]
+                "Y-m-d H:i:s", $dev->params->LastContact
             ),
             HUGnetClass::VPRINT_NORMAL
         );
-        $lastPoll = $dev->params->DriverInfo["LastPoll"];
-        $ret      = $dev->readData();
-        // Read the setup
+        // Ping the device
+        $pkt = new PacketContainer(array(
+            "To" => $dev->DeviceID,
+            "Retries" => 1,
+        ));
+        $ret = $pkt->ping("", true);
         if (!$ret) {
             $this->_checkFail($dev);
         } else {
-            // Print out the failure if verbose
+            $dev->params->LastContact = time();
+            // Print out the success if verbose
             self::vprint(
-                "Success.  LastPoll set to: "
-                .date("Y-m-d H:i:s", $dev->params->DriverInfo["LastPoll"])
-                ." Interval: "
-                .round(
-                    (($dev->params->DriverInfo["LastPoll"] - $lastPoll)/60), 2
-                )."/".$dev->PollInterval,
+                "Success.  Last Contact set to: "
+                .date("Y-m-d H:i:s", $dev->params->LastContact),
                 HUGnetClass::VPRINT_NORMAL
             );
+
         }
+        $dev->params->DriverInfo["LastPingTry"] = time();
         return $ret;
     }
     /**
@@ -136,21 +133,23 @@ class DevicePollPlugin extends DeviceProcessPluginBase
     */
     private function _checkFail(DeviceContainer &$dev)
     {
+        $dev->params->DriverInfo["PingFail"]++;
+        $dev->params->DriverInfo["LastPingTry"] = time();
         // Print out the failure if verbose
         self::vprint(
-            "Failed. Failures: ".$dev->params->DriverInfo["PollFail"]
-            ." LastPoll try: "
-            .date("Y-m-d H:i:s", $dev->params->DriverInfo["LastPollTry"]),
+            "Failed. Failures: ".$dev->params->DriverInfo["PingFail"]
+            ." Last Ping try: "
+            .date("Y-m-d H:i:s", $dev->params->DriverInfo["LastPingTry"]),
             HUGnetClass::VPRINT_NORMAL
         );
         // Log an error for every 10 failures
-        if ((($dev->params->DriverInfo["PollFail"] % 10) == 0)
-            && ($dev->params->DriverInfo["PollFail"] > 0)
+        if ((($dev->params->DriverInfo["PingFail"] % 10) == 0)
+            && ($dev->params->DriverInfo["PingFail"] > 0)
         ) {
             $this->logError(
-                "NOPOLL",
+                "NOPING",
                 $dev->DeviceID.": has failed "
-                .$dev->params->DriverInfo["PollFail"]." polls",
+                .$dev->params->DriverInfo["PingFail"]." pings",
                 ErrorTable::SEVERITY_WARNING,
                 "DeviceConfig::config"
             );
@@ -165,7 +164,8 @@ class DevicePollPlugin extends DeviceProcessPluginBase
     */
     public function ready(DeviceContainer &$dev)
     {
-        return $dev->readDataTime() && $this->enable && !$dev->lostContact();
+        return $dev->lostContact()
+            && ($dev->params->DriverInfo["LastPingTry"] < (time() - 3600 * 6));
     }
 }
 ?>

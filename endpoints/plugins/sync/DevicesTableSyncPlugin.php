@@ -94,9 +94,20 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
     */
     public function main()
     {
+        $this->localToRemote();
+        $this->remoteToLocal();
+        $this->last = time();
+    }
+    /**
+    * This function checks to see if any new firmware has been uploaded
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    public function localToRemote()
+    {
         // State we are looking for firmware
         self::vprint(
-            "Synchronizing remote and local devices",
+            "Synchronizing local -> remote",
             HUGnetClass::VPRINT_NORMAL
         );
         // Get the devices
@@ -117,7 +128,43 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
                 $this->remoteDevice->insertRow(true);
             }
         }
-        $this->last = time();
+    }
+    /**
+    * This function checks to see if any new firmware has been uploaded
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    public function remoteToLocal()
+    {
+        // State we are looking for firmware
+        self::vprint(
+            "Synchronizing remote -> local",
+            HUGnetClass::VPRINT_NORMAL
+        );
+        // Get the devices
+        $remoteDevs = $this->remoteDevice->selectIDs(
+            "GatewayKey = ?",
+            array($this->gatewayKey)
+        );
+        // Get the devices
+        $devs = $this->device->selectIDs(
+            "GatewayKey = ?",
+            array($this->gatewayKey)
+        );
+        // Go through the devices
+        foreach ($remoteDevs as $key) {
+            if (array_search($key, $devs) === false) {
+                $this->remoteDevice->getRow($key);
+                if ($this->remoteDevice->gateway()) {
+                    // Don't want to update gateways
+                    continue;
+                } else if ($this->remoteDevice->id < 0xFD0000) {
+                    $this->device->fromArray($this->remoteDevice->toDB());
+                    // Insert a row only if there is nothing here.
+                    $this->device->insertRow(false);
+                }
+            }
+        }
     }
 
 }

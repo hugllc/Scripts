@@ -85,7 +85,7 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
         $this->config->forceConfig($config);
         $this->config->sockets->forceDeviceID("000019");
         $this->socket = &$this->config->sockets->getSocket("default");
-        $this->pdo = &$this->config->servers->getPDO();
+        $this->pdo = &$this->config->servers->getPDO("default");
         $this->device = array(
             "id"         => 0x000019,
             "DeviceID"   => "000019",
@@ -210,6 +210,20 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                         "DriverInfo" => array(
                             "LastConfig" => 0,
                         ),
+                        "LastContact" => 0,
+                    ),
+                ),
+                false,
+            ),
+            array(
+                array(
+                    "id" => 0x000021,
+                    "DeviceID" => "000021",
+                    "params" => array(
+                        "DriverInfo" => array(
+                            "LastConfig" => 0,
+                        ),
+                        "LastContact" => time(),
                     ),
                 ),
                 true,
@@ -222,6 +236,7 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                         "DriverInfo" => array(
                             "LastConfig" => time(),
                         ),
+                        "LastContact" => time(),
                     ),
                 ),
                 false,
@@ -301,7 +316,7 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     "FWPartNum" => "0039-20-13-C",
                     "FWVersion" => "1.2.3",
                     "RawSetup"=> "000012345600392801410039201343010203FFFFFF00",
-                    "Active"            => "1",
+                    "Active"            => "0",
                     "GatewayKey"        => "1",
                     "ControllerKey"     => "0",
                     "ControllerIndex"   => "0",
@@ -320,6 +335,7 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                                 PacketContainer::COMMAND_POWERUP => 1,
                             ),
                         ),
+                        "LastContact" => time(),
                     ),
                 ),
                 "",
@@ -450,20 +466,30 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
     */
     public function testPacketConsumer($config, $preload, $id, $pkt, $expect)
     {
+        $time = time();
         $this->config->forceConfig($config);
         $control = new DeviceProcess(array(), $this->device);
         $o = new DeviceConfigPlugin(array(), $control);
         $pdo = &$this->config->servers->getPDO();
         $d = new DeviceContainer($preload);
-        $d->insertRow(true);
-
+        if (!empty($preload)) {
+            $d->insertRow(true);
+        }
         $p = new PacketContainer($pkt);
         $o->packetConsumer($p);
         $stmt = $pdo->query("SELECT * FROM `devices` WHERE `id`=".$id);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $d->clearData();
         $d->fromArray($rows[0]);
-        $this->assertSame($expect, $d->toArray(false));
+        $res = $d->toArray(false);
+        $this->assertThat(
+            $res["params"]["LastContact"],
+            $this->greaterThanOrEqual($expect["params"]["LastContact"]),
+            "LastContact is wrong"
+        );
+        unset($res["params"]["LastContact"]);
+        unset($expect["params"]["LastContact"]);
+        $this->assertSame($expect, $res);
     }
 
     /**
@@ -480,6 +506,9 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     "DeviceID" => "123456",
                     "GatewayKey" => 1,
                     "PollInterval" => 10,
+                    "params" => array(
+                        "LastContact" => time(),
+                    ),
                 ),
                 (string)new PacketContainer(array(
                     "From" => "123456",
@@ -509,6 +538,9 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     "FWVersion" => "1.2.3",
                     "GatewayKey" => 1,
                     "PollInterval" => 10,
+                    "params" => array(
+                        "LastContact" => time(),
+                    ),
                 ),
                 (string)new PacketContainer(array(
                     "From" => "123456",
@@ -536,6 +568,7 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                         "DriverInfo" => array(
                             "ConfigFail" => 109,
                         ),
+                        "LastContact" => time(),
                     ),
                 ),
                 "",
@@ -583,6 +616,177 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
         $d = new DeviceContainer($preload);
         $this->socket->readString = $read;
         $this->o->main($d);
+        $this->assertSame($expect, $this->socket->writeString);
+    }
+
+    /**
+    * data provider for testMain
+    *
+    * @return array
+    */
+    public static function dataPre()
+    {
+        return array(
+            array(
+                array(
+                    "id" => hexdec("123456"),
+                    "DeviceID" => "123456",
+                    "GatewayKey" => 1,
+                    "HWPartNum" => "0039-21-01-A",
+                    "FWPartNum" => "0039-20-01-C",
+                    "PollInterval" => 10,
+                    "Driver" => "e00392100",
+                    "params" => array(
+                        "LastContact" => time(),
+                    ),
+                ),
+                (string)new PacketContainer(array(
+                    "From" => "123456",
+                    "To" => "000019",
+                    "Command" => PacketContainer::COMMAND_REPLY,
+                    "Data" => "000012345600392101410039200143000009FFFFFF50",
+                )).
+                (string)new PacketContainer(array(
+                    "From" => "123456",
+                    "To" => "000019",
+                    "Command" => PacketContainer::COMMAND_REPLY,
+                    "Data" => str_repeat("000000", 30),
+                )).
+                (string)new PacketContainer(array(
+                    "From" => "123456",
+                    "To" => "000019",
+                    "Command" => PacketContainer::COMMAND_REPLY,
+                    "Data" => str_repeat("000000", 30),
+                )).
+                (string)new PacketContainer(array(
+                    "From" => "123456",
+                    "To" => "000019",
+                    "Command" => PacketContainer::COMMAND_REPLY,
+                    "Data" => "000012345600392101410039200143000009FFFFFF50",
+                )).
+                (string)new PacketContainer(array(
+                    "From" => "123456",
+                    "To" => "000019",
+                    "Command" => PacketContainer::COMMAND_REPLY,
+                    "Data" => str_repeat("000000", 30),
+                )).
+                (string)new PacketContainer(array(
+                    "From" => "123456",
+                    "To" => "000019",
+                    "Command" => PacketContainer::COMMAND_REPLY,
+                    "Data" => str_repeat("000000", 30),
+                )),
+                (string)new PacketContainer(array(
+                    "To" => "123456",
+                    "From" => "000019",
+                    "Command" => PacketContainer::COMMAND_GETSETUP,
+                    "Data" => "",
+                )).
+                (string)new PacketContainer(array(
+                    "To" => "123456",
+                    "From" => "000019",
+                    "Command" => E00392100Device::COMMAND_READDOWNSTREAM,
+                    "Data" => "00",
+                )).
+                (string)new PacketContainer(array(
+                    "To" => "123456",
+                    "From" => "000019",
+                    "Command" => E00392100Device::COMMAND_READDOWNSTREAM,
+                    "Data" => "01",
+                )).
+                (string)new PacketContainer(array(
+                    "To" => "123456",
+                    "From" => "000019",
+                    "Command" => PacketContainer::COMMAND_GETSETUP,
+                    "Data" => "",
+                )).
+                (string)new PacketContainer(array(
+                    "To" => "123456",
+                    "From" => "000019",
+                    "Command" => E00392100Device::COMMAND_READDOWNSTREAM,
+                    "Data" => "00",
+                )).
+                (string)new PacketContainer(array(
+                    "To" => "123456",
+                    "From" => "000019",
+                    "Command" => E00392100Device::COMMAND_READDOWNSTREAM,
+                    "Data" => "01",
+                )),
+            ),
+            array(
+                array(
+                    "id" => hexdec("123456"),
+                    "DeviceID" => "123456",
+                    "HWPartNum" => "0039-28-01-A",
+                    "FWPartNum" => "0039-20-13-C",
+                    "FWVersion" => "1.2.3",
+                    "GatewayKey" => 1,
+                    "PollInterval" => 10,
+                    "params" => array(
+                        "LastContact" => time(),
+                    ),
+                ),
+                "",
+                "",
+            ),
+            array(
+                array(
+                    "id" => hexdec("123456"),
+                    "DeviceID" => "123456",
+                    "HWPartNum" => "0039-21-01-A",
+                    "FWPartNum" => "0039-20-01-C",
+                    "FWVersion" => "1.2.3",
+                    "GatewayKey" => 1,
+                    "PollInterval" => 10,
+                    "params" => array(
+                        "LastContact" => time(),
+                    ),
+                ),
+                "",
+                (string)new PacketContainer(array(
+                    "To" => "123456",
+                    "From" => "000019",
+                    "Command" => PacketContainer::COMMAND_GETSETUP,
+                    "Data" => "",
+                )).
+                (string)new PacketContainer(array(
+                    "To" => "123456",
+                    "From" => "000019",
+                    "Command" => PacketContainer::COMMAND_GETSETUP,
+                    "Data" => "",
+                )).
+                (string)new PacketContainer(array(
+                    "To" => "123456",
+                    "From" => "000019",
+                    "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
+                    "Data" => "",
+                )).
+                (string)new PacketContainer(array(
+                    "To" => "123456",
+                    "From" => "000019",
+                    "Command" => PacketContainer::COMMAND_GETSETUP,
+                    "Data" => "",
+                )),
+            ),
+        );
+    }
+
+    /**
+    * test the set routine when an extra class exists
+    *
+    * @param array  $preload The data to preload into the devices table
+    * @param string $read    The read string for the socket
+    * @param string $expect  The expected return
+    *
+    * @return null
+    *
+    * @dataProvider dataPre
+    */
+    public function testPre($preload, $read, $expect)
+    {
+        $d = new DeviceContainer($preload);
+        $this->socket->readString = $read;
+        $this->o->pre($d);
         $this->assertSame($expect, $this->socket->writeString);
     }
 

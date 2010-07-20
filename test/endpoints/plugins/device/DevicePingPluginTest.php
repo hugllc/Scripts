@@ -39,7 +39,7 @@
 /** Get our classes */
 require_once dirname(__FILE__).'/DeviceProcessPluginTestBase.php';
 require_once dirname(__FILE__)
-    .'/../../../../endpoints/plugins/device/DevicePollPlugin.php';
+    .'/../../../../endpoints/plugins/device/DevicePingPlugin.php';
 require_once HUGNET_INCLUDE_PATH."/processes/DeviceProcess.php";
 /**
  * Test class for filter.
@@ -54,7 +54,7 @@ require_once HUGNET_INCLUDE_PATH."/processes/DeviceProcess.php";
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class DevicePollPluginTest extends DeviceProcessPluginTestBase
+class DevicePingPluginTest extends DeviceProcessPluginTestBase
 {
 
     /**
@@ -94,7 +94,7 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
         );
 
         $this->control = new DeviceProcess(array(), $this->device);
-        $this->o = new DevicePollPlugin(array(), $this->control);
+        $this->o = new DevicePingPlugin(array(), $this->control);
     }
 
     /**
@@ -118,7 +118,7 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
     public static function dataRegisterPlugin()
     {
         return array(
-            array("DevicePollPlugin"),
+            array("DevicePingPlugin"),
         );
     }
 
@@ -186,8 +186,7 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
     ) {
         $this->config->forceConfig($config);
         $control = new DeviceProcess(array(), $device);
-        $o = new DevicePollPlugin(array(), $control);
-        $this->assertAttributeSame($enable, "enable", $o, "Enable is wrong");
+        $o = new DevicePingPlugin(array(), $control);
         if ($enable) {
             $this->assertAttributeSame(
                 $gatewayKey, "gatewayKey", $o, "Gateway Key is Wrong"
@@ -214,7 +213,7 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
                         "LastContact" => time(),
                     ),
                 ),
-                true,
+                false,
             ),
             array(
                 array(
@@ -228,7 +227,7 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
                         "LastContact" => 0,
                     ),
                 ),
-                false,
+                true,
             ),
             array(
                 array(
@@ -237,9 +236,9 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
                     "PollInterval" => 100,
                     "params" => array(
                         "DriverInfo" => array(
-                            "LastPoll" => time(),
+                            "LastPingTry" => time(),
                         ),
-                        "LastContact" => time(),
+                        "LastContact" => 0,
                     ),
                 ),
                 false,
@@ -278,19 +277,19 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
                     "GatewayKey" => 1,
                     "PollInterval" => 10,
                     "params" => array(
-                        "LastContact" => time(),
+                        "LastContact" => 0,
                     ),
                 ),
                 (string)new PacketContainer(array(
                     "From" => "123456",
                     "To" => "000019",
                     "Command" => PacketContainer::COMMAND_REPLY,
-                    "Data" => "000012345600391101410039201343000009FFFFFF50",
+                    "Data" => "",
                 )),
                 (string)new PacketContainer(array(
                     "To" => "123456",
                     "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETDATA,
+                    "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
                     "Data" => "",
                 )),
             ),
@@ -310,19 +309,19 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
                     "GatewayKey" => 1,
                     "PollInterval" => 10,
                     "params" => array(
-                        "LastContact" => time(),
+                        "LastContact" => 0,
                     ),
                 ),
                 (string)new PacketContainer(array(
                     "From" => "123456",
                     "To" => "000019",
                     "Command" => PacketContainer::COMMAND_REPLY,
-                    "Data" => "000012345600392101410039200143000009FFFFFF50",
+                    "Data" => "",
                 )),
                 (string)new PacketContainer(array(
                     "To" => "123456",
                     "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETDATA,
+                    "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
                     "Data" => "",
                 )),
             ),
@@ -337,34 +336,16 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
                     "PollInterval" => 10,
                     "params" => array(
                         "DriverInfo" => array(
-                            "PollFail" => 29,
+                            "PingFail" => 29,
                         ),
-                        "LastContact" => time(),
+                        "LastContact" => 0,
                     ),
                 ),
                 "",
                 (string)new PacketContainer(array(
                     "To" => "123456",
                     "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETDATA,
-                    "Data" => "",
-                )).
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETDATA,
-                    "Data" => "",
-                )).
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
                     "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
-                    "Data" => "",
-                )).
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETDATA,
                     "Data" => "",
                 )),
             ),

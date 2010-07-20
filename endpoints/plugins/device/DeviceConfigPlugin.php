@@ -55,13 +55,14 @@ require_once HUGNET_INCLUDE_PATH."/interfaces/PacketConsumerInterface.php";
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
 class DeviceConfigPlugin extends DeviceProcessPluginBase
+    implements PacketConsumerInterface
 {
     /** @var This is to register the class */
     public static $registerPlugin = array(
         "Name" => "DeviceConfig",
         "Type" => "deviceProcess",
         "Class" => "DeviceConfigPlugin",
-        "Priority" => 0,
+        "Priority" => 10,
     );
     /**
     * This function sets up the driver object, and the database object.  The
@@ -103,17 +104,29 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
         }
         // Be verbose ;)
         self::vprint(
-            "Checking ".$dev->DeviceID." LastConfig: ".
+            "Checking ".$dev->DeviceID." Last Config: ".
             date(
                 "Y-m-d H:i:s",
                 $dev->params->DriverInfo["LastConfig"]
             ),
             HUGnetClass::VPRINT_NORMAL
         );
+        $lastConfig = $dev->params->DriverInfo["LastConfig"];
         // Read the setup
         if (!$dev->readSetup()) {
             $this->_checkFail($dev);
             return false;
+        } else {
+            // Print out the failure if verbose
+            self::vprint(
+                "Success.  LastConfig set to: "
+                .date("Y-m-d H:i:s", $dev->params->DriverInfo["LastConfig"])
+                ." Interval: "
+                .round(
+                    (($dev->params->DriverInfo["LastConfig"] - $lastConfig)/60), 2
+                ),
+                HUGnetClass::VPRINT_NORMAL
+            );
         }
         return true;
     }
@@ -174,24 +187,6 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
                 "DeviceConfig::config"
             );
         }
-        // for 100 failures mark the device inactive
-        if (($dev->gateway() && ($dev->params->DriverInfo["ConfigFail"] >= 10))
-            || ($dev->params->DriverInfo["ConfigFail"] >= $this->deactivate)
-        ) {
-            $dev->Active = 0;
-            $dev->ControllerKey = 0;
-            $dev->ControllerIndex = 0;
-            if (!$dev->gateway()) {
-                $this->logError(
-                    "DEACTIVATE",
-                    $dev->DeviceID.": has failed to respond to "
-                    .$dev->params->DriverInfo["ConfigFail"]." configs.  Rendering "
-                    ."the device inactive.",
-                    ErrorTable::SEVERITY_ERROR,
-                    "DeviceConfig::config"
-                );
-            }
-        }
     }
     /**
     * This deals with Unsolicited Packets
@@ -214,12 +209,14 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
         $this->unsolicited->clearData();
         // Find the device if it is there
         $this->unsolicited->selectInto("DeviceID = ?", array($pkt->From));
+        // Check if it is empty
+        $empty = $this->unsolicited->isEmpty();
         // Set our gateway key
         $this->unsolicited->GatewayKey = $this->gatewayKey;
-        // Set the device active
-        $this->unsolicited->Active = 1;
+        // Set the last contact date
+        $this->unsolicited->params->LastContact = time();
 
-        if (!$this->unsolicited->isEmpty()) {
+        if (!$empty) {
             // If it is not empty, reset the LastConfig.  This causes it to actually
             // try to get the config.
             $this->unsolicited->readSetupTimeReset();
@@ -229,6 +226,8 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
             $this->unsolicited->updateRow();
 
         } else {
+            // Reset the last config times.  This will cause a setup immediately
+            $this->unsolicited->readSetupTimeReset();
             // This is a brand new device.  Set the DeviceID
             $this->unsolicited->id = hexdec($pkt->From);
             $this->unsolicited->DeviceID = $pkt->From;
@@ -245,8 +244,7 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
     */
     public function ready(DeviceContainer &$dev)
     {
-        return $dev->readSetupTime()
-            && $this->enable;
+        return $dev->readSetupTime() && $this->enable && !$dev->lostContact();
     }
 
 

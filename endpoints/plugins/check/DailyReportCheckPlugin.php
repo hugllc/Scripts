@@ -168,19 +168,22 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
         );
         $days = array("0.04", "0.25", "0.5", "1", "3", "10", "many");
         $stats = array();
-        foreach ((array)$this->devs as $row) {
-            foreach ($types as $key => $type) {
-                $date = $row->params->DriverInfo[$key];
-                $done = false;
-                foreach ($days as $d) {
-                    if ($d == "many") {
-                        $stats[$key][$d]++;
-                        break;
-                    }
-                    $time = time() - (int)((float)$d * 86400);
-                    if ($date > $time) {
-                        $stats[$key][$d]++;
-                        break;
+        foreach (array_keys((array)$this->devs) as $key) {
+            $row = &$this->devs[$key];
+            if ($row->Active == 1) {
+                foreach ($types as $key => $type) {
+                    $date = $row->params->DriverInfo[$key];
+                    $done = false;
+                    foreach ($days as $d) {
+                        if ($d == "many") {
+                            $stats[$key][$d]++;
+                            break;
+                        }
+                        $time = time() - (int)((float)$d * 86400);
+                        if ($date > $time) {
+                            $stats[$key][$d]++;
+                            break;
+                        }
                     }
                 }
             }
