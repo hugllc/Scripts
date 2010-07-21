@@ -42,18 +42,18 @@ require_once dirname(__FILE__).'/../head.inc.php';
 require_once HUGNET_INCLUDE_PATH.'/containers/PacketContainer.php';
 require_once HUGNET_INCLUDE_PATH.'/containers/DeviceContainer.php';
 
-print "monitor.php\n";
+print "loadprog.php\n";
 print "Starting...\n";
 
 print "Using GatewayKey ".$GatewayKey."\n";
 
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
-$config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
-
+$config->verbose($hugnet_config["verbose"] + HUGnetClass::VPRINT_NORMAL);
 $dev = new DeviceContainer();
 $dev->getRow(hexdec($DeviceID));
+$dev->runBootloader();
 $dev->readConfig();
-var_dump($dev->writeProgram());
+var_dump($dev->writeProgram($pktData));
 $dev->readConfig();
 
 print "Finished\n";

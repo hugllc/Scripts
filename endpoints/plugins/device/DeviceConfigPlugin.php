@@ -113,7 +113,12 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
         );
         $lastConfig = $dev->params->DriverInfo["LastConfig"];
         // Read the setup
-        if (!$dev->readSetup()) {
+        $tries = 5;
+        do {
+            $ret = $dev->readSetup();
+        } while (is_null($ret) && ($tries-- > 0));
+
+        if (!$ret) {
             $this->_checkFail($dev);
             return false;
         } else {
@@ -152,7 +157,12 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
             HUGnetClass::VPRINT_NORMAL
         );
         // Read the setup
-        if (!$dev->readSetup()) {
+        $tries = 5;
+        do {
+            $ret = $dev->readSetup();
+        } while (is_null($ret) && ($tries-- > 0));
+
+        if (!$ret) {
             $this->_checkFail($dev);
             return false;
         }
