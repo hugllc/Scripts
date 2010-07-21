@@ -165,6 +165,13 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
         if (!$ret) {
             $this->_checkFail($dev);
             return false;
+        } else {
+            // Print out the failure if verbose
+            self::vprint(
+                "Success.  LastConfig set to: "
+                .date("Y-m-d H:i:s", $dev->params->DriverInfo["LastConfig"]),
+                HUGnetClass::VPRINT_NORMAL
+            );
         }
         $dev->readSetup();
         return true;
