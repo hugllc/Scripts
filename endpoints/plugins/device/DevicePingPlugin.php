@@ -92,7 +92,7 @@ class DevicePingPlugin extends DeviceProcessPluginBase
     */
     public function main(DeviceContainer &$dev)
     {
-        if ($dev->isEmpty() || !$this->ready($dev)) {
+        if ($dev->isEmpty() || !$this->ready($dev) || ($dev->Active != 1)) {
             return; // Can't do anything with an empty device
         }
         // Be verbose ;)
@@ -165,7 +165,7 @@ class DevicePingPlugin extends DeviceProcessPluginBase
     public function ready(DeviceContainer &$dev)
     {
         return $dev->lostContact()
-            && ($dev->params->DriverInfo["LastPingTry"] < (time() - 3600 * 6));
+            && ($dev->params->DriverInfo["LastPingTry"] < (time() - 3600 * 2));
     }
 }
 ?>

@@ -173,7 +173,6 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
                 HUGnetClass::VPRINT_NORMAL
             );
         }
-        $dev->readSetup();
         return true;
     }
     /**
