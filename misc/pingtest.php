@@ -58,7 +58,7 @@ do {
         )
     );
     $pkt->send();
-    print strlen($pktData)."\n";
+    print (strlen($pktData)/2)."\n";
 } while (is_object($pkt->Reply));
 
 ?>
