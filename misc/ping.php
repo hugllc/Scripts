@@ -45,6 +45,9 @@ if (empty($DeviceID)) {
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
 $config->verbose($hugnet_config["verbose"]);
 
+if (empty($Count)) {
+    $Count = 1000000;
+}
 $pkt = new PacketContainer(
     array(
         "To" => $DeviceID,
@@ -55,11 +58,22 @@ $pkt = new PacketContainer(
     )
 );
 
-$pkt->send();
-if (is_object($pkt)) {
-    var_dump($pkt->toArray());
-} else {
-    print "No Return";
+for ($i = 0; $i < $Count; $i++) {
+    $ret = $pkt->ping(
+        array(
+            "Retries" => 1,
+            "GetReply" => true,
+            "group" => "default",
+            "Data" => $config->stringSize(mt_rand(0, 16777215), 6)
+                .$config->stringSize($i, 6),
+        ),
+        ($pktCommand != "02")
+    );
+    if ($ret) {
+        print $pkt->Length." byte from ".$pkt->To." seq=$i ";
+        print "ttl=".$pkt->Timeout." time=".round($pkt->replyTime(), 4)."\n";
+    } else {
+        print "No Reply seq $i\n";
+    }
 }
-
 ?>

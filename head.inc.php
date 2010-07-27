@@ -112,6 +112,12 @@ for ($i = 1; $i < count($argv); $i++) {
         $DeviceKey                  = $argv[$i];
         $hugnet_config["DeviceKey"] = $argv[$i];
         break;
+    // Packet Serial Number to use
+    case "-n":
+        $i++;
+        $Count                  = $argv[$i];
+        print "Test Mode Enabled\n";
+        break;
     // Gateway Port
     case "-p":
         $i++;
