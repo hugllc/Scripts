@@ -128,7 +128,7 @@ class HistoryTableSyncPlugin extends PeriodicPluginBase
         if ($bad > 0) {
             // State we did some uploading
             self::vprint(
-                "Found $bad raw history records",
+                "Found $bad bad raw history records",
                 HUGnetClass::VPRINT_NORMAL
             );
         }
