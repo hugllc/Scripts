@@ -111,19 +111,27 @@ class HistoryTableSyncPlugin extends PeriodicPluginBase
             $hist = &$rows[$key]->toHistoryTable($prev[$id]);
             if ($hist->insertRow(true)) {
                 $local++;
-            }
-            /*
-            if ($this->enableRemote) {
-                $this->remote->clearData();
-                $this->remote->group = "remote";
-                $this->remote->fromArray($rows[$key]->toDB());
-                if ($this->remote->insertRow(false)) {
-                    $remote++;
+                if ($this->enableRemote) {
+                    $class = get_class($hist);
+                    $remote = new $class(array("group" => "remote"));
+                    $remote->fromArray($hist->toDB());
+                    if ($remote->insertRow(false)) {
+                        $remote++;
+                    }
                 }
-            }*/
+            } else {
+                $bad++;
+            }
             $prev[$id] = $rows[$key]->raw;
         }
         unset($rows);
+        if ($bad > 0) {
+            // State we did some uploading
+            self::vprint(
+                "Found $bad raw history records",
+                HUGnetClass::VPRINT_NORMAL
+            );
+        }
         if ($local > 0) {
             // State we did some uploading
             self::vprint(

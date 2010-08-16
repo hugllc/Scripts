@@ -45,7 +45,7 @@ require_once HUGNET_INCLUDE_PATH.'/containers/DeviceContainer.php';
 print "loadprog.php\n";
 print "Starting...\n";
 
-print "Using GatewayKey ".$GatewayKey."\n";
+print "Using GatewayKey ".$GatewayKey.", DeviceKey ".$DeviceKey."\n";
 
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
 $config->verbose($hugnet_config["verbose"] + HUGnetClass::VPRINT_NORMAL);
