@@ -113,9 +113,9 @@ class HistoryTableSyncPlugin extends PeriodicPluginBase
                 $local++;
                 if ($this->enableRemote) {
                     $class = get_class($hist);
-                    $remote = new $class(array("group" => "remote"));
-                    $remote->fromArray($hist->toDB());
-                    if ($remote->insertRow(false)) {
+                    $r = new $class(array("group" => "remote"));
+                    $r->fromArray($hist->toDB());
+                    if ($r->insertRow(false)) {
                         $remote++;
                     }
                 }
