@@ -136,7 +136,7 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
     public function ready()
     {
         // Run every minute
-        return (time() >= ($this->last + 300));
+        return (time() >= ($this->last + 300)) && $this->enable;
     }
 
 }

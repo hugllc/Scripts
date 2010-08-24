@@ -161,7 +161,7 @@ class HistoryTableSyncPlugin extends PeriodicPluginBase
     public function ready()
     {
         // Run every minute
-        return true;
+        return $this->enable;
     }
 
 }
