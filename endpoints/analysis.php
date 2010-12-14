@@ -40,6 +40,7 @@ define("ANALYSIS_PARTNUMBER", "0039-26-03-P");  //0039-26-01-P
 
 require_once dirname(__FILE__).'/../head.inc.php';
 require_once HUGNET_INCLUDE_PATH.'/processes/DeviceAnalysis.php';
+require_once HUGNET_INCLUDE_PATH."/base/DeviceProcessPluginBase.php";
 
 // Set up our configuration
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");

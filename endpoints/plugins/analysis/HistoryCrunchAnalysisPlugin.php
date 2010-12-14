@@ -49,14 +49,13 @@
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class HistoryTableSyncPlugin extends PeriodicPluginBase
-    implements PeriodicPluginInterface
+class HistoryCrunchAnalysisPlugin extends DeviceProcessPluginBase
 {
     /** @var This is to register the class */
     public static $registerPlugin = array(
-        "Name" => "HistoryTableSync",
-        "Type" => "periodic",
-        "Class" => "HistoryTableSyncPlugin",
+        "Name" => "HistoryCrunchAnalysis",
+        "Type" => "analysis",
+        "Class" => "HistoryCrunchAnalysisPlugin",
     );
     /** @var This is when we were created */
     protected $firmware = 0;
@@ -64,22 +63,21 @@ class HistoryTableSyncPlugin extends PeriodicPluginBase
     * This function sets up the driver object, and the database object.  The
     * database object is taken from the driver object.
     *
-    * @param mixed           $config The configuration array
-    * @param PeriodicPlugins &$obj   The controller object
+    * @param mixed         $config The configuration array
+    * @param DeviceProcess &$obj   The controller object
     *
     * @return null
     */
-    public function __construct($config, PeriodicPlugins &$obj)
+    public function __construct($config, DeviceProcess &$obj)
     {
         parent::__construct($config, $obj);
-        $this->enable &= $this->control->myConfig->poll["enable"];
-        $this->enableRemote = $this->control->myConfig->servers->available("remote");
         if (!$this->enable) {
             return;
         }
         $this->raw = new RawHistoryTable();
         // We don't want more than 10 records at a time;
         $this->raw->sqlLimit = 100;
+        $this->raw->sqlOrderBy = "Date asc";
         // State we are here
         self::vprint(
             "Registed class ".self::$registerPlugin["Class"],
@@ -87,45 +85,40 @@ class HistoryTableSyncPlugin extends PeriodicPluginBase
         );
     }
     /**
-    * This function checks to see if any new firmware has been uploaded
+    * This function does the stuff in the class.
+    *
+    * @param DeviceContainer &$dev The device to check
     *
     * @return bool True if ready to return, false otherwise
     */
-    public function main()
+    public function main(DeviceContainer &$dev)
     {
-        $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
-        static $prev;
+        $last = &$dev->params->DriverInfo["LastHistory"];
+//        $last = 0;
         // Get the devices
-        $rows = $this->raw->select(
-            "`Date` > ?",
-            array((int)$last)
-        );
-        $remote = 0;
+//print date("Y-m-d H:i:s", $last)." => ".date("Y-m-d H:i:s")."\n";
+        $ret = $this->raw->getPeriod((int)$last, time(), $dev->id, "id");
+        $bad = 0;
         $local = 0;
-        // Go through the records
-        foreach (array_keys((array)$rows) as $key) {
-            $now = $rows[$key]->Date;
-            $id = $rows[$key]->id;
-            $hist = &$rows[$key]->toHistoryTable($prev[$id]);
-            if ($hist->insertRow(true)) {
-                $local++;
-                if ($this->enableRemote) {
-                    $class = get_class($hist);
-                    $r = new $class(array("group" => "remote"));
-                    $r->fromArray($hist->toDB());
-                    if ($r->insertRow(false)) {
-                        $remote++;
-                    }
+        if ($ret) {
+            // Go through the records
+            do {
+//                print $dev->id." - ".$this->raw->id." - ".date("Y-m-d H:i:s", $this->raw->Date)."\n";
+                $now = $this->raw->Date;
+                $id = $this->raw->id;
+                $hist = &$this->raw->toHistoryTable($prev);
+                if ($hist->insertRow(true)) {
+                    $local++;
+                } else {
+                    $bad++;
                 }
-            } else {
-                $bad++;
-            }
-            $prev[$id] = $rows[$key]->raw;
+                $prev = $this->raw->raw;
+            } while ($this->raw->nextInto());
         }
-        unset($rows);
         if ($bad > 0) {
             // State we did some uploading
             self::vprint(
+                $dev->DeviceID." - ".
                 "Found $bad bad raw history records",
                 HUGnetClass::VPRINT_NORMAL
             );
@@ -133,33 +126,26 @@ class HistoryTableSyncPlugin extends PeriodicPluginBase
         if ($local > 0) {
             // State we did some uploading
             self::vprint(
-                "Decoded $local raw history records",
-                HUGnetClass::VPRINT_NORMAL
-            );
-        }
-        if ($remote > 0) {
-            // State we did some uploading
-            self::vprint(
-                "Uploaded $remote history records",
+                $dev->DeviceID." - ".
+                "Decoded $local raw history records ".
+                date("Y-m-d H:i:s", $last)." - ".date("Y-m-d H:i:s", $now),
                 HUGnetClass::VPRINT_NORMAL
             );
         }
         if (!empty($now)) {
-            $this->last = (int)$now;
-            $last = (int)$now;
+            $last = (int)$now+1;
         }
     }
     /**
-    * This function checks to see if it is ready to run again
+    * This function does the stuff in the class.
     *
-    * The default is to run every 24 hours.
+    * @param DeviceContainer &$dev The device to check
     *
     * @return bool True if ready to return, false otherwise
     */
-    public function ready()
+    public function ready(DeviceContainer &$dev)
     {
-        // Run every minute
-        return false; //$this->enable;
+        return $this->enable;
     }
 
 }
