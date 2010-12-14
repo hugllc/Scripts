@@ -76,8 +76,10 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
             ),
             "script_gateway" => 1,
             "admin_email" => "test@dflytech.com",
-            "poll" => array(
-                "enable" => true,
+            "pluginData" => array(
+                "DevicePollPlugin" => array(
+                    "enable" => true,
+                ),
             ),
             "test" => true,
         );
@@ -134,8 +136,10 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
                 array(
                     "script_gateway" => 1,
                     "admin_email" => "test@dflytech.com",
-                    "poll" => array(
-                        "enable" => true,
+                    "pluginData" => array(
+                        "DevicePollPlugin" => array(
+                            "enable" => true,
+                        ),
                     ),
                 ),
                 array(
@@ -152,8 +156,10 @@ class DevicePollPluginTest extends DeviceProcessPluginTestBase
                 array(
                     "script_gateway" => 1,
                     "admin_email" => "",
-                    "poll" => array(
-                        "enable" => false,
+                    "pluginData" => array(
+                        "DevicePollPlugin" => array(
+                            "enable" => false,
+                        ),
                     ),
                 ),
                 array(

@@ -76,8 +76,10 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
             ),
             "script_gateway" => 1,
             "admin_email" => "test@dflytech.com",
-            "config" => array(
-                "enable" => true,
+            "pluginData" => array(
+                "DeviceConfigPlugin" => array(
+                    "enable" => true,
+                ),
             ),
             "test" => true,
         );
@@ -134,8 +136,10 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                 array(
                     "script_gateway" => 1,
                     "admin_email" => "test@dflytech.com",
-                    "config" => array(
-                        "enable" => true,
+                    "pluginData" => array(
+                        "DeviceConfigPlugin" => array(
+                            "enable" => true,
+                        ),
                     ),
                 ),
                 array(
@@ -152,8 +156,10 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                 array(
                     "script_gateway" => 1,
                     "admin_email" => "",
-                    "config" => array(
-                        "enable" => false,
+                    "pluginData" => array(
+                        "DeviceConfigPlugin" => array(
+                            "enable" => false,
+                        ),
                     ),
                 ),
                 array(
@@ -276,8 +282,10 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     ),
                     "script_gateway" => 1,
                     "admin_email" => "test@dflytech.com",
-                    "config" => array(
-                        "enable" => true,
+                    "pluginData" => array(
+                        "DeviceConfigPlugin" => array(
+                            "enable" => true,
+                        ),
                     ),
                     "test" => true,
                 ),
@@ -307,6 +315,7 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                 ),
                 array(
                     "DriverInfo" => array(
+                        "NumSensors" => 16,
                         "TimeConstant" => 0,
                     ),
                     "id"         => 0x123456,
@@ -367,8 +376,10 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     ),
                     "script_gateway" => 1,
                     "admin_email" => "test@dflytech.com",
-                    "config" => array(
-                        "enable" => false,
+                    "pluginData" => array(
+                        "DeviceConfigPlugin" => array(
+                            "enable" => false,
+                        ),
                     ),
                     "test" => true,
                 ),
@@ -398,6 +409,7 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                 ),
                 array(
                     "DriverInfo" => array(
+                        "NumSensors" => 16,
                         "TimeConstant" => 0,
                     ),
                     "id"         => 0x123456,
@@ -414,7 +426,25 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     "Driver" => "e00392800",
                     "PollInterval"      => "0",
                     "ActiveSensors"     => "0",
-                    "sensors"           => array(),
+                    "sensors"           => array(
+                        "Sensors" => 16,
+                        0 => array("id" => 0, "type" => "BCTherm2322640"),
+                        1 => array("id" => 0, "type" => "BCTherm2322640"),
+                        2 => array("id" => 0, "type" => "BCTherm2322640"),
+                        3 => array("id" => 0, "type" => "BCTherm2322640"),
+                        4 => array("id" => 0, "type" => "BCTherm2322640"),
+                        5 => array("id" => 0, "type" => "BCTherm2322640"),
+                        6 => array("id" => 0, "type" => "BCTherm2322640"),
+                        7 => array("id" => 0, "type" => "BCTherm2322640"),
+                        8 => array("id" => 0, "type" => "BCTherm2322640"),
+                        9 => array("id" => 0, "type" => "BCTherm2322640"),
+                        10 => array("id" => 0, "type" => "BCTherm2322640"),
+                        11 => array("id" => 0, "type" => "BCTherm2322640"),
+                        12 => array("id" => 0, "type" => "BCTherm2322640"),
+                        13 => array("id" => 0, "type" => "BCTherm2322640"),
+                        14 => array("id" => 0, "type" => "BCTherm2322640"),
+                        15 => array("id" => 0, "type" => "BCTherm2322640"),
+                    ),
                     "params" => array(
                         "DriverInfo" => array(
                             "LastConfig" => 1275688484,
@@ -434,8 +464,10 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     ),
                     "script_gateway" => 1,
                     "admin_email" => "test@dflytech.com",
-                    "config" => array(
-                        "enable" => true,
+                    "pluginData" => array(
+                        "DeviceConfigPlugin" => array(
+                            "enable" => true,
+                        ),
                     ),
                     "test" => true,
                 ),
@@ -445,7 +477,7 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                 array(
                     "To" => "000000",
                     "From" => "123456",
-                    "Command" => "5C",
+                    "Command" => '5C',
                     "group" => "default",
                 ),
                 array(
@@ -462,7 +494,13 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     "PollInterval"      => "0",
                     "ActiveSensors"     => "0",
                     "sensors" => array(),
-                    "params" => array(),
+                    "params" => array(
+                        "DriverInfo" => array(
+                            "LastConfig" => 0,
+                            "ConfigFail" => 0,
+                            "LastConfigTry" => 0,
+                        ),
+                    ),
                 ),
                 "",
             ),

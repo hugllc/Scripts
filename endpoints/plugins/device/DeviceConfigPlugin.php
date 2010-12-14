@@ -76,7 +76,6 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
     public function __construct($config, DeviceProcess &$obj)
     {
         parent::__construct($config, $obj);
-        $this->enable = $this->control->myConfig->config["enable"];
         $this->deactivate = $this->control->myConfig->config["deactivate"];
         if (!$this->enable) {
             return;
@@ -231,7 +230,6 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
         $this->unsolicited->GatewayKey = $this->gatewayKey;
         // Set the last contact date
         $this->unsolicited->params->LastContact = time();
-
         if (!$empty) {
             // If it is not empty, reset the LastConfig.  This causes it to actually
             // try to get the config.

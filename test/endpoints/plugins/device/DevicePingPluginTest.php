@@ -76,8 +76,10 @@ class DevicePingPluginTest extends DeviceProcessPluginTestBase
             ),
             "script_gateway" => 1,
             "admin_email" => "test@dflytech.com",
-            "poll" => array(
-                "enable" => true,
+            "pluginData" => array(
+                "DeviceConfigPlugin" => array(
+                    "enable" => true,
+                ),
             ),
             "test" => true,
         );

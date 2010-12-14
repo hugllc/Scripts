@@ -60,8 +60,6 @@ class HistoryTableSyncPlugin extends PeriodicPluginBase
     );
     /** @var This is when we were created */
     protected $firmware = 0;
-    /** @var This says if we are enabled or not */
-    protected $enabled = true;
     /**
     * This function sets up the driver object, and the database object.  The
     * database object is taken from the driver object.
@@ -74,7 +72,7 @@ class HistoryTableSyncPlugin extends PeriodicPluginBase
     public function __construct($config, PeriodicPlugins &$obj)
     {
         parent::__construct($config, $obj);
-        $this->enable = $this->control->myConfig->poll["enable"];
+        $this->enable &= $this->control->myConfig->poll["enable"];
         $this->enableRemote = $this->control->myConfig->servers->available("remote");
         if (!$this->enable) {
             return;

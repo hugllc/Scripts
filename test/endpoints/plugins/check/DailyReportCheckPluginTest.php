@@ -70,8 +70,10 @@ class DailyReportCheckPluginTest extends CheckPluginTestBase
         $config = array(
             "script_gateway" => 1,
             "admin_email" => "test@dflytech.com",
-            "check" => array(
-                "send_daily" => true,
+            "pluginData" => array(
+                "DailyReportCheckPlugin" => array(
+                    "enable" => true,
+                ),
             ),
             "test" => true,
         );
@@ -126,8 +128,10 @@ class DailyReportCheckPluginTest extends CheckPluginTestBase
                 array(
                     "script_gateway" => 1,
                     "admin_email" => "test@dflytech.com",
-                    "check" => array(
-                        "send_daily" => true,
+                    "pluginData" => array(
+                        "DailyReportCheckPlugin" => array(
+                            "enable" => true,
+                        ),
                     ),
                 ),
                 array(
@@ -144,8 +148,10 @@ class DailyReportCheckPluginTest extends CheckPluginTestBase
                 array(
                     "script_gateway" => 1,
                     "admin_email" => "",
-                    "check" => array(
-                        "send_daily" => true,
+                    "pluginData" => array(
+                        "DailyReportCheckPlugin" => array(
+                            "enabkle" => true,
+                        ),
                     ),
                 ),
                 array(
@@ -162,8 +168,10 @@ class DailyReportCheckPluginTest extends CheckPluginTestBase
                 array(
                     "script_gateway" => 1,
                     "admin_email" => "test@dflytech.com",
-                    "check" => array(
-                        "send_daily" => false,
+                    "pluginData" => array(
+                        "DailyReportCheckPlugin" => array(
+                            "enable" => false,
+                        ),
                     ),
                 ),
                 array(
@@ -222,27 +230,77 @@ class DailyReportCheckPluginTest extends CheckPluginTestBase
     {
         return array(
             array(
+                array(
+                    "script_gateway" => 1,
+                    "admin_email" => "test@dflytech.com",
+                    "pluginData" => array(
+                        "DailyReportCheckPluginTestStub" => array(
+                            "enable" => true,
+                        ),
+                    ),
+                    "test" => true,
+                ),
                 time(),
                 false,
             ),
             array(
+                array(
+                    "script_gateway" => 1,
+                    "admin_email" => "test@dflytech.com",
+                    "pluginData" => array(
+                        "DailyReportCheckPluginTestStub" => array(
+                            "enable" => true,
+                        ),
+                    ),
+                    "test" => true,
+                ),
                 time()-86400,
                 true,
+            ),
+            array(
+                array(
+                    "script_gateway" => 1,
+                    "admin_email" => "test@dflytech.com",
+                    "pluginData" => array(
+                        "DailyReportCheckPluginTestStub" => array(
+                            "enable" => false,
+                        ),
+                    ),
+                    "test" => true,
+                ),
+                time()-86400,
+                false,
+            ),
+            array(
+                array(
+                    "script_gateway" => 1,
+                    "admin_email" => "",
+                    "pluginData" => array(
+                        "DailyReportCheckPluginTestStub" => array(
+                            "enable" => true,
+                        ),
+                    ),
+                    "test" => true,
+                ),
+                time()-86400,
+                false,
             ),
         );
     }
     /**
     * test the constructor
     *
-    * @param int  $last   The date to set as the last run
-    * @param bool $expect The expected return value
+    * @param array $config The configuration to use
+    * @param int   $last   The date to set as the last run
+    * @param bool  $expect The expected return value
     *
     * @return null
     *
     * @dataProvider dataReady
     */
-    public function testReady($last, $expect)
+    public function testReady($config, $last, $expect)
     {
+        $this->config->forceConfig($config);
         $o = new DailyReportCheckPluginTestStub(array(), $this->control);
         $o->last($last);
         $this->assertSame($expect, $o->ready());

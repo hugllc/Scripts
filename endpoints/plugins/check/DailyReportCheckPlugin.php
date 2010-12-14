@@ -81,7 +81,6 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
     public function __construct($config, PeriodicPlugins &$obj)
     {
         parent::__construct($config, $obj);
-        $this->enable = $this->control->myConfig->check["send_daily"];
         $this->_to = $this->control->myConfig->admin_email;
         $this->enable = $this->enable && !empty($this->_to);
         if (!$this->enable) {
