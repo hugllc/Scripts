@@ -35,6 +35,7 @@
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  *
  */
+require_once HUGNET_INCLUDE_PATH."/base/DeviceProcessPluginBase.php";
 /**
  * Base class for all other classes
  *
