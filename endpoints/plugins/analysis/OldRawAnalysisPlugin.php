@@ -56,7 +56,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
     /** @var This is to register the class */
     public static $registerPlugin = array(
         "Name" => "OldRawAnalysis",
-        "Type" => "analysis",
+        "Type" => "analysisPeriodic",
         "Class" => "OldRawAnalysisPlugin",
     );
     /**
@@ -77,12 +77,12 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         }
         $this->raw = new RawHistoryTable();
         // We don't want more than 10 records at a time;
-        $this->raw->sqlLimit = 100;
+        $this->raw->sqlLimit = 1000;
         $this->raw->sqlOrderBy = "Date asc";
         $this->oldRaw = new GenericTable(array("group" => "old"));
         $this->oldRaw->forceTable("history_raw");
         $this->oldRaw->sqlOrderBy = "Date desc";
-        $this->oldRaw->sqlLimit = 100;
+        $this->oldRaw->sqlLimit = 1000;
         $this->pkt = new PacketContainer();
         $this->oldDev = new GenericTable(array("group" => "old"));
         $this->oldDev->sqlID = "DeviceKey";
@@ -196,7 +196,8 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         if ($failed > 0) {
             // State we did some uploading
             self::vprint(
-                "$failed raw history records failed to insert ",
+                "$failed raw history records failed to insert ".
+                date("Y-m-d H:i:s", $last)." - ".date("Y-m-d H:i:s", $now),
                 HUGnetClass::VPRINT_NORMAL
             );
         }
