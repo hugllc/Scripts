@@ -176,7 +176,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             $now = $this->raw->Date;
             $ret = $this->oldRaw->nextInto();
         }
-//        $this->raw->insertEnd();
+        $this->raw->insertEnd();
         if ($local > 0) {
             // State we did some uploading
             self::vprint(
