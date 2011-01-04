@@ -62,6 +62,10 @@ class DevicesHistoryTableSyncPlugin extends PeriodicPluginBase
     protected $firmware = 0;
     /** @var This says if we are enabled or not */
     protected $enabled = true;
+    /** @var This is our configuration */
+    protected $defConf = array(
+        "enabled"   => true,
+    );
     /**
     * This function sets up the driver object, and the database object.  The
     * database object is taken from the driver object.

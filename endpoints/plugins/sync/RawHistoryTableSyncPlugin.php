@@ -60,6 +60,10 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
     );
     /** @var This is when we were created */
     protected $firmware = 0;
+    /** @var This is our configuration */
+    protected $defConf = array(
+        "enabled"   => true,
+    );
     /**
     * This function sets up the driver object, and the database object.  The
     * database object is taken from the driver object.
