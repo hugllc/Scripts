@@ -189,7 +189,8 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         if ($bad > 0) {
             // State we did some uploading
             self::vprint(
-                "Found $bad bad raw history records",
+                "Found $bad bad raw history records ".
+                date("Y-m-d H:i:s", $last)." - ".date("Y-m-d H:i:s", $now),
                 HUGnetClass::VPRINT_NORMAL
             );
         }

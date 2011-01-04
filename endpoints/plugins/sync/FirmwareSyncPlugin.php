@@ -86,8 +86,8 @@ class FirmwareSyncPlugin extends PeriodicPluginBase
     */
     public function main()
     {
-        $path  = $this->control->myConfig->sync["downloads"]."/";
-        $path .= $this->control->myConfig->sync["firmware"];
+        $path  = $this->conf["downloads"]."/";
+        $path .= $this->conf["firmware"];
         // State we are looking for firmware
         self::vprint(
             "Checking for new firmware at ".trim($path),
