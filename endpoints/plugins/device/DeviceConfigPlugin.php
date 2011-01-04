@@ -66,7 +66,7 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
     );
     /** @var This is our configuration */
     protected $defConf = array(
-        "enabled"   => true,
+        "enable"   => true,
     );
     /**
     * This function sets up the driver object, and the database object.  The

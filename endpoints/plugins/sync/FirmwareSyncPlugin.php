@@ -62,7 +62,7 @@ class FirmwareSyncPlugin extends PeriodicPluginBase
     protected $firmware = 0;
     /** @var This is our configuration */
     protected $defConf = array(
-        "enabled"   => true,
+        "enable"   => true,
         "downloads" => "http://downloads.hugllc.com",   // Where to get stuff
         "firmware"  => "firmware",       // The firmware directory
     );
