@@ -78,6 +78,9 @@ class FirmwareSyncPlugin extends PeriodicPluginBase
     public function __construct($config, PeriodicPlugins &$obj)
     {
         parent::__construct($config, $obj);
+        if (!$this->enable) {
+            return;
+        }
         $this->firmware = new FirmwareTable();
         // State we are here
         self::vprint(
