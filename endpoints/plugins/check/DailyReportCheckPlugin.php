@@ -67,8 +67,10 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
     private $_to = null;
     /** @var This is the array of devices in our gateway */
     private $_subject = null;
-    /** @var This says if we are enabled or not */
-    protected $enabled = true;
+    /** @var This is our configuration */
+    protected $defConf = array(
+        "enable"   => true,
+    );
     /**
     * This function sets up the driver object, and the database object.  The
     * database object is taken from the driver object.
