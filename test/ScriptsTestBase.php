@@ -37,7 +37,7 @@
  */
 
 // Need to make sure this file is not added to the code coverage
-PHPUnit_Util_Filter::addFileToFilter(__FILE__);
+PHP_CodeCoverage_Filter::getInstance()->addFileToBlacklist(__FILE__);
 
 if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
     include_once "/home/hugnet/HUGnetLib/hugnet.inc.php";
@@ -51,7 +51,7 @@ if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
     }
 }
 require_once HUGNET_INCLUDE_PATH."/containers/ConfigContainer.php";
-PHPUnit_Util_Filter::addDirectoryToFilter(HUGNET_INCLUDE_PATH);
+PHP_CodeCoverage_Filter::getInstance()->addDirectoryToBlacklist(HUGNET_INCLUDE_PATH);
 
 /**
  * Test class for filter.

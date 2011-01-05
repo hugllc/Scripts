@@ -37,7 +37,7 @@
  */
 
 // Need to make sure this file is not added to the code coverage
-PHPUnit_Util_Filter::addFileToFilter(__FILE__);
+PHP_CodeCoverage_Filter::getInstance()->addFileToBlacklist(__FILE__);
 require_once dirname(__FILE__)."/../../ScriptsTestBase.php";
 require_once HUGNET_INCLUDE_PATH."/processes/PeriodicPlugins.php";
 /**
@@ -74,7 +74,7 @@ abstract class PluginTestBase extends ScriptsTestBase
     public function testRegisterPlugin($class)
     {
         $var = eval("return $class::\$registerPlugin;");
-        $this->assertType(
+        $this->assertInternalType(
             "array",
             $var,
             "registerPlugins is not an array"
@@ -83,7 +83,7 @@ abstract class PluginTestBase extends ScriptsTestBase
             empty($var["Name"]),
             "Name is empty"
         );
-        $this->assertType(
+        $this->assertInternalType(
             "string",
             $var["Type"],
             "Type is not a string"

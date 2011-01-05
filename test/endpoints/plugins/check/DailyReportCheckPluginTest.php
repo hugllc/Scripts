@@ -208,13 +208,13 @@ class DailyReportCheckPluginTest extends CheckPluginTestBase
         $this->assertAttributeSame($enable, "enable", $o, "Enable is wrong");
         if ($enable) {
             $dev = $this->readAttribute($o, "device");
-            $this->assertType("object", $dev);
+            $this->assertInternalType("object", $dev);
             $this->assertTrue(is_a($dev, "DeviceContainer"));
             $this->assertAttributeSame(
                 $gatewayKey, "gatewayKey", $o, "Gateway Key is Wrong"
             );
             $subject = $this->readAttribute($o, "_subject");
-            $this->assertType("string", $subject);
+            $this->assertInternalType("string", $subject);
             $this->assertFalse(empty($subject));
             $this->assertAttributeSame(
                 $to, "_to", $o, "To field is wrong"

@@ -183,13 +183,13 @@ class CriticalErrorCheckPluginTest extends CheckPluginTestBase
         $this->assertAttributeSame($enable, "enable", $o, "Enable is wrong");
         if ($enable) {
             $error = $this->readAttribute($o, "error");
-            $this->assertType("object", $error, "error is not an object");
+            $this->assertInternalType("object", $error, "error is not an object");
             $this->assertTrue(is_a($error, "ErrorTable"), "ErrorTable is wrong");
             $this->assertAttributeSame(
                 $gatewayKey, "gatewayKey", $o, "Gateway Key is Wrong"
             );
             $subject = $this->readAttribute($o, "_subject");
-            $this->assertType("string", $subject);
+            $this->assertInternalType("string", $subject);
             $this->assertFalse(empty($subject));
         }
     }
