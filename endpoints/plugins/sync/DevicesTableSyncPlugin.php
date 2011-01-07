@@ -60,8 +60,16 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
     );
     /** @var This is when we were created */
     protected $firmware = 0;
-    /** @var This says if we are enabled or not */
-    protected $enabled = true;
+    /** @var These are the keys to copy over */
+    protected $remoteCopy = array(
+        "driverInfo" => array(
+            "LastConfig", "LastPoll", "LastContact"
+        ),
+        "keys" => array(
+            "RawSetup", "ControllerKey", "ControllerIndex", "Driver",
+            "FWVersion", "FWPartNum", "HWPartNum"
+        ),
+    );
     /** @var This is our configuration */
     protected $defConf = array(
         "enable"   => true,
@@ -127,9 +135,20 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
                 // Don't want to update gateways
                 continue;
             } else if ($this->device->id < 0xFD0000) {
-                $this->remoteDevice->fromArray($this->device->toDB());
-                // Replace the row
-                $this->remoteDevice->insertRow(true);
+                $ret = $this->remoteDevice->getRow($key);
+                if ($ret) {
+                    foreach ($this->remoteCopy["keys"] as $key) {
+                        $this->remoteDevice->$key = $this->device->$key;
+                    }
+                    foreach ($this->remoteCopy["driverInfo"] as $key) {
+                        $this->remoteDevice->params->DriverInfo[$key]
+                            = $this->device->DriverInfo[$key];
+                    }
+                } else {
+                    $this->remoteDevice->fromArray($this->device->toDB());
+                    // Insert a new row since we didn't find one.
+                    $this->remoteDevice->insertRow(false);
+                }
             }
         }
     }

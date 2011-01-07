@@ -59,13 +59,10 @@ $endpoint->packet->SNCheck(false);
 //Only try twice per server.
 $endpoint->socket->Retries = 2;
 $endpoint->socket->PacketTimeout = 6;
-$firmware =& HUGnetDB::getInstance("firmware", $hugnet_config); //new firmware($endpoint->db);
-//$config = $hugnet_config;
-//$config["table"] = "endpoints";
-//$ep =& HUGnetDB::getInstance("HUGnetDB", $config); //new firmware($endpoint->db);
+$firmware =& HUGnetDB::getInstance("firmware", $hugnet_config);
 $config = $hugnet_config;
 $config["table"] = "testLog";
-$testLog =& HUGnetDB::getInstance("HUGnetDB", $config); //new firmware($endpoint->db);
+$testLog =& HUGnetDB::getInstance("HUGnetDB", $config);
 
 /*
 $where = "Obsolete=0";
@@ -78,7 +75,7 @@ while (empty($tester)) {
     $tester = trim(fgets(STDIN));
 }
 
-while(empty($hwPart)) {
+while (empty($hwPart)) {
     fwrite(STDOUT, "Hardware Part Number:  \n");
     foreach ($res as $k => $f) {
         fwrite(STDOUT, $k.".  ".$f['HWPartNum']."\n");
@@ -128,7 +125,8 @@ if (!isset($hwPart['Param']['firmware'])) {
 } else {
     $fwPart = $firmware->GetLatestFirmware($hwPart['Param']['firmware']);
 }
-print "Using firmware part number '".$fwPart['FWPartNum']."' v".$fwPart['FirmwareVersion']."\n";
+print "Using firmware part number '".$fwPart['FWPartNum'];
+print "' v".$fwPart['FirmwareVersion']."\n";
 while (empty($startSN)) {
     fwrite(STDOUT, "Starting Serial Number (in Hexadecimal):  ");
     $startSN = hexdec(fgets(STDIN));
@@ -154,7 +152,6 @@ if ($programOnly !== true) {
     print " Done \n";
 }
 while (1) {
-//          $Prog = 'uisp -dprog=dapa -v=0 -dpart='.$hwPart['Param']['cpu'].' -dlpt=/dev/parport0';
     $Prog = 'avrdude -p '.$hwPart['Param']['cpu'].' -c avrisp2 -P usb ';
 
     // Start the device Info array
@@ -170,7 +167,9 @@ while (1) {
     print "Press <enter> to continue, q<enter> to quit\n";
 
     $input = fgets(STDIN);
-    if (trim(strtolower($input)) == "q") break;
+    if (trim(strtolower($input)) == "q") {
+        break;
+    }
     $testStart = time();
 
 
@@ -178,29 +177,35 @@ while (1) {
     // SET the fuses
     print "Setting Fuses...";
     $fuse = ' -U hfuse:w:'.$hwPart['Param']['fusehigh'].':m';
-    if ($verbose) print "\nUsing: ".$Prog.$fuse."\n";
+    if ($verbose) {
+        print "\nUsing: ".$Prog.$fuse."\n";
+    }
     exec($Prog.$fuse, $out, $pass['FuseHigh']);
     print " Low ";
 
     $fuse = ' -U lfuse:w:'.$hwPart['Param']['fuselow'].':m';
-    if ($verbose) print "\nUsing: ".$Prog.$fuse."\n";
+    if ($verbose) {
+        print "\nUsing: ".$Prog.$fuse."\n";
+    }
     exec($Prog.$fuse, $out, $pass['FuseLow']);
     print " High ";
 
     if (isset($hwPart['Param']['fuseextended'])) {
         $fuse = ' -U efuse:w:'.$hwPart['Param']['fuseextended'].':m';
-        if ($verbose) print "\nUsing: ".$Prog.$fuse."\n";
+        if ($verbose) {
+            print "\nUsing: ".$Prog.$fuse."\n";
+        }
         exec($Prog.$fuse, $out, $pass['FuseExtended']);
         print " Extended ";
     }
-/*
+    /*
     if (isset($hwPart['Param']['lockbits'])) {
         $fuse = ' -U lock:w:'.$hwPart['Param']['lockbits'].':m';
         if ($verbose) print "\nUsing: ".$Prog.$fuse."\n";
         exec($Prog.$fuse, $out, $pass['LockBits']);
         print " Lock Bits ";
     }
-*/
+    */
     print " Done \n";
 
 
@@ -212,7 +217,9 @@ while (1) {
     fclose($fp);
     $flash = ' -U flash:w:'.$tempname;
 
-    if ($verbose) print "\nUsing: ".$Prog.$flash."\n";
+    if ($verbose) {
+        print "\nUsing: ".$Prog.$flash."\n";
+    }
     exec($Prog.$flash, $out, $pass['Program']);
     unlink($tempname);
     print " Done \n";
@@ -226,7 +233,9 @@ while (1) {
     fclose($fp);
     $eeprom = ' -D -U eeprom:w:'.$tempname;
 
-    if ($verbose) print "\nUsing: ".$Prog.$eeprom."\n";
+    if ($verbose) {
+        print "\nUsing: ".$Prog.$eeprom."\n";
+    }
     exec($Prog.$eeprom, $out, $pass['Data']);
     unlink($tempname);
     print " Done \n";
@@ -238,10 +247,11 @@ while (1) {
     $tempname = writeSREC($SN, $hwPart['HWPartNum']);
 
     $eeprom = ' -U eeprom:w:'.$tempname;
-    if ($verbose) print "\nUsing: ".$Prog.$eeprom."\n";
+    if ($verbose) {
+        print "\nUsing: ".$Prog.$eeprom."\n";
+    }
     exec($Prog.$eeprom, $out, $pass['Serialnum']);
     print " Done \n";
-//        print "Writing Firmware Program... ";
 
     // Get the configuration
     if ($programOnly !== true) {
@@ -267,7 +277,12 @@ while (1) {
         if (method_exists($endpoint->drivers[$dev['Driver']], "loadProgram")) {
             print "Loading program...\n";
             $res = $firmware->GetLatestFirmware('0039-20-01-C');
-            $pass['Load Program'] = !(bool)($endpoint->drivers[$dev['Driver']]->loadProgram($dev, $dev, $res["FirmwareKey"]));
+            $pass['Load Program']
+                = !(bool)$endpoint->drivers[$dev['Driver']]->loadProgram(
+                    $dev,
+                    $dev,
+                    $res["FirmwareKey"]
+                );
             print "Done\r\n";
         }
 
@@ -313,7 +328,6 @@ while (1) {
     } else {
         // UPdate the database
         print "Updating Database...";
-//        $return = $endpoint->db->AutoExecute($endpoint->device_table, $dev, 'INSERT');
         $endpoint->device->add($dev);
         if ($return) {
             print " Done ";
@@ -322,7 +336,8 @@ while (1) {
         }
         print "\r\n";
 
-        print "\n\nThis device Passed.  Please mark it with the serial number ".$dev['DeviceID']."\n\n";
+        print "\n\nThis device Passed.  Please mark it with the serial number ";
+        print $dev['DeviceID']."\n\n";
         $SN++;
     }
 
@@ -331,7 +346,15 @@ while (1) {
 print "Finished\n";
 exit    (0);
 
-function getControllers($hugnet_config) {
+/**
+* This writes the srecord
+*
+* @param array $hugnet_config The configuration to use
+*
+* @return string the file name used
+*/
+function getControllers($hugnet_config)
+{
     $endpoint =& HUGnetDriver::getInstance($hugnet_config);
 
     $cPkt = array("to" => "FFFFFF", "command" => "DC");
@@ -344,9 +367,15 @@ function getControllers($hugnet_config) {
 
             $config = $endpoint->InterpConfig($cfg);
             $cont[$p['From']] = $config;
-               if (method_exists($endpoint->drivers[$config['Driver']], "checkProgram")) {
+            $exists = method_exists(
+                $endpoint->drivers[$config['Driver']],
+                "checkProgram"
+            );
+            if ($exists) {
                 print " Checking Program ";
-                $ret = $endpoint->drivers[$config['Driver']]->checkProgram($config, $cfg, true);
+                $ret = $endpoint->drivers[$config['Driver']]->checkProgram(
+                    $config, $cfg, true
+                );
                 if ($ret) {
                     print " Done ";
                 } else {
@@ -361,8 +390,17 @@ function getControllers($hugnet_config) {
     return ($cont);
 }
 
-
-function writeSREC($sn, $pn, $file="/tmp/uispsn") {
+/**
+* This writes the srecord
+*
+* @param string $sn   The serial number to use
+* @param string $pn   The part number to use
+* @param string $file The file name to use
+*
+* @return string the file name used
+*/
+function writeSREC($sn, $pn, $file="/tmp/uispsn")
+{
 
     $sn = dechex($sn);
     $sn = str_pad($sn, 10, '0', STR_PAD_LEFT);

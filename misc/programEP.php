@@ -115,7 +115,16 @@ if (!empty($firmware->id)) {
 /**
  * @endcond
  */
-function writeSREC($data, $file) {
+/**
+* This writes the srecord
+*  
+* @param string $data The data to write
+* @param string $file The file name to use
+* 
+* @return string the file name used
+*/
+function writeSREC($data, $file)
+{
 
 
     $len = strlen($data)/2 + 3;

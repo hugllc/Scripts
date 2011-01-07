@@ -58,10 +58,10 @@ class DevicesTableUpgradePlugin extends PeriodicPluginBase
         "Type" => "periodic",
         "Class" => "DevicesTableUpgradePlugin",
     );
-    /** @var This is when we were created */
-    protected $firmware = 0;
-    /** @var This says if we are enabled or not */
-    protected $enabled = true;
+    /** @var This is our configuration */
+    protected $defConf = array(
+        "enable"   => false,
+    );
     /**
     * This function sets up the driver object, and the database object.  The
     * database object is taken from the driver object.
@@ -74,7 +74,8 @@ class DevicesTableUpgradePlugin extends PeriodicPluginBase
     public function __construct($config, PeriodicPlugins &$obj)
     {
         parent::__construct($config, $obj);
-        $this->enable = $this->control->myConfig->servers->available("old");
+        $old = $this->control->myConfig->servers->available("old");
+        $this->enable = $this->enable && $old;
         if (!$this->enable) {
             return;
         }

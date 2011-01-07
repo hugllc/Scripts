@@ -99,16 +99,13 @@ class HistoryCrunchAnalysisPlugin extends DeviceProcessPluginBase
     public function main(DeviceContainer &$dev)
     {
         $last = &$dev->params->DriverInfo["LastHistory"];
-//        $last = 0;
         // Get the devices
-//print date("Y-m-d H:i:s", $last)." => ".date("Y-m-d H:i:s")."\n";
         $ret = $this->raw->getPeriod((int)$last, time(), $dev->id, "id");
         $bad = 0;
         $local = 0;
         if ($ret) {
             // Go through the records
             do {
-//                print $dev->id." - ".$this->raw->id." - ".date("Y-m-d H:i:s", $this->raw->Date)."\n";
                 $now = $this->raw->Date;
                 $id = $this->raw->id;
                 $hist = &$this->raw->toHistoryTable($prev);
