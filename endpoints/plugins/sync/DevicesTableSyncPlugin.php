@@ -67,7 +67,7 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
         ),
         "keys" => array(
             "RawSetup", "ControllerKey", "ControllerIndex", "Driver",
-            "FWVersion", "FWPartNum", "HWPartNum"
+            "FWVersion", "FWPartNum", "HWPartNum", "GatewayKey"
         ),
     );
     /** @var This is our configuration */
