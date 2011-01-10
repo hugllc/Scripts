@@ -106,8 +106,8 @@ class AverageDailyAnalysisPlugin extends DeviceProcessPluginBase
 
         $avg = &$dev->historyFactory($data, false);
 
-        $last = &$dev->params->DriverInfo["LastAverageDaily"];
-        $dev->params->DriverInfo["LastAverageDailyTry"] = time();
+        $last = &$dev->params->DriverInfo["LastAverageDAILY"];
+        $dev->params->DriverInfo["LastAverageDAILYTry"] = time();
         $ret = $hist->getPeriod(
             (int)$last, time(), $dev->id, AverageTableBase::AVERAGE_HOURLY
         );
@@ -156,7 +156,7 @@ class AverageDailyAnalysisPlugin extends DeviceProcessPluginBase
     */
     public function ready(DeviceContainer &$dev)
     {
-        $last = &$dev->params->DriverInfo["LastAverageDailyTry"];
+        $last = &$dev->params->DriverInfo["LastAverageDAILYTry"];
         // Run when enabled, and at most every 15 minutes.
         return $this->enable
             && ((time() - $last) > 3600);

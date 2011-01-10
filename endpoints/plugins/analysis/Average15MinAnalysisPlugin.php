@@ -106,9 +106,9 @@ class Average15MinAnalysisPlugin extends DeviceProcessPluginBase
 
         $avg = &$dev->historyFactory($data, false);
 
-        $last = &$dev->params->DriverInfo["LastAverage15Min"];
-        $lastTry = &$dev->params->DriverInfo["LastAverage15MinTry"];
-        $local = &$dev->params->DriverInfo["LastAverage15MinCnt"];
+        $last = &$dev->params->DriverInfo["LastAverage15MIN"];
+        $lastTry = &$dev->params->DriverInfo["LastAverage15MINTry"];
+        $local = &$dev->params->DriverInfo["LastAverage15MINCnt"];
         $ret = $hist->getPeriod((int)$last, time(), $dev->id, "id");
 
         $bad = 0;
@@ -157,8 +157,8 @@ class Average15MinAnalysisPlugin extends DeviceProcessPluginBase
     {
         // Run when enabled, and at most every 15 minutes.
         return $this->enable
-            && (((time() - $dev->params->DriverInfo["LastAverage15MinTry"]) > 900)
-            || ($dev->params->DriverInfo["LastAverage15MinCnt"] > 1));
+            && (((time() - $dev->params->DriverInfo["LastAverage15MINTry"]) > 900)
+            || ($dev->params->DriverInfo["LastAverage15MINCnt"] > 1));
     }
 
 }

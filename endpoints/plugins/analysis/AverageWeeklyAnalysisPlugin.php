@@ -106,8 +106,8 @@ class AverageWeeklyAnalysisPlugin extends DeviceProcessPluginBase
 
         $avg = &$dev->historyFactory($data, false);
 
-        $last = &$dev->params->DriverInfo["LastAverageWeekly"];
-        $dev->params->DriverInfo["LastAverageWeeklyTry"] = time();
+        $last = &$dev->params->DriverInfo["LastAverageWEEKLY"];
+        $dev->params->DriverInfo["LastAverageWEEKLYTry"] = time();
         $ret = $hist->getPeriod(
             (int)$last, time(), $dev->id, AverageTableBase::AVERAGE_DAILY
         );
@@ -156,7 +156,7 @@ class AverageWeeklyAnalysisPlugin extends DeviceProcessPluginBase
     */
     public function ready(DeviceContainer &$dev)
     {
-        $last = &$dev->params->DriverInfo["LastAverageWeeklyTry"];
+        $last = &$dev->params->DriverInfo["LastAverageWEEKLYTry"];
         // Run when enabled, and at most every 15 minutes.
         return $this->enable
             && ((time() - $last) > 86400);

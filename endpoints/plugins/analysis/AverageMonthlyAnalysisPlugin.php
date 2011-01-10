@@ -106,8 +106,8 @@ class AverageMonthlyAnalysisPlugin extends DeviceProcessPluginBase
 
         $avg = &$dev->historyFactory($data, false);
 
-        $last = &$dev->params->DriverInfo["LastAverageMonthly"];
-        $dev->params->DriverInfo["LastAverageMonthlyTry"] = time();
+        $last = &$dev->params->DriverInfo["LastAverageMONTHLY"];
+        $dev->params->DriverInfo["LastAverageMONTHLYTry"] = time();
         $ret = $hist->getPeriod(
             (int)$last, time(), $dev->id, AverageTableBase::AVERAGE_DAILY
         );
@@ -156,7 +156,7 @@ class AverageMonthlyAnalysisPlugin extends DeviceProcessPluginBase
     */
     public function ready(DeviceContainer &$dev)
     {
-        $last = &$dev->params->DriverInfo["LastAverageMonthlyTry"];
+        $last = &$dev->params->DriverInfo["LastAverageMONTHLYTry"];
         // Run when enabled, and at most every 15 minutes.
         return $this->enable
             && ((time() - $last) > 86400);

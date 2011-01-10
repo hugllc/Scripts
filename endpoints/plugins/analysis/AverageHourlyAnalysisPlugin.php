@@ -105,8 +105,8 @@ class AverageHourlyAnalysisPlugin extends DeviceProcessPluginBase
         $hist->sqlOrderBy = "Date asc";
         $avg = &$dev->historyFactory($data, false);
 
-        $last = &$dev->params->DriverInfo["LastAverageHourly"];
-        $dev->params->DriverInfo["LastAverageHourlyTry"] = time();
+        $last = &$dev->params->DriverInfo["LastAverageHOURLY"];
+        $dev->params->DriverInfo["LastAverageHOURLYTry"] = time();
         $ret = $hist->getPeriod(
             (int)$last, time(), $dev->id, AverageTableBase::AVERAGE_15MIN
         );
@@ -157,7 +157,7 @@ class AverageHourlyAnalysisPlugin extends DeviceProcessPluginBase
     {
         // Run when enabled, and at most every 15 minutes.
         return $this->enable
-            && ((time() - $dev->params->DriverInfo["LastAverageHourlyTry"]) > 3600);
+            && ((time() - $dev->params->DriverInfo["LastAverageHOURLYTry"]) > 3600);
     }
 
 }
