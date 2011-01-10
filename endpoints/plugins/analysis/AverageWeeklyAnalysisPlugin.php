@@ -97,7 +97,11 @@ class AverageWeeklyAnalysisPlugin extends DeviceProcessPluginBase
     {
         $hist = &$dev->historyFactory($data, false);
         // We don't want more than 40 records at a time;
-        $hist->sqlLimit = 40;
+        if (empty($this->conf["maxRecords"])) {
+            $hist->sqlLimit = 22;
+        } else {
+            $hist->sqlLimit = $this->conf["maxRecords"];
+        }
         $hist->sqlOrderBy = "Date asc";
 
         $avg = &$dev->historyFactory($data, false);

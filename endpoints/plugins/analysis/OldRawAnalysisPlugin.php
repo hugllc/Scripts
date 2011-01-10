@@ -79,14 +79,19 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         if (!$this->enable) {
             return;
         }
+        if (empty($this->conf["maxRecords"])) {
+            $maxRec = 1000;
+        } else {
+            $maxRec = $this->conf["maxRecords"];
+        }
         $this->raw = new RawHistoryTable();
         // We don't want more than 10 records at a time;
-        $this->raw->sqlLimit = 1000;
+        $this->raw->sqlLimit = $maxRec;
         $this->raw->sqlOrderBy = "Date asc";
         $this->oldRaw = new GenericTable(array("group" => "old"));
         $this->oldRaw->forceTable("history_raw");
         $this->oldRaw->sqlOrderBy = "Date desc";
-        $this->oldRaw->sqlLimit = 1000;
+        $this->oldRaw->sqlLimit = $maxRec;
         $this->pkt = new PacketContainer();
         $this->oldDev = new GenericTable(array("group" => "old"));
         $this->oldDev->sqlID = "DeviceKey";

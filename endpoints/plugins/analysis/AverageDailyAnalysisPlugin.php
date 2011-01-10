@@ -97,7 +97,11 @@ class AverageDailyAnalysisPlugin extends DeviceProcessPluginBase
     {
         $hist = &$dev->historyFactory($data, false);
         // We don't want more than 100 records at a time;
-        $hist->sqlLimit = 100;
+        if (empty($this->conf["maxRecords"])) {
+            $hist->sqlLimit = 100;
+        } else {
+            $hist->sqlLimit = $this->conf["maxRecords"];
+        }
         $hist->sqlOrderBy = "Date asc";
 
         $avg = &$dev->historyFactory($data, false);

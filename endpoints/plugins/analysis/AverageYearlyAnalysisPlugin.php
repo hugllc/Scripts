@@ -97,7 +97,11 @@ class AverageYearlyAnalysisPlugin extends DeviceProcessPluginBase
     {
         $hist = &$dev->historyFactory($data, false);
         // We don't want more than 15 records at a time;
-        $hist->sqlLimit = 15;
+        if (empty($this->conf["maxRecords"])) {
+            $hist->sqlLimit = 15;
+        } else {
+            $hist->sqlLimit = $this->conf["maxRecords"];
+        }
         $hist->sqlOrderBy = "Date asc";
 
         $avg = &$dev->historyFactory($data, false);

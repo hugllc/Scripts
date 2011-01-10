@@ -82,7 +82,11 @@ class HistoryCrunchAnalysisPlugin extends DeviceProcessPluginBase
         }
         $this->raw = new RawHistoryTable();
         // We don't want more than 10 records at a time;
-        $this->raw->sqlLimit = 100;
+        if (empty($this->conf["maxRecords"])) {
+            $hist->sqlLimit = 100;
+        } else {
+            $hist->sqlLimit = $this->conf["maxRecords"];
+        }
         $this->raw->sqlOrderBy = "Date asc";
         // State we are here
         self::vprint(
