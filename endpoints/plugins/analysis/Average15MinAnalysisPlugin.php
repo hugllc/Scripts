@@ -50,14 +50,14 @@ require_once HUGNET_INCLUDE_PATH."/base/DeviceProcessPluginBase.php";
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class HistoryCrunchAnalysisPlugin extends DeviceProcessPluginBase
+class Average15MinAnalysisPlugin extends DeviceProcessPluginBase
 {
     /** @var This is to register the class */
     public static $registerPlugin = array(
-        "Name" => "HistoryCrunchAnalysis",
+        "Name" => "Average15MinAnalysis",
         "Type" => "analysis",
-        "Class" => "HistoryCrunchAnalysisPlugin",
-        "Priority" => 10,
+        "Class" => "Average15MinAnalysisPlugin",
+        "Priority" => 20,
     );
     /** @var This is when we were created */
     protected $firmware = 0;
@@ -80,10 +80,6 @@ class HistoryCrunchAnalysisPlugin extends DeviceProcessPluginBase
         if (!$this->enable) {
             return;
         }
-        $this->raw = new RawHistoryTable();
-        // We don't want more than 10 records at a time;
-        $this->raw->sqlLimit = 100;
-        $this->raw->sqlOrderBy = "Date asc";
         // State we are here
         self::vprint(
             "Registed class ".self::$registerPlugin["Class"],
@@ -99,30 +95,37 @@ class HistoryCrunchAnalysisPlugin extends DeviceProcessPluginBase
     */
     public function main(DeviceContainer &$dev)
     {
-        $last = &$dev->params->DriverInfo["LastHistory"];
-        // Get the devices
-        $ret = $this->raw->getPeriod((int)$last, time(), $dev->id, "id");
+        $hist = &$dev->historyFactory($data, true);
+        // We don't want more than 100 records at a time;
+        $hist->sqlLimit = 100;
+        $hist->sqlOrderBy = "Date asc";
+
+        $avg = &$dev->historyFactory($data, false);
+
+        $last = &$dev->params->DriverInfo["LastAverage15Min"];
+        $lastTry = &$dev->params->DriverInfo["LastAverage15MinTry"];
+        $local = &$dev->params->DriverInfo["LastAverage15MinCnt"];
+        $ret = $hist->getPeriod((int)$last, time(), $dev->id, "id");
+
         $bad = 0;
         $local = 0;
         if ($ret) {
             // Go through the records
-            do {
-                $now = $this->raw->Date;
-                $id = $this->raw->id;
-                $hist = &$this->raw->toHistoryTable($prev);
-                if ($hist->insertRow(true)) {
+            while ($avg->calcAverage($hist, AverageTableBase::AVERAGE_15MIN)) {
+                if ($avg->insertRow(true)) {
+                    $now = $avg->Date;
                     $local++;
+                    $lastTry = time();
                 } else {
                     $bad++;
                 }
-                $prev = $this->raw->raw;
-            } while ($this->raw->nextInto());
+            }
         }
         if ($bad > 0) {
             // State we did some uploading
             self::vprint(
                 $dev->DeviceID." - ".
-                "Found $bad bad raw history records",
+                "Failed to insert $bad 15MIN average records",
                 HUGnetClass::VPRINT_NORMAL
             );
         }
@@ -130,13 +133,13 @@ class HistoryCrunchAnalysisPlugin extends DeviceProcessPluginBase
             // State we did some uploading
             self::vprint(
                 $dev->DeviceID." - ".
-                "Decoded $local raw history records ".
+                "Inserted $local 15MIN average records ".
                 date("Y-m-d H:i:s", $last)." - ".date("Y-m-d H:i:s", $now),
                 HUGnetClass::VPRINT_NORMAL
             );
         }
         if (!empty($now)) {
-            $last = (int)$now+1;
+            $last = (int)$now;
         }
     }
     /**
@@ -148,7 +151,10 @@ class HistoryCrunchAnalysisPlugin extends DeviceProcessPluginBase
     */
     public function ready(DeviceContainer &$dev)
     {
-        return $this->enable;
+        // Run when enabled, and at most every 15 minutes.
+        return $this->enable
+            && (((time() - $dev->params->DriverInfo["LastAverage15MinTry"]) > 900)
+            || ($dev->params->DriverInfo["LastAverage15MinCnt"] > 1));
     }
 
 }
