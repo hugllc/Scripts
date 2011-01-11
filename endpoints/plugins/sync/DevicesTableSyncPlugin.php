@@ -131,7 +131,7 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
         // Go through the devices
         foreach ($devs as $key) {
             $this->device->getRow($key);
-            if ($this->device->gateway()) {
+            if ($this->device->gateway() || $this->device->isEmpty()) {
                 // Don't want to update gateways
                 continue;
             } else if ($this->device->id < 0xFD0000) {
@@ -142,7 +142,7 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
                     }
                     foreach ($this->remoteCopy["driverInfo"] as $key) {
                         $this->remoteDevice->params->DriverInfo[$key]
-                            = $this->device->DriverInfo[$key];
+                            = $this->device->params->DriverInfo[$key];
                     }
                     $rows = array_merge(
                         $this->remoteCopy["keys"],
