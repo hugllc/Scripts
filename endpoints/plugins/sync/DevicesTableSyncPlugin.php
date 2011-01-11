@@ -144,6 +144,11 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
                         $this->remoteDevice->params->DriverInfo[$key]
                             = $this->device->DriverInfo[$key];
                     }
+                    $rows = array_merge(
+                        $this->remoteCopy["keys"],
+                        array("params")
+                    );
+                    $this->remoteDevice->updateRow($rows);
                 } else {
                     $this->remoteDevice->fromArray($this->device->toDB());
                     // Insert a new row since we didn't find one.
