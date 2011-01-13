@@ -194,6 +194,18 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
             }
         }
     }
+    /**
+    * This function checks to see if it is ready to run again
+    *
+    * The default is to run every 24 hours.
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    public function ready()
+    {
+        // Run every 10 minutes
+        return $this->enable && (time() >= ($this->last + 600));
+    }
 
 }
 
