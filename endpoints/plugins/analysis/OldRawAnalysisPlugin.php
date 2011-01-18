@@ -90,7 +90,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         $this->raw->sqlOrderBy = "Date asc";
         $this->oldRaw = new GenericTable(array("group" => "old"));
         $this->oldRaw->forceTable("history_raw");
-        $this->oldRaw->sqlOrderBy = "Date desc";
+        $this->oldRaw->sqlOrderBy = "Date asc";
         $this->oldRaw->sqlLimit = $maxRec;
         $this->pkt = new PacketContainer();
         $this->oldDev = new GenericTable(array("group" => "old"));
@@ -120,7 +120,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         
         //$startTime = time();
         $ret = $this->oldRaw->selectInto(
-            "Date <= ?",
+            "Date >= ?",
             array(date("Y-m-d H:i:s", (int)$last))
         );
         /*
