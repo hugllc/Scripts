@@ -122,14 +122,16 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
         if ($count > 0) {
             // State we did some uploading
             self::vprint(
-                "Uploaded $count raw history records",
+                "Uploaded $count raw history records from "
+                .date("Y-m-d H:i:s", $last)." - ".date("Y-m-d H:i:s", $now),
                 HUGnetClass::VPRINT_NORMAL
             );
         }
         if ($fail > 0) {
             // State we did some uploading
             self::vprint(
-                "$fail raw history records FAILED to upload",
+                "$fail raw history records FAILED to upload from "
+                .date("Y-m-d H:i:s", $last)." - ".date("Y-m-d H:i:s", $now),
                 HUGnetClass::VPRINT_NORMAL
             );
         }
