@@ -105,6 +105,7 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
             array((int)$last)
         );
         $count = 0;
+        $fail = 0;
         // Go through the records
         foreach (array_keys((array)$rows) as $key) {
             $now = $rows[$key]->Date;
@@ -113,6 +114,8 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
             $this->remote->fromArray($rows[$key]->toDB());
             if ($this->remote->insertRow(false)) {
                 $count++;
+            } else {
+                $fail++;
             }
         }
         unset($rows);
@@ -120,6 +123,13 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
             // State we did some uploading
             self::vprint(
                 "Uploaded $count raw history records",
+                HUGnetClass::VPRINT_NORMAL
+            );
+        }
+        if ($fail > 0) {
+            // State we did some uploading
+            self::vprint(
+                "$fail raw history records FAILED to upload",
                 HUGnetClass::VPRINT_NORMAL
             );
         }
