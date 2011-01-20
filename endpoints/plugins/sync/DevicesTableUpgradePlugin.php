@@ -116,7 +116,13 @@ class DevicesTableUpgradePlugin extends PeriodicPluginBase
             } else if ($this->device->id < 0xFD0000) {
                 $this->device->fromArray($this->remoteDevice->toDB());
                 // Replace the row
-                $this->device->insertRow(true);
+                if ($this->device->insertRow(false)) {
+                    // State we are looking for firmware
+                    self::vprint(
+                        "Upgraded DeviceID ".$this->device->DeviceID,
+                        HUGnetClass::VPRINT_NORMAL
+                    );
+                }
             }
         } while ($this->remoteDevice->nextInto());
         // This should only run once.

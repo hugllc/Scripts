@@ -84,6 +84,7 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
         $this->remote = new RawHistoryTable(array("group" => "remote"));
         // We don't want more than 1000 records at a time;
         $this->local->sqlLimit = 1000;
+        $this->local->sqlOrderBy = "Date asc";
         // State we are here
         self::vprint(
             "Registed class ".self::$registerPlugin["Class"],
@@ -136,7 +137,6 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
             );
         }
         if (!empty($now)) {
-            $this->last = (int)$now;
             $last = (int)$now;
         }
     }

@@ -130,13 +130,15 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
         shuffle($devs);
         // Go through the devices
         foreach ($devs as $key) {
+            $this->device->clearData();
             $this->device->getRow($key);
             if ($this->device->gateway() || $this->device->isEmpty()) {
                 // Don't want to update gateways
                 continue;
             } else if ($this->device->id < 0xFD0000) {
+                $this->remoteDevice->clearData();
                 $ret = $this->remoteDevice->getRow($key);
-                if ($ret) {
+                if (!$this->remoteDevice->isEmpty()) {
                     foreach ($this->remoteCopy["keys"] as $key) {
                         $this->remoteDevice->$key = $this->device->$key;
                     }
@@ -151,6 +153,7 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
                     $this->remoteDevice->updateRow($rows);
                 } else {
                     $this->remoteDevice->fromArray($this->device->toDB());
+                    $this->remoteDevice->group = "remote";
                     // Insert a new row since we didn't find one.
                     $this->remoteDevice->insertRow(false);
                 }
@@ -182,11 +185,13 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
         // Go through the devices
         foreach ($remoteDevs as $key) {
             if (array_search($key, $devs) === false) {
+                $this->remoteDevice->clearData();
                 $this->remoteDevice->getRow($key);
                 if ($this->remoteDevice->gateway()) {
                     // Don't want to update gateways
                     continue;
                 } else if ($this->remoteDevice->id < 0xFD0000) {
+                    $this->device->clearData();
                     $this->device->fromArray($this->remoteDevice->toDB());
                     // Insert a row only if there is nothing here.
                     $this->device->insertRow(false);
