@@ -397,7 +397,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
     public function __construct($config, DeviceProcess &$obj)
     {
         parent::__construct($config, $obj);
-        $this->enable = &$this->control->myConfig->servers->available("old");
+        $this->enable &= $this->control->myConfig->servers->available("old");
         if (!$this->enable) {
             return;
         }
@@ -498,21 +498,21 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             if ($ins) {
                 $hist =& $this->raw->toHistoryTable($prev);
                 $count++;
-                if ($this->conf["dots"] && (($count % 10) == 0)) {
+                if ($this->conf["dots"] && (($count % 100) == 0)) {
                     print ".";
                 }
                 if ($hist->insertRow(true)) {
                     $local++;
                 } else {
                     $bad++;
-                    if ($this->conf["dots"] && (($bad % 10) == 0)) {
+                    if ($this->conf["dots"] && (($bad % 100) == 0)) {
                         print "B";
                     }
                 }
                 $prev = $this->raw->raw;
             } else {
                 $failed++;
-                if ($this->conf["dots"] && (($failed % 10) == 0)) {
+                if ($this->conf["dots"] && (($failed % 100) == 0)) {
                     print "F";
                 }
             }
