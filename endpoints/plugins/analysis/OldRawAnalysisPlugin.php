@@ -437,7 +437,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
     */
     public function main(DeviceContainer &$dev)
     {
-        $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
+        $last &= $this->control->myDevice->params->ProcessInfo[__CLASS__];
         
         //$startTime = time();
         $ret = $this->oldRaw->selectInto(
@@ -498,8 +498,14 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             if ($ins) {
                 $hist =& $this->raw->toHistoryTable($prev);
                 $count++;
-                if ($this->conf["dots"] && (($count % 10) == 0)) {
-                    print ".";
+                if ($this->conf["dots"]) {
+                    if (($count % 10) == 0) {
+                        print ".";
+                    } else if ($bad % 10) {
+                        print "B";
+                    } else if ($failed % 10) {
+                        print "F";
+                    }
                 }
                 if ($hist->insertRow(true)) {
                     $local++;
