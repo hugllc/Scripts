@@ -437,7 +437,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
     */
     public function main(DeviceContainer &$dev)
     {
-        $last &= $this->control->myDevice->params->ProcessInfo[__CLASS__];
+        $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
         
         //$startTime = time();
         $ret = $this->oldRaw->selectInto(
@@ -554,7 +554,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             );
         }
         if (!empty($now)) {
-            $last = (int)$now-1;
+            $last = (int)$now;
         }
     }
     /**
