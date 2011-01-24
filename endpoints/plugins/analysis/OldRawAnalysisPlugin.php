@@ -498,23 +498,23 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             if ($ins) {
                 $hist =& $this->raw->toHistoryTable($prev);
                 $count++;
-                if ($this->conf["dots"]) {
-                    if (($count % 10) == 0) {
-                        print ".";
-                    } else if ($bad % 10) {
-                        print "B";
-                    } else if ($failed % 10) {
-                        print "F";
-                    }
+                if ($this->conf["dots"] && (($count % 10) == 0)) {
+                    print ".";
                 }
                 if ($hist->insertRow(true)) {
                     $local++;
                 } else {
                     $bad++;
+                    if ($this->conf["dots"] && (($bad % 10) == 0)) {
+                        print "B";
+                    }
                 }
                 $prev = $this->raw->raw;
             } else {
                 $failed++;
+                if ($this->conf["dots"] && (($failed % 10) == 0)) {
+                    print "F";
+                }
             }
             $now = $this->raw->Date;
             $ret = $this->oldRaw->nextInto();
