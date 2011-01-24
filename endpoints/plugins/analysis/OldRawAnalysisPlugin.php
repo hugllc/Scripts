@@ -397,7 +397,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
     public function __construct($config, DeviceProcess &$obj)
     {
         parent::__construct($config, $obj);
-        $this->enable = $this->control->myConfig->servers->available("old");
+        $this->enable = &$this->control->myConfig->servers->available("old");
         if (!$this->enable) {
             return;
         }
