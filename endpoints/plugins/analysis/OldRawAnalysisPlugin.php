@@ -438,7 +438,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
     public function main(DeviceContainer &$dev)
     {
         $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
-        
+        $old = $last;
         //$startTime = time();
         $ret = $this->oldRaw->selectInto(
             "Date >= ?",
@@ -527,7 +527,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             // State we did some uploading
             self::vprint(
                 "Moved $count good raw history records ".
-                date("Y-m-d H:i:s", $last)." - ".date("Y-m-d H:i:s", $now)." in "
+                date("Y-m-d H:i:s", $old)." - ".date("Y-m-d H:i:s", $last)." in "
                 .(time() - $startTime)." s",
                 HUGnetClass::VPRINT_NORMAL
             );
@@ -536,7 +536,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             // State we did some uploading
             self::vprint(
                 "Found $bad bad raw history records ".
-                date("Y-m-d H:i:s", $last)." - ".date("Y-m-d H:i:s", $now),
+                date("Y-m-d H:i:s", $old)." - ".date("Y-m-d H:i:s", $last),
                 HUGnetClass::VPRINT_NORMAL
             );
         }
@@ -544,7 +544,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             // State we did some uploading
             self::vprint(
                 "$failed raw history records failed to insert ".
-                date("Y-m-d H:i:s", $last)." - ".date("Y-m-d H:i:s", $now),
+                date("Y-m-d H:i:s", $old)." - ".date("Y-m-d H:i:s", $last),
                 HUGnetClass::VPRINT_NORMAL
             );
         }
@@ -552,7 +552,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             // State we did some uploading
             self::vprint(
                 "Decoded $local raw history records ".
-                date("Y-m-d H:i:s", $last)." - ".date("Y-m-d H:i:s", $now),
+                date("Y-m-d H:i:s", $old)." - ".date("Y-m-d H:i:s", $last),
                 HUGnetClass::VPRINT_NORMAL
             );
         }/*
