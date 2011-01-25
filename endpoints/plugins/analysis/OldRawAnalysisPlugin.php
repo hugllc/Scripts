@@ -516,7 +516,10 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
                     print "F";
                 }
             }
-            $now = $this->raw->Date;
+            //$now = $this->raw->Date;
+            if (!empty($this->raw->Date)) {
+                $last = (int)$this->raw->Date;
+            }
             $ret = $this->oldRaw->nextInto();
         }
         $this->raw->insertEnd();
@@ -552,10 +555,10 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
                 date("Y-m-d H:i:s", $last)." - ".date("Y-m-d H:i:s", $now),
                 HUGnetClass::VPRINT_NORMAL
             );
-        }
+        }/*
         if (!empty($now)) {
             $last = (int)$now;
-        }
+        }*/
     }
     /**
     * This function does the stuff in the class.
