@@ -462,6 +462,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             $this->myDev->getRow($this->_getID($this->oldRaw->DeviceKey));
             if ($this->myDev->isEmpty()) {
                 $bad++;
+                $ret = $this->oldRaw->nextInto();
                 continue;
             }
             $time = $this->oldRaw->unixDate($this->oldRaw->Date, "UTC");
