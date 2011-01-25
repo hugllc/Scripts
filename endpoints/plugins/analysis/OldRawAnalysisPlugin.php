@@ -439,7 +439,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
     {
         $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
         $old = $last;
-        //$startTime = time();
+        $startTime = time();
         $ret = $this->oldRaw->selectInto(
             "Date >= ?",
             array(date("Y-m-d H:i:s", (int)$last))
