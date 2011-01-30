@@ -184,9 +184,9 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
         );
         // Go through the devices
         foreach ($remoteDevs as $key) {
-            if (array_search($key, $devs) === false) {
-                $this->remoteDevice->clearData();
-                $this->remoteDevice->getRow($key);
+            $this->remoteDevice->clearData();
+            $this->remoteDevice->getRow($key);
+            if ($this->remoteDevice->isEmpty()) {
                 if ($this->remoteDevice->gateway()) {
                     // Don't want to update gateways
                     continue;
@@ -195,6 +195,26 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
                     $this->device->fromArray($this->remoteDevice->toDB());
                     // Insert a row only if there is nothing here.
                     $this->device->insertRow(false);
+                }
+            } else {
+                $this->device->clearData();
+                $this->device->getRow($key);
+                if ($this->remoteDevice->params->LastModified
+                    > $this->device->params->LastModified
+                ) {
+                    $this->device->sensors->fromArray(
+                        $this->remoteDevice->sensors->toArray()
+                    );
+                    $keys = array(
+                        "DeviceName", "DeviceLocation", "DeviceJob", "ActiveSensors",
+                        "Active", "PollInterval"
+                    );
+                    foreach ($keys as $k) {
+                        $this->device->$k = $this->remoteDevice->$k;
+                    }
+                    $this->device->params->LastModified
+                        = $this->remoteDevice->params->LastModified;
+                    $this->device->updateRow();
                 }
             }
         }
