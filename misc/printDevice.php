@@ -47,7 +47,7 @@ print "Starting...\n";
 print "Using GatewayKey ".$GatewayKey."\n";
 
 ConfigContainer::config("/etc/hugnet/config.inc.php");
-$dev = new DeviceContainer();
+$dev = new DeviceContainer(array("group" => "remote"));
 $dev->getRow(hexdec($DeviceID));
 var_dump($dev->toArray());
 

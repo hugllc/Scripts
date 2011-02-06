@@ -47,6 +47,7 @@ $raw->sqlLimit = 1;
 $raw->getPeriod(0, time(), hexdec($DeviceID), "id");
 $hist = &$raw->toHistoryTable($prev);
 var_dump($hist->device->sensors->toArray());
+var_dump($hist->device->DriverInfo);
 var_dump($hist->toOutput());
 
 
