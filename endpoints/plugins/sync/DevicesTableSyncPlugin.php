@@ -186,35 +186,35 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
         foreach ($remoteDevs as $key) {
             $this->remoteDevice->clearData();
             $this->remoteDevice->getRow($key);
-            if ($this->remoteDevice->isEmpty()) {
-                if ($this->remoteDevice->gateway()) {
-                    // Don't want to update gateways
-                    continue;
-                } else if ($this->remoteDevice->id < 0xFD0000) {
+            if ($this->remoteDevice->gateway()) {
+                // Don't want to update gateways
+                continue;
+            } else if ($this->remoteDevice->id < 0xFD0000) {
+                $this->device->clearData();
+                $this->device->getRow($key);
+                if ($this->device->isEmpty()) {
                     $this->device->clearData();
                     $this->device->fromArray($this->remoteDevice->toDB());
                     // Insert a row only if there is nothing here.
                     $this->device->insertRow(false);
-                }
-            } else {
-                $this->device->clearData();
-                $this->device->getRow($key);
-                if ($this->remoteDevice->params->LastModified
-                    > $this->device->params->LastModified
-                ) {
-                    $this->device->sensors->fromArray(
-                        $this->remoteDevice->sensors->toArray()
-                    );
-                    $keys = array(
-                        "DeviceName", "DeviceLocation", "DeviceJob", "ActiveSensors",
-                        "Active", "PollInterval"
-                    );
-                    foreach ($keys as $k) {
-                        $this->device->$k = $this->remoteDevice->$k;
+                } else {
+                    if ($this->remoteDevice->params->LastModified
+                        > $this->device->params->LastModified
+                    ) {
+                        $this->device->sensors->fromArray(
+                            $this->remoteDevice->sensors->toArray()
+                        );
+                        $keys = array(
+                            "DeviceName", "DeviceLocation", "DeviceJob",
+                            "ActiveSensors", "Active", "PollInterval"
+                        );
+                        foreach ($keys as $k) {
+                            $this->device->$k = $this->remoteDevice->$k;
+                        }
+                        $this->device->params->LastModified
+                            = $this->remoteDevice->params->LastModified;
+                        $this->device->updateRow();
                     }
-                    $this->device->params->LastModified
-                        = $this->remoteDevice->params->LastModified;
-                    $this->device->updateRow();
                 }
             }
         }
