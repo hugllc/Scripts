@@ -202,7 +202,7 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
                         > $this->device->params->LastModified
                     ) {
                         $this->device->sensors->fromArray(
-                            $this->remoteDevice->sensors->toArray()
+                            $this->remoteDevice->sensors->toArray(true)
                         );
                         $keys = array(
                             "DeviceName", "DeviceLocation", "DeviceJob",
@@ -213,6 +213,8 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
                         }
                         $this->device->params->LastModified
                             = $this->remoteDevice->params->LastModified;
+                        $this->device->params->LastModifiedBy
+                            = $this->remoteDevice->params->LastModifiedBy;
                         $this->device->updateRow();
                     }
                 }
