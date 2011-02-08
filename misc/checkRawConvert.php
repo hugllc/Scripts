@@ -42,7 +42,7 @@ require_once HUGNET_INCLUDE_PATH.'/tables/GenericTable.php';
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
 $config->verbose($hugnet_config["verbose"]+10);
 
-$raw = new RawHistoryTable(array("group" => "remote"));
+$raw = new RawHistoryTable(array("group" => $group));
 $raw->sqlLimit = 1;
 $raw->getPeriod(0, time(), hexdec($DeviceID), "id");
 $hist = &$raw->toHistoryTable($prev);

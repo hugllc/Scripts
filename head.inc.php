@@ -67,9 +67,8 @@ if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
     }
 }
 
-//require_once HUGNET_INCLUDE_PATH.'/lib/plugins.inc.php';
-
 $GatewayKey = $hugnet_config["script_gatewaykey"];
+$group = "default";
 
 $hugnet_config["loop"] = 1;
 $newArgv = array();
@@ -92,6 +91,12 @@ for ($i = 1; $i < count($argv); $i++) {
         $i++;
         $pktData                  = $argv[$i];
         $hugnet_config["pktData"] = $argv[$i];
+        break;
+    // Packet Data
+    case "-db":
+        $i++;
+        $group                  = $argv[$i];
+        $hugnet_config["group"] = $argv[$i];
         break;
     // Gateway Key
     case "-g":
@@ -124,7 +129,6 @@ for ($i = 1; $i < count($argv); $i++) {
         $GatewayPort                  = $argv[$i];
         $hugnet_config["GatewayPort"] = $argv[$i];
         break;
-
     // Packet Serial Number to use
     case "-s":
         $i++;
@@ -159,7 +163,9 @@ for ($i = 1; $i < count($argv); $i++) {
 if ($phpunit) {
     print "PHPUnit installed and ready.\n";
 }
-print "HUGnet Scripts Version ".SCRIPTS_VERSION."\n";
-print "HUGnet Lib Version ".HUGNET_LIB_VERSION."\n";
-print "All script times are in UTC\n";
+if (!$silent) {
+    print "HUGnet Scripts Version ".SCRIPTS_VERSION."\n";
+    print "HUGnet Lib Version ".HUGNET_LIB_VERSION."\n";
+    print "All script times are in UTC\n";
+}
 ?>
