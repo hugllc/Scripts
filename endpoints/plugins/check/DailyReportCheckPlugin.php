@@ -110,9 +110,15 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
             HUGnetClass::VPRINT_NORMAL
         );
         $this->_body = "";
-        $this->devs = $this->device->select(
-            "GatewayKey = ?",
-            array($this->gatewayKey)
+        $where = 1;
+        $data = array();
+        if ($this->gatewayKey != "all") {
+            $where .= " AND GatewayKey = ?";
+            $data[] = $this->gatewayKey;
+        }
+        $this->devs = $this->device->selectIDs(
+            $where,
+            $data
         );
         $this->last();
         $ret = $this->send();

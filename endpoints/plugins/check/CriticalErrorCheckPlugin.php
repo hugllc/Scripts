@@ -83,7 +83,7 @@ class CriticalErrorCheckPlugin extends PeriodicPluginBase
     public function __construct($config, PeriodicPlugins &$obj)
     {
         parent::__construct($config, $obj);
-        $this->enable = !empty($this->control->myConfig->admin_email);
+        $this->enable &= !empty($this->control->myConfig->admin_email);
         if (!$this->enable) {
             return;
         }

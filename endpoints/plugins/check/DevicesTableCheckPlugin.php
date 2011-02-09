@@ -110,10 +110,11 @@ class DevicesTableCheckPlugin extends PeriodicPluginBase
             .date("Y-m-d H:i:s", $this->last),
             HUGnetClass::VPRINT_NORMAL
         );
+        $where = 1;
         $data = array();
-        if ($this->GatewayKey != "all") {
+        if ($this->gatewayKey != "all") {
             $where .= " AND GatewayKey = ?";
-            $data[] = $this->GatewayKey;
+            $data[] = $this->gatewayKey;
         }
         $devs = $this->device->selectIDs(
             $where,
