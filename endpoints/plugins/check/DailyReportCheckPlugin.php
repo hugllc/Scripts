@@ -116,7 +116,7 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
             $where .= " AND GatewayKey = ?";
             $data[] = $this->gatewayKey;
         }
-        $this->devs = $this->device->selectIDs(
+        $this->devs = $this->device->select(
             $where,
             $data
         );
@@ -175,6 +175,7 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
         );
         $days = array("0.04", "0.25", "0.5", "1", "3", "10", "many");
         $stats = array();
+        var_dump($devs);
         foreach (array_keys((array)$this->devs) as $key) {
             $row = &$this->devs[$key];
             if ($row->Active == 1) {
