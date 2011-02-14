@@ -129,8 +129,8 @@ class DevicesTableCheckPlugin extends PeriodicPluginBase
                 && empty($this->device->FWPartNum)
                 && empty($this->device->FWVersion))
                 && ($this->device->params->LastContact < (time() - 3600)))
-                || ($this->device->gateway()
-                && ($this->device->params->LastContact < (time() - 86400)))
+                //|| ($this->device->gateway()
+                //&& ($this->device->params->LastContact < (time() - 86400)))
             ) {
                 self::vprint(
                     "Device ".$this->device->DeviceID." removed as a bad record",
