@@ -150,7 +150,13 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
     public function ready()
     {
         // Run every minute
-        return (time() >= ($this->last + 300)) && $this->enable;
+        self::vprint(
+            "Enable: ".(int)$this->enable."; Last: "
+            .(int)(time() >= ($this->last + 300)),
+            HUGnetClass::VPRINT_NORMAL
+        );
+        return $this->enable;
+        //return (time() >= ($this->last + 300)) && $this->enable;
     }
 
 }
