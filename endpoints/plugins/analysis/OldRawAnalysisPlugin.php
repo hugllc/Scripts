@@ -281,15 +281,6 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         373 => 1,
         377 => 187,
         381 => 298,
-        414 => 3,
-        418 => 4,
-        422 => 5,
-        426 => 6,
-        430 => 7,
-        434 => 8,
-        435 => 9,
-        439 => 10,
-        443 => 11,
         445 => 193,
         454 => 300,
         458 => 301,
@@ -298,9 +289,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         474 => 305,
         478 => 306,
         482 => 307,
-        495 => 12,
         501 => 312,
-        503 => 13,
         526 => 324,
         530 => 325,
         534 => 326,
@@ -466,11 +455,24 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         while ($ret) {
             $this->raw->clearData();
             $this->device->clearData();
-            $this->device->getRow($this->_getID($this->oldRaw->DeviceKey));
+            $this->device->fromSetupString($this->oldRaw->RawSetup);
+            // First try the deviceID from the raw packet
+            $id = $this->device->id;
+            $this->device->clearData();
+            $this->device->getRow($id);
+            // If it is not there, try the one from the DeviceKey
             if ($this->device->isEmpty()) {
-                $bad++;
-                $ret = $this->oldRaw->nextInto();
-                continue;
+                $this->device->clearData();
+                $this->device->getRow($this->_getID($this->oldRaw->DeviceKey));
+                // If it is not there, try inserting a record.
+                if ($this->device->isEmpty()) {
+                    $this->device->fromSetupString($this->oldRaw->RawSetup);
+                    if (!$this->device->insertRow()) {
+                        $bad++;
+                        $ret = $this->oldRaw->nextInto();
+                        continue;
+                    }
+                }
             }
             $time = $this->oldRaw->unixDate($this->oldRaw->Date, "UTC");
             $this->pkt->clearData();
