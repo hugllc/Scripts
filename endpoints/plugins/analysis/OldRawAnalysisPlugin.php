@@ -420,7 +420,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         $this->oldDev->sqlID = "DeviceKey";
         $this->oldDev->forceTable("devices");
         */
-        $this->myDev = new DeviceContainer(array("group" => "default"));
+        $this->device = new DeviceContainer(array("group" => "default"));
         // State we are here
         self::vprint(
             "Registed class ".self::$registerPlugin["Class"],
@@ -438,6 +438,9 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
     public function main(DeviceContainer &$dev)
     {
         $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
+        if (empty($last)) {
+            $last = $this->conf["startTime"];
+        }
         $old = $last;
         $startTime = time();
         $ret = $this->oldRaw->selectInto(
@@ -458,9 +461,9 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         $startTime = time();
         while ($ret) {
             $this->raw->clearData();
-            $this->myDev->clearData();
-            $this->myDev->getRow($this->_getID($this->oldRaw->DeviceKey));
-            if ($this->myDev->isEmpty()) {
+            $this->device->clearData();
+            $this->device->getRow($this->_getID($this->oldRaw->DeviceKey));
+            if ($this->device->isEmpty()) {
                 $bad++;
                 $ret = $this->oldRaw->nextInto();
                 continue;
@@ -469,13 +472,13 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             $this->pkt->clearData();
             $this->pkt->fromArray(
                 array(
-                    "To" =>  $this->myDev->DeviceID,
+                    "To" =>  $this->device->DeviceID,
                     "Command" => $this->oldRaw->sendCommand,
                     "Time" => $time - $this->oldRaw->ReplyTime,
                     "Date" => $time - $this->oldRaw->ReplyTime,
                     "Reply" => new PacketContainer(
                         array(
-                        "From" => $this->myDev->DeviceID,
+                        "From" => $this->device->DeviceID,
                         "Command" => PacketContainer::COMMAND_REPLY,
                         "Data" => $this->oldRaw->RawData,
                         "Length" => strlen($this->oldRaw->RawData)/2,
@@ -487,12 +490,12 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             );
             $this->raw->fromArray(
                 array(
-                    "id" => hexdec($this->myDev->id),
+                    "id" => hexdec($this->device->id),
                     "Date" => $this->oldRaw->unixDate($this->oldRaw->Date, "UTC"),
                     "packet" => $this->pkt,
-                    "device" => $this->myDev,
+                    "device" => $this->device,
                     "command" => $this->oldRaw->sendCommand,
-                    "dataIndex" => $this->myDev->dataIndex($this->oldRaw->RawData),
+                    "dataIndex" => $this->device->dataIndex($this->oldRaw->RawData),
                 )
             );
             $ins = $this->raw->insert();
