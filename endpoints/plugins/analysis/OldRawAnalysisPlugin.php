@@ -440,6 +440,10 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
         if (empty($last)) {
             $last = $this->conf["startTime"];
+            self::vprint(
+                "Starting at ".date("Y-m-d H:i:s", $last),
+                HUGnetClass::VPRINT_NORMAL
+            );
         }
         $old = $last;
         $startTime = time();
