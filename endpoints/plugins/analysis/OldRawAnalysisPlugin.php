@@ -466,6 +466,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
                 $this->device->getRow($this->_getID($this->oldRaw->DeviceKey));
                 // If it is not there, try inserting a record.
                 if ($this->device->isEmpty()) {
+                    $this->device->clearData();
                     $this->device->fromSetupString($this->oldRaw->RawSetup);
                     if (!$this->device->insertRow()) {
                         $bad++;
