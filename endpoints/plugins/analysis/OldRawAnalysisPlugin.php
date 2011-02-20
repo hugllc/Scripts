@@ -502,7 +502,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
                     "dataIndex" => $this->device->dataIndex($this->oldRaw->RawData),
                 )
             );
-            $ins = $this->raw->insert();
+            $ins = $this->raw->insert((bool)$this->conf["force"]);
             if ($ins) {
                 $hist =& $this->raw->toHistoryTable($prev);
                 $count++;
