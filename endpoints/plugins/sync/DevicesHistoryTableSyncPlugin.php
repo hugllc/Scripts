@@ -83,6 +83,7 @@ class DevicesHistoryTableSyncPlugin extends PeriodicPluginBase
             return;
         }
         $this->local = new DevicesHistoryTable();
+        $this->local->sqlOrderBy = "SaveDate ASC";
         $this->remote = new DevicesHistoryTable(array("group" => "remote"));
         // We don't want more than 1000 records at a time;
         $this->local->sqlLimit = 1000;
