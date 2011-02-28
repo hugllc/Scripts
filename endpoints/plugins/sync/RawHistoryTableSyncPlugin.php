@@ -80,7 +80,6 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
             return;
         }
         $this->local = new RawHistoryTable();
-        $this->remote = new RawHistoryTable(array("group" => "remote"));
         // We don't want more than 1000 records at a time;
         $this->local->sqlLimit = 1000;
         $this->local->sqlOrderBy = "Date asc";
@@ -103,6 +102,9 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
                 HUGnetClass::VPRINT_NORMAL
             );
             return;
+        }
+        if (!is_object($this->remote)) {
+            $this->remote = new RawHistoryTable(array("group" => "remote"));
         }
         $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
 

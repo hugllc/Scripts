@@ -90,7 +90,6 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
         if (!$this->enable) {
             return;
         }
-        $this->remoteDevice = new DeviceContainer(array("group" => "remote"));
         $this->device = new DeviceContainer();
         $this->gatewayKey = $this->control->myConfig->script_gateway;
         // State we are here
@@ -112,6 +111,9 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
                 HUGnetClass::VPRINT_NORMAL
             );
             return;
+        }
+        if (!is_object($this->remoteDevice)) {
+            $this->remoteDevice = new DeviceContainer(array("group" => "remote"));
         }
         $this->localToRemote();
         $this->remoteToLocal();

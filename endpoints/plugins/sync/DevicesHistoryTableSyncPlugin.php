@@ -78,13 +78,11 @@ class DevicesHistoryTableSyncPlugin extends PeriodicPluginBase
     public function __construct($config, PeriodicPlugins &$obj)
     {
         parent::__construct($config, $obj);
-        //$this->enable &= $this->control->myConfig->servers->available("remote");
         if (!$this->enable) {
             return;
         }
         $this->local = new DevicesHistoryTable();
         $this->local->sqlOrderBy = "SaveDate ASC";
-        $this->remote = new DevicesHistoryTable(array("group" => "remote"));
         // We don't want more than 1000 records at a time;
         $this->local->sqlLimit = 1000;
         // State we are here
@@ -106,6 +104,9 @@ class DevicesHistoryTableSyncPlugin extends PeriodicPluginBase
                 HUGnetClass::VPRINT_NORMAL
             );
             return;
+        }
+        if (!is_object($this->remote)) {
+            $this->remote = new DevicesHistoryTable(array("group" => "remote"));
         }
         $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
         // Get the devices
