@@ -76,7 +76,6 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
     public function __construct($config, PeriodicPlugins &$obj)
     {
         parent::__construct($config, $obj);
-        $this->enable &= $this->control->myConfig->servers->available("remote");
         if (!$this->enable) {
             return;
         }
@@ -98,6 +97,13 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
     */
     public function main()
     {
+        if (!$this->control->myConfig->servers->available("remote")) {
+            self::vprint(
+                "Remote database not available",
+                HUGnetClass::VPRINT_NORMAL
+            );
+            return;
+        }
         $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
 
         // Get the devices
@@ -149,12 +155,6 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
     */
     public function ready()
     {
-        // Run every minute
-        self::vprint(
-            "Enable: ".(int)$this->enable."; Last: "
-            .(int)(time() >= ($this->last + 300)),
-            HUGnetClass::VPRINT_NORMAL
-        );
         return $this->enable;
         //return (time() >= ($this->last + 300)) && $this->enable;
     }

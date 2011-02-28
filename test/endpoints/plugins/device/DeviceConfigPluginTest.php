@@ -315,7 +315,8 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                 ),
                 array(
                     "DriverInfo" => array(
-                        "NumSensors" => 16,
+                        "PhysicalSensors" => 16,
+                        "VirtualSensors" => 4,
                         "TimeConstant" => 0,
                     ),
                     "id"         => 0x123456,
@@ -333,7 +334,10 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     "PollInterval"      => "0",
                     "ActiveSensors"     => "0",
                     "sensors"           => array(
-                        "Sensors" => 16,
+                        "Sensors" => 20,
+                        "ActiveSensors" => 16,
+                        "PhysicalSensors" => 16,
+                        "VirtualSensors" => 4,
                         0 => array("id" => 0, "type" => "BCTherm2322640"),
                         1 => array("id" => 0, "type" => "BCTherm2322640"),
                         2 => array("id" => 0, "type" => "BCTherm2322640"),
@@ -350,6 +354,18 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                         13 => array("id" => 0, "type" => "BCTherm2322640"),
                         14 => array("id" => 0, "type" => "BCTherm2322640"),
                         15 => array("id" => 0, "type" => "BCTherm2322640"),
+                        16 => array(
+                            "id" => 0xFE, "type" => "Placeholder", "location" => null
+                        ),
+                        17 => array(
+                            "id" => 0xFE, "type" => "Placeholder", "location" => null
+                        ),
+                        18 => array(
+                            "id" => 0xFE, "type" => "Placeholder", "location" => null
+                        ),
+                        19 => array(
+                            "id" => 0xFE, "type" => "Placeholder", "location" => null
+                        ),
                     ),
                     "params" => array(
                         "DriverInfo" => array(
@@ -409,7 +425,8 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                 ),
                 array(
                     "DriverInfo" => array(
-                        "NumSensors" => 16,
+                        "PhysicalSensors" => 16,
+                        "VirtualSensors" => 4,
                         "TimeConstant" => 0,
                     ),
                     "id"         => 0x123456,
@@ -427,7 +444,10 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     "PollInterval"      => "0",
                     "ActiveSensors"     => "0",
                     "sensors"           => array(
-                        "Sensors" => 16,
+                        "Sensors" => 20,
+                        "ActiveSensors" => 16,
+                        "PhysicalSensors" => 16,
+                        "VirtualSensors" => 4,
                         0 => array("id" => 0, "type" => "BCTherm2322640"),
                         1 => array("id" => 0, "type" => "BCTherm2322640"),
                         2 => array("id" => 0, "type" => "BCTherm2322640"),
@@ -444,6 +464,18 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                         13 => array("id" => 0, "type" => "BCTherm2322640"),
                         14 => array("id" => 0, "type" => "BCTherm2322640"),
                         15 => array("id" => 0, "type" => "BCTherm2322640"),
+                        16 => array(
+                            "id" => 0xFE, "type" => "Placeholder", "location" => null
+                        ),
+                        17 => array(
+                            "id" => 0xFE, "type" => "Placeholder", "location" => null
+                        ),
+                        18 => array(
+                            "id" => 0xFE, "type" => "Placeholder", "location" => null
+                        ),
+                        19 => array(
+                            "id" => 0xFE, "type" => "Placeholder", "location" => null
+                        ),
                     ),
                     "params" => array(
                         "DriverInfo" => array(

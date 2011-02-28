@@ -86,7 +86,7 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
     public function __construct($config, PeriodicPlugins &$obj)
     {
         parent::__construct($config, $obj);
-        $this->enable &= $this->control->myConfig->servers->available("remote");
+        //$this->enable &= $this->control->myConfig->servers->available("remote");
         if (!$this->enable) {
             return;
         }
@@ -106,6 +106,13 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
     */
     public function main()
     {
+        if (!$this->control->myConfig->servers->available("remote")) {
+            self::vprint(
+                "Remote database not available",
+                HUGnetClass::VPRINT_NORMAL
+            );
+            return;
+        }
         $this->localToRemote();
         $this->remoteToLocal();
         $this->last = time();

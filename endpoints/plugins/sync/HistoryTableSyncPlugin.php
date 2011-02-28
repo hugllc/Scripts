@@ -73,7 +73,6 @@ class HistoryTableSyncPlugin extends PeriodicPluginBase
     {
         parent::__construct($config, $obj);
         $this->enable &= $this->control->myConfig->poll["enable"];
-        $this->enableRemote = $this->control->myConfig->servers->available("remote");
         if (!$this->enable) {
             return;
         }
@@ -93,6 +92,7 @@ class HistoryTableSyncPlugin extends PeriodicPluginBase
     */
     public function main()
     {
+        $this->enableRemote = $this->control->myConfig->servers->available("remote");
         $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
         static $prev;
         // Get the devices
