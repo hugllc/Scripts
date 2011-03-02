@@ -146,6 +146,9 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
             }
             $ret = $this->oldRaw->nextInto();
         }
+        if ($this->conf["dots"]) {
+            print "\r";
+        }
         if ($count > 0) {
             // State we did some uploading
             self::vprint(
