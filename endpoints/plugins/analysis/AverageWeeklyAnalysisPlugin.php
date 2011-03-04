@@ -108,8 +108,9 @@ class AverageWeeklyAnalysisPlugin extends DeviceProcessPluginBase
 
         $last = &$dev->params->DriverInfo["LastAverageWEEKLY"];
         $dev->params->DriverInfo["LastAverageWEEKLYTry"] = time();
+        $lastDaily = &$dev->params->DriverInfo["LastAverageDAILY"];
         $ret = $hist->getPeriod(
-            (int)$last, time(), $dev->id, AverageTableBase::AVERAGE_DAILY
+            (int)$last, $lastDaily, $dev->id, AverageTableBase::AVERAGE_DAILY
         );
 
         $bad = 0;

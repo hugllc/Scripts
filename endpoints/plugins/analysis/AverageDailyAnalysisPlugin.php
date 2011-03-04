@@ -108,8 +108,9 @@ class AverageDailyAnalysisPlugin extends DeviceProcessPluginBase
 
         $last = &$dev->params->DriverInfo["LastAverageDAILY"];
         $dev->params->DriverInfo["LastAverageDAILYTry"] = time();
+        $lastHourly = &$dev->params->DriverInfo["LastAverageHOURLY"];
         $ret = $hist->getPeriod(
-            (int)$last, time(), $dev->id, AverageTableBase::AVERAGE_HOURLY
+            (int)$last, $lastHourly, $dev->id, AverageTableBase::AVERAGE_HOURLY
         );
 
         $bad = 0;

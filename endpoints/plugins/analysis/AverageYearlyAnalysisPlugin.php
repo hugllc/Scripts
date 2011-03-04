@@ -108,8 +108,9 @@ class AverageYearlyAnalysisPlugin extends DeviceProcessPluginBase
 
         $last = &$dev->params->DriverInfo["LastAverageYEARLY"];
         $dev->params->DriverInfo["LastAverageYEARLYTry"] = time();
+        $lastMonthly = &$dev->params->DriverInfo["LastAverageMONTHLY"];
         $ret = $hist->getPeriod(
-            (int)$last, time(), $dev->id, AverageTableBase::AVERAGE_MONTHLY
+            (int)$last, $lastMonthly, $dev->id, AverageTableBase::AVERAGE_MONTHLY
         );
 
         $bad = 0;

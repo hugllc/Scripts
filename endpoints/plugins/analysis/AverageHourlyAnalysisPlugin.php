@@ -107,8 +107,9 @@ class AverageHourlyAnalysisPlugin extends DeviceProcessPluginBase
 
         $last = &$dev->params->DriverInfo["LastAverageHOURLY"];
         $dev->params->DriverInfo["LastAverageHOURLYTry"] = time();
+        $last15Min = &$dev->params->DriverInfo["LastAverage15MIN"];
         $ret = $hist->getPeriod(
-            (int)$last, time(), $dev->id, AverageTableBase::AVERAGE_15MIN
+            (int)$last, $last15Min, $dev->id, AverageTableBase::AVERAGE_15MIN
         );
 
         $bad = 0;

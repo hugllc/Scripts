@@ -109,7 +109,8 @@ class Average15MinAnalysisPlugin extends DeviceProcessPluginBase
         $last = &$dev->params->DriverInfo["LastAverage15MIN"];
         $lastTry = &$dev->params->DriverInfo["LastAverage15MINTry"];
         $local = &$dev->params->DriverInfo["LastAverage15MINCnt"];
-        $ret = $hist->getPeriod((int)$last, time(), $dev->id, "id");
+        $lastHistory = &$dev->params->DriverInfo["LastHistory"];
+        $ret = $hist->getPeriod((int)$last, $lastHistory, $dev->id, "id");
 
         $bad = 0;
         $local = 0;
