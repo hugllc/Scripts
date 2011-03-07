@@ -44,7 +44,7 @@ $config->verbose($hugnet_config["verbose"]+10);
 
 $raw = new RawHistoryTable(array("group" => $group));
 $raw->sqlLimit = 1;
-$raw->getPeriod(0, time(), hexdec($DeviceID), "id");
+$raw->getPeriod(0, gmmktime(14, 7, 0, 1, 12, 2010), hexdec($DeviceID), "id");
 $hist = &$raw->toHistoryTable($prev);
 //var_dump($hist->device->sensors->toArray(true));
 var_dump($hist->device->toArray());
