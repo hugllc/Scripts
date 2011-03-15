@@ -127,7 +127,7 @@ class OldRawAnalysisPlugin extends DeviceProcessPluginBase
         $startTime = time();
         while ($ret) {
             $raw = $this->oldRaw->toRaw($this->group);
-            if (is_object($raw) && ($raw->id < 0x300)) {
+            if (is_object($raw) && ($raw->id < 0x500)) {
                 $ins = $raw->insertRow((bool)$this->conf["force"]);
                 if ($ins) {
                     $count++;
