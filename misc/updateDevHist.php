@@ -50,7 +50,7 @@ ConfigContainer::config("/etc/hugnet/config.inc.php");
 $dev = new DeviceContainer(array("group" => $group));
 $hist = new DevicesHistoryTable(array("group" => $group));
 
-$dev->selectInto();
+$dev->selectInto(1);
 do {
     $hist->clearData();
     $hist->fromAny($dev);
