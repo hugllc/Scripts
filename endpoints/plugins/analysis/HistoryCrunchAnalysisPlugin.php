@@ -142,6 +142,11 @@ class HistoryCrunchAnalysisPlugin extends DeviceProcessPluginBase
         if (!empty($now)) {
             $last = (int)$now+1;
         }
+        if (($bad + $local) > 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
     /**
     * This function does the stuff in the class.

@@ -147,6 +147,7 @@ class AverageDailyAnalysisPlugin extends DeviceProcessPluginBase
         if (!empty($now)) {
             $last = (int)$now;
         }
+        return true;
     }
     /**
     * This function does the stuff in the class.
