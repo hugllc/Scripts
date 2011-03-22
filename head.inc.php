@@ -69,7 +69,7 @@ if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
 
 $GatewayKey = $hugnet_config["script_gatewaykey"];
 $group = "default";
-
+$config_file = "/etc/hugnet/config.inc.php";
 $hugnet_config["loop"] = 1;
 $newArgv = array();
 for ($i = 1; $i < count($argv); $i++) {
@@ -98,7 +98,12 @@ for ($i = 1; $i < count($argv); $i++) {
         $group                  = $argv[$i];
         $hugnet_config["group"] = $argv[$i];
         break;
-    // Gateway Key
+        // Gateway Key
+    case "-f":
+        $i++;
+        $config_file = $argv[$i];
+        break;
+        // Gateway Key
     case "-g":
         $i++;
         $GatewayKey                         = $argv[$i];
