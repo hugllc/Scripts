@@ -167,5 +167,14 @@ class DevicePingPlugin extends DeviceProcessPluginBase
         return $dev->lostContact()
             && ($dev->params->DriverInfo["LastPingTry"] < (time() - 3600 * 2));
     }
+    /**
+    * This runs before once as the last part of the constructor
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    public function requireLock()
+    {
+        return false;
+    }
 }
 ?>

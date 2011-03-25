@@ -264,6 +264,15 @@ class DeviceConfigPlugin extends DeviceProcessPluginBase
     {
         return $dev->readSetupTime() && $this->enable && !$dev->lostContact();
     }
+    /**
+    * This runs before once as the last part of the constructor
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    public function requireLock()
+    {
+        return false;
+    }
 
 
 }
