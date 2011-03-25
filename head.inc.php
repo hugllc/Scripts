@@ -66,6 +66,7 @@ if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
         }
     }
 }
+require_once HUGNET_INCLUDE_PATH.'/containers/ConfigContainer.php';
 
 $GatewayKey = $hugnet_config["script_gatewaykey"];
 $group = "default";
@@ -165,6 +166,10 @@ for ($i = 1; $i < count($argv); $i++) {
         break;
     }
 }
+// Set up our configuration
+$config = &ConfigContainer::singleton($config_file);
+$config->verbose($hugnet_config["verbose"]);
+
 if ($phpunit) {
     print "PHPUnit installed and ready.\n";
 }

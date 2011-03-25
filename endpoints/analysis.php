@@ -43,7 +43,6 @@ require_once HUGNET_INCLUDE_PATH.'/processes/DeviceAnalysis.php';
 require_once HUGNET_INCLUDE_PATH."/base/DeviceProcessPluginBase.php";
 
 // Set up our configuration
-$config = &ConfigContainer::singleton($config_file);
 $config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
 // This sets us up as a device

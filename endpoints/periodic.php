@@ -39,10 +39,9 @@
 define("PERIODIC_PARTNUMBER", "0039-26-02-P");  //0039-26-01-P
 
 require_once dirname(__FILE__).'/../head.inc.php';
-require_once HUGNET_INCLUDE_PATH.'/processes/PeriodicSync.php';
+require_once HUGNET_INCLUDE_PATH.'/processes/PeriodicPlugins.php';
 
 // Set up our configuration
-$config = &ConfigContainer::singleton($config_file);
 $config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
 // This sets us up as a device

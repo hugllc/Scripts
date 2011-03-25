@@ -42,7 +42,6 @@ require_once dirname(__FILE__).'/../head.inc.php';
 require_once HUGNET_INCLUDE_PATH.'/processes/DeviceProcess.php';
 
 // Set up our configuration
-$config = &ConfigContainer::singleton($config_file);
 $config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 
 // This sets us up as a device
