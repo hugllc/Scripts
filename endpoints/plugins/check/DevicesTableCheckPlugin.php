@@ -125,24 +125,30 @@ class DevicesTableCheckPlugin extends PeriodicPluginBase
         foreach ($devs as $key) {
             $this->device->clearData();
             $this->device->getRow($key);
-            if (((empty($this->device->HWPartNum)
-                && empty($this->device->FWPartNum)
-                && empty($this->device->FWVersion))
-                && ($this->device->params->LastContact < (time() - 3600)))
-                //|| ($this->device->gateway()
-                //&& ($this->device->params->LastContact < (time() - 86400)))
-            ) {
-                self::vprint(
-                    "Device ".$this->device->DeviceID." removed as a bad record",
-                    HUGnetClass::VPRINT_NORMAL
-                );
-                $this->logError(
-                    -15,
-                    "Device ".$this->device->DeviceID." removed as a bad record",
-                    ErrorTable::SEVERITY_ERROR,
-                    __METHOD__
-                );
-                $this->device->deleteRow();
+            if ($this->device->params->LastContact < (time() - 3600)) {
+
+                if (((empty($this->device->HWPartNum)
+                    && empty($this->device->FWPartNum)
+                    && empty($this->device->FWVersion)))
+                    //|| ($this->device->gateway()
+                    //&& ($this->device->params->LastContact < (time() - 86400)))
+                ) {
+                    self::vprint(
+                        "Device ".$this->device->DeviceID." removed as a bad record",
+                        HUGnetClass::VPRINT_NORMAL
+                    );
+                    $this->logError(
+                        -15,
+                        "Device ".$this->device->DeviceID." removed as a bad record",
+                        ErrorTable::SEVERITY_ERROR,
+                        __METHOD__
+                    );
+                    $this->device->deleteRow();
+                } else if ($this->device->gateway()) {
+                    // If it is a gateway script just set it inactive.
+                    $this->device->Active = 0;
+                    $this->device->updateRow(array("Active"));
+                }
             }
         }
         $this->last = time();
