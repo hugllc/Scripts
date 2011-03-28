@@ -56,7 +56,7 @@ class DeviceRegenAnalysisPlugin extends DeviceProcessPluginBase
     /** @var This is to register the class */
     public static $registerPlugin = array(
         "Name" => "DeviceRegenAnalysis",
-        "Type" => "analysisPeriodic",
+        "Type" => "analysis",
         "Class" => "DeviceRegenAnalysisPlugin",
         "Priority" => 8,  // This runs it before the history crunching
     );
@@ -97,6 +97,10 @@ class DeviceRegenAnalysisPlugin extends DeviceProcessPluginBase
     {
         $info = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
         $di = &$dev->params->DriverInfo;
+        if ($info["current"] === "000000") {
+            unset($info["current"]);
+            $info["done"]["000000"] = true;
+        }
         if ($dev->DeviceID == $info["current"]) {
             // State we are here
             self::vprint(
