@@ -105,6 +105,11 @@ class DeviceRegenAnalysisPlugin extends DeviceProcessPluginBase
         } else if (empty($info["current"])
             && !isset($info["done"][$dev->DeviceID])
         ) {
+            // State we are here
+            self::vprint(
+                "Regenerating the history for ".$dev->DeviceID,
+                HUGnetClass::VPRINT_NORMAL
+            );
             $info["current"] = $dev->DeviceID;
             // Reset all of the last dates so it totally rebuilds the history.
             unset($di["LastHistory"]);
