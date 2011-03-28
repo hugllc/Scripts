@@ -98,6 +98,11 @@ class DeviceRegenAnalysisPlugin extends DeviceProcessPluginBase
         $info = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
         $di = &$dev->params->DriverInfo;
         if ($dev->DeviceID == $info["current"]) {
+            // State we are here
+            self::vprint(
+                "Currently rebuilding history for ".$dev->DeviceID,
+                HUGnetClass::VPRINT_NORMAL
+            );
             if ($di["LastHistory"] > ($di["LastPoll"] - 3600)) {
                 $info["current"] = "";
                 $info["done"][$dev->DeviceID] = true;
