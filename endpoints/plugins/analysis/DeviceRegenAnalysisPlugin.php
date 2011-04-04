@@ -107,7 +107,9 @@ class DeviceRegenAnalysisPlugin extends DeviceProcessPluginBase
                 "Currently rebuilding history for ".$dev->DeviceID,
                 HUGnetClass::VPRINT_NORMAL
             );
-            if ($di["LastHistory"] > ($di["LastPoll"] - 3600)) {
+            if (($di["LastHistory"] > ($di["LastPoll"] - 3600))
+                || empty($di["LastPoll"])
+            ) {
                 $info["current"] = "";
                 $info["done"][$dev->DeviceID] = true;
             }
