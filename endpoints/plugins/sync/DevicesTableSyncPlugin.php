@@ -151,9 +151,13 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
                     foreach ($this->remoteCopy["keys"] as $key) {
                         $this->remoteDevice->$key = $this->device->$key;
                     }
+                    $di = &$this->device->params->DriverInfo;
+                    $rdi = &$this->remoteDevice->params->DriverInfo;
                     foreach ($this->remoteCopy["driverInfo"] as $key) {
-                        $this->remoteDevice->params->DriverInfo[$key]
-                            = $this->device->params->DriverInfo[$key];
+                        // Copy only if the date is greater
+                        if ($di[$key] > $rdi[$key]) {
+                            $rdi[$key] = $di[$key];
+                        }
                     }
                     $rows = array_merge(
                         $this->remoteCopy["keys"],
