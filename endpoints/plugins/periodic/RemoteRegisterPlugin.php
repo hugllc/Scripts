@@ -114,10 +114,10 @@ class RemoteRegisterPlugin extends PeriodicPluginBase
             .date("Y-m-d H:i:s", $last),
             HUGnetClass::VPRINT_NORMAL
         );
+        $me = new DataCollectorsTable();
+        $me->getMine($this->control->myDevice);
         $dc = new DataCollectorsTable(array("group" => "remote"));
-        $dc->fromDeviceContainer($this->control->myDevice);
-        $uname = posix_uname();
-        $dc->name = trim($uname['nodename']);
+        $dc->fromArray($me->toArray());
         $ret = $dc->registerMe();
         if ($ret) {
             $last = time();
