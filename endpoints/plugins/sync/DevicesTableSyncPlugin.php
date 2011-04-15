@@ -115,123 +115,152 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
         if (!is_object($this->remoteDevice)) {
             $this->remoteDevice = new DeviceContainer(array("group" => "remote"));
         }
-        $this->localToRemote();
-        $this->remoteToLocal();
+        // Get the devices (no gateways)
+        $devs = $this->device->selectIDs(
+            "GatewayKey = ? AND id < ?",
+            array($this->gatewayKey, 0xFD0000)
+        );
+        // Get the devices (no gateways)
+        $remoteDevs = $this->remoteDevice->selectIDs(
+            "GatewayKey = ? AND id < ?",
+            array($this->gatewayKey, 0xFD0000)
+        );
+        $this->syncDevs(array_intersect($devs, $remoteDevs));
+        $this->newLocalDevs(array_diff($remoteDevs, $devs));
+        $this->newRemoteDevs(array_diff($devs, $remoteDevs));
         $this->last = time();
     }
     /**
-    * This function checks to see if any new firmware has been uploaded
+    * This function synchronizes the devices between local and remote
     *
-    * @return bool True if ready to return, false otherwise
+    * @param array $devs An array of devices to sync
+    *
+    * @return null
     */
-    public function localToRemote()
+    public function syncDevs($devs)
     {
-        // State we are looking for firmware
-        self::vprint(
-            "Synchronizing local -> remote",
-            HUGnetClass::VPRINT_NORMAL
-        );
-        // Get the devices
-        $devs = $this->device->selectIDs(
-            "GatewayKey = ?",
-            array($this->gatewayKey)
-        );
-        shuffle($devs);
+        if (!empty($devs)) {
+            self::vprint(
+                "Synchronizing ".count($devs)." devices",
+                HUGnetClass::VPRINT_NORMAL
+            );
+        }
+        foreach ($devs as $id) {
+            $this->device->clearData();
+            $this->device->getRow($id);
+            $this->remoteDevice->clearData();
+            $this->remoteDevice->getRow($id);
+            $locked = $this->control->myDevice->getMyDevLock($this->device);
+            $this->localToRemote($this->device, $this->remoteDevice, $locked);
+            $this->remoteToLocal($this->device, $this->remoteDevice, $locked);
+            $this->device->updateRow();
+            $this->remoteDevice->updateRow();
+        }
+    }
+    /**
+    * This function synchronizes the devices between local and remote
+    *
+    * @param array $devs An array of devices to sync
+    *
+    * @return null
+    */
+    public function newLocalDevs($devs)
+    {
+        if (!empty($devs)) {
+            self::vprint(
+                "Downloading ".count($devs)." new local devices",
+                HUGnetClass::VPRINT_NORMAL
+            );
+        }
+        // Go through the devices
+        foreach ($devs as $key) {
+            $this->remoteDevice->clearData();
+            $this->remoteDevice->getRow($key);
+            $this->device->clearData();
+            $this->device->fromArray($this->remoteDevice->toDB());
+            $this->device->insertRow(false);
+        }
+
+    }
+    /**
+    * This function synchronizes the devices between local and remote
+    *
+    * @param array $devs An array of devices to sync
+    *
+    * @return null
+    */
+    public function newRemoteDevs($devs)
+    {
+        if (!empty($devs)) {
+            self::vprint(
+                "Uploading ".count($devs)." new remote devices",
+                HUGnetClass::VPRINT_NORMAL
+            );
+        }
         // Go through the devices
         foreach ($devs as $key) {
             $this->device->clearData();
             $this->device->getRow($key);
-            if ($this->device->gateway() || $this->device->isEmpty()) {
-                // Don't want to update gateways
-                continue;
-            } else if ($this->device->id < 0xFD0000) {
-                $this->remoteDevice->clearData();
-                $ret = $this->remoteDevice->getRow($key);
-                if (!$this->remoteDevice->isEmpty()) {
-                    foreach ($this->remoteCopy["keys"] as $key) {
-                        $this->remoteDevice->$key = $this->device->$key;
-                    }
-                    $di = &$this->device->params->DriverInfo;
-                    $rdi = &$this->remoteDevice->params->DriverInfo;
-                    foreach ($this->remoteCopy["driverInfo"] as $key) {
-                        // Copy only if the date is greater
-                        if ($di[$key] > $rdi[$key]) {
-                            $rdi[$key] = $di[$key];
-                        }
-                    }
-                    $rows = array_merge(
-                        $this->remoteCopy["keys"],
-                        array("params")
-                    );
-                    $this->remoteDevice->updateRow($rows);
-                } else {
-                    $this->remoteDevice->fromArray($this->device->toDB());
-                    $this->remoteDevice->group = "remote";
-                    // Insert a new row since we didn't find one.
-                    $this->remoteDevice->insertRow(false);
-                }
+            $this->remoteDevice->clearData();
+            $this->remoteDevice->fromArray($this->device->toDB());
+            $this->remoteDevice->insertRow(false);
+        }
+    }
+
+    /**
+    * This function checks to see if any new firmware has been uploaded
+    *
+    * @param object &$local  The local object to do
+    * @param object &$remote The remote object to use
+    * @param bool   $lock    Whether or not I have a lock
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    public function localToRemote(&$local, &$remote, $lock)
+    {
+        if ($lock) {
+            $from = &$local;
+            $to = &$remote;
+        } else {
+            $to = &$local;
+            $from = &$remote;
+        }
+        foreach ($this->remoteCopy["keys"] as $key) {
+            $to->$key = $from->$key;
+        }
+        $di = &$from->params->DriverInfo;
+        $rdi = &$to->params->DriverInfo;
+        foreach ($this->remoteCopy["driverInfo"] as $key) {
+            // Copy only if the date is greater
+            if ($from->params->DriverInfo[$key] > $to->params->DriverInfo[$key]) {
+                $to->params->DriverInfo[$key] = $from->params->DriverInfo[$key];
             }
         }
     }
     /**
     * This function checks to see if any new firmware has been uploaded
     *
+    * @param object &$local  The local object to do
+    * @param object &$remote The remote object to use
+    * @param bool   $lock    Whether or not I have a lock
+    *
     * @return bool True if ready to return, false otherwise
     */
-    public function remoteToLocal()
+    public function remoteToLocal(&$local, &$remote, $lock)
     {
-        // State we are looking for firmware
-        self::vprint(
-            "Synchronizing remote -> local",
-            HUGnetClass::VPRINT_NORMAL
-        );
-        // Get the devices
-        $remoteDevs = $this->remoteDevice->selectIDs(
-            "GatewayKey = ?",
-            array($this->gatewayKey)
-        );
-        // Get the devices
-        $devs = $this->device->selectIDs(
-            "GatewayKey = ?",
-            array($this->gatewayKey)
-        );
-        // Go through the devices
-        foreach ($remoteDevs as $key) {
-            $this->remoteDevice->clearData();
-            $this->remoteDevice->getRow($key);
-            if ($this->remoteDevice->gateway()) {
-                // Don't want to update gateways
-                continue;
-            } else if ($this->remoteDevice->id < 0xFD0000) {
-                $this->device->clearData();
-                $this->device->getRow($key);
-                if ($this->device->isEmpty()) {
-                    $this->device->clearData();
-                    $this->device->fromArray($this->remoteDevice->toDB());
-                    // Insert a row only if there is nothing here.
-                    $this->device->insertRow(false);
-                } else {
-                    if ($this->remoteDevice->params->LastModified
-                        > $this->device->params->LastModified
-                    ) {
-                        $this->device->sensors->fromArray(
-                            $this->remoteDevice->sensors->toArray(true)
-                        );
-                        $keys = array(
-                            "DeviceName", "DeviceLocation", "DeviceJob",
-                            "ActiveSensors", "Active", "PollInterval"
-                        );
-                        foreach ($keys as $k) {
-                            $this->device->$k = $this->remoteDevice->$k;
-                        }
-                        $this->device->params->LastModified
-                            = $this->remoteDevice->params->LastModified;
-                        $this->device->params->LastModifiedBy
-                            = $this->remoteDevice->params->LastModifiedBy;
-                        $this->device->updateRow();
-                    }
-                }
+        if ($remote->params->LastModified > $local->params->LastModified) {
+            $local->sensors->fromArray(
+                $remote->sensors->toArray(true)
+            );
+            $keys = array(
+                "DeviceName", "DeviceLocation", "DeviceJob",
+                "ActiveSensors", "Active", "PollInterval"
+            );
+            foreach ($keys as $k) {
+                $local->$k = $remote->$k;
             }
+            $local->params->LastModified = $remote->params->LastModified;
+            $local->params->LastModifiedBy = $remote->params->LastModifiedBy;
         }
     }
     /**
