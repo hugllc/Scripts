@@ -71,18 +71,18 @@ while (1) {
         $time = $oldRaw->unixDate($oldRaw->Date, "UTC");
         $pkt = new PacketContainer(
             array(
-               "To" =>  $dev->DeviceID,
-               "Command" => $oldRaw->sendCommand,
-               "Time" => $time - $oldRaw->ReplyTime,
-               "Date" => $time - $oldRaw->ReplyTime,
-               "Reply" => new PacketContainer(
+                "To" =>  $dev->DeviceID,
+                "Command" => $oldRaw->sendCommand,
+                "Time" => $time - $oldRaw->ReplyTime,
+                "Date" => $time - $oldRaw->ReplyTime,
+                "Reply" => new PacketContainer(
                     array(
-                       "From" => $dev->DeviceID,
-                       "Command" => PacketContainer::COMMAND_REPLY,
-                       "Data" => $oldRaw->RawData,
-                       "Length" => strlen($oldRaw->RawData)/2,
-                       "Time" => $time,
-                       "Date" => $time,
+                        "From" => $dev->DeviceID,
+                        "Command" => PacketContainer::COMMAND_REPLY,
+                        "Data" => $oldRaw->RawData,
+                        "Length" => strlen($oldRaw->RawData)/2,
+                        "Time" => $time,
+                        "Date" => $time,
                     )
                 ),
             )

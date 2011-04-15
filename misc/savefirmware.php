@@ -51,22 +51,24 @@ $config->verbose($config->verbose + HUGnetClass::VPRINT_NORMAL);
 $Code = implode("", file($argv[2]));
 $Data = implode("", file($argv[3]));
 // This sets us up as a device
-$firmware = new FirmwareTable(array(
-    "group"     => "default",
-    "Version"   => $argv[1],
-    "Code"      => $Code,
-    "CodeHash"  => md5($Code),
-    "Data"      => $Data,
-    "DataHash"  => md5($Data),
-    "FWPartNum" => $argv[5],
-    "HWPartNum" => $argv[6],
-    "Date"      => time(),
-    "FileType"  => $argv[4],
-    "RelStatus" => $argv[7],
-    "Tag"       => $argv[8],
-    "Target"    => $argv[9],
-    "Active"    => 1,
-));
+$firmware = new FirmwareTable(
+    array(
+        "group"     => "default",
+        "Version"   => $argv[1],
+        "Code"      => $Code,
+        "CodeHash"  => md5($Code),
+        "Data"      => $Data,
+        "DataHash"  => md5($Data),
+        "FWPartNum" => $argv[5],
+        "HWPartNum" => $argv[6],
+        "Date"      => time(),
+        "FileType"  => $argv[4],
+        "RelStatus" => $argv[7],
+        "Tag"       => $argv[8],
+        "Target"    => $argv[9],
+        "Active"    => 1,
+    )
+);
 
 var_dump($firmware->toArray());
 

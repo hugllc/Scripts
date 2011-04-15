@@ -282,18 +282,22 @@ class DevicePingPluginTest extends DeviceProcessPluginTestBase
                         "LastContact" => 0,
                     ),
                 ),
-                (string)new PacketContainer(array(
-                    "From" => "123456",
-                    "To" => "000019",
-                    "Command" => PacketContainer::COMMAND_REPLY,
-                    "Data" => "",
-                )),
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
-                    "Data" => "",
-                )),
+                (string)new PacketContainer(
+                    array(
+                        "From" => "123456",
+                        "To" => "000019",
+                        "Command" => PacketContainer::COMMAND_REPLY,
+                        "Data" => "",
+                    )
+                ),
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
+                        "Data" => "",
+                    )
+                ),
             ),
             array(
                 array(
@@ -314,18 +318,22 @@ class DevicePingPluginTest extends DeviceProcessPluginTestBase
                         "LastContact" => 0,
                     ),
                 ),
-                (string)new PacketContainer(array(
-                    "From" => "123456",
-                    "To" => "000019",
-                    "Command" => PacketContainer::COMMAND_REPLY,
-                    "Data" => "",
-                )),
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
-                    "Data" => "",
-                )),
+                (string)new PacketContainer(
+                    array(
+                        "From" => "123456",
+                        "To" => "000019",
+                        "Command" => PacketContainer::COMMAND_REPLY,
+                        "Data" => "",
+                    )
+                ),
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
+                        "Data" => "",
+                    )
+                ),
             ),
             array(
                 array(
@@ -344,12 +352,14 @@ class DevicePingPluginTest extends DeviceProcessPluginTestBase
                     ),
                 ),
                 "",
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
-                    "Data" => "",
-                )),
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
+                        "Data" => "",
+                    )
+                ),
             ),
         );
     }
@@ -371,6 +381,15 @@ class DevicePingPluginTest extends DeviceProcessPluginTestBase
         $this->socket->readString = $read;
         $this->o->main($d);
         $this->assertSame($expect, $this->socket->writeString);
+    }
+    /**
+    * test the set routine when an extra class exists
+    *
+    * @return null
+    */
+    public function testRequireLock()
+    {
+        $this->assertSame(false, $this->o->requireLock());
     }
 
 }

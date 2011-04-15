@@ -104,10 +104,12 @@ class DevicePingPlugin extends DeviceProcessPluginBase
             HUGnetClass::VPRINT_NORMAL
         );
         // Ping the device
-        $pkt = new PacketContainer(array(
-            "To" => $dev->DeviceID,
-            "Retries" => 1,
-        ));
+        $pkt = new PacketContainer(
+            array(
+                "To" => $dev->DeviceID,
+                "Retries" => 1,
+            )
+        );
         $ret = $pkt->ping("", true);
         if (!$ret) {
             $this->_checkFail($dev);

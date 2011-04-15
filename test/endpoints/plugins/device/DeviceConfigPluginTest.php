@@ -598,18 +598,22 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                         "LastContact" => time(),
                     ),
                 ),
-                (string)new PacketContainer(array(
-                    "From" => "123456",
-                    "To" => "000019",
-                    "Command" => PacketContainer::COMMAND_REPLY,
-                    "Data" => "000012345600391101410039201343000009FFFFFF50",
-                )),
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETSETUP,
-                    "Data" => "",
-                )),
+                (string)new PacketContainer(
+                    array(
+                        "From" => "123456",
+                        "To" => "000019",
+                        "Command" => PacketContainer::COMMAND_REPLY,
+                        "Data" => "000012345600391101410039201343000009FFFFFF50",
+                    )
+                ),
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_GETSETUP,
+                        "Data" => "",
+                    )
+                ),
             ),
             array(
                 array(
@@ -630,18 +634,22 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                         "LastContact" => time(),
                     ),
                 ),
-                (string)new PacketContainer(array(
-                    "From" => "123456",
-                    "To" => "000019",
-                    "Command" => PacketContainer::COMMAND_REPLY,
-                    "Data" => "000012345600392101410039200143000009FFFFFF50",
-                )),
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETSETUP,
-                    "Data" => "",
-                )),
+                (string)new PacketContainer(
+                    array(
+                        "From" => "123456",
+                        "To" => "000019",
+                        "Command" => PacketContainer::COMMAND_REPLY,
+                        "Data" => "000012345600392101410039200143000009FFFFFF50",
+                    )
+                ),
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_GETSETUP,
+                        "Data" => "",
+                    )
+                ),
             ),
             array(
                 array(
@@ -660,30 +668,38 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     ),
                 ),
                 "",
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETSETUP,
-                    "Data" => "",
-                )).
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETSETUP,
-                    "Data" => "",
-                )).
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
-                    "Data" => "",
-                )).
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETSETUP,
-                    "Data" => "",
-                )),
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_GETSETUP,
+                        "Data" => "",
+                    )
+                ).
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_GETSETUP,
+                        "Data" => "",
+                    )
+                ).
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
+                        "Data" => "",
+                    )
+                ).
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_GETSETUP,
+                        "Data" => "",
+                    )
+                ),
             ),
         );
     }
@@ -728,42 +744,54 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                         "LastContact" => time(),
                     ),
                 ),
-                (string)new PacketContainer(array(
-                    "From" => "123456",
-                    "To" => "000019",
-                    "Command" => PacketContainer::COMMAND_REPLY,
-                    "Data" => "000012345600392101410039200143000009FFFFFF50",
-                )).
-                (string)new PacketContainer(array(
-                    "From" => "123456",
-                    "To" => "000019",
-                    "Command" => PacketContainer::COMMAND_REPLY,
-                    "Data" => str_repeat("000000", 30),
-                )).
-                (string)new PacketContainer(array(
-                    "From" => "123456",
-                    "To" => "000019",
-                    "Command" => PacketContainer::COMMAND_REPLY,
-                    "Data" => str_repeat("000000", 30),
-                )),
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETSETUP,
-                    "Data" => "",
-                )).
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => E00392100Device::COMMAND_READDOWNSTREAM,
-                    "Data" => "00",
-                )).
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => E00392100Device::COMMAND_READDOWNSTREAM,
-                    "Data" => "01",
-                )),
+                (string)new PacketContainer(
+                    array(
+                        "From" => "123456",
+                        "To" => "000019",
+                        "Command" => PacketContainer::COMMAND_REPLY,
+                        "Data" => "000012345600392101410039200143000009FFFFFF50",
+                    )
+                ).
+                (string)new PacketContainer(
+                    array(
+                        "From" => "123456",
+                        "To" => "000019",
+                        "Command" => PacketContainer::COMMAND_REPLY,
+                        "Data" => str_repeat("000000", 30),
+                    )
+                ).
+                (string)new PacketContainer(
+                    array(
+                        "From" => "123456",
+                        "To" => "000019",
+                        "Command" => PacketContainer::COMMAND_REPLY,
+                        "Data" => str_repeat("000000", 30),
+                    )
+                ),
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_GETSETUP,
+                        "Data" => "",
+                    )
+                ).
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => E00392100Device::COMMAND_READDOWNSTREAM,
+                        "Data" => "00",
+                    )
+                ).
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => E00392100Device::COMMAND_READDOWNSTREAM,
+                        "Data" => "01",
+                    )
+                ),
             ),
             array(
                 array(
@@ -795,30 +823,38 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
                     ),
                 ),
                 "",
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETSETUP,
-                    "Data" => "",
-                )).
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETSETUP,
-                    "Data" => "",
-                )).
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
-                    "Data" => "",
-                )).
-                (string)new PacketContainer(array(
-                    "To" => "123456",
-                    "From" => "000019",
-                    "Command" => PacketContainer::COMMAND_GETSETUP,
-                    "Data" => "",
-                )),
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_GETSETUP,
+                        "Data" => "",
+                    )
+                ).
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_GETSETUP,
+                        "Data" => "",
+                    )
+                ).
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_FINDECHOREQUEST,
+                        "Data" => "",
+                    )
+                ).
+                (string)new PacketContainer(
+                    array(
+                        "To" => "123456",
+                        "From" => "000019",
+                        "Command" => PacketContainer::COMMAND_GETSETUP,
+                        "Data" => "",
+                    )
+                ),
             ),
         );
     }
@@ -840,6 +876,15 @@ class DeviceConfigPluginTest extends DeviceProcessPluginTestBase
         $this->socket->readString = $read;
         $this->o->pre($d);
         $this->assertSame($expect, $this->socket->writeString);
+    }
+    /**
+    * test the set routine when an extra class exists
+    *
+    * @return null
+    */
+    public function testRequireLock()
+    {
+        $this->assertSame(false, $this->o->requireLock());
     }
 
 }

@@ -54,7 +54,7 @@ $dev->selectInto(1);
 do {
     $hist->clearData();
     $hist->fromAny($dev);
-    $hist->SaveDate = gmmktime(0,0,0,1,1,2003);
+    $hist->SaveDate = gmmktime(0, 0, 0, 1, 1, 2003);
     if ($hist->insertRow()) {
         print $dev->DeviceID."\n";
     }
