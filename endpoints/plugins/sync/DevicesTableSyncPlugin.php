@@ -150,6 +150,12 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
             $this->device->getRow($id);
             $this->remoteDevice->clearData();
             $this->remoteDevice->getRow($id);
+            if (empty($this->remoteDevice->HWPartNum)
+                && empty($this->device->HWPartNum)
+            ) {
+                continue;
+            }
+
             $locked = $this->control->myDevice->getMyDevLock($this->device);
             $this->localToRemote($this->device, $this->remoteDevice, $locked);
             $this->remoteToLocal($this->device, $this->remoteDevice, $locked);
@@ -166,19 +172,23 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
     */
     public function newLocalDevs($devs)
     {
-        if (!empty($devs)) {
-            self::vprint(
-                "Downloading ".count($devs)." new local devices",
-                HUGnetClass::VPRINT_NORMAL
-            );
-        }
         // Go through the devices
         foreach ($devs as $key) {
             $this->remoteDevice->clearData();
             $this->remoteDevice->getRow($key);
+            if (empty($this->remoteDevice->HWPartNum)) {
+                unset($devs[$key]);
+                continue;
+            }
             $this->device->clearData();
             $this->device->fromArray($this->remoteDevice->toDB());
             $this->device->insertRow(false);
+        }
+        if (!empty($devs)) {
+            self::vprint(
+                "Downloaded ".count($devs)." new local devices",
+                HUGnetClass::VPRINT_NORMAL
+            );
         }
 
     }
@@ -191,19 +201,23 @@ class DevicesTableSyncPlugin extends PeriodicPluginBase
     */
     public function newRemoteDevs($devs)
     {
-        if (!empty($devs)) {
-            self::vprint(
-                "Uploading ".count($devs)." new remote devices",
-                HUGnetClass::VPRINT_NORMAL
-            );
-        }
         // Go through the devices
         foreach ($devs as $key) {
             $this->device->clearData();
             $this->device->getRow($key);
+            if (empty($this->device->HWPartNum)) {
+                unset($devs[$key]);
+                continue;
+            }
             $this->remoteDevice->clearData();
             $this->remoteDevice->fromArray($this->device->toDB());
             $this->remoteDevice->insertRow(false);
+        }
+        if (!empty($devs)) {
+            self::vprint(
+                "Uploaded ".count($devs)." new remote devices",
+                HUGnetClass::VPRINT_NORMAL
+            );
         }
     }
 

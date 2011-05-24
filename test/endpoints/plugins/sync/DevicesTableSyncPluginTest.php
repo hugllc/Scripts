@@ -89,8 +89,8 @@ class DevicesTableSyncPluginTest extends SyncPluginTestBase
         $this->pdo = &$this->config->servers->getPDO("default");
         $this->rpdo = &$this->config->servers->getPDO("remote");
         $this->device = array(
-            "id"         => 0x000019,
-            "DeviceID"   => "000019",
+            "id"         => 0xFE0019,
+            "DeviceID"   => "FE0019",
             "HWPartNum"  => "0039-26-00-P",
             "FWPartNum"  => "0039-26-00-P",
             "ControllerKey"  => 19,
@@ -593,7 +593,7 @@ class DevicesTableSyncPluginTest extends SyncPluginTestBase
                 ),
                 array(
                     array(
-                        "id" => 19,
+                        "id" => 0xFE0019,
                         "type" => "device",
                         "lockData" => "000119",
                         "expiration" => 10000000000000, // Way in the future
