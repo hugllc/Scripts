@@ -51,6 +51,7 @@ print "Finding device and reading information:";
 $processors = array(
     "atmega16", "atmega324p", "attiny26", "attiny861", "atmega168"
 );
+$bootloader = false;
 foreach ($processors as $target) {
     $Prog =  "avrdude -c avrisp2 -p $target -P usb ";
     $Prog .= " -B 10 -i 100 -q -q -U eeprom:r:$eepromName:s ";
@@ -68,6 +69,7 @@ foreach ($processors as $target) {
             if (!empty($extra)) {
                 $data = substr($data, 0, 20).$extra;
             }
+            $bootloader = true;
         }
         $dev->fromSetupString($data);
         break;
@@ -80,10 +82,11 @@ if (empty($dev->FWPartNum)) {
 }
 
 $firmware->clearData();
-print "Device has firmware: ".$dev->FWPartNum."  Version: ".$dev->FWVersion."\n".
+print "Device ".$dev->DeviceID." has firmware: ".$dev->FWPartNum."  Version: ".$dev->FWVersion."\n".
 $firmware->fromArray(
     array(
         "FWPartNum" => $dev->FWPartNum,
+        "Version" => $argv[1],
     )
 );
 $firmware->getLatest();
@@ -119,7 +122,11 @@ if (!empty($firmware->id)) {
     // Program the user data
     $dev->FWVersion = $firmware->Version;
     $tempname = tempnam("/tmp", "uisp");
-    writeSREC($dev->toSetupString(), $tempname);
+    $data = $dev->toSetupString();
+    if ($bootloader) {
+        $data = substr($data, 0, 20);
+    }
+    writeSREC($data, $tempname);
 
     $eeprom = ' -V -U eeprom:w:'.$tempname;
 
