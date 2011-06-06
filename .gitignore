@@ -4,3 +4,5 @@ Documentation/
 *.kdev4
 typescript
 old/
+build/
+
