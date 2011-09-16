@@ -32,7 +32,7 @@ clean:
 
 style:
 	mkdir -p ${BASE_DIR}Documentation/Scripts
-	${PHPCS} --standard=PHPCS --report=full --standard=Pear  --ignore="Documentation/,JoomlaMock/,tmpl/,old/,contrib/,html/" .
+	${PHPCS} --standard=PHPCS --report=full --standard=Pear  --ignore="Documentation/,JoomlaMock/,tmpl/,old/,contrib/,html/,build/" .
 	
 UItest: UItest-CoreUI
 

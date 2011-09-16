@@ -107,7 +107,22 @@ class RawHistoryTableSyncPlugin extends PeriodicPluginBase
             $this->remote = new RawHistoryTable(array("group" => "remote"));
         }
         $last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
-
+        // If $last is in the future, reset it.
+        if ($last > time()) {
+            self::vprint(
+                "Resetting the RawHistory sync time because the last time we did it"
+                ." was in the future.",
+                HUGnetClass::VPRINT_NORMAL
+            );
+            $this->logError(
+                -16,
+                "Resetting the RawHistory sync time because the last time we did it"
+                ." was in the future.",
+                ErrorTable::SEVERITY_CRITICAL,
+                __METHOD__
+            );
+            $last = 0;
+        }
         // Get the devices
         $rows = $this->local->select(
             "`Date` > ?",
