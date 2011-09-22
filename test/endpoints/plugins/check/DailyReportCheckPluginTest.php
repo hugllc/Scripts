@@ -334,13 +334,14 @@ class DailyReportCheckPluginTest extends CheckPluginTestBase
                 "test@dflytech.com",
                 "Daily Report on [A-Za-z0-9]+",
                 array(
-                    "Last Header" => "LAST RECORDS[ \r\n\t]+"
-                    ."[a-zA-Z0-9\t ]+[\r\n]+",
-                    "Last Data" => "([A-Za-z0-9 \)\(]+:([\t]*[0-9]*)+[\r\n]+){7}",
-                    "Last 1 Hour" => "(1 hour[A-Za-z0-9 \)\(]+:"
-                        ."([\t]*[1]*)+[\r\n]+){1}",
-                    "Last Way Old" => "(Way[A-Za-z0-9 \)\(]+:"
-                        ."([\t]*[1]*)+[\r\n]+){1}",
+                    "Date Header" => "CURRENT DATE AND TIME[ \r\n\t]+",
+                    "Date" => "[Mon|Tue|Wed|Thu|Fri|Sat|Sun]{1}, [0-9]{2} "
+                        ."[A-Za-z]{3} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9\-]+",
+                    "Last Header" => "CURRENT DEVICES[ \r\n\t]+",
+                    "LastPoll" => "LastPoll\t[0-9]+\/[0-9]+[\r\n]{1}",
+                    "LastConfig" => "LastConfig\t[0-9]+\/[0-9]+[\r\n]{1}",
+                    "LastHistory" => "LastHistory\t[0-9]+\/[0-9]+[\r\n]{1}",
+                    "LastAnalysis" => "LastAnalysis\t[0-9]+\/[0-9]+[\r\n]{1}",
                 ),
             ),
         );
@@ -380,7 +381,7 @@ class DailyReportCheckPluginTest extends CheckPluginTestBase
             $this->assertRegExp(
                 "/".$e."/",
                 $ret["Body"],
-                "$key is not found"
+                "$k is not found"
             );
         }
     }

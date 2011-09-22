@@ -88,7 +88,7 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
         if (!$this->enable) {
             return;
         }
-        $this->_subject = "Daily Report on ".`hostname`;
+        $this->_subject = "HUGnet Daily Report on ".`hostname`;
         $this->device = new DeviceContainer();
         $this->gatewayKey = $this->control->myConfig->script_gateway;
         // State we are here
@@ -120,6 +120,7 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
             $where,
             $data
         );
+        $this->printDate();
         $this->last();
         $ret = $this->send();
         unset($this->devs);
@@ -168,53 +169,44 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
     protected function last()
     {
         $types = array(
-            "LastPoll" => "Poll",
-            "LastConfig" => "Config",
-            "LastHistory" => "History",
-            "LastAnalysis" => "Analysis",
+            "LastPoll" => 3600,
+            "LastConfig" => 60*60*12,
+            "LastHistory" => 3600,
+            "LastAnalysis" => 3600,
         );
-        $days = array("0.04", "0.25", "0.5", "1", "3", "10", "many");
         $stats = array();
         foreach (array_keys((array)$this->devs) as $key) {
             $row = &$this->devs[$key];
             if ($row->Active == 1) {
-                foreach ($types as $key => $type) {
+                foreach ($types as $k => $thresh) {
                     $date = $row->params->DriverInfo[$key];
-                    $done = false;
-                    foreach ($days as $d) {
-                        if ($d == "many") {
-                            $stats[$key][$d]++;
-                            break;
-                        }
-                        $time = time() - (int)((float)$d * 86400);
-                        if ($date > $time) {
-                            $stats[$key][$d]++;
-                            break;
-                        }
+                    $time = time() - $thresh;
+                    if ($date <= $time) {
+                        $stats[$k]["current"]++;
                     }
+                    $stats[$k]["total"]++;
                 }
             }
         }
-        $title = "Last Records";
-        $text = "\t\t\t".implode("\t", $types)."\r\n";
-        foreach ($days as $d) {
-            if ($d == "many") {
-                $text .= "Way Old:\t\t";
-            } else if ($d < 1) {
-                $text .= round($d*24)." hour(s) old:\t\t";
-            } else {
-                $text .= $d." day(s) old:\t\t";
-            }
-            foreach ($types as $key => $type) {
-                $cnt = $stats[$key][$d];
-                if (empty($cnt)) {
-                    $cnt = 0;
-                }
-                $text .= $cnt."\t";
-            }
+        $title = "Current Devices";
+        foreach ($stats as $key => $stat) {
+            $text .= $key."\t".$stat["current"]."/".$stat["total"];
             $text .= "\r\n";
         }
         $this->output($text, $title);
+
+    }
+    /**
+    * This checks the hourly scripts
+    *
+    * @return int The error code, if any
+    */
+    protected function printDate()
+    {
+        $this->output(
+            date('r'), 
+            "Current Date and Time"
+        );
 
     }
     /**
@@ -227,10 +219,23 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
     */
     protected function output($text, $title = "")
     {
+        $this->_body .= $this->lineEnding();
         if (!empty($title)) {
-            $this->_body .= strtoupper($title)."\r\n";
+            $this->_body .= strtoupper($title);
+            $this->_body .= $this->lineEnding();
         }
         $this->_body .= $text;
+        $this->_body .= $this->lineEnding();
+    }
+    /**
+    * This checks the hourly scripts
+    *
+    * @return int The error code, if any
+    */
+    protected function lineEnding()
+    {
+        return "\r\n";
+
     }
 }
 

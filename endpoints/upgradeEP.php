@@ -82,7 +82,8 @@ if (empty($dev->FWPartNum)) {
 }
 
 $firmware->clearData();
-print "Device ".$dev->DeviceID." has firmware: ".$dev->FWPartNum."  Version: ".$dev->FWVersion."\n".
+print "Device ".$dev->DeviceID." has firmware: ".$dev->FWPartNum;
+print "  Version: ".$dev->FWVersion."\n".
 $firmware->fromArray(
     array(
         "FWPartNum" => $dev->FWPartNum,
