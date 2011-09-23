@@ -178,21 +178,23 @@ class DevicesCheckPlugin extends PeriodicPluginBase
         $loop = $this->devicesHistory->selectInto("`id` = ?", array($id));
         while ($loop) {
             if (!$this->devicesHistory->checkRecord()) {
+                $date = $this->devicesHistory->SaveDate;
                 self::vprint(
                     "DeviceHistory ".$this->device->DeviceID
+                        ." on ".date("Y-m-d H:i:s", $date)
                         ." removed as a bad record",
                     HUGnetClass::VPRINT_NORMAL
                 );
                 $this->logError(
                     -15,
                     "DeviceHistory ".$this->device->DeviceID
-                    ." removed as a bad record",
+                        ." on ".date("Y-m-d H:i:s", $date)
+                        ." removed as a bad record",
                     ErrorTable::SEVERITY_ERROR,
                     __METHOD__
                 );
                 $this->device->clearData();
                 $this->device->getRow($id);
-                $date = $this->devicesHistory->SaveDate;
                 if (empty($date)) die("Bad Date");
                 $params = array(
                     "LastHistory", "LastAverage15MIN", "LastAverageHOURLY",
