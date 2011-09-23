@@ -179,9 +179,9 @@ class DailyReportCheckPlugin extends PeriodicPluginBase
             $row = &$this->devs[$key];
             if ($row->Active == 1) {
                 foreach ($types as $k => $thresh) {
-                    $date = $row->params->DriverInfo[$key];
+                    $date = $row->params->DriverInfo[$k];
                     $time = time() - $thresh;
-                    if ($date <= $time) {
+                    if ($date >= $time) {
                         $stats[$k]["current"]++;
                     }
                     $stats[$k]["total"]++;
