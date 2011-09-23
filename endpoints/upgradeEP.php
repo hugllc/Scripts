@@ -81,6 +81,55 @@ if (empty($dev->FWPartNum)) {
     die(" No endpoint found\n");
 }
 
+if ($target == "attiny26") {
+    print "This device needs to be upgraded to a ATTiny861 procesor.\n";
+    print "Please replace the processor now.\n";
+    print "Press <enter> to continue, q<enter> to quit\n";
+
+    $input = fgets(STDIN);
+    if (trim(strtolower($input)) == "q") {
+        break;
+    }
+    $dev->FWPartNum = "0039-20-17-C";
+    $res = $dev->getHardwareTypes(0);
+    $hw = null;
+    foreach ($res as $k => $val) {
+        if ($val["HWPartNum"] === "0039-12-02-C") {
+            $hw = $val;
+            break;
+        }
+    }
+    if (empty($hw)) {
+        die(" No device entry found for 0039-12-02-C\n");
+    }
+    $Prog = 'avrdude -c avrisp2 -p attiny861 -P usb ';
+    // SET the fuses
+    print "Setting Fuses...";
+    $fuse = ' -U hfuse:w:'.$hw['Param']['FuseHigh'].':m';
+    if (!$hugnet_config["test"]) {
+        exec($Prog.$fuse, $out, $pass['FuseHigh']);
+    } else {
+        print $Prog.$fuse."\n";
+    }
+    print " Low ";
+
+    $fuse = ' -U lfuse:w:'.$hw['Param']['FuseLow'].':m';
+    if (!$hugnet_config["test"]) {
+        exec($Prog.$fuse, $out, $pass['FuseLow']);
+    } else {
+        print $Prog.$fuse."\n";
+    }
+    print " High ";
+
+    $fuse = ' -U efuse:w:'.$hw['Param']['FuseExtended'].':m';
+    if (!$hugnet_config["test"]) {
+        exec($Prog.$fuse, $out, $pass['FuseExtended']);
+    } else {
+        print $Prog.$fuse."\n";
+    }
+    print " Extended ";
+    print "\n";
+}
 $firmware->clearData();
 print "Device ".$dev->DeviceID." has firmware: ".$dev->FWPartNum;
 print "  Version: ".$dev->FWVersion."\n".
@@ -104,7 +153,11 @@ if (!empty($firmware->id)) {
     fclose($fp);
     $flash = ' -e -U flash:w:'.$tempname;
     print "Using: ".$Prog.$flash."\n";
-    passthru($Prog.$flash);
+    if (!$hugnet_config["test"]) {
+        passthru($Prog.$flash);
+    } else {
+        print $Prog.$flash."\n";
+    }
     unlink($tempname);
 
     // Program the E2
@@ -116,7 +169,11 @@ if (!empty($firmware->id)) {
     $eeprom = ' -V -U eeprom:w:'.$tempname;
 
     print "Using: ".$Prog.$eeprom."\n";
-    passthru($Prog.$eeprom);
+    if (!$hugnet_config["test"]) {
+        passthru($Prog.$eeprom);
+    } else {
+        print $Prog.$eeprom."\n";
+    }
 
     unlink($tempname);
 
@@ -126,14 +183,24 @@ if (!empty($firmware->id)) {
     $data = $dev->toSetupString();
     if ($bootloader) {
         $data = substr($data, 0, 20);
+    } else {
+        $data .= DeviceContainer::stringSize(
+            $dev->sensors->sensor(0)->timeConstant, 2
+        );
+        for ($i = 0; $i < $dev->sensors->PhysicalSensors; $i++) {
+            $data .= DeviceContainer::stringSize($dev->sensors->sensor($i)->id, 2);
+        }
     }
     writeSREC($data, $tempname);
-
     $eeprom = ' -V -U eeprom:w:'.$tempname;
 
     print "Using: ".$Prog.$eeprom."\n";
-    passthru($Prog.$eeprom);
 
+    if (!$hugnet_config["test"]) {
+        passthru($Prog.$eeprom);
+    } else {
+        print $Prog.$eeprom."\n";
+    }
     unlink($tempname);
 
 } else {
