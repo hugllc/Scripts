@@ -52,7 +52,7 @@ require_once HUGNET_INCLUDE_PATH."/tables/ErrorTable.php";
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class DevicesTableCheckPlugin extends PeriodicPluginBase
+class DevicesCheckPlugin extends PeriodicPluginBase
     implements PeriodicPluginInterface
 {
     /** @var This is to register the class */
