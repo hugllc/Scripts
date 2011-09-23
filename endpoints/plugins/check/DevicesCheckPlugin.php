@@ -89,7 +89,7 @@ class DevicesCheckPlugin extends PeriodicPluginBase
             return;
         }
         $this->device = new DeviceContainer();
-        $this->device = new DevicesHistoryTable();
+        $this->devicesHistory = new DevicesHistoryTable();
         $this->gatewayKey = $this->control->myConfig->script_gateway;
         // State we are here
         self::vprint(
@@ -107,7 +107,7 @@ class DevicesCheckPlugin extends PeriodicPluginBase
         $this->last = &$this->control->myDevice->params->ProcessInfo[__CLASS__];
         // State we are looking for errors
         self::vprint(
-            "Checking for bad device records.  Last Check: "
+            "Checking for bad device and deviceHistory records.  Last Check: "
             .date("Y-m-d H:i:s", $this->last),
             HUGnetClass::VPRINT_NORMAL
         );
@@ -125,7 +125,7 @@ class DevicesCheckPlugin extends PeriodicPluginBase
         // Go through the devices
         foreach ($devs as $key) {
             $this->checkDevicesTable($key);
-            $this->checkDeivicesHistoryTable($key);
+            $this->checkDevicesHistoryTable($key);
         }
         $this->last = time();
         return true;
@@ -175,10 +175,22 @@ class DevicesCheckPlugin extends PeriodicPluginBase
     protected function checkDevicesHistoryTable($id)
     {
         $this->devicesHistory->clearData();
-        $this->devicesHistory->selectInto("id = ?", array($id));
+        $this->devicesHistory->selectInto("`id` = ?", array($id));
         do {
             if (!$this->devicesHistory->checkRecord()) {
-                var_dump($this->devicesHistory->toArray());
+                $this->device->clearData();
+                $this->device->getRow($id);
+                $date = $this->devicesHistory->SaveDate;
+                $this->device->params->DriverInfo["LastHistory"] = $date;
+                $this->device->params->DriverInfo["LastAverage15MIN"] = $date;
+                $this->device->params->DriverInfo["LastAverageHOURLY"] = $date;
+                $this->device->params->DriverInfo["LastAverageDAILY"] = $date;
+                $this->device->params->DriverInfo["LastAverageWEEKLY"] = $date;
+                $this->device->params->DriverInfo["LastAverageMONTHLY"] = $date;
+                $this->device->params->DriverInfo["LastAverageYEARLY"] = $date;
+                $this->device->updateRow(array("params"));
+                
+                $this->devicesHistory->deleteRow();
             }
         } while ($this->devicesHistory->nextInto());
     }
