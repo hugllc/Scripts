@@ -175,24 +175,40 @@ class DevicesCheckPlugin extends PeriodicPluginBase
     protected function checkDevicesHistoryTable($id)
     {
         $this->devicesHistory->clearData();
-        $this->devicesHistory->selectInto("`id` = ?", array($id));
-        do {
+        $loop = $this->devicesHistory->selectInto("`id` = ?", array($id));
+        while ($loop) {
             if (!$this->devicesHistory->checkRecord()) {
+                self::vprint(
+                    "DeviceHistory ".$this->device->DeviceID
+                        ." removed as a bad record",
+                    HUGnetClass::VPRINT_NORMAL
+                );
+                $this->logError(
+                    -15,
+                    "DeviceHistory ".$this->device->DeviceID
+                    ." removed as a bad record",
+                    ErrorTable::SEVERITY_ERROR,
+                    __METHOD__
+                );
                 $this->device->clearData();
                 $this->device->getRow($id);
                 $date = $this->devicesHistory->SaveDate;
-                $this->device->params->DriverInfo["LastHistory"] = $date;
-                $this->device->params->DriverInfo["LastAverage15MIN"] = $date;
-                $this->device->params->DriverInfo["LastAverageHOURLY"] = $date;
-                $this->device->params->DriverInfo["LastAverageDAILY"] = $date;
-                $this->device->params->DriverInfo["LastAverageWEEKLY"] = $date;
-                $this->device->params->DriverInfo["LastAverageMONTHLY"] = $date;
-                $this->device->params->DriverInfo["LastAverageYEARLY"] = $date;
+                if (empty($date)) die("Bad Date");
+                $params = array(
+                    "LastHistory", "LastAverage15MIN", "LastAverageHOURLY",
+                    "LastAverageDAILY","LastAverageWEEKLY","LastAverageMONTHLY",
+                    "LastAverageYEARLY"
+                );
+                foreach ($params as $p) {
+                    if ($this->device->params->DriverInfo[$p] > $date) {
+                        $this->device->params->DriverInfo[$p] = $date;
+                    }
+                }
                 $this->device->updateRow(array("params"));
-                
                 $this->devicesHistory->deleteRow();
             }
-        } while ($this->devicesHistory->nextInto());
+            $loop = $this->devicesHistory->nextInto();
+        }
     }
 
     /**
