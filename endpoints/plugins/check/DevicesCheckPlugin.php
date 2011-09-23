@@ -57,9 +57,9 @@ class DevicesTableCheckPlugin extends PeriodicPluginBase
 {
     /** @var This is to register the class */
     public static $registerPlugin = array(
-        "Name" => "DevicesTableCheckPlugin",
+        "Name" => "DevicesCheckPlugin",
         "Type" => "periodic",
-        "Class" => "DevicesTableCheckPlugin",
+        "Class" => "DevicesCheckPlugin",
     );
     /** @var This is the array of devices in our gateway */
     protected $errors = null;
@@ -89,6 +89,7 @@ class DevicesTableCheckPlugin extends PeriodicPluginBase
             return;
         }
         $this->device = new DeviceContainer();
+        $this->device = new DevicesHistoryTable();
         $this->gatewayKey = $this->control->myConfig->script_gateway;
         // State we are here
         self::vprint(
@@ -123,34 +124,63 @@ class DevicesTableCheckPlugin extends PeriodicPluginBase
         shuffle($devs);
         // Go through the devices
         foreach ($devs as $key) {
-            $this->device->clearData();
-            $this->device->getRow($key);
-            if ($this->device->params->LastContact < (time() - 3600)) {
-
-                if (((empty($this->device->HWPartNum)
-                    && empty($this->device->FWPartNum)
-                    && empty($this->device->FWVersion)))
-                ) {
-                    self::vprint(
-                        "Device ".$this->device->DeviceID." removed as a bad record",
-                        HUGnetClass::VPRINT_NORMAL
-                    );
-                    $this->logError(
-                        -15,
-                        "Device ".$this->device->DeviceID." removed as a bad record",
-                        ErrorTable::SEVERITY_ERROR,
-                        __METHOD__
-                    );
-                    $this->device->deleteRow();
-                } else if ($this->device->gateway()) {
-                    // If it is a gateway script just set it inactive.
-                    $this->device->Active = 0;
-                    $this->device->updateRow(array("Active"));
-                }
-            }
+            $this->checkDevicesTable($key);
+            $this->checkDeivicesHistoryTable($key);
         }
         $this->last = time();
         return true;
+    }
+    /**
+    * Check the devices table
+    * 
+    * @param int $id The device id to use
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    protected function checkDevicesTable($id)
+    {
+        $this->device->clearData();
+        $this->device->getRow($id);
+        if ($this->device->params->LastContact < (time() - 3600)) {
+
+            if (((empty($this->device->HWPartNum)
+                && empty($this->device->FWPartNum)
+                && empty($this->device->FWVersion)))
+            ) {
+                self::vprint(
+                    "Device ".$this->device->DeviceID." removed as a bad record",
+                    HUGnetClass::VPRINT_NORMAL
+                );
+                $this->logError(
+                    -15,
+                    "Device ".$this->device->DeviceID." removed as a bad record",
+                    ErrorTable::SEVERITY_ERROR,
+                    __METHOD__
+                );
+                $this->device->deleteRow();
+            } else if ($this->device->gateway()) {
+                // If it is a gateway script just set it inactive.
+                $this->device->Active = 0;
+                $this->device->updateRow(array("Active"));
+            }
+        }
+    }
+    /**
+    * Check the devicesHistory table
+    * 
+    * @param int $id The device id to use
+    *
+    * @return bool True if ready to return, false otherwise
+    */
+    protected function checkDevicesHistoryTable($id)
+    {
+        $this->devicesHistory->clearData();
+        $this->devicesHistory->selectInto("id = ?", array($id));
+        do {
+            if (!$this->devicesHistory->checkRecord()) {
+                var_dump($this->devicesHistory->toArray());
+            }
+        } while ($this->devicesHistory->nextInto());
     }
 
     /**
