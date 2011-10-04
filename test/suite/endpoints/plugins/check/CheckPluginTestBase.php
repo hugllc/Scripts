@@ -37,8 +37,7 @@
  */
 
 // Need to make sure this file is not added to the code coverage
-PHP_CodeCoverage_Filter::getInstance()->addFileToBlacklist(__FILE__);
-require_once dirname(__FILE__)."/../PluginTestBase.php";
+require_once TEST_BASE."endpoints/plugins/PluginTestBase.php";
 /**
  * Test class for device drivers
  *

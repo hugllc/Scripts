@@ -37,9 +37,8 @@
  */
 
 /** Get our classes */
-require_once dirname(__FILE__).'/DeviceProcessPluginTestBase.php';
-require_once dirname(__FILE__)
-    .'/../../../../endpoints/plugins/device/DevicePollPlugin.php';
+require_once 'DeviceProcessPluginTestBase.php';
+require_once CODE_BASE.'endpoints/plugins/device/DevicePollPlugin.php';
 require_once HUGNET_INCLUDE_PATH."/processes/DeviceProcess.php";
 /**
  * Test class for filter.

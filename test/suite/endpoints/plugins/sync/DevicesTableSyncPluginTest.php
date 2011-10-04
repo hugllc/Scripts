@@ -37,9 +37,8 @@
  */
 
 /** Get our classes */
-require_once dirname(__FILE__).'/SyncPluginTestBase.php';
-require_once dirname(__FILE__)
-    .'/../../../../endpoints/plugins/sync/DevicesTableSyncPlugin.php';
+require_once 'SyncPluginTestBase.php';
+require_once CODE_BASE.'endpoints/plugins/sync/DevicesTableSyncPlugin.php';
 require_once HUGNET_INCLUDE_PATH."/processes/PeriodicPlugins.php";
 /**
  * Test class for filter.

@@ -37,8 +37,7 @@
  */
 
 // Need to make sure this file is not added to the code coverage
-PHP_CodeCoverage_Filter::getInstance()->addFileToBlacklist(__FILE__);
-require_once dirname(__FILE__)."/../PluginTestBase.php";
+require_once TEST_BASE."endpoints/plugins/PluginTestBase.php";
 /**
  * Test class for device drivers
  *
@@ -51,8 +50,37 @@ require_once dirname(__FILE__)."/../PluginTestBase.php";
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       https://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-abstract class DeviceProcessPluginTestBase extends PluginTestBase
+abstract class DataPointPluginTestBase extends PluginTestBase
 {
+    /**
+    * test the set routine when an extra class exists
+    *
+    * @param string $class The class to use
+    *
+    * @return null
+    *
+    * @dataProvider dataRegisterPlugin
+    */
+    public function testRegisterPluginDevices($class)
+    {
+        $var = eval("return $class::\$registerPlugin;");
+        $this->assertInternalType(
+            "array",
+            $var["Units"],
+            "Units is not an array"
+        );
+        foreach ($var["Units"] as $key => $units) {
+            $this->assertInternalType(
+                "string",
+                $units,
+                "hardware $key is not a string"
+            );
+            $this->assertFalse(
+                empty($units),
+                "Units $key can't be empty"
+            );
+        }
+    }
     /**
     * test the set routine when an extra class exists
     *
@@ -64,7 +92,7 @@ abstract class DeviceProcessPluginTestBase extends PluginTestBase
     */
     public function testParent($class)
     {
-        $this->assertTrue(is_subclass_of($class, "DeviceProcessPluginBase"));
+        $this->assertTrue(is_subclass_of($class, "DataPointBase"));
     }
 }
 
