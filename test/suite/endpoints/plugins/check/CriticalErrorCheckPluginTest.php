@@ -38,7 +38,7 @@
 
 /** Get our classes */
 require_once 'CheckPluginTestBase.php';
-require_once CODE_BASE.'endpoints/plugins/check/CriticalErrorCheckPlugin.php';
+require_once SCRIPTS_CODE_BASE.'endpoints/plugins/check/CriticalErrorCheckPlugin.php';
 require_once HUGNET_INCLUDE_PATH."/processes/PeriodicPlugins.php";
 /**
  * Test class for filter.

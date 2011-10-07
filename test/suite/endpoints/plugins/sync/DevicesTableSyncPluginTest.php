@@ -38,7 +38,7 @@
 
 /** Get our classes */
 require_once 'SyncPluginTestBase.php';
-require_once CODE_BASE.'endpoints/plugins/sync/DevicesTableSyncPlugin.php';
+require_once SCRIPTS_CODE_BASE.'endpoints/plugins/sync/DevicesTableSyncPlugin.php';
 require_once HUGNET_INCLUDE_PATH."/processes/PeriodicPlugins.php";
 /**
  * Test class for filter.

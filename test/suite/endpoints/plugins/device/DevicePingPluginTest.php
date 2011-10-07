@@ -38,7 +38,7 @@
 
 /** Get our classes */
 require_once 'DeviceProcessPluginTestBase.php';
-require_once CODE_BASE.'endpoints/plugins/device/DevicePingPlugin.php';
+require_once SCRIPTS_CODE_BASE.'endpoints/plugins/device/DevicePingPlugin.php';
 require_once HUGNET_INCLUDE_PATH."/processes/DeviceProcess.php";
 /**
  * Test class for filter.

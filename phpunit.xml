@@ -5,7 +5,7 @@
          backupGlobals="false"
          backupStaticAttributes="false"
          strict="false"
-         verbose="true">
+         verbose="false">
   <testsuites>
     <testsuite name="Scripts">
       <directory suffix="Test.php">test/suite/</directory>
@@ -21,14 +21,14 @@
   </logging>
 
   <filter>
-    <whitelist addUncoveredFilesFromWhitelist="true">
+    <whitelist addUncoveredFilesFromWhitelist="false">
       <directory suffix=".php">.</directory>
       <exclude>
         <directory suffix=".php">test</directory>
         <directory suffix=".php">contrib</directory>
         <directory suffix=".php">old</directory>
         <directory suffix=".php">build</directory>
-        <directory suffix=".php">Documentation</directory>
+        <directory suffix=".php">misc</directory>
       </exclude>
     </whitelist>
   </filter>

@@ -10,6 +10,8 @@
   <delete dir="${basedir}/build/coverage"/>
   <delete dir="${basedir}/build/logs"/>
   <delete dir="${basedir}/build/pdepend"/>
+  <delete dir="${basedir}/Documentation"/>
+  <delete dir="${basedir}/php.core"/>
 
   <mkdir dir="${basedir}/build/api"/>
   <mkdir dir="${basedir}/build/code-browser"/>
@@ -18,7 +20,7 @@
   <mkdir dir="${basedir}/build/pdepend"/>
  </target>
 
- <target name="phpunit" description="Run unit tests using PHPUnit and generates junit.xml and clover.xml">
+ <target name="phpunit" description="Run unit tests using PHPUnit and generates junit.xml and clover.xml" depends="setuptest">
   <exec executable="phpunit" failonerror="true"/>
  </target>
 
@@ -108,5 +110,11 @@
   </exec>
  </target>
 
+ <target name="setuptest" depends="">
+  <exec executable="test/setup.sh" />
+ </target>
+ 
+
  <target name="build" depends="clean,pdepend,phpmd,phpcpd,phpcs,phpdoc,phploc,phpunit,phpcb"/>
+
 </project>

@@ -28,8 +28,7 @@ doc-clean:
 	rm -Rf ${BASE_DIR}Documentation/Scripts
 
 clean:
-	rm -Rf *~ */*~ */*/*~ */*/*/*~
-
+	find . -iname "*~" |xargs -n 1 rm -f
 
 style:
 	mkdir -p ${BASE_DIR}Documentation/Scripts

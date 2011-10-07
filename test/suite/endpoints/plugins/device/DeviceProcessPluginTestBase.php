@@ -36,8 +36,10 @@
  *
  */
 
-// Need to make sure this file is not added to the code coverage
+/** These are the required files */
 require_once TEST_BASE."endpoints/plugins/PluginTestBase.php";
+/** This is so that we can do dummy socket writes */
+require_once HUGNETLIB_STUB_PATH."DummySocketContainer.php";
 /**
  * Test class for device drivers
  *
