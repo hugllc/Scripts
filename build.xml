@@ -111,7 +111,9 @@
  </target>
 
  <target name="setuptest" depends="">
-  <exec executable="test/setup.sh" />
+  <exec executable="bash">
+     <arg line="test/setup.sh" />
+  </exec>
  </target>
  
 
