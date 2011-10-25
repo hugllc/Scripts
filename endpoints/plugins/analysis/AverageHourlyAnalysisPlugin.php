@@ -157,9 +157,11 @@ class AverageHourlyAnalysisPlugin extends DeviceProcessPluginBase
     */
     public function ready(DeviceContainer &$dev)
     {
+        $info = &$dev->params->DriverInfo;
         // Run when enabled, and at most every 15 minutes.
         return $this->enable
-            && ((time() - $dev->params->DriverInfo["LastAverageHOURLYTry"]) > 3600);
+            && (((time() - $info["LastAverageHOURLYTry"]) > 3600)
+            || (($info["LastAverage15MIN"] - $info["LastAverageHOURLY"]) > 3600));
     }
 
 }

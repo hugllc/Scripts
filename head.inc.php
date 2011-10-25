@@ -54,8 +54,8 @@ if (!@include_once '/etc/hugnet/config.inc.php') {
     }
 }
 
-if (file_exists("/home/hugnet/HUGnetLib/hugnet.inc.php")) {
-    include_once "/home/hugnet/HUGnetLib/hugnet.inc.php";
+if (file_exists("/home/hugnet/HUGnetLib/src/hugnet.inc.php")) {
+    include_once "/home/hugnet/HUGnetLib/src/hugnet.inc.php";
 } else {
 
     if (!@include_once $hugnet_config["HUGnetLib_dir"]."/hugnet.inc.php") {
@@ -129,7 +129,7 @@ for ($i = 1; $i < count($argv); $i++) {
     case "-n":
         $i++;
         $Count                  = $argv[$i];
-        print "Test Mode Enabled\n";
+        print "Count set to $Count\n";
         break;
     // Gateway Port
     case "-p":
