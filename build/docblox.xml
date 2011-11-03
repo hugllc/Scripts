@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<docblox>
+  <parser>
+      <default-package-name>HUGnet Scripts</default-package-name>
+      <target>build/api</target>
+  </parser>
+  <transformer>
+    <target>build/api</target>
+  </transformer>
+  <files>
+    <directory>endpoints</directory>
+    <directory>test</directory>
+    <ignore>build</ignore>
+    <ignore>rel</ignore>
+    <ignore>deb</ignore>
+  </files>
+    <plugins>
+        <plugin path="Core">
+            <option name="a">value</option>
+        </plugin>
+    </plugins>
+</docblox>
+
