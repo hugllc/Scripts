@@ -42,17 +42,6 @@ define("HUGNET_INCLUDE_PATH", realpath(dirname(__FILE__)."/HUGnetLib/src")."/");
 define(
     "HUGNETLIB_STUB_PATH", realpath(dirname(__FILE__)."/HUGnetLib/test/stubs")."/"
 );
-
-PHP_CodeCoverage_Filter::getInstance()->addFileToBlacklist(__FILE__);
-PHP_CodeCoverage_Filter::getInstance()->addFileToBlacklist(
-    SCRIPTS_CODE_BASE."hugnet.inc.php"
-);
-PHP_CodeCoverage_Filter::getInstance()->addDirectoryToBlacklist(SCRIPTS_CODE_BASE."contrib");
-PHP_CodeCoverage_Filter::getInstance()->addDirectoryToBlacklist(SCRIPTS_CODE_BASE."test");
-PHP_CodeCoverage_Filter::getInstance()->addDirectoryToBlacklist(
-    SCRIPTS_CODE_BASE."interfaces"
-);
-PHP_CodeCoverage_Filter::getInstance()->addDirectoryToBlacklist(HUGNET_INCLUDE_PATH);
 //include_once dirname(__FILE__)."/HUGnetLib/src/hugnet.inc.php";
 require_once HUGNET_INCLUDE_PATH."/containers/ConfigContainer.php";
 
