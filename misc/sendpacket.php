@@ -1,6 +1,6 @@
 <?php
 /**
- * Sends a packet
+ * Monitors incoming packets
  *
  * PHP Version 5
  *
@@ -26,7 +26,7 @@
  *
  * @category   Scripts
  * @package    Scripts
- * @subpackage Test
+ * @subpackage Misc
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2007-2011 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
@@ -35,31 +35,65 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-$pktData = "";
-require_once dirname(__FILE__).'/../head.inc.php';
+/** HUGnet code */
+//require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once HUGNET_INCLUDE_PATH.'/containers/PacketContainer.php';
+require_once dirname(__FILE__).'/../../HUGnetLib/src/cli/Daemon.php';
+require_once dirname(__FILE__).'/../../HUGnetLib/src/cli/Args.php';
 
-if (empty($DeviceID)) {
-    die("DeviceID must be specified!\r\n");
-}
-$config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
-$config->verbose($hugnet_config["verbose"]);
+print "monitor.php\n";
+print "Starting...\n";
 
-$pkt = new PacketContainer(
+$config = &\HUGnet\cli\Args::factory(
+    $argv, $argc,
     array(
-        "To" => $DeviceID,
-        "Command" => isset($pktCommand) ? $pktCommand : "02",
-        "Data" => $pktData,
-        "GetReply" => true,
-        "group" => "default",
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+        "D" => array("name" => "Data", "type" => "string", "args" => true),
+        "C" => array("name" => "Command", "type" => "string", "args" => true),
     )
 );
-
-$pkt->send();
+$conf = $config->config();
+$conf["network"]["block"] = true;
+$cli = &\HUGnet\cli\CLI::factory($conf);
+/*
+$daemon->system()->network()->monitor(
+    function (&$pkt)
+    {
+        if (is_object($pkt)) {
+            print "From: ".$pkt->From();
+            print " -> To: ".$pkt->To();
+            print "  Command: ".$pkt->Command();
+            print "  Type: ".$pkt->Type();
+            print "\r\n";
+            $data = $pkt->Data();
+            if (!empty($data)) {
+                print "Data: ".$data."\r\n";
+            }
+        }
+    }
+);*/
+$pkt = $cli->system()->network()->send(
+    array(
+        "To" => $config->i,
+        "Command" => $config->C,
+        "Data" => $config->D,
+    )
+);
 if (is_object($pkt)) {
-    var_dump($pkt->toArray());
-} else {
-     print "No Return";
+    print "From: ".$pkt->From();
+    print " -> To: ".$pkt->To();
+    print "  Command: ".$pkt->Command();
+    print "  Type: ".$pkt->Type();
+    print "\r\n";
+    $data = $pkt->Data();
+    if (!empty($data)) {
+        print "Data: ".$data."\r\n";
+    }
+    $data = $pkt->Reply();
+    if (!empty($data)) {
+        print "Reply Data: ".$data."\r\n";
+    }
 }
+print "Finished\n";
+
 ?>

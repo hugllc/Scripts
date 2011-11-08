@@ -46,6 +46,10 @@ print "Starting...\n";
 
 $config = &\HUGnet\cli\Args::factory($argv, $argc);
 $daemon = &\HUGnet\cli\Daemon::factory($config);
+$daemon->system()->network()->device(
+    array(
+    )
+);
 $daemon->system()->network()->monitor(
     function ($pkt)
     {
@@ -62,7 +66,6 @@ $daemon->system()->network()->monitor(
         }
     }
 );
-
 while ($daemon->loop()) {
     $daemon->main();
 }

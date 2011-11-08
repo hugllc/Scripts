@@ -46,7 +46,7 @@ print "Starting...\n";
 
 $config = &\HUGnet\cli\Args::factory($argv, $argc);
 $daemon = &\HUGnet\cli\Daemon::factory($config);
-$daemon->system()->network()->monitor(
+$daemon->system()->network()->match(
     function ($pkt)
     {
         if (is_object($pkt)) {
@@ -59,10 +59,14 @@ $daemon->system()->network()->monitor(
             if (!empty($data)) {
                 print "Data: ".$data."\r\n";
             }
+            $data = $pkt->Reply();
+            if (!empty($data)) {
+                print "Reply Data: ".$data."\r\n";
+            }
         }
     }
 );
-
+//ConfigContainer::config("/etc/hugnet/config.inc.php");
 while ($daemon->loop()) {
     $daemon->main();
 }
