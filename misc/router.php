@@ -45,7 +45,12 @@ print $argv[0]."\n";
 print "Starting...\n";
 
 $config = &\HUGnet\cli\Args::factory($argv, $argc);
-$daemon = &\HUGnet\cli\Daemon::factory($config);
+// This is so we can have a different network config from everyone else
+$conf = $config->config();
+if (isset($conf["router"])) {
+    $conf["network"] = $conf["router"];
+}
+$daemon = &\HUGnet\cli\Daemon::factory($conf);
 $daemon->system()->network()->device(
     array(
     )
