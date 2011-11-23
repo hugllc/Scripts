@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 /**
  * Monitors incoming packets
@@ -54,7 +55,7 @@ $config = &\HUGnet\cli\Args::factory(
 );
 $conf = $config->config();
 $conf["network"]["block"] = true;
-$cli = &\HUGnet\cli\CLI::factory($conf);
+$cli = &\HUGnet\cli\Daemon::factory($conf);
 /*
 $daemon->system()->network()->monitor(
     function (&$pkt)
