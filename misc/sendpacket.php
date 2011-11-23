@@ -50,7 +50,7 @@ $config = &\HUGnet\cli\Args::factory(
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
         "D" => array("name" => "Data", "type" => "string", "args" => true),
-        "C" => array("name" => "Command", "type" => "string", "args" => true),
+        "C" => array("name" => "Command", "type" => "string", "args" => true, "default" => "03"),
     )
 );
 $conf = $config->config();
