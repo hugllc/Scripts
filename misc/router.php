@@ -49,7 +49,9 @@ $config = &\HUGnet\cli\Args::factory($argv, $argc);
 // This is so we can have a different network config from everyone else
 $conf = $config->config();
 if (isset($conf["router"])) {
+    unset($conf["network"]);
     $conf["network"] = $conf["router"];
+    unset($conf["router"]);
 }
 $daemon = &\HUGnet\cli\Daemon::factory($conf);
 $daemon->system()->network()->device(
