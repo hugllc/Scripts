@@ -57,12 +57,29 @@ $conf = $config->config();
 $conf["network"]["channels"] = 1;
 $cli = &\HUGnet\cli\Daemon::factory($conf);
 
-$devices = array(0x67, 0x68);
+$devices = array(0x67, 0x68, 0xFE);
 
+$devInfo = array();
 $reply = 0;
 $sent = 0;
 $packets = array();
 $counts = array();
+foreach ($devices as $dev) {
+    $ret = $cli->system()->network()->send(
+        array(
+            "To" => $dev,
+            "Command" => "5C",
+        ),
+        null,
+        array(
+            "block" => 1
+        )
+    );
+    if (!is_object($ret) || strlen($ret->Reply()) == 0) {
+        die("Could not contact device ".sprintf("%06X", $dev));
+    }
+    $devInfo[$dev] = new DeviceContainer($ret->Reply());
+}
 $start = time();
 while ($cli->loop()) {
     shuffle($devices);
@@ -81,9 +98,6 @@ while ($cli->loop()) {
                     global $packets;
                     global $prev, $devInfo;
                     $dev = hexdec($pkt->To());
-                    if (!isset($devInfo[$dev])) {
-                        $devInfo[$dev] = new DeviceContainer("0000000067003912024300393801430000010001000000000000000000");
-                    }
                     $data = $devInfo[$dev]->decodeData(
                         $pkt->Reply(),
                         $pkt->Command(),
