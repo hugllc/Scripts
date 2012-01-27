@@ -62,7 +62,8 @@ $daemon->system()->network()->monitor(
     function ($pkt)
     {
         if (is_object($pkt)) {
-            print "From: ".$pkt->From();
+            print date("Y-m-d H:i:s");
+            print " From: ".$pkt->From();
             print " -> To: ".$pkt->To();
             print "  Command: ".$pkt->Command();
             print "  Type: ".$pkt->Type();
