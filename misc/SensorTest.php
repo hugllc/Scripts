@@ -41,6 +41,7 @@
 /** Packet log include stuff */
 require_once dirname(__FILE__).'/../../HUGnetLib/src/cli/Daemon.php';
 require_once dirname(__FILE__).'/../../HUGnetLib/src/cli/Args.php';
+require_once dirname(__FILE__).'/../../HUGnetLib/src/containers/DeviceContainer.php';
 
 print "monitor.php\n";
 print "Starting...\n";
@@ -57,39 +58,31 @@ $conf = $config->config();
 $conf["network"]["channels"] = 1;
 $cli = &\HUGnet\cli\Daemon::factory($conf);
 
-$devices = array(0x67, 0x68, 0xFE);
+$devices = explode(",", $config->i); //array(0x67, 0x68, 0xFE);
 
 $devInfo = array();
 $reply = 0;
 $sent = 0;
 $packets = array();
 $counts = array();
-foreach ($devices as $dev) {
-    $ret = $cli->system()->network()->send(
-        array(
-            "To" => $dev,
-            "Command" => "5C",
-        ),
-        null,
-        array(
-            "block" => 1
-        )
-    );
+foreach (array_keys($devices) as $key) {
+    $devices[$key] = hexdec($devices[$key]);
+    print "Getting configuration of ".sprintf("%06X", $devices[$key])."\n";
+    $ret = $cli->system()->device($devices[$key])->network()->config();
     if (!is_object($ret) || strlen($ret->Reply()) == 0) {
-        die("Could not contact device ".sprintf("%06X", $dev));
+        die("Could not contact device ".sprintf("%06X", $devices[$key])."\n");
     }
-    $devInfo[$dev] = new DeviceContainer($ret->Reply());
+    $devInfo[$devices[$key]] = new DeviceContainer($ret->Reply());
+    if (!$cli->loop()) {
+        break;
+    }
 }
 $start = time();
 while ($cli->loop()) {
     shuffle($devices);
     foreach ($devices as $dev) {
         if (!isset($packets[$dev])) {
-            $ret = $cli->system()->network()->send(
-                array(
-                    "To" => $dev,
-                    "Command" => "55",
-                ),
+            $ret = $cli->system()->device($dev)->network()->poll(
                 function ($pkt)
                 {
                     if (!is_object($pkt) || strlen($pkt->Reply()) == 0) {
