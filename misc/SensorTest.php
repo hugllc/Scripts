@@ -76,6 +76,11 @@ foreach (array_keys($devices) as $key) {
     if (!$cli->loop()) {
         break;
     }
+    print sprintf("%06X", $devices[$key])." ";
+    for ($i = 0; $i < 9; $i++) {
+        print $devInfo[$devices[$key]]->sensor($i)->longName.":  ";
+    }
+    print "\n";
 }
 $start = time();
 while ($cli->loop()) {
@@ -103,7 +108,12 @@ while ($cli->loop()) {
                         print date("Y-m-d H:i:s ").$data["DataIndex"]." ";
                         for ($i = 0; $i < 9; $i++) {
                             $var = "Data".$i;
-                            printf("%f ", $d->$var);
+                            $val = $d->$var;
+                            if (is_null($val)) {
+                                print "null ";
+                            } else {
+                                printf("%f ", $val);
+                            }
                         }
                         print "\n";
                         $prev[$dev] = $data;
@@ -116,7 +126,7 @@ while ($cli->loop()) {
             if ($ret) {
                 $packets[$dev] = time();
             }
-        } else if ((time() - $packets[$dev]) > 10) {
+        } else if ((time() - $packets[$dev]) > 2) {
             unset($packets[$dev]);
         }
     }
