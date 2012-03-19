@@ -85,6 +85,7 @@ print "Success!\n";
 
 
 $firmware = new FirmwareTable();
+$firmware->verbose(10);
 $firmware->fromFile($file, $path);
 print "Found firmware ".$firmware->FWPartNum." v".$firmware->Version."\n";
 
@@ -95,14 +96,16 @@ $code = $cli->system()->device($DevID)->network()->writeFlashBuffer(
 if (!$code) {
     die("Failed to write code\n");
 }
-print "Writing the data...\n";
-$data = $cli->system()->device($DevID)->network()->writeE2Buffer(
-    $firmware->getData(), 10
-);
-if (!$data) {
-    die("Failed to write data\n");
+/* Data is not required */
+if (strlen($firmware->getData()) > 0) {
+    print "Writing the data...\n";
+    $data = $cli->system()->device($DevID)->network()->writeE2Buffer(
+        $firmware->getData(), 0
+    );
+    if (!$data) {
+        die("Failed to write data\n");
+    }
 }
-
 print "Setting the CRC...  ";
 $crc = $cli->system()->device($DevID)->network()->setCRC();
 if ($crc === false) {
@@ -112,6 +115,12 @@ print $crc."\n";
 
 print "Running the application...  ";
 if (!$cli->system()->device($DevID)->network()->runApplication()) {
+    die("Failure\n");
+}
+print "Success!\n";
+print "Getting the configuration...  ";
+$newConfig = $cli->system()->device($DevID)->network()->config();
+if (!is_object($newConfig) || is_null($newConfig->Reply())) {
     die("Failure\n");
 }
 print "Success!\n";

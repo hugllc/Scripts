@@ -91,8 +91,12 @@ if (is_object($pkt)) {
         print "Data: ".$data."\r\n";
     }
     $data = $pkt->Reply();
-    if (!empty($data)) {
+    if (is_null($data)) {
+        print "No Reply\r\n";
+    } else if (!empty($data)) {
         print "Reply Data: ".$data."\r\n";
+    } else {
+        print "Empty Reply\r\n";
     }
 }
 print "Finished\n";
