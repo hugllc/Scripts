@@ -39,13 +39,13 @@
 /** HUGnet code */
 //require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once dirname(__FILE__).'/../../HUGnetLib/src/cli/Daemon.php';
-require_once dirname(__FILE__).'/../../HUGnetLib/src/cli/Args.php';
+require_once HUGnetLib/ui/Daemon.php';
+require_once HUGnetLib/ui/Args.php';
 
 print $argv[0]."\n";
 print "Starting...\n";
 
-$config = &\HUGnet\cli\Args::factory($argv, $argc);
+$config = &\HUGnet\ui\Args::factory($argv, $argc);
 // This is so we can have a different network config from everyone else
 $conf = $config->config();
 if (isset($conf["router"])) {
@@ -53,7 +53,7 @@ if (isset($conf["router"])) {
     $conf["network"] = $conf["router"];
     unset($conf["router"]);
 }
-$daemon = &\HUGnet\cli\Daemon::factory($conf);
+$daemon = &\HUGnet\ui\Daemon::factory($conf);
 $daemon->system()->network()->device(
     array(
     )

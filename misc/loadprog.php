@@ -36,14 +36,14 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-require_once dirname(__FILE__).'/../../HUGnetLib/src/cli/Daemon.php';
-require_once dirname(__FILE__).'/../../HUGnetLib/src/cli/Args.php';
-require_once dirname(__FILE__).'/../../HUGnetLib/src/containers/DeviceContainer.php';
+require_once HUGnetLib/ui/Daemon.php';
+require_once HUGnetLib/ui/Args.php';
+require_once HUGnetLib/containers/DeviceContainer.php';
 
 print "loadprog.php\n";
 print "Starting...\n";
 
-$config = &\HUGnet\cli\Args::factory(
+$config = &\HUGnet\ui\Args::factory(
     $argv, $argc,
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
@@ -52,7 +52,7 @@ $config = &\HUGnet\cli\Args::factory(
 );
 $conf = $config->config();
 $conf["network"]["channels"] = 1;
-$cli = &\HUGnet\cli\Daemon::factory($conf);
+$cli = &\HUGnet\ui\Daemon::factory($conf);
 
 $path = dirname($config->D);
 if (empty($path)) {

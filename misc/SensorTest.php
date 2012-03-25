@@ -39,14 +39,14 @@
 /** HUGnet code */
 //require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once dirname(__FILE__).'/../../HUGnetLib/src/cli/Daemon.php';
-require_once dirname(__FILE__).'/../../HUGnetLib/src/cli/Args.php';
-require_once dirname(__FILE__).'/../../HUGnetLib/src/containers/DeviceContainer.php';
+require_once HUGnetLib/ui/Daemon.php';
+require_once HUGnetLib/ui/Args.php';
+require_once HUGnetLib/containers/DeviceContainer.php';
 
 print "monitor.php\n";
 print "Starting...\n";
 
-$config = &\HUGnet\cli\Args::factory(
+$config = &\HUGnet\ui\Args::factory(
     $argv, $argc,
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
@@ -56,7 +56,7 @@ $config = &\HUGnet\cli\Args::factory(
 );
 $conf = $config->config();
 $conf["network"]["channels"] = 1;
-$cli = &\HUGnet\cli\Daemon::factory($conf);
+$cli = &\HUGnet\ui\Daemon::factory($conf);
 
 $devices = explode(",", $config->i); //array(0x67, 0x68, 0xFE);
 
