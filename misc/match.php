@@ -38,8 +38,8 @@
 /** HUGnet code */
 //require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once HUGnetLib/ui/Daemon.php';
-require_once HUGnetLib/ui/Args.php';
+require_once 'HUGnetLib/ui/Daemon.php';
+require_once 'HUGnetLib/ui/Args.php';
 
 print $argv[0]."\n";
 print "Starting...\n";

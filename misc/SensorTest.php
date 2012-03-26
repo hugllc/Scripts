@@ -39,9 +39,9 @@
 /** HUGnet code */
 //require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once HUGnetLib/ui/Daemon.php';
-require_once HUGnetLib/ui/Args.php';
-require_once HUGnetLib/containers/DeviceContainer.php';
+require_once 'HUGnetLib/ui/Daemon.php';
+require_once 'HUGnetLib/ui/Args.php';
+require_once 'HUGnetLib/containers/DeviceContainer.php';
 
 print "monitor.php\n";
 print "Starting...\n";

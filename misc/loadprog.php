@@ -36,9 +36,9 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-require_once HUGnetLib/ui/Daemon.php';
-require_once HUGnetLib/ui/Args.php';
-require_once HUGnetLib/containers/DeviceContainer.php';
+require_once 'HUGnetLib/ui/Daemon.php';
+require_once 'HUGnetLib/ui/Args.php';
+require_once 'HUGnetLib/containers/DeviceContainer.php';
 
 print "loadprog.php\n";
 print "Starting...\n";
