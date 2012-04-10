@@ -43,7 +43,9 @@ define(
     "HUGNETLIB_STUB_PATH", realpath(dirname(__FILE__)."/HUGnetLib/test/stubs")."/"
 );
 //include_once dirname(__FILE__)."/HUGnetLib/src/hugnet.inc.php";
+require_once HUGNET_INCLUDE_PATH."/system/System.php";
 require_once HUGNET_INCLUDE_PATH."/containers/ConfigContainer.php";
+
 
 $path = ini_get("include_path");
 ini_set("include_path", $path.":".dirname(__FILE__)."/HUGnetLib/src");
