@@ -70,12 +70,9 @@ $firmware->verbose(10);
 $firmware->fromFile($file, $path);
 print "Found firmware ".$firmware->FWPartNum." v".$firmware->Version."\n";
 
-//$ret = $dev->network()->loadFirmware($firmware, false);
+$ret = $dev->network()->loadFirmware($firmware);
 if (!$ret) {
-//    exit(1);
-}
-$ret = $dev->network()->loadConfig();
-if (!$ret) {
+    print "Failure!!!\n";
     exit(1);
 }
 print "Finished\n";
