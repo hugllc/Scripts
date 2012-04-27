@@ -1,0 +1,19 @@
+#!/bin/sh
+
+if [ -e "/etc/init/tty2.conf.old" ]; then
+    mv /etc/init/tty2.conf.old /etc/init/tty2.conf
+fi
+if [ -e "/etc/init/tty3.conf.old" ]; then
+    mv /etc/init/tty3.conf.old /etc/init/tty3.conf
+fi
+if [ -e "/etc/init/tty4.conf.old" ]; then
+    mv /etc/init/tty4.conf.old /etc/init/tty4.conf
+fi
+if [ -e "/etc/init/tty5.conf.old" ]; then
+    mv /etc/init/tty5.conf.old /etc/init/tty5.conf
+fi
+if [ -e "/etc/init/tty6.conf.old" ]; then
+    mv /etc/init/tty6.conf.old /etc/init/tty6.conf
+fi
+
+exit $?

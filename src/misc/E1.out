@@ -1,0 +1,704 @@
+
+HUGnet Scripts Version 0.6.99+git
+HUGnet Lib Version 0.9.1
+All script times are in UTC
+monitor.php
+Starting...
+Using GatewayKey 
+
+(MysqlDriver) Executing (group: old): SELECT`id`, `DeviceID`, `DeviceName`, `HWPartNum`, `FWPartNum`, `FWVersion`, `RawSetup`, `Active`, `GatewayKey`, `ControllerKey`, `ControllerIndex`, `DeviceLocation`, `DeviceJob`, `Driver`, `PollInterval`, `ActiveSensors`, `DeviceGroup`, `sensors`, `params` FROM `devices` WHERE DeviceID = ? 
+(MysqlDriver) With Data: Array
+(
+    [0] => 0000E1
+)
+
+(MysqlDriver) With Result: 1(1 rows)
+array(21) {
+  ["group"]=>
+  string(3) "old"
+  ["DriverInfo"]=>
+  array(4) {
+    ["PacketTimeout"]=>
+    int(0)
+    ["PhysicalSensors"]=>
+    int(16)
+    ["VirtualSensors"]=>
+    int(4)
+    ["TimeConstant"]=>
+    int(1)
+  }
+  ["id"]=>
+  int(0)
+  ["DeviceID"]=>
+  string(6) "0000E1"
+  ["DeviceName"]=>
+  string(14) "Utility Room 1"
+  ["HWPartNum"]=>
+  string(12) "0039-28-01-A"
+  ["FWPartNum"]=>
+  string(12) "0039-20-13-C"
+  ["FWVersion"]=>
+  string(5) "0.0.6"
+  ["RawSetup"]=>
+  string(64) "00000000E100392801410039201343000006FFFFFF5001020202020202020202"
+  ["Active"]=>
+  string(1) "1"
+  ["GatewayKey"]=>
+  string(1) "4"
+  ["ControllerKey"]=>
+  string(1) "0"
+  ["ControllerIndex"]=>
+  string(1) "0"
+  ["DeviceLocation"]=>
+  string(25) "Machine Shop Utility Room"
+  ["DeviceJob"]=>
+  string(10) "Heat Pump "
+  ["Driver"]=>
+  string(9) "e00392800"
+  ["PollInterval"]=>
+  string(1) "5"
+  ["ActiveSensors"]=>
+  string(1) "5"
+  ["DeviceGroup"]=>
+  string(6) "FFFFFF"
+  ["sensors"]=>
+  array(26) {
+    ["RawCalibration"]=>
+    string(0) ""
+    ["Sensors"]=>
+    int(20)
+    ["ActiveSensors"]=>
+    int(5)
+    ["PhysicalSensors"]=>
+    int(16)
+    ["VirtualSensors"]=>
+    int(4)
+    ["forceSensors"]=>
+    bool(false)
+    [0]=>
+    array(15) {
+      ["id"]=>
+      int(2)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(3) "raw"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [1]=>
+    array(15) {
+      ["id"]=>
+      int(2)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(3) "raw"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [2]=>
+    array(15) {
+      ["id"]=>
+      int(2)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(3) "raw"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [3]=>
+    array(15) {
+      ["id"]=>
+      int(2)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(3) "raw"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [4]=>
+    array(15) {
+      ["id"]=>
+      int(2)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(3) "raw"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [5]=>
+    array(15) {
+      ["id"]=>
+      int(2)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(6) "ignore"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [6]=>
+    array(15) {
+      ["id"]=>
+      int(2)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(6) "ignore"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [7]=>
+    array(15) {
+      ["id"]=>
+      int(2)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(6) "ignore"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [8]=>
+    array(15) {
+      ["id"]=>
+      int(2)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(6) "ignore"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [9]=>
+    array(15) {
+      ["id"]=>
+      int(0)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(6) "ignore"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [10]=>
+    array(15) {
+      ["id"]=>
+      int(0)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(6) "ignore"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [11]=>
+    array(15) {
+      ["id"]=>
+      int(0)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(6) "ignore"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [12]=>
+    array(15) {
+      ["id"]=>
+      int(0)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(6) "ignore"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [13]=>
+    array(15) {
+      ["id"]=>
+      int(0)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(6) "ignore"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [14]=>
+    array(15) {
+      ["id"]=>
+      int(0)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(6) "ignore"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [15]=>
+    array(15) {
+      ["id"]=>
+      int(0)
+      ["type"]=>
+      string(14) "BCTherm2322640"
+      ["location"]=>
+      string(0) ""
+      ["dataType"]=>
+      string(6) "ignore"
+      ["extra"]=>
+      array(0) {
+      }
+      ["units"]=>
+      string(7) "&#176;F"
+      ["bound"]=>
+      bool(false)
+      ["rawCalibration"]=>
+      string(0) ""
+      ["timeConstant"]=>
+      int(1)
+      ["Am"]=>
+      int(1023)
+      ["Tf"]=>
+      int(65536)
+      ["D"]=>
+      int(65536)
+      ["s"]=>
+      int(64)
+      ["Vcc"]=>
+      int(5)
+      ["decimals"]=>
+      int(2)
+    }
+    [16]=>
+    array(3) {
+      ["id"]=>
+      int(254)
+      ["type"]=>
+      string(11) "Placeholder"
+      ["location"]=>
+      NULL
+    }
+    [17]=>
+    array(3) {
+      ["id"]=>
+      int(254)
+      ["type"]=>
+      string(11) "Placeholder"
+      ["location"]=>
+      NULL
+    }
+    [18]=>
+    array(3) {
+      ["id"]=>
+      int(254)
+      ["type"]=>
+      string(11) "Placeholder"
+      ["location"]=>
+      NULL
+    }
+    [19]=>
+    array(3) {
+      ["id"]=>
+      int(254)
+      ["type"]=>
+      string(11) "Placeholder"
+      ["location"]=>
+      NULL
+    }
+  }
+  ["params"]=>
+  array(12) {
+    ["graphUnits"]=>
+    array(0) {
+    }
+    ["DriverInfo"]=>
+    array(0) {
+    }
+    ["ProcessInfo"]=>
+    array(0) {
+    }
+    ["LastContact"]=>
+    int(0)
+    ["LastModified"]=>
+    int(0)
+    ["LastModifiedBy"]=>
+    string(0) ""
+    ["Loc"]=>
+    array(4) {
+      [0]=>
+      string(8) "Load Out"
+      [1]=>
+      string(7) "Load In"
+      [2]=>
+      string(10) "Source Out"
+      [3]=>
+      string(9) "Source In"
+    }
+    ["sensorType"]=>
+    array(0) {
+    }
+    ["Units"]=>
+    array(0) {
+    }
+    ["dType"]=>
+    array(0) {
+    }
+    ["Extra"]=>
+    array(0) {
+    }
+    ["Raw"]=>
+    array(0) {
+    }
+  }
+}
+Finished

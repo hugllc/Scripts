@@ -1,6 +1,6 @@
 <?php
 /**
- * Monitors incoming packets
+ * Sends a packet
  *
  * PHP Version 5
  *
@@ -26,7 +26,7 @@
  *
  * @category   Scripts
  * @package    Scripts
- * @subpackage Misc
+ * @subpackage Test
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2007-2011 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
@@ -35,37 +35,31 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-/** HUGnet code */
-//require_once dirname(__FILE__).'/../head.inc.php';
+$pktData = "";
+require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once 'HUGnetLib/ui/Daemon.php';
-require_once 'HUGnetLib/ui/Args.php';
+require_once HUGNET_INCLUDE_PATH.'/containers/PacketContainer.php';
 
-print $argv[0]."\n";
-print "Starting...\n";
+if (empty($DeviceID)) {
+    die("DeviceID must be specified!\r\n");
+}
+$config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
+$config->verbose($hugnet_config["verbose"]);
 
-$config = &\HUGnet\ui\Args::factory($argv, $argc);
-$daemon = &\HUGnet\ui\Daemon::factory($config);
-$daemon->system()->network()->monitor(
-    function ($pkt)
-    {
-        if (is_object($pkt)) {
-            print "From: ".$pkt->From();
-            print " -> To: ".$pkt->To();
-            print "  Command: ".$pkt->Command();
-            print "  Type: ".$pkt->Type();
-            print "\r\n";
-            $data = $pkt->Data();
-            if (!empty($data)) {
-                print "Data: ".$data."\r\n";
-            }
-        }
-    }
+$pkt = new PacketContainer(
+    array(
+        "To" => $DeviceID,
+        "Command" => isset($pktCommand) ? $pktCommand : "02",
+        "Data" => $pktData,
+        "GetReply" => true,
+        "group" => "default",
+    )
 );
 
-while ($daemon->loop()) {
-    $daemon->main();
+$pkt->send();
+if (is_object($pkt)) {
+    var_dump($pkt->toArray());
+} else {
+     print "No Return";
 }
-print "Finished\n";
-
 ?>

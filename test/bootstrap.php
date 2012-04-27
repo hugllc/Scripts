@@ -35,7 +35,7 @@
  * @link       https://dev.hugllc.com/index.php/Project:Comtimeclock
  */
 
-define("SCRIPTS_CODE_BASE", realpath(dirname(__FILE__)."/..")."/");
+define("SCRIPTS_CODE_BASE", realpath(dirname(__FILE__)."/../src")."/");
 define("CODE_BASE", realpath(dirname(__FILE__)."/HUGnetLib/src")."/");
 define("TEST_BASE", realpath(dirname(__FILE__)."/suite/")."/");
 define("HUGNET_INCLUDE_PATH", realpath(dirname(__FILE__)."/HUGnetLib/src")."/");

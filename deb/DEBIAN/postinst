@@ -1,0 +1,21 @@
+#!/bin/sh
+
+if [ -e "/etc/init/tty2.conf" ]; then
+    mv /etc/init/tty2.conf /etc/init/tty2.conf.old
+fi
+if [ -e "/etc/init/tty3.conf" ]; then
+    mv /etc/init/tty3.conf /etc/init/tty3.conf.old
+fi
+if [ -e "/etc/init/tty4.conf" ]; then
+    mv /etc/init/tty4.conf /etc/init/tty4.conf.old
+fi
+if [ -e "/etc/init/tty5.conf" ]; then
+    mv /etc/init/tty5.conf /etc/init/tty5.conf.old
+fi
+if [ -e "/etc/init/tty6.conf" ]; then
+    mv /etc/init/tty6.conf /etc/init/tty6.conf.old
+fi
+
+service hugnet_router start
+
+exit $?

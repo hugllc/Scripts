@@ -3,6 +3,7 @@
 
 <project name="Scripts" default="build" basedir=".">
     <property name="source" value="."/>
+    <include file="${basedir}/build/debs.xml"/>
 
     <target name="clean" description="Clean up and create artifact directories">
         <delete dir="${basedir}/build/api"/>
@@ -120,6 +121,9 @@
             <arg line="test/setup.sh" />
         </exec>
     </target>
+    <target name="deb" depends="deb.build"/>
+    <target name="post" depends="deb.post"/>
+    <target name="testpost" depends="deb.testpost"/>
 
 
  <target name="build" depends="clean,pdepend,phpmd,phpcpd,phpcs,docblox,phploc,phpunit,phpcb"/>
