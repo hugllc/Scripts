@@ -7,3 +7,4 @@ old/
 build/
 test/HUGnetLib
 rel/
+*.ini
