@@ -51,34 +51,24 @@ $config = &\HUGnet\ui\Args::factory(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
         "D" => array("name" => "Data", "type" => "string", "args" => true),
         "C" => array("name" => "Command", "type" => "string", "args" => true, "default" => "03"),
+        "c" => array("name" => "count", "type" => "int", "args" => true, "default" => 10000),
+        "F" => array("name" => "find", "type" => "bool", "default" => false),
     )
 );
 $cli = &\HUGnet\ui\Daemon::factory($config);
-$pkt = $cli->system()->network()->send(
-    array(
-        "To" => $config->i,
-        "Command" => $config->C,
-        "Data" => $config->D,
-    )
-);
-if (is_object($pkt)) {
-    print "From: ".$pkt->From();
-    print " -> To: ".$pkt->To();
-    print "  Command: ".$pkt->Command();
-    print "  Type: ".$pkt->Type();
-    print "\r\n";
-    $data = $pkt->Data();
-    if (!empty($data)) {
-        print "Data: ".$data."\r\n";
-    }
-    $data = $pkt->Reply();
-    if (is_null($data)) {
-        print "No Reply\r\n";
-    } else if (!empty($data)) {
-        print "Reply Data: ".$data."\r\n";
+$dev = $cli->system()->device(hexdec($config->i));
+
+for ($i = 0; $i < $config->c; $i++) {
+    $time = microtime(true);
+    $pkt = $dev->network()->ping($config->F);
+    $time = microtime(true) - $time;
+    if (is_object($pkt)) {
+        print $pkt->length()." bytes from ".$pkt->to()." seq=$i ";
+        print "ttl=".$dev->get("packetTimeout")." time=".round($time, 4)."\n";
     } else {
-        print "Empty Reply\r\n";
+        print "No Reply seq $i\n";
     }
+    usleep((1 - $time) * 1000000);
 }
 print "Finished\n";
 

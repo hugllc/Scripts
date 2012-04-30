@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 /**
- * Monitors incoming packets
+ * Saves firmware to the database
  *
  * PHP Version 5
  *
@@ -36,50 +36,47 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-/** HUGnet code */
-//require_once dirname(__FILE__).'/../head.inc.php';
-/** Packet log include stuff */
-require_once 'HUGnetLib/ui/Daemon.php';
-require_once 'HUGnetLib/ui/Args.php';
 
-print "monitor.php\n";
-print "Starting...\n";
+$data = array(
+    "test" => "This is a test",
+    "test2" => array(
+        "this",
+        "is",
+        "a",
+        "test",
+        "also",
+    ),
+);
 
-$config = &\HUGnet\ui\Args::factory(
-    $argv, $argc,
-    array(
-        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
-        "D" => array("name" => "Data", "type" => "string", "args" => true),
-        "C" => array("name" => "Command", "type" => "string", "args" => true, "default" => "03"),
-    )
-);
-$cli = &\HUGnet\ui\Daemon::factory($config);
-$pkt = $cli->system()->network()->send(
-    array(
-        "To" => $config->i,
-        "Command" => $config->C,
-        "Data" => $config->D,
-    )
-);
-if (is_object($pkt)) {
-    print "From: ".$pkt->From();
-    print " -> To: ".$pkt->To();
-    print "  Command: ".$pkt->Command();
-    print "  Type: ".$pkt->Type();
-    print "\r\n";
-    $data = $pkt->Data();
-    if (!empty($data)) {
-        print "Data: ".$data."\r\n";
+var_dump(do_post_request("http://localhost/test.php?test=2", $data));
+
+
+
+function do_post_request($url, $postdata, $optional_headers = null)
+{
+    $params = array(
+        'http' => array(
+            'method' => 'POST',
+            'content' => http_build_query($postdata)."\n",
+        )
+    );
+    if ($optional_headers !== null) {
+        $params['http']['header'] = $optional_headers;
     }
-    $data = $pkt->Reply();
-    if (is_null($data)) {
-        print "No Reply\r\n";
-    } else if (!empty($data)) {
-        print "Reply Data: ".$data."\r\n";
-    } else {
-        print "Empty Reply\r\n";
+    $ctx = stream_context_create($params);
+    $fp = @fopen($url, 'rb', false, $ctx);
+    if (!$fp) {
+        /* Failed, so return false */
+        return false;
     }
+    $response = @stream_get_contents($fp);
+    $return = json_decode($response, true);
+    if (is_null($return) && ($response != "null")) {
+        $return = $response;
+    }
+    return $return;
 }
-print "Finished\n";
+
+
 
 ?>
