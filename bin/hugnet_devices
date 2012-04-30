@@ -39,11 +39,13 @@
 /** HUGnet code */
 //require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once 'HUGnetLib/ui/Daemon.php';
+require_once 'HUGnetLib/processes/Devices.php';
 require_once 'HUGnetLib/ui/Args.php';
 
 print $argv[0]."\n";
 print "Starting...\n";
+
+
 
 $config = &\HUGnet\ui\Args::factory(
     $argv,
@@ -52,45 +54,24 @@ $config = &\HUGnet\ui\Args::factory(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
     )
 );
-// This is so we can have a different network config from everyone else
-$conf = $config->config();
-if (isset($conf["router"])) {
-    unset($conf["network"]);
-    $conf["network"] = $conf["router"];
-    unset($conf["router"]);
-}
 if (!is_null($config->i)) {
     $id = hexdec($config->i);
 } else {
     $id = null;
 }
-$daemon = &\HUGnet\ui\Daemon::factory($conf);
+$daemon = &\HUGnet\processes\Devices::factory($config);
 $daemon->system()->network()->device(
     array(
         "id" => $id,
-        "HWPartNum" => "0039-26-04-P",
+        "HWPartNum" => "0039-26-06-P",
     )
 );
-$daemon->system()->network()->monitor(
-    function ($pkt)
-    {
-        if (is_object($pkt)) {
-            print date("Y-m-d H:i:s");
-            print " From: ".$pkt->From();
-            print " -> To: ".$pkt->To();
-            print "  Command: ".$pkt->Command();
-            print "  Type: ".$pkt->Type();
-            print "\r\n";
-            $data = $pkt->Data();
-            if (!empty($data)) {
-                print "Data: ".$data."\r\n";
-            }
-        }
-    }
-);
+
+
 while ($daemon->loop()) {
     $daemon->main();
 }
 print "Finished\n";
+
 
 ?>
