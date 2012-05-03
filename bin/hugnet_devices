@@ -59,6 +59,11 @@ if (!is_null($config->i)) {
 } else {
     $id = null;
 }
+$conf = $config->config();
+if (empty($conf["GatewayKey"])) {
+    die("A gateway key must be supplied for this script in the ini file!\r\n");
+}
+
 $daemon = &\HUGnet\processes\Devices::factory($config);
 $daemon->system()->network()->device(
     array(
