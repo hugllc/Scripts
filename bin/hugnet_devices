@@ -69,6 +69,10 @@ $daemon->system()->network()->device(
     array(
         "id" => $id,
         "HWPartNum" => "0039-26-06-P",
+        "DeviceLocation" => "0.0.0.0",
+        "params" => array(
+            "uuid" => $config->uuid,
+        ),
     )
 );
 
