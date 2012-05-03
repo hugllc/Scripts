@@ -59,20 +59,12 @@ if (isset($conf["router"])) {
     $conf["network"] = $conf["router"];
     unset($conf["router"]);
 }
-if (!is_null($config->i)) {
-    $id = hexdec($config->i);
-} else {
-    $id = null;
-}
 $daemon = &\HUGnet\ui\Daemon::factory($conf);
+$DeviceID = $daemon->system()->get("DeviceID");
 $daemon->system()->network()->device(
     array(
-        "id" => $id,
+        "id" => empty($DeviceID) ? null : $DeviceID,
         "HWPartNum" => "0039-26-04-P",
-        "DeviceLocation" => "1.2.3.4",
-        "params" => array(
-            "uuid" => $conf["uuid"],
-        ),
     )
 );
 $daemon->system()->network()->monitor(

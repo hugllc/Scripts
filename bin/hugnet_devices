@@ -45,8 +45,6 @@ require_once 'HUGnetLib/ui/Args.php';
 print $argv[0]."\n";
 print "Starting...\n";
 
-
-
 $config = &\HUGnet\ui\Args::factory(
     $argv,
     $argc,
@@ -54,25 +52,16 @@ $config = &\HUGnet\ui\Args::factory(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
     )
 );
-if (!is_null($config->i)) {
-    $id = hexdec($config->i);
-} else {
-    $id = null;
-}
-$conf = $config->config();
-if (empty($conf["GatewayKey"])) {
+$daemon = &\HUGnet\processes\Devices::factory($config);
+$GatewayKey = $daemon->system()->get("GatewayKey");
+if (empty($GatewayKey)) {
     die("A gateway key must be supplied for this script in the ini file!\r\n");
 }
-
-$daemon = &\HUGnet\processes\Devices::factory($config);
+$DeviceID = $daemon->system()->get("DeviceID");
 $daemon->system()->network()->device(
     array(
-        "id" => $id,
+        "id" => empty($DeviceID) ? null : $DeviceID,
         "HWPartNum" => "0039-26-06-P",
-        "DeviceLocation" => "0.0.0.0",
-        "params" => array(
-            "uuid" => $config->uuid,
-        ),
     )
 );
 
