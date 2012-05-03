@@ -42,9 +42,6 @@
 require_once 'HUGnetLib/ui/Daemon.php';
 require_once 'HUGnetLib/ui/Args.php';
 
-print $argv[0]."\n";
-print "Starting...\n";
-
 $config = &\HUGnet\ui\Args::factory(
     $argv,
     $argc,
@@ -60,6 +57,9 @@ if (isset($conf["router"])) {
     unset($conf["router"]);
 }
 $daemon = &\HUGnet\ui\Daemon::factory($conf);
+$daemon->out("Starting ".$daemon->system()->get("program"));
+
+/* Set up our device */
 $DeviceID = $daemon->system()->get("DeviceID");
 $daemon->system()->network()->device(
     array(
@@ -67,6 +67,8 @@ $daemon->system()->network()->device(
         "HWPartNum" => "0039-26-04-P",
     )
 );
+
+/* Print packets out on the screen */
 $daemon->system()->network()->monitor(
     function ($pkt)
     {
