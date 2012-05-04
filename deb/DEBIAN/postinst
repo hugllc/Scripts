@@ -16,6 +16,10 @@ if [ -e "/etc/init/tty6.conf" ]; then
     mv /etc/init/tty6.conf /etc/init/tty6.conf.old
 fi
 
-service hugnet_router start
+if [ ! -e "/usr/local/share/HUGnet/config.ini" ]; then
+    cp /usr/local/share/HUGnet/Scripts/config.ini.sample /usr/local/share/HUGnet/config.ini
+fi
+
+#service hugnet_router start
 
 exit $?

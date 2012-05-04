@@ -43,6 +43,7 @@ require_once 'HUGnetLib/ui/Daemon.php';
 require_once 'HUGnetLib/ui/Args.php';
 
 $config = &\HUGnet\ui\Args::factory($argv, $argc);
+$config->addLocation("/usr/local/share/HUGnet/config.ini");
 $daemon = &\HUGnet\ui\Daemon::factory($config);
 $daemon->help(
     $daemon->system()->get("program")."

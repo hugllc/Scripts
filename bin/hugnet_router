@@ -49,6 +49,7 @@ $config = &\HUGnet\ui\Args::factory(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
     )
 );
+$config->addLocation("/usr/local/share/HUGnet/config.ini");
 // This is so we can have a different network config from everyone else
 $conf = $config->config();
 if (isset($conf["router"])) {

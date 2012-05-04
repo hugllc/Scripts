@@ -51,6 +51,7 @@ $config = &\HUGnet\ui\Args::factory(
         "F" => array("name" => "find", "type" => "bool", "default" => false),
     )
 );
+$config->addLocation("/usr/local/share/HUGnet/config.ini");
 $cli = &\HUGnet\ui\Daemon::factory($config);
 $cli->help(
     $cli->system()->get("program")."
@@ -68,7 +69,7 @@ Arguments:
     -f <file>       The config file to use",
     $config->h
 );
-if (empty($config->i)) {
+if (strlen($config->i) == 0) {
     $cli->help();
     $cli->out();
     $cli->out("DeviceID must be specified");
