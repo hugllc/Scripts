@@ -56,7 +56,7 @@ $cli->help(
     $cli->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
 
-Polls and keeps track of endpoints.
+Sends ping packets to endpoints.
 
 Usage: ".$cli->system()->get("program")." -i <DeviceID> [-vF] [-f <file>] [-c <count>] [-D <data>]
 Arguments:
