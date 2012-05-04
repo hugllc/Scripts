@@ -50,14 +50,34 @@ $config = &\HUGnet\ui\Args::factory(
     )
 );
 $daemon = &\HUGnet\processes\Devices::factory($config);
+$daemon->help(
+    $daemon->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+
+Polls and keeps track of endpoints.
+
+Usage: ".$daemon->system()->get("program")." [-v] [-i <DeviceID>] [-f <file>]
+Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+
+);
+$daemon->requireINI();
+$daemon->requireUUID();
+
 /* Check to make sure we have a GatewayKey */
 $GatewayKey = $daemon->system()->get("GatewayKey");
 if (empty($GatewayKey)) {
+    $daemon->help();
+    $daemon->out();
     $daemon->out(
-        "A gateway key must be supplied for this script in the ini file!"
+        "A gateway key must be supplied for this script in the ini file"
     );
     exit(1);
 }
+
 $daemon->out("Starting ".$daemon->system()->get("program"));
 
 /* Set up our device */
@@ -74,6 +94,5 @@ while ($daemon->loop()) {
     $daemon->main();
 }
 print "Finished\n";
-
-
+exit(0);
 ?>

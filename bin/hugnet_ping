@@ -42,23 +42,43 @@
 require_once 'HUGnetLib/ui/Daemon.php';
 require_once 'HUGnetLib/ui/Args.php';
 
-print "monitor.php\n";
-print "Starting...\n";
-
 $config = &\HUGnet\ui\Args::factory(
     $argv, $argc,
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
         "D" => array("name" => "Data", "type" => "string", "args" => true),
-        "C" => array("name" => "Command", "type" => "string", "args" => true, "default" => "03"),
         "c" => array("name" => "count", "type" => "int", "args" => true, "default" => 10000),
         "F" => array("name" => "find", "type" => "bool", "default" => false),
     )
 );
 $cli = &\HUGnet\ui\Daemon::factory($config);
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+
+Polls and keeps track of endpoints.
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> [-vF] [-f <file>] [-c <count>] [-D <data>]
+Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -v              Increment the verbosity
+    -F              Use 'find ping' instead of standard ping
+    -c <count>      Send <count> pings
+    -D <data>       ASCII hex data to send in the ping.  Up to 255 bytes.
+    -f <file>       The config file to use",
+    $config->h
+);
+if (empty($config->i)) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+$cli->out("Starting ".$cli->system()->get("program"));
+
 $dev = $cli->system()->device(hexdec($config->i));
 
-for ($i = 0; $i < $config->c; $i++) {
+for ($i = 0; ($i < $config->c) && $cli->loop(); $i++) {
     $time = microtime(true);
     $pkt = $dev->network()->ping(
         $config->F,
@@ -82,5 +102,5 @@ for ($i = 0; $i < $config->c; $i++) {
     }
 }
 print "Finished\n";
-
+exit(0);
 ?>

@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 /**
- * Monitors incoming packets
+ * Loads a program into a controller board
  *
  * PHP Version 5
  *
@@ -27,7 +27,7 @@
  *
  * @category   Scripts
  * @package    Scripts
- * @subpackage Misc
+ * @subpackage Test
  * @author     Scott Price <prices@hugllc.com>
  * @copyright  2007-2011 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
@@ -36,74 +36,61 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-/** HUGnet code */
-//require_once dirname(__FILE__).'/../head.inc.php';
-/** Packet log include stuff */
-require_once 'HUGnetLib/ui/Daemon.php';
+require_once 'HUGnetLib/ui/CLI.php';
 require_once 'HUGnetLib/ui/Args.php';
 
 $config = &\HUGnet\ui\Args::factory(
-    $argv,
-    $argc,
+    $argv, $argc,
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+        "D" => array("name" => "Data", "type" => "string", "args" => true),
     )
 );
-// This is so we can have a different network config from everyone else
 $conf = $config->config();
-if (isset($conf["router"])) {
-    unset($conf["network"]);
-    $conf["network"] = $conf["router"];
-    unset($conf["router"]);
-}
-$daemon = &\HUGnet\ui\Daemon::factory($conf);
-$daemon->help(
-    $daemon->system()->get("program")."
+$conf["network"]["channels"] = 1;
+$cli = &\HUGnet\ui\CLI::factory($conf);
+$cli->help(
+    $cli->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
 
-Routes HUGnet packets between interfaces
+A utility to load programs into devices
 
-Usage: ".$daemon->system()->get("program")." [-v] [-i <DeviceID>] [-f <file>]
+Usage: ".$cli->system()->get("program")." [-v] [-f <file>] -i <DeviceID> -D <file>
 Arguments:
-    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -i <DeviceID>   The device ID to load.  Should be a hex value up to 6 digits
+    -D <file>       The file to load into the device
     -v              Increment the verbosity
     -f <file>       The config file to use",
     $config->h
 );
-$daemon->requireUUID();
-$daemon->requireINI();
-$daemon->out("Starting ".$daemon->system()->get("program"));
+if (empty($config->i)) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+$path = dirname($config->D);
+if (empty($path)) {
+    $path = ".";
+}
+$file = basename($config->D);
+if (strlen($file) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("File with firmware must be specified");
+    exit(1);
+}
 
-/* Set up our device */
-$DeviceID = $daemon->system()->get("DeviceID");
-$daemon->system()->network()->device(
-    array(
-        "id" => empty($DeviceID) ? null : $DeviceID,
-        "HWPartNum" => "0039-26-04-P",
-    )
-);
+$DevID = hexdec($config->i);
+$dev = $cli->system()->device($DevID);
+$firmware = new FirmwareTable();
+$firmware->fromFile($file, $path);
+print "Found firmware ".$firmware->FWPartNum." v".$firmware->Version."\n";
 
-/* Print packets out on the screen */
-$daemon->system()->network()->monitor(
-    function ($pkt)
-    {
-        if (is_object($pkt)) {
-            print date("Y-m-d H:i:s");
-            print " From: ".$pkt->From();
-            print " -> To: ".$pkt->To();
-            print "  Command: ".$pkt->Command();
-            print "  Type: ".$pkt->Type();
-            print "\r\n";
-            $data = $pkt->Data();
-            if (!empty($data)) {
-                print "Data: ".$data."\r\n";
-            }
-        }
-    }
-);
-while ($daemon->loop()) {
-    $daemon->main();
+$ret = $dev->network()->loadFirmware($firmware);
+if (!$ret) {
+    print "Failure!!!\n";
+    exit(1);
 }
 print "Finished\n";
-exit(0);
 ?>

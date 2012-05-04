@@ -42,11 +42,21 @@
 require_once 'HUGnetLib/ui/Daemon.php';
 require_once 'HUGnetLib/ui/Args.php';
 
-print $argv[0]."\n";
-print "Starting...\n";
-
 $config = &\HUGnet\ui\Args::factory($argv, $argc);
 $daemon = &\HUGnet\ui\Daemon::factory($config);
+$daemon->help(
+    $daemon->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+
+Monitors a HUGnet and prints out packets.
+
+Usage: ".$daemon->system()->get("program")." [-v] [-f <file>]
+Arguments:
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+
 $daemon->system()->network()->monitor(
     function ($pkt)
     {
