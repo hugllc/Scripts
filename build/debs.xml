@@ -78,6 +78,6 @@
     <target name="postclean" description="build the deb">
         <delete dir="${deb.staging}"/>
     </target>
-    <target name="build" depends="clean,setup,deb,sign"/>
+    <target name="build" depends="clean,setup,deb"/>
 
 </project>
