@@ -49,7 +49,7 @@ $config = &\HUGnet\ui\Args::factory(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
     )
 );
-$config->addLocation("/usr/local/share/HUGnet/config.ini");
+$config->addLocation("/usr/share/HUGnet/config.ini");
 $daemon = &\HUGnet\processes\Devices::factory($config);
 $daemon->help(
     $daemon->system()->get("program")."

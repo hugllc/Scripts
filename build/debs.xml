@@ -7,7 +7,7 @@
     <property name="deb.bin" value="${basedir}/bin"/>
     <property name="deb.staging" value="${basedir}/build/deb"/>
     <property name="deb.release" value="" />
-    <property name="deb.prefix" value="/usr/local" />
+    <property name="deb.prefix" value="/usr" />
     <property name="deb.versionfile" value="${basedir}/src/VERSION.TXT" />
 
     <exec executable="grep" failonerror="true"

@@ -46,7 +46,7 @@ $config = &\HUGnet\ui\Args::factory(
         "D" => array("name" => "Data", "type" => "string", "args" => true),
     )
 );
-$config->addLocation("/usr/local/share/HUGnet/config.ini");
+$config->addLocation("/usr/share/HUGnet/config.ini");
 $conf = $config->config();
 $conf["network"]["channels"] = 1;
 $cli = &\HUGnet\ui\CLI::factory($conf);

@@ -51,7 +51,7 @@ $config = &\HUGnet\ui\Args::factory(
         "F" => array("name" => "find", "type" => "bool", "default" => false),
     )
 );
-$config->addLocation("/usr/local/share/HUGnet/config.ini");
+$config->addLocation("/usr/share/HUGnet/config.ini");
 $cli = &\HUGnet\ui\Daemon::factory($config);
 $cli->help(
     $cli->system()->get("program")."
