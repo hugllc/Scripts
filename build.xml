@@ -126,6 +126,6 @@
     <target name="testpost" depends="deb.testpost"/>
 
 
- <target name="build" depends="clean,pdepend,phpmd,phpcpd,phpcs,docblox,phploc,phpunit,phpcb"/>
+ <target name="build" depends="clean,pdepend,phpmd,phpcpd,phpcs,docblox,phploc,phpcb"/>
 
 </project>
