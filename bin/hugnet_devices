@@ -83,7 +83,7 @@ $daemon->out("Starting ".$daemon->system()->get("program"));
 
 /* Set up our device */
 $DeviceID = $daemon->system()->get("DeviceID");
-$daemon->system()->network()->device(
+$daemon->device(
     array(
         "id" => empty($DeviceID) ? null : $DeviceID,
         "HWPartNum" => "0039-26-06-P",
