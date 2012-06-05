@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<ruleset name="HUGnetLib Ruleset" xmlns="http://pmd.sf.net/ruleset/1.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0 http://pmd.sf.net/ruleset_xml_schema.xsd"
+    xsi:noNamespaceSchemaLocation=" http://pmd.sf.net/ruleset_xml_schema.xsd">
+    <description>HUGnetLib custom ruleset</description>
+    <rule ref="rulesets/unusedcode.xml" />
+    <rule ref="rulesets/design.xml" />
+    <!-- I like lots of little functions vs fewer larger functions -->
+    <rule ref="rulesets/codesize.xml/TooManyMethods">
+        <priority>1</priority>
+        <properties>
+            <property name="maxmethods" value="25" />
+        </properties>
+    </rule>
+    <!-- I like lots of little functions vs fewer larger functions -->
+    <rule ref="rulesets/codesize.xml/ExcessiveMethodLength">
+        <priority>1</priority>
+        <properties>
+            <property name="minimum" value="50" />
+        </properties>
+    </rule>
+    <!-- 45 is way to many public methods.  25 is better -->
+    <rule ref="rulesets/codesize.xml/ExcessivePublicCount">
+        <priority>1</priority>
+        <properties>
+            <property name="minimum" value="25" />
+        </properties>
+    </rule>
+    <rule ref="rulesets/codesize.xml">
+        <exclude name="TooManyMethods" />
+        <exclude name="ExcessiveMethodLength" />
+        <exclude name="ExcessivePublicCount" />
+    </rule>
+    <rule ref="rulesets/naming.xml"/>
+</ruleset>
