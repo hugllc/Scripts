@@ -44,7 +44,7 @@
                         --jdepend-chart=${basedir}/build/pdepend/dependencies.svg
                         --overview-pyramid=${basedir}/build/pdepend/overview-pyramid.svg
                         --ignore=old,contrib,test,build,Documentation
-                        --configuration=test/pdepend.xml
+                        --configuration=${basedir}/pdepend.xml
                         ${source}" />
         </exec>
     </target>
@@ -53,7 +53,7 @@
         <exec executable="phpmd">
             <arg line="${source}
                         xml
-                        codesize,design,naming,unusedcode
+                        ${basedir}/build/ruleset.xml
                         --exclude old,contrib,test,build,Documentation
                         --reportfile ${basedir}/build/logs/pmd.xml" />
         </exec>
