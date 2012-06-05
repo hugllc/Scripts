@@ -12,7 +12,7 @@
 
     <exec executable="grep" failonerror="true"
         outputproperty="deb.version" errorproperty="deb.versionerror">
-        <arg line='-o -e "[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}[-alpha0-9]\{0,\}" ${deb.versionfile}'
+        <arg line='-o -e "[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}[~alpha0-9]\{0,\}" ${deb.versionfile}'
             />
     </exec>
     <property name="deb.builddir" value="${basedir}/rel" />
