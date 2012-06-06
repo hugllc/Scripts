@@ -39,7 +39,7 @@
 /** HUGnet code */
 //require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once 'HUGnetLib/processes/Devices.php';
+require_once 'HUGnetLib/processes/Gather.php';
 require_once 'HUGnetLib/ui/Args.php';
 
 $config = &\HUGnet\ui\Args::factory(
@@ -50,7 +50,7 @@ $config = &\HUGnet\ui\Args::factory(
     )
 );
 $config->addLocation("/usr/share/HUGnet/config.ini");
-$daemon = &\HUGnet\processes\Devices::factory($config);
+$daemon = &\HUGnet\processes\Gather::factory($config);
 $daemon->help(
     $daemon->system()->get("program")."
 Copyright Hunt Utilities Group, LLC

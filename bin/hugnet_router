@@ -39,7 +39,7 @@
 /** HUGnet code */
 //require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once 'HUGnetLib/processes/Router.php';
+require_once 'HUGnetLib/processes/Route.php';
 require_once 'HUGnetLib/ui/Args.php';
 
 $config = &\HUGnet\ui\Args::factory(
@@ -57,7 +57,7 @@ if (isset($conf["router"])) {
     $conf["network"] = $conf["router"];
     unset($conf["router"]);
 }
-$daemon = &\HUGnet\processes\Router::factory($conf);
+$daemon = &\HUGnet\processes\Route::factory($conf);
 $daemon->help(
     $daemon->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
