@@ -9,4 +9,4 @@ test/HUGnetLib
 rel/
 *.ini
 *.kate-swp
-
+*.gz

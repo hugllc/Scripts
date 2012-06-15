@@ -72,13 +72,13 @@ foreach (array_keys($devices) as $key) {
     if (!is_object($ret) || strlen($ret->Reply()) == 0) {
         die("Could not contact device ".sprintf("%06X", $devices[$key])."\n");
     }
-    $devInfo[$devices[$key]] = new DeviceContainer($ret->Reply());
+    $devInfo[$devices[$key]] = $cli->system()->device($ret->reply());
     if (!$cli->loop()) {
         break;
     }
     print sprintf("%06X", $devices[$key])." ";
     for ($i = 0; $i < 9; $i++) {
-        print $devInfo[$devices[$key]]->sensor($i)->longName.":  ";
+        print $devInfo[$devices[$key]]->sensor($i)->get("longName").":  ";
     }
     print "\n";
 }
