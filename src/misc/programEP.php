@@ -71,13 +71,14 @@ Arguments:
     -f <file>       The config file to use",
     $config->h
 );
+/*
 if (strlen($config->i) == 0) {
     $cli->help();
     $cli->out();
     $cli->out("DeviceID must be specified");
     exit(1);
 }
-
+*/
 if (trim(strtolower($argv[2])) == 'clean') {
     unlink('/tmp/uisp*');
     die();
