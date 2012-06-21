@@ -41,10 +41,41 @@ print "Starting...\n";
 
 require_once HUGNET_INCLUDE_PATH.'/tables/FirmwareTable.php';
 require_once HUGNET_INCLUDE_PATH.'/containers/ConfigContainer.php';
+require_once 'HUGnetLib/ui/CLI.php';
+require_once 'HUGnetLib/ui/Args.php';
+
 $config = &ConfigContainer::singleton("/etc/hugnet/config.inc.php");
 
-if (empty($argv[1])) {
-    die("Usage: ".$argv[0]." <firmwarePart> [ <clean> ] [-d <EEPROM DATA> ]\n");
+$config = &\HUGnet\ui\Args::factory(
+    $argv, $argc,
+    array(
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+        "D" => array("name" => "Data", "type" => "string", "args" => true),
+    )
+);
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$conf = $config->config();
+$conf["network"]["channels"] = 1;
+$cli = &\HUGnet\ui\CLI::factory($conf);
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+
+A utility to load programs into devices
+
+Usage: ".$cli->system()->get("program")." [-v] [-f <file>] -i <DeviceID> -D <file>
+Arguments:
+    -i <DeviceID>   The device ID to load.  Should be a hex value up to 6 digits
+    -D <file>       The file to load into the device
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
 }
 
 if (trim(strtolower($argv[2])) == 'clean') {
@@ -117,10 +148,10 @@ if (!empty($firmware->id)) {
  */
 /**
 * This writes the srecord
-*  
+*
 * @param string $data The data to write
 * @param string $file The file name to use
-* 
+*
 * @return string the file name used
 */
 function writeSREC($data, $file)
