@@ -87,8 +87,9 @@ $dev = $cli->system()->device($DevID);
 $firmware = new FirmwareTable();
 $firmware->fromFile($file, $path);
 print "Found firmware ".$firmware->FWPartNum." v".$firmware->Version."\n";
-
-$ret = $dev->network()->loadFirmware($firmware);
+if ($ret = $dev->network()->loadFirmware($firmware)) {
+    $ret = $dev->action()->config();
+}
 if (!$ret) {
     print "Failure!!!\n";
     exit(1);
