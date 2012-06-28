@@ -87,7 +87,41 @@ $dev = $cli->system()->device($DevID);
 $firmware = new FirmwareTable();
 $firmware->fromFile($file, $path);
 print "Found firmware ".$firmware->FWPartNum." v".$firmware->Version."\n";
-if ($ret = $dev->network()->loadFirmware($firmware)) {
+$ret = false;
+if ($dev->get("loadable")) {
+    if ($ret = $dev->network()->loadFirmware($firmware)) {
+        $ret = $dev->action()->config();
+    }
+} else if ($dev->get("arch") === "AVR") {
+    $Prog = 'avrdude -c avrisp2 -p '.$firmware->Target.' -P usb ';
+
+    // Program the flash
+    $flashname = tempnam("/tmp", "flash");
+
+    $fp = fopen($flashname, "w");
+    fwrite($fp, $firmware->Code);
+    fclose($fp);
+
+    // Program the E2
+    $eename = tempnam("/tmp", "eeprom");
+
+    $fp = fopen($eename, "w");
+    fwrite($fp, $firmware->Data);
+    fclose($fp);
+
+    //    $flash = ' --segment=flash --erase --upload --verify if='.$tempname;
+    $flash = " -e -U flash:w:$flashname -U eeprom:w:$eename";
+    print "Using: ".$Prog.$flash."\n";
+    if (passthru($Prog.$flash) == 0) {
+        $ret = true;
+    } else {
+        $ret = false;
+    }
+
+    unlink($flashname);
+    unlink($eename);
+}
+if ($ret) {
     $ret = $dev->action()->config();
 }
 if (!$ret) {
@@ -95,4 +129,45 @@ if (!$ret) {
     exit(1);
 }
 print "Finished\n";
+
+
+/**
+* This writes the srecord
+*
+* @param string $data The data to write
+* @param string $file The file name to use
+*
+* @return string the file name used
+*/
+function writeSREC($data, $file)
+{
+
+
+    $len = strlen($data)/2 + 3;
+    $hexlen = strtoupper(dechex($len));
+    $hexlen = str_pad($hexlen, 2, '0', STR_PAD_LEFT);
+    $hexlen = substr(trim($hexlen), 0, 2);
+
+    $string = $hexlen."0000".$data;
+    $csum = 0;
+    for ($i = 0; $i < $len; $i++) {
+        $csum += hexdec(substr($string, $i*2, 2));
+    }
+    $csum = (~$csum) & 0xFF;
+    $csum = strtoupper(dechex($csum));
+    $csum = str_pad($csum, 2, '0', STR_PAD_LEFT);
+    $csum = substr(trim($csum), 0, 2);
+    $string .= $csum;
+
+    @unlink($file);
+    $fp = fopen($file, 'w');
+    fwrite($fp, "S0090000736E2E656570AD\r\n");
+    fwrite($fp, "S1".$string."\r\n");
+    fwrite($fp, "S9030000FC\r\n");
+    fclose($fp);
+
+    return $file;
+
+}
+
 ?>
