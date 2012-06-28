@@ -69,6 +69,7 @@ if (file_exists("/home/hugnet/HUGnetLib/src/hugnet.inc.php")) {
     }
 }
 require_once HUGNET_INCLUDE_PATH.'/containers/ConfigContainer.php';
+require_once HUGNET_INCLUDE_PATH.'/system/System.php';
 
 $GatewayKey = $hugnet_config["script_gatewaykey"];
 $group = "default";
