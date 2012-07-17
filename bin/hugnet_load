@@ -89,9 +89,7 @@ $firmware->fromFile($file, $path);
 print "Found firmware ".$firmware->FWPartNum." v".$firmware->Version."\n";
 $ret = false;
 if ($dev->get("loadable")) {
-    if ($ret = $dev->network()->loadFirmware($firmware)) {
-        $ret = $dev->action()->config();
-    }
+    $ret = $dev->network()->loadFirmware($firmware);
 } else if ($dev->get("arch") === "AVR") {
     $Prog = 'avrdude -c avrisp2 -p '.$firmware->Target.' -P usb ';
 
@@ -121,9 +119,11 @@ if ($dev->get("loadable")) {
     unlink($flashname);
     unlink($eename);
 }
+/*
 if ($ret) {
     $ret = $dev->action()->config();
 }
+*/
 if (!$ret) {
     print "Failure!!!\n";
     exit(1);
