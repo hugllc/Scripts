@@ -118,6 +118,10 @@ if ($dev->get("loadable")) {
 
     unlink($flashname);
     unlink($eename);
+} else {
+    $cli->out("I don't know how to load this\n");
+    $cli->out("HW Part: ".$dev->get("HWPartNum"));
+    $cli->out("FW Part: ".$dev->get("FWPartNum"));
 }
 /*
 if ($ret) {
