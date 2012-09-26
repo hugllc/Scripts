@@ -10,3 +10,5 @@ rel/
 *.ini
 *.kate-swp
 *.gz
+config.ini
+config.inc.php
