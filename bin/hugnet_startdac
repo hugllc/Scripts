@@ -7,7 +7,7 @@
  *
  * <pre>
  * Scripts related to HUGnet
- * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
+ * Copyright (C) 2007-2012 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
  *
  * This program is free software; you can redistribute it and/or
@@ -106,14 +106,25 @@ $stepVoltage = 1.2 / 4095;
 
 for ($i = 0; $i < 17; $i++){
 
-    $cli->out($i);
+    print "step: ".$i."\r\n";
     $ctlVoltage = $ControlVolts[$i];
     $steps = $ctlVoltage / $stepVoltage;
+    $steps = (int)$steps;
+
+    /********************************************************/
+    /* swap upper and lower bytes to send out little endian */
+    $highbyte = $steps & 0xff00;
+    $highbyte = $highbyte >> 8;
+
+    $lowbyte = $steps & 0xff;
+    $lowbyte = $lowbyte << 8;
+    $newval = $lowbyte | $highbyte;
+    /*******************************************************/
 
     $dacVal = '%4x';
-    $dacVal = sprintf($dacVal,(int)$steps);
+    $dacVal = sprintf($dacVal, $newval);
 
-    $cli->out($dacVal);
+
 
     $pkt = $cli->system()->network()->send(
         array(
@@ -130,12 +141,20 @@ for ($i = 0; $i < 17; $i++){
         print "\r\n";
         $data = $pkt->Data();
         if (!empty($data)) {
+            /* swap high and low bytes to display Big Endian */
+            $high = substr($data,0,2);
+            $low = substr($data,2,2);
+            $data = $low.$high;
             print "Data: ".$data."\r\n";
         }
         $data = $pkt->Reply();
         if (is_null($data)) {
             print "No Reply\r\n";
         } else if (!empty($data)) {
+            /* swap high and low bytes to display Big Endian */
+            $high = substr($data,0,2);
+            $low = substr($data,2,2);
+            $data = $low.$high;
             print "Reply Data: ".$data."\r\n";
         } else {
             print "Empty Reply\r\n";
