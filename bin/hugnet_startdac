@@ -82,8 +82,14 @@ $ctlVoltage = $config->D;
 
 $sleeptime = 2100;   /* sleep 35 minutes = 2100 seconds */
 
+
+/************************************************************/
+/* 0.95 is added to table values to compensate for the fact */
+/* that the DAC output will be reference to CGND which is   */
+/* 0.95 VDC below AGND.                                     */
+/************************************************************/
 $ControlVolts = array(
-    0 => 0,
+    0 => 0,      
     1 => 0.053,
     2 => 0.1,
     3 => 0.2,
@@ -101,13 +107,20 @@ $ControlVolts = array(
     15=> 1.1,
     16=> 1.2 );
 
-$stepVoltage = 1.2 / 4095;
+$stepVoltage = 2.5 / 4095;
 
 
 for ($i = 0; $i < 17; $i++){
 
     print "step: ".$i."\r\n";
-    $ctlVoltage = $ControlVolts[$i];
+
+    $strVolts = '%4.2f';
+    $strVolts = sprintf($strVolts, $ControlVolts[$i]);
+    print "DAC Control Voltage: ".$strVolts."\r\n";
+
+    $ctlVoltage = ($ControlVolts[$i] + 0.95);
+
+
     $steps = $ctlVoltage / $stepVoltage;
     $steps = (int)$steps;
 
