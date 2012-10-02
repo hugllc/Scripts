@@ -113,7 +113,6 @@ $stepVoltage = 2.5 / 4095;
 for ($i = 0; $i < 17; $i++){
 
     print "step: ".$i."\r\n";
-
     $strVolts = '%4.2f';
     $strVolts = sprintf($strVolts, $ControlVolts[$i]);
     print "DAC Control Voltage: ".$strVolts."\r\n";
@@ -173,7 +172,14 @@ for ($i = 0; $i < 17; $i++){
             print "Empty Reply\r\n";
         }
     }
+
     sleep($sleeptime);
+
+    $cli->main();
+    if (!$cli->loop()){
+        break;
+    }
+
 } /* end of for loop */
 
 print "Finished\n";
