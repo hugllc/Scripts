@@ -81,7 +81,8 @@ $ctlVoltage = $config->D;
 
 
 $sleeptime = 2100;   /* sleep 35 minutes = 2100 seconds */
-
+//$sleeptime = 30;
+$CGNDOffset = 0.95;
 
 /************************************************************/
 /* 0.95 is added to table values to compensate for the fact */
@@ -89,7 +90,7 @@ $sleeptime = 2100;   /* sleep 35 minutes = 2100 seconds */
 /* 0.95 VDC below AGND.                                     */
 /************************************************************/
 $ControlVolts = array(
-    0 => 0,      
+    0 => 0,
     1 => 0.053,
     2 => 0.1,
     3 => 0.2,
@@ -105,38 +106,24 @@ $ControlVolts = array(
     13=> 1,
     14=> 1.05,
     15=> 1.1,
-    16=> 1.2 );
+    16=> 1.2
+);
 
 $stepVoltage = 2.5 / 4095;
 
 
-for ($i = 0; $i < 17; $i++){
+foreach ($ControlVolts as $i => $val) {
 
-    print "step: ".$i."\r\n";
+    $cli->out("step: ".$i);
     $strVolts = '%4.2f';
     $strVolts = sprintf($strVolts, $ControlVolts[$i]);
-    print "DAC Control Voltage: ".$strVolts."\r\n";
+    $cli->out("DAC Control Voltage: ".$strVolts);
 
-    $ctlVoltage = ($ControlVolts[$i] + 0.95);
+    $ctlVoltage = ($ControlVolts[$i] + $CGNDOffset);
 
+    $steps = (int)($ctlVoltage / $stepVoltage);
 
-    $steps = $ctlVoltage / $stepVoltage;
-    $steps = (int)$steps;
-
-    /********************************************************/
-    /* swap upper and lower bytes to send out little endian */
-    $highbyte = $steps & 0xff00;
-    $highbyte = $highbyte >> 8;
-
-    $lowbyte = $steps & 0xff;
-    $lowbyte = $lowbyte << 8;
-    $newval = $lowbyte | $highbyte;
-    /*******************************************************/
-
-    $dacVal = '%4x';
-    $dacVal = sprintf($dacVal, $newval);
-
-
+    $dacVal = sprintf("%02X%02X", ($steps & 0xFF), (($steps >> 8) & 0xFF));
 
     $pkt = $cli->system()->network()->send(
         array(
@@ -146,6 +133,18 @@ for ($i = 0; $i < 17; $i++){
         )
     );
     if (is_object($pkt)) {
+        $reply = $pkt->Reply();
+        if (is_null($reply)) {
+            print "No Reply\r\n";
+        } else if (!empty($reply)) {
+            $dacOut = hexdec(substr($reply, 0, 2)) + (hexdec(substr($reply, 2, 2)) << 8);
+            $dacV = $dacOut * $stepVoltage;
+            $cli->out("Confirm ".round($dacV, 4)." V to AGND");
+            $cli->out("Confirm ".round($dacV - $CGNDOffset, 4)." V to CGND");
+        } else {
+            print "Empty Reply\r\n";
+        }
+/*
         print "From: ".$pkt->From();
         print " -> To: ".$pkt->To();
         print "  Command: ".$pkt->Command();
@@ -153,7 +152,7 @@ for ($i = 0; $i < 17; $i++){
         print "\r\n";
         $data = $pkt->Data();
         if (!empty($data)) {
-            /* swap high and low bytes to display Big Endian */
+            // swap high and low bytes to display Big Endian
             $high = substr($data,0,2);
             $low = substr($data,2,2);
             $data = $low.$high;
@@ -163,7 +162,7 @@ for ($i = 0; $i < 17; $i++){
         if (is_null($data)) {
             print "No Reply\r\n";
         } else if (!empty($data)) {
-            /* swap high and low bytes to display Big Endian */
+            // swap high and low bytes to display Big Endian
             $high = substr($data,0,2);
             $low = substr($data,2,2);
             $data = $low.$high;
@@ -171,11 +170,23 @@ for ($i = 0; $i < 17; $i++){
         } else {
             print "Empty Reply\r\n";
         }
+*/
+    } else {
+        $cli->out("No Reply");
     }
 
-    sleep($sleeptime);
+    $wait = time() + $sleeptime;
+    $count = 0;
+    while ((time() < $wait) && $cli->loop()) {
+        $cli->main();
+        sleep(5);
+        $count++;
+        if ($count >= 12) {
+            $cli->out(round(($wait - time()) / 60)." Minutes left");
+            $count = 0;
+        }
+    }
 
-    $cli->main();
     if (!$cli->loop()){
         break;
     }
