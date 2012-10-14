@@ -80,8 +80,8 @@ if (strlen($config->i) == 0) {
 $ctlVoltage = $config->D;
 
 
-$sleeptime = 2100;   /* sleep 35 minutes = 2100 seconds */
-//$sleeptime = 30;
+//$sleeptime = 2100;   /* sleep 35 minutes = 2100 seconds */
+$sleeptime = 45 * 60;
 $CGNDOffset = 0.95;
 
 /************************************************************/
