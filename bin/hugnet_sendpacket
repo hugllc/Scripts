@@ -42,9 +42,6 @@
 require_once 'HUGnetLib/ui/Daemon.php';
 require_once 'HUGnetLib/ui/Args.php';
 
-print "monitor.php\n";
-print "Starting...\n";
-
 $config = &\HUGnet\ui\Args::factory(
     $argv, $argc,
     array(
