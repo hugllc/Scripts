@@ -84,9 +84,11 @@ if (strlen($file) == 0) {
 
 $DevID = hexdec($config->i);
 $dev = $cli->system()->device($DevID);
-$firmware = new FirmwareTable();
+$firmware = $cli->system()->table("Firmware");
 $firmware->fromFile($file, $path);
-print "Found firmware ".$firmware->FWPartNum." v".$firmware->Version."\n";
+$cli->out(
+    "Found firmware ".$firmware->get("FWPartNum")." v".$firmware->get("Version")
+);
 $ret = false;
 if ($dev->get("loadable")) {
     $ret = $dev->network()->loadFirmware($firmware);
