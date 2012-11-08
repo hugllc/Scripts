@@ -58,6 +58,8 @@ $cli = &\HUGnet\ui\Daemon::factory($config);
 $cli->help(
     $cli->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
 
 Reads and prints raw data from the endpoint
 

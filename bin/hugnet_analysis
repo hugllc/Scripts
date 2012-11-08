@@ -53,6 +53,8 @@ $daemon = &\HUGnet\processes\Analysis::factory($config);
 $daemon->help(
     $daemon->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$daemon->system()->get("version")."
 
 Analyzes data and other things from endpoints.
 

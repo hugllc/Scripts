@@ -54,6 +54,8 @@ $daemon = &\HUGnet\processes\Update::factory($config);
 $daemon->help(
     $daemon->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$daemon->system()->get("version")."
 
 Updates the database as well as any partners and the master server
 

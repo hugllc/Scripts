@@ -53,6 +53,8 @@ $cli = &\HUGnet\ui\CLI::factory($conf);
 $cli->help(
     $cli->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
 
 A utility to load programs into devices
 
