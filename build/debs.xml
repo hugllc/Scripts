@@ -4,11 +4,12 @@
 <project name="deb" default="build" basedir=".">
     <property name="deb.setup" value="${basedir}/deb"/>
     <property name="deb.source" value="${basedir}/src"/>
+    <property name="deb.include" value="${basedir}/include"/>
     <property name="deb.bin" value="${basedir}/bin"/>
     <property name="deb.staging" value="${basedir}/build/deb"/>
     <property name="deb.release" value="" />
     <property name="deb.prefix" value="/usr" />
-    <property name="deb.versionfile" value="${basedir}/src/VERSION.TXT" />
+    <property name="deb.versionfile" value="${basedir}/include/VERSION.TXT" />
 
     <exec executable="grep" failonerror="true"
         outputproperty="deb.version" errorproperty="deb.versionerror">
@@ -33,10 +34,16 @@
         <copy todir="${deb.staging}">
             <fileset dir="${deb.setup}"/>
         </copy>
+        <mkdir dir="${deb.staging}/usr/share/php/HUGnetScripts"/>
+        <copy todir="${deb.staging}/usr/share/php/HUGnetScripts">
+            <fileset dir="${deb.include}"/>
+        </copy>
+        <!--
         <mkdir dir="${deb.staging}/home/hugnet/Scripts"/>
         <copy todir="${deb.staging}/home/hugnet/Scripts">
             <fileset dir="${deb.source}"/>
         </copy>
+        -->
         <mkdir dir="${deb.staging}${deb.prefix}/bin"/>
         <copy todir="${deb.staging}${deb.prefix}/bin">
             <fileset dir="${deb.bin}"/>
