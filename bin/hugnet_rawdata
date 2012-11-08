@@ -81,9 +81,9 @@ while ($cli->loop()) {
             "Command" => "54",
         )
     );
+    $output = "";
     if (is_object($pkt)) {
         $string = $pkt->Reply();
-        $output = "";
         do {
             $value = strToInt($string, 4);
             if (!is_null($value)) {
@@ -91,8 +91,8 @@ while ($cli->loop()) {
                 $output .= str_pad($value, 14, " ", STR_PAD_LEFT);
             }
         } while (!is_null($value));
-        $cli->out($output);
     }
+    $cli->out($output);
 }
 print "Finished\n";
 
