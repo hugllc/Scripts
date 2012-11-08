@@ -1,0 +1,149 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007-2011 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** HUGnet code */
+//require_once dirname(__FILE__).'/../head.inc.php';
+/** Packet log include stuff */
+require_once 'HUGnetLib/ui/Daemon.php';
+require_once 'HUGnetLib/ui/Args.php';
+
+$config = &\HUGnet\ui\Args::factory(
+    $argv, $argc,
+    array(
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+        "D" => array("name" => "Data", "type" => "string", "args" => true),
+        "C" => array(
+            "name" => "Command", "type" => "string", "args" => true,
+            "default" => "FINDPING"
+        ),
+    )
+);
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = &\HUGnet\ui\Daemon::factory($config);
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+
+Reads and prints raw data from the endpoint
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> [-C <Command>] [-D <data>] [-v] [-f <file>]
+Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+while ($cli->loop()) {
+    $pkt = $cli->system()->network()->send(
+        array(
+            "To" => $config->i,
+            "Command" => "54",
+        )
+    );
+    if (is_object($pkt)) {
+        $string = $pkt->Reply();
+        $output = "";
+        do {
+            $value = strToInt($string, 4);
+            if (!is_null($value)) {
+                $value = getTwosCompliment($value, 32);
+                $output .= str_pad($value, 14, " ", STR_PAD_LEFT);
+            }
+        } while (!is_null($value));
+        $cli->out($output);
+    }
+}
+print "Finished\n";
+
+
+/**
+* Takes in a raw string from a sensor and makes an int out it
+*
+* The sensor data is stored little-endian, so it just takes that and adds
+* the bytes together.
+*
+* @param string &$string The string to convert
+* @param int    $size    The size to extract
+*
+* @return int
+*/
+function strToInt(&$string, $size)
+{
+    if ($size > strlen($string)) {
+        return null;
+    }
+    $work = substr($string, 0, ($size * 2));
+    $string = (string)substr($string, ($size * 2));
+    $bytes = str_split($work, 2);
+    $shift = 0;
+    $return = 0;
+    foreach ($bytes as $b) {
+        $return += hexdec($b) << $shift;
+        $shift += 8;
+    }
+    return $return;
+}
+/**
+* Changes an n-bit twos compliment number into a signed number PHP can use
+*
+* @param int   $value The incoming number
+* @param float $bits  The number of bits the incoming number is
+*
+* @return int A signed integer for PHP to use
+*/
+function getTwosCompliment($value, $bits = 32)
+{
+    /* Clear off any excess */
+    $value = (int)($value & (pow(2, $bits) - 1));
+    /* Calculate the top bit */
+    $topBit = pow(2, ($bits - 1));
+    /* Check to see if the top bit is set */
+    if (($value & $topBit) == $topBit) {
+        /* This is a negative number */
+        $value = -(pow(2, $bits) - $value);
+    }
+    return $value;
+}
+
+?>
