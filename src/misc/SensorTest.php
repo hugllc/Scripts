@@ -126,7 +126,7 @@ while ($cli->loop()) {
             if ($ret) {
                 $packets[$dev] = time();
             }
-        } else if ((time() - $packets[$dev]) > 2) {
+        } else if ((time() - $packets[$dev]) > 10) {
             unset($packets[$dev]);
         }
     }

@@ -78,11 +78,15 @@ if (strlen($config->i) == 0) {
     $cli->out("DeviceID must be specified");
     exit(1);
 }
-$pkt = $cli->system()->network()->send(
+$dev = $cli->system()->device(hexdec($config->i));
+$pkt = $cli->system()->device(hexdec($config->i))->action()->send(
     array(
-        "To" => $config->i,
         "Command" => $config->C,
         "Data" => $config->D,
+    ),
+    null,
+    array(
+        "timeout" => $dev->get("packetTimeout")
     )
 );
 if (is_object($pkt)) {

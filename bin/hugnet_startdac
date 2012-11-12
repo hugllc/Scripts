@@ -111,7 +111,6 @@ $ControlVolts = array(
 
 $stepVoltage = 2.5 / 4095;
 
-
 foreach ($ControlVolts as $i => $val) {
 
     $cli->out("step: ".$i);
