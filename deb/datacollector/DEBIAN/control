@@ -4,10 +4,10 @@ Section: hugnet
 Priority: optional
 Architecture: all
 Essential: no
-Depends: hugnetscripts-common (= %VERSION% )
+Depends: hugnetscripts (= %VERSION% )
 Recommends: php5-mysqli
 Maintainer: Scott Price [prices@hugllc.com]
-Provides: hugnetscripts
+Provides: hugnetscripts-datacollector
 Description:   This is the HUGnet scripts.
  They are the core of the system that does the actual
  monitoring and control of the HUGnet devices.

@@ -4,7 +4,7 @@ Section: hugnet
 Priority: optional
 Architecture: all
 Essential: no
-Depends: hugnetscripts-common (= %VERSION% )
+Depends: hugnetscripts (= %VERSION% )
 Recommends: php5-mysqli
 Maintainer: Scott Price [prices@hugllc.com]
 Provides: hugnetscripts-misc

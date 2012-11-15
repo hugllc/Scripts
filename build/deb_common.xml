@@ -7,7 +7,7 @@
     <property name="deb.common.bin" value="${basedir}/bin"/>
     <property name="deb.common.staging" value="${deb.staging}/common"/>
 
-    <property name="deb.common.outputfile" value="${deb.builddir}/HUGnetScripts_common_${deb.version}${deb.release}_all.deb" />
+    <property name="deb.common.outputfile" value="${deb.builddir}/HUGnetScripts_${deb.version}${deb.release}_all.deb" />
 
     <target name="clean" description="Clean up and create artifact directories">
         <delete dir="${deb.common.staging}" failonerror="false"/>
