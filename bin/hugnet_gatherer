@@ -40,15 +40,15 @@
 //require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
 require_once 'HUGnetLib/processes/Gather.php';
-require_once 'HUGnetLib/ui/Args.php';
+require_once 'HUGnetLib/HUGnetLib.php';
 
-$config = &\HUGnet\ui\Args::factory(
-    $argv,
-    $argc,
+$config = HUGnetLib::Args(
     array(
-        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
-    )
+    ),
+    "args",
+    $argv
 );
+
 $config->addLocation("/usr/share/HUGnet/config.ini");
 $daemon = &\HUGnet\processes\Gather::factory($config);
 $daemon->help(
@@ -61,7 +61,6 @@ Polls and keeps track of endpoints.
 
 Usage: ".$daemon->system()->get("program")." [-v] [-i <DeviceID>] [-f <file>]
 Arguments:
-    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
     -v              Increment the verbosity
     -f <file>       The config file to use",
     $config->h

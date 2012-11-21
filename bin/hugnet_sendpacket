@@ -39,11 +39,9 @@
 /** HUGnet code */
 //require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once 'HUGnetLib/ui/Daemon.php';
-require_once 'HUGnetLib/ui/Args.php';
+require_once 'HUGnetLib/HUGnetLib.php';
 
-$config = &\HUGnet\ui\Args::factory(
-    $argv, $argc,
+$config = HUGnetLib::Args(
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
         "D" => array("name" => "Data", "type" => "string", "args" => true),
@@ -51,10 +49,12 @@ $config = &\HUGnet\ui\Args::factory(
             "name" => "Command", "type" => "string", "args" => true,
             "default" => "FINDPING"
         ),
-    )
+    ),
+    "args",
+    $argv
 );
 $config->addLocation("/usr/share/HUGnet/config.ini");
-$cli = &\HUGnet\ui\Daemon::factory($config);
+$cli = HUGnetLib::ui($config, "Daemon");
 $cli->help(
     $cli->system()->get("program")."
 Copyright Hunt Utilities Group, LLC

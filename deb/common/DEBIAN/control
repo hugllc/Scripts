@@ -1,0 +1,14 @@
+Package: hugnetscripts
+Version: %VERSION%
+Section: hugnet
+Priority: optional
+Architecture: all
+Essential: no
+Depends: php5-sqlite, php5-cli, php5-mysql | php5-mysqli, hugnetlib (>>0.9.10), hugnetfirmware, openntpd
+Recommends: php5-mysqli
+Maintainer: Scott Price [prices@hugllc.com]
+Provides: hugnetscripts
+Breaks: hugnetscripts-common
+Description:   This is the HUGnet scripts.
+ They are the core of the system that does the actual
+ monitoring and control of the HUGnet devices.
