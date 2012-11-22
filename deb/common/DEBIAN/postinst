@@ -4,6 +4,4 @@ if [ ! -e "/usr/share/HUGnet/config.ini" ]; then
     cp /usr/share/HUGnet/Scripts/config.ini.sample /usr/share/HUGnet/config.ini
 fi
 
-#service hugnet_router start
-
 exit $?

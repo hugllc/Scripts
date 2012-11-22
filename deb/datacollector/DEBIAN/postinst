@@ -1,9 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
-if [ ! -e "/usr/share/HUGnet/config.ini" ]; then
-    cp /usr/share/HUGnet/Scripts/config.ini.sample /usr/share/HUGnet/config.ini
-fi
-
-#service hugnet_router start
+service hugnet_router start 2>&1 > /dev/null
+service hugnet_gatherer start 2>&1 > /dev/null
+service hugnet_updater start 2>&1 > /dev/null
 
 exit $?
