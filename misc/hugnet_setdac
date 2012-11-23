@@ -120,6 +120,9 @@ if ($slot < 0) {
         if (trim(strtoupper($pkt->reply())) == $data) {
             $slot = $open;
             $cli->out("Added one in slot $open.");
+            $dev->network()->reboot();
+            $cli->out("Rebooting.");
+            sleep(5);
         } else {
             $cli->out("Add Failed.");
         }
