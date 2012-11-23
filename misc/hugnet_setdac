@@ -1,0 +1,180 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2012 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @author     Jeff Liesmaki <jeffl@hugllc.com>
+ * @copyright  2007-2012 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** Packet log include stuff */
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+        "D" => array("name" => "Data", "type" => "string", "args" => true),
+    ),
+    "args",
+    $argv
+);
+
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = HUGnetLib::ui($config, "CLI");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+Sends a series of DAC set packets to HUGnetLab endpoints.
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
+Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+
+$dac = array(
+    "Driver" => 0x01,
+    "DAC0Con" => 0x0013,  //DAC_DACCLR_NORM | DAC_RANGE_AVDD;
+);
+
+$dev = $cli->system()->device(hexdec($config->i));
+$slot = -1;
+$open = -1;
+$cli->out("Checking for DAC OutputTable");
+for ($i = 0; $i < $dev->get("OutputTables"); $i++) {
+    $pkt = $dev->action()->send(
+        array(
+            "Command" => "READOUTPUTTABLE",
+            "Data" => sprintf("%02X", $i),
+        )
+    );
+    if (is_null($pkt->reply())) {
+        $cli->out("Failed to contact device");
+        exit(-1);
+    }
+    $driver = substr($pkt->reply(), 0, 2);
+    if (($driver === "FF") && ($open < 0)) {
+        $open = $i;
+    } else if ($driver === "01") {
+        $slot = $i;
+        break;
+    }
+}
+if ($slot < 0) {
+    $cli->out("No DAC OutputTable found.");
+    if ($open >= 0) {
+        $cli->out("Attempting to add one.");
+        $data = sprintf(
+            "%02X%02X%02X",
+            $dac["Driver"],
+            $dac["DAC0Con"] & 0xFF,
+            ($dac["DAC0Con"] >> 8) & 0xFF
+        );
+        $pkt = $dev->action()->send(
+            array(
+                "Command" => "SETOUTPUTTABLE",
+                "Data" => sprintf("%02X", $open).$data,
+            )
+        );
+        if (trim(strtoupper($pkt->reply())) == $data) {
+            $slot = $open;
+            $cli->out("Added one in slot $open.");
+        } else {
+            $cli->out("Add Failed.");
+        }
+    }
+}
+if ($slot < 0) {
+    $cli->out("No DAC Available.");
+    exit(-1);
+} else {
+    $cli->out("Found a DAC setup on slot $slot");
+}
+
+/* save input control voltage */
+$ctlVoltage = (float)$config->D;
+
+
+$CGNDOffset = 0.95;
+$stepVoltage = 2.5 / 4095;
+
+$cli->out("DAC Control Voltage: ".sprintf("%4.2f", $ctlVoltage));
+
+$ctlVoltage += $CGNDOffset;
+
+$steps = (int)($ctlVoltage / $stepVoltage);
+
+$dacVal = sprintf(
+    "%02X%02X%02X%02X",
+    ($steps & 0xFF), (($steps >> 8) & 0xFF),
+    (($steps >> 16) & 0xFF), (($steps >> 24) & 0xFF)
+);
+
+$pkt = $dev->action()->send(
+    array(
+        "Command" => '0x64',
+        "Data" => sprintf("%02X", $slot).$dacVal,
+    )
+);
+if (is_object($pkt)) {
+    $reply = $pkt->Reply();
+    if (is_null($reply)) {
+        print "No Reply\r\n";
+    } else if (!empty($reply)) {
+        $dacOut = hexdec(substr($reply, 0, 2)) + (hexdec(substr($reply, 2, 2)) << 8);
+        $dacV = $dacOut * $stepVoltage;
+        $cli->out("Confirm ".round($dacV, 4)." V to AGND");
+        $cli->out("Confirm ".round($dacV - $CGNDOffset, 4)." V to CGND");
+    } else {
+        print "Empty Reply\r\n";
+    }
+} else {
+    $cli->out("No Reply");
+}
+
+
+print "Finished\n";
+
+exit(0);
+?>
