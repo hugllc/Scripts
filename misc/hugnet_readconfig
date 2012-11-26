@@ -7,7 +7,7 @@
  *
  * <pre>
  * Scripts related to HUGnet
- * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
+ * Copyright (C) 2007-2012 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
  *
  * This program is free software; you can redistribute it and/or
@@ -29,72 +29,58 @@
  * @package    Scripts
  * @subpackage Misc
  * @author     Scott Price <prices@hugllc.com>
- * @copyright  2007-2011 Hunt Utilities Group, LLC
+ * @author     Jeff Liesmaki <jeffl@hugllc.com>
+ * @copyright  2007-2012 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-/** HUGnet code */
-//require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once 'HUGnetLib/processes/Gather.php';
 require_once 'HUGnetLib/HUGnetLib.php';
 
 $config = HUGnetLib::Args(
     array(
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+        "D" => array("name" => "Data", "type" => "string", "args" => true),
     ),
     "args",
     $argv
 );
 
 $config->addLocation("/usr/share/HUGnet/config.ini");
-$daemon = &\HUGnet\processes\Gather::factory($config);
-$daemon->help(
-    $daemon->system()->get("program")."
+$cli = HUGnetLib::ui($config, "CLI");
+$cli->help(
+    $cli->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
 HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
-."HUGnetLib v".$daemon->system()->get("version")."
+."HUGnetLib v".$cli->system()->get("version")."
 
-Polls and keeps track of endpoints.
+Sends a series of DAC set packets to HUGnetLab endpoints.
 
-Usage: ".$daemon->system()->get("program")." [-v] [-i <DeviceID>] [-f <file>]
+Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
 Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
     -v              Increment the verbosity
     -f <file>       The config file to use",
     $config->h
-
 );
-$daemon->requireINI();
-$daemon->requireUUID();
-
-/* Check to make sure we have a GatewayKey */
-$GatewayKey = $daemon->system()->get("GatewayKey");
-if (empty($GatewayKey)) {
-    $daemon->help();
-    $daemon->out();
-    $daemon->out(
-        "A gateway key must be supplied for this script in the ini file"
-    );
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
     exit(1);
 }
 
-$daemon->out("Starting ".$daemon->system()->get("program"));
-
-/* Set up our device */
-$DeviceID = $daemon->system()->get("DeviceID");
-$daemon->device(
-    array(
-        "id" => empty($DeviceID) ? null : $DeviceID,
-        "HWPartNum" => "0039-26-06-P",
-    )
-);
-
-
-while ($daemon->loop()) {
-    $daemon->main();
+$dev = $cli->system()->device(hexdec($config->i));
+$pkt = $dev->action()->config();
+if (!$pkt) {
+    $cli->out("Failed");
+    exit(-1);
 }
-print "Finished\n";
+
+$cli->out("Finished");
 exit(0);
+
 ?>

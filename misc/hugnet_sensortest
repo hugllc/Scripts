@@ -41,7 +41,6 @@
 /** Packet log include stuff */
 require_once 'HUGnetLib/ui/Daemon.php';
 require_once 'HUGnetLib/ui/Args.php';
-require_once 'HUGnetLib/containers/DeviceContainer.php';
 
 print "monitor.php\n";
 print "Starting...\n";
@@ -50,13 +49,31 @@ $config = &\HUGnet\ui\Args::factory(
     $argv, $argc,
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
-        "D" => array("name" => "Data", "type" => "string", "args" => true),
-        "C" => array("name" => "Command", "type" => "string", "args" => true),
     )
 );
-$conf = $config->config();
-$conf["network"]["channels"] = 1;
-$cli = &\HUGnet\ui\Daemon::factory($conf);
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = &\HUGnet\ui\Daemon::factory($config);
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+Reads out an endpoint and crunches the numbers.
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
+Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
 
 $devices = explode(",", $config->i); //array(0x67, 0x68, 0xFE);
 
@@ -67,18 +84,10 @@ $packets = array();
 $counts = array();
 foreach (array_keys($devices) as $key) {
     $devices[$key] = hexdec($devices[$key]);
-    print "Getting configuration of ".sprintf("%06X", $devices[$key])."\n";
-    $ret = $cli->system()->device($devices[$key])->network()->config();
-    if (!is_object($ret) || strlen($ret->Reply()) == 0) {
-        die("Could not contact device ".sprintf("%06X", $devices[$key])."\n");
-    }
-    $devInfo[$devices[$key]] = $cli->system()->device($ret->reply());
-    if (!$cli->loop()) {
-        break;
-    }
     print sprintf("%06X", $devices[$key])." ";
-    for ($i = 0; $i < 9; $i++) {
-        print $devInfo[$devices[$key]]->sensor($i)->get("longName").":  ";
+    $dev = $cli->system()->device($devices[$key]);
+    for ($i = 0; $i < $dev->get("physicalSensors"); $i++) {
+        print $dev->sensor($i)->get("unitType")." ";
     }
     print "\n";
 }
@@ -93,26 +102,27 @@ while ($cli->loop()) {
                     if (!is_object($pkt) || strlen($pkt->Reply()) == 0) {
                         return;
                     }
-                    global $packets;
-                    global $prev, $devInfo;
+                    global $packets, $prev;
+                    global $cli;
                     $dev = hexdec($pkt->To());
-                    $data = $devInfo[$dev]->decodeData(
+                    $device = $cli->system()->device($dev);
+                    $data = $device->decodeData(
                         $pkt->Reply(),
                         $pkt->Command(),
                         0,
                         (array)$prev[$dev]
                     );
-                    $d = $devInfo[$dev]->historyFactory($data);
+                    $d = $device->historyFactory($data);
                     if ($data["DataIndex"] !== $prev[$dev]["DataIndex"]) {
                         printf("%06X ", $dev);
                         print date("Y-m-d H:i:s ").$data["DataIndex"]." ";
-                        for ($i = 0; $i < 9; $i++) {
+                        for ($i = 0; $i < $device->get("physicalSensors"); $i++) {
                             $var = "Data".$i;
-                            $val = $d->$var;
+                            $val = $d->get($var);
                             if (is_null($val)) {
                                 print "null ";
                             } else {
-                                printf("%f ", $val);
+                                printf("%.4f ", $val);
                             }
                         }
                         print "\n";

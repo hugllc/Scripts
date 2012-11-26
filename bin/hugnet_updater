@@ -40,26 +40,26 @@
 //require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
 require_once 'HUGnetLib/processes/Update.php';
-require_once 'HUGnetLib/ui/Args.php';
+require_once 'HUGnetLib/HUGnetLib.php';
 
-$config = &\HUGnet\ui\Args::factory(
-    $argv,
-    $argc,
+$config = HUGnetLib::Args(
     array(
-        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
-    )
+    ),
+    "args",
+    $argv
 );
 $config->addLocation("/usr/share/HUGnet/config.ini");
 $daemon = &\HUGnet\processes\Update::factory($config);
 $daemon->help(
     $daemon->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$daemon->system()->get("version")."
 
 Updates the database as well as any partners and the master server
 
 Usage: ".$daemon->system()->get("program")." [-v] [-i <DeviceID>] [-f <file>]
 Arguments:
-    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
     -v              Increment the verbosity
     -f <file>       The config file to use",
     $config->h

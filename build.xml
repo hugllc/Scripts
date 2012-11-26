@@ -124,6 +124,7 @@
     <target name="deb" depends="deb.build"/>
     <target name="post" depends="deb.post"/>
     <target name="testpost" depends="deb.testpost"/>
+    <target name="rcpost" depends="deb.rcpost"/>
 
 
  <target name="build" depends="clean,pdepend,phpmd,phpcpd,phpcs,docblox,phploc,phpcb"/>

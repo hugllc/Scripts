@@ -53,6 +53,7 @@ $config = HUGnetLib::Args(
     "args",
     $argv
 );
+
 $config->addLocation("/usr/share/HUGnet/config.ini");
 $cli = HUGnetLib::ui($config, "Daemon");
 $cli->help(
@@ -61,13 +62,11 @@ Copyright Hunt Utilities Group, LLC
 HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
 ."HUGnetLib v".$cli->system()->get("version")."
 
-Sends arbitrary packets to endpoints.
+Reads and prints raw data from the endpoint
 
 Usage: ".$cli->system()->get("program")." -i <DeviceID> [-C <Command>] [-D <data>] [-v] [-f <file>]
 Arguments:
     -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
-    -C <Command>    Command to send the endpoint.  FINDPING is the default
-    -D <data>       ASCII hex data to send in the ping.  Up to 255 bytes.
     -v              Increment the verbosity
     -f <file>       The config file to use",
     $config->h
@@ -78,36 +77,73 @@ if (strlen($config->i) == 0) {
     $cli->out("DeviceID must be specified");
     exit(1);
 }
-$dev = $cli->system()->device(hexdec($config->i));
-$pkt = $cli->system()->device(hexdec($config->i))->action()->send(
-    array(
-        "Command" => $config->C,
-        "Data" => $config->D,
-    ),
-    null,
-    array(
-        "timeout" => $dev->get("packetTimeout")
-    )
-);
-if (is_object($pkt)) {
-    print "From: ".$pkt->From();
-    print " -> To: ".$pkt->To();
-    print "  Command: ".$pkt->Command();
-    print "  Type: ".$pkt->Type();
-    print "\r\n";
-    $data = $pkt->Data();
-    if (!empty($data)) {
-        print "Data: ".$data."\r\n";
+while ($cli->loop()) {
+    $pkt = $cli->system()->device(hexdec($config->i))->action()->send(
+        "54"
+    );
+    $output = "";
+    if (is_object($pkt)) {
+        $string = $pkt->Reply();
+        do {
+            $value = strToInt($string, 4);
+            if (!is_null($value)) {
+                $value = getTwosCompliment($value, 32);
+                $output .= str_pad($value, 14, " ", STR_PAD_LEFT);
+            }
+        } while (!is_null($value));
     }
-    $data = $pkt->Reply();
-    if (is_null($data)) {
-        print "No Reply\r\n";
-    } else if (!empty($data)) {
-        print "Reply Data: ".$data."\r\n";
-    } else {
-        print "Empty Reply\r\n";
-    }
+    $cli->out($output);
 }
 print "Finished\n";
+
+
+/**
+* Takes in a raw string from a sensor and makes an int out it
+*
+* The sensor data is stored little-endian, so it just takes that and adds
+* the bytes together.
+*
+* @param string &$string The string to convert
+* @param int    $size    The size to extract
+*
+* @return int
+*/
+function strToInt(&$string, $size)
+{
+    if ($size > strlen($string)) {
+        return null;
+    }
+    $work = substr($string, 0, ($size * 2));
+    $string = (string)substr($string, ($size * 2));
+    $bytes = str_split($work, 2);
+    $shift = 0;
+    $return = 0;
+    foreach ($bytes as $b) {
+        $return += hexdec($b) << $shift;
+        $shift += 8;
+    }
+    return $return;
+}
+/**
+* Changes an n-bit twos compliment number into a signed number PHP can use
+*
+* @param int   $value The incoming number
+* @param float $bits  The number of bits the incoming number is
+*
+* @return int A signed integer for PHP to use
+*/
+function getTwosCompliment($value, $bits = 32)
+{
+    /* Clear off any excess */
+    $value = (int)($value & (pow(2, $bits) - 1));
+    /* Calculate the top bit */
+    $topBit = pow(2, ($bits - 1));
+    /* Check to see if the top bit is set */
+    if (($value & $topBit) == $topBit) {
+        /* This is a negative number */
+        $value = -(pow(2, $bits) - $value);
+    }
+    return $value;
+}
 
 ?>

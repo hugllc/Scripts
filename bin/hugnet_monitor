@@ -39,15 +39,20 @@
 /** HUGnet code */
 //require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
-require_once 'HUGnetLib/ui/Daemon.php';
-require_once 'HUGnetLib/ui/Args.php';
-
-$config = &\HUGnet\ui\Args::factory($argv, $argc);
+require_once 'HUGnetLib/HUGnetLib.php';
+$config = HUGnetLib::Args(
+    array(
+    ),
+    "args",
+    $argv
+);
 $config->addLocation("/usr/share/HUGnet/config.ini");
-$daemon = &\HUGnet\ui\Daemon::factory($config);
+$daemon = HUGnetLib::ui($config, "Daemon");
 $daemon->help(
     $daemon->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$daemon->system()->get("version")."
 
 Monitors a HUGnet and prints out packets.
 

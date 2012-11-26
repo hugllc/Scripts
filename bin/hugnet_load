@@ -36,23 +36,22 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
-require_once 'HUGnetLib/ui/CLI.php';
-require_once 'HUGnetLib/ui/Args.php';
-
-$config = &\HUGnet\ui\Args::factory(
-    $argv, $argc,
+require_once 'HUGnetLib/HUGnetLib.php';
+$config = HUGnetLib::Args(
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
         "D" => array("name" => "Data", "type" => "string", "args" => true),
-    )
+    ),
+    "args",
+    $argv
 );
 $config->addLocation("/usr/share/HUGnet/config.ini");
-$conf = $config->config();
-$conf["network"]["channels"] = 1;
-$cli = &\HUGnet\ui\CLI::factory($conf);
+$cli = HUGnetLib::ui($config, "CLI");
 $cli->help(
     $cli->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
 
 A utility to load programs into devices
 
@@ -84,9 +83,11 @@ if (strlen($file) == 0) {
 
 $DevID = hexdec($config->i);
 $dev = $cli->system()->device($DevID);
-$firmware = new FirmwareTable();
+$firmware = $cli->system()->table("Firmware");
 $firmware->fromFile($file, $path);
-print "Found firmware ".$firmware->FWPartNum." v".$firmware->Version."\n";
+$cli->out(
+    "Found firmware ".$firmware->get("FWPartNum")." v".$firmware->get("Version")
+);
 $ret = false;
 if ($dev->get("loadable")) {
     $ret = $dev->network()->loadFirmware($firmware);

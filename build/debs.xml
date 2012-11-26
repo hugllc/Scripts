@@ -4,20 +4,23 @@
 <project name="deb" default="build" basedir=".">
     <property name="deb.setup" value="${basedir}/deb"/>
     <property name="deb.source" value="${basedir}/src"/>
-    <property name="deb.bin" value="${basedir}/bin"/>
     <property name="deb.staging" value="${basedir}/build/deb"/>
     <property name="deb.release" value="" />
     <property name="deb.prefix" value="/usr" />
-    <property name="deb.versionfile" value="${basedir}/src/VERSION.TXT" />
+    <property name="deb.versionfile" value="${basedir}/include/VERSION.TXT" />
 
     <exec executable="grep" failonerror="true"
         outputproperty="deb.version" errorproperty="deb.versionerror">
-        <arg line='-o -e "[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}[~alpha0-9]\{0,\}" ${deb.versionfile}'
+        <arg line='-o -e "[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}[~alpharc0-9]\{0,\}" ${deb.versionfile}'
             />
     </exec>
     <property name="deb.builddir" value="${basedir}/rel" />
-    <property name="deb.outputfile" value="${deb.builddir}/HUGnetScripts_${deb.version}${deb.release}_all.deb" />
     <property name="deb.postloc" value="hugnet.int.hugllc.com:/home/reprepro/incoming/" />
+
+    <include file="${basedir}/build/deb_common.xml"/>
+    <include file="${basedir}/build/deb_server.xml"/>
+    <include file="${basedir}/build/deb_datacollector.xml"/>
+    <include file="${basedir}/build/deb_misc.xml"/>
 
     <target name="clean" description="Clean up and create artifact directories">
         <delete dir="${deb.staging}" failonerror="false"/>
@@ -26,56 +29,13 @@
         </delete>
     </target>
 
-    <target name="setup" description="Copy all of the files to build the deb">
-        <echo>Setting up for HUGnetScripts 'v${deb.version}'</echo>
+    <target name="setup" depends="common.setup,server.setup,datacollector.setup,misc.setup" />
+    <target name="deb" depends="common.deb,server.deb,datacollector.deb,misc.deb" />
+    <target name="post" depends="build,common.post,server.post,datacollector.post,misc.post" />
+    <target name="testpost" depends="build,common.testpost,server.testpost,datacollector.testpost,misc.testpost" />
+    <target name="rcpost" depends="build,common.rcpost,server.rcpost,datacollector.rcpost,misc.rcpost" />
 
-        <mkdir dir="${deb.staging}"/>
-        <copy todir="${deb.staging}">
-            <fileset dir="${deb.setup}"/>
-        </copy>
-        <mkdir dir="${deb.staging}/home/hugnet/Scripts"/>
-        <copy todir="${deb.staging}/home/hugnet/Scripts">
-            <fileset dir="${deb.source}"/>
-        </copy>
-        <mkdir dir="${deb.staging}${deb.prefix}/bin"/>
-        <copy todir="${deb.staging}${deb.prefix}/bin">
-            <fileset dir="${deb.bin}"/>
-        </copy>
-        <chmod dir="${deb.staging}${deb.prefix}/bin" perm="ugo+rx"
-               includes="*"/>
-        <chmod file="${deb.staging}/DEBIAN/postinst" perm="ugo+rx"/>
-        <chmod file="${deb.staging}/DEBIAN/prerm" perm="ugo+rx"/>
-        <replaceregexp file="${deb.staging}/DEBIAN/control"
-                    match="%VERSION%"
-                    replace="${deb.version}"
-        />
-    </target>
-    <target name="deb" description="build the deb">
-        <mkdir dir="${deb.builddir}"/>
-        <exec executable="dpkg" failonerror="true">
-            <arg line="-b ${deb.staging}
-                       ${deb.outputfile}"/>
-        </exec>
-    </target>
-    <target name="sign" description="sign the deb">
-        <exec executable="dpkg-sig" failonerror="true" dir="${deb.builddir}">
-            <arg line="-s builder
-                       ${deb.outputfile}"/>
-        </exec>
-    </target>
-    <target name="post" description="post the deb" depends="build">
-        <exec executable="rsync" failonerror="true" dir="${deb.builddir}">
-            <arg line="-av ${deb.outputfile}
-                        ${deb.postloc}main/"/>
-        </exec>
-    </target>
-    <target name="testpost" description="post the deb" depends="build">
-        <exec executable="rsync" failonerror="true" dir="${deb.builddir}">
-            <arg line="-av ${deb.outputfile}
-                        ${deb.postloc}testing/"/>
-        </exec>
-    </target>
-    <target name="postclean" description="build the deb">
+    <target name="postclean">
         <delete dir="${deb.staging}"/>
     </target>
     <target name="build" depends="clean,setup,deb"/>
