@@ -1,0 +1,148 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007-2011 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** HUGnet code */
+//require_once dirname(__FILE__).'/../head.inc.php';
+/** Packet log include stuff */
+require_once 'HUGnetLib/ui/Daemon.php';
+require_once 'HUGnetLib/ui/Args.php';
+
+print "monitor.php\n";
+print "Starting...\n";
+
+$config = &\HUGnet\ui\Args::factory(
+    $argv, $argc,
+    array(
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+    )
+);
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = &\HUGnet\ui\Daemon::factory($config);
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+Reads out an endpoint and crunches the numbers.
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
+Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+
+$devices = explode(",", $config->i); //array(0x67, 0x68, 0xFE);
+
+$devInfo = array();
+$reply = 0;
+$sent = 0;
+$packets = array();
+$counts = array();
+foreach (array_keys($devices) as $key) {
+    $devices[$key] = hexdec($devices[$key]);
+    print sprintf("%06X", $devices[$key])." ";
+    $dev = $cli->system()->device($devices[$key]);
+    for ($i = 0; $i < $dev->get("physicalSensors"); $i++) {
+        print $dev->sensor($i)->get("unitType")." ";
+    }
+    print "\n";
+}
+$start = time();
+while ($cli->loop()) {
+    shuffle($devices);
+    foreach ($devices as $dev) {
+        if (!isset($packets[$dev])) {
+            $ret = $cli->system()->device($dev)->network()->poll(
+                function ($pkt)
+                {
+                    if (!is_object($pkt) || strlen($pkt->Reply()) == 0) {
+                        return;
+                    }
+                    global $packets, $prev;
+                    global $cli;
+                    $dev = hexdec($pkt->To());
+                    $device = $cli->system()->device($dev);
+                    $data = $device->decodeData(
+                        $pkt->Reply(),
+                        $pkt->Command(),
+                        0,
+                        (array)$prev[$dev]
+                    );
+                    $d = $device->historyFactory($data);
+                    if ($data["DataIndex"] !== $prev[$dev]["DataIndex"]) {
+                        printf("%06X ", $dev);
+                        print date("Y-m-d H:i:s ").$data["DataIndex"]." ";
+                        for ($i = 0; $i < $device->get("physicalSensors"); $i++) {
+                            $var = "Data".$i;
+                            $val = $d->get($var);
+                            if (is_null($val)) {
+                                print "null ";
+                            } else {
+                                printf("%.4f ", $val);
+                            }
+                        }
+                        print "\n";
+                        $prev[$dev] = $data;
+                    }
+                },
+                array(
+                    //"find" => false, "tries" => 1
+                )
+            );
+            if ($ret) {
+                $packets[$dev] = time();
+            }
+        } else if ((time() - $packets[$dev]) > 10) {
+            unset($packets[$dev]);
+        }
+    }
+    $cli->system()->main();
+}
+print "Finished\n";
+
+
+?>
