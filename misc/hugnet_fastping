@@ -7,7 +7,7 @@
  *
  * <pre>
  * Scripts related to HUGnet
- * Copyright (C) 2007-2012 Hunt Utilities Group, LLC
+ * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
  *
  * This program is free software; you can redistribute it and/or
@@ -29,14 +29,15 @@
  * @package    Scripts
  * @subpackage Misc
  * @author     Scott Price <prices@hugllc.com>
- * @author     Jeff Liesmaki <jeffl@hugllc.com>
- * @copyright  2007-2012 Hunt Utilities Group, LLC
+ * @copyright  2007-2011 Hunt Utilities Group, LLC
  * @copyright  2009 Scott Price
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  *
  */
+/** HUGnet code */
+//require_once dirname(__FILE__).'/../head.inc.php';
 /** Packet log include stuff */
 require_once 'HUGnetLib/HUGnetLib.php';
 
@@ -44,25 +45,29 @@ $config = HUGnetLib::Args(
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
         "D" => array("name" => "Data", "type" => "string", "args" => true),
+        "c" => array("name" => "count", "type" => "int", "args" => true, "default" => 10000),
+        "F" => array("name" => "find", "type" => "bool", "default" => false),
     ),
     "args",
     $argv
 );
-
 $config->addLocation("/usr/share/HUGnet/config.ini");
-$cli = HUGnetLib::ui($config, "CLI");
+$cli = HUGnetLib::ui($config, "Daemon");
 $cli->help(
     $cli->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
 HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
 ."HUGnetLib v".$cli->system()->get("version")."
 
-Sends a series of DAC set packets to HUGnetLab endpoints.
+Sends ping packets to endpoints.
 
-Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
+Usage: ".$cli->system()->get("program")." -i <DeviceID> [-vF] [-f <file>] [-c <count>] [-D <data>]
 Arguments:
     -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
     -v              Increment the verbosity
+    -F              Use 'find ping' instead of standard ping
+    -c <count>      Send <count> pings
+    -D <data>       ASCII hex data to send in the ping.  Up to 255 bytes.
     -f <file>       The config file to use",
     $config->h
 );
@@ -72,15 +77,33 @@ if (strlen($config->i) == 0) {
     $cli->out("DeviceID must be specified");
     exit(1);
 }
+$cli->out("Starting ".$cli->system()->get("program"));
 
 $dev = $cli->system()->device(hexdec($config->i));
-$pkt = $dev->action()->config();
-if (!$pkt) {
-    $cli->out("Failed");
-    exit(-1);
+
+for ($i = 0; ($i < $config->c) && $cli->loop(); $i++) {
+    $time = microtime(true);
+    $pkt = $dev->network()->ping(
+        $config->F,
+        null,
+        null,
+        array(
+            "tries" => 1,
+            "find" => false,
+        )
+    );
+    $time = microtime(true) - $time;
+    if (is_string($pkt->reply())) {
+        print $pkt->length()." bytes from ".$pkt->to()." seq=$i ";
+        print "ttl=".$dev->get("packetTimeout")." time=".round($time, 4)."\n";
+    } else {
+        print "No Reply seq $i\n";
+    }
+    //$sleep = (1 - $time) * 1000000;
+    //if ($sleep > 0) {
+    //    usleep($sleep);
+   // }
 }
-
-$cli->out("Finished");
+print "Finished\n";
 exit(0);
-
 ?>

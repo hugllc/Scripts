@@ -42,8 +42,18 @@ require_once 'HUGnetLib/HUGnetLib.php';
 
 $config = HUGnetLib::Args(
     array(
-        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
-        "D" => array("name" => "Data", "type" => "string", "args" => true),
+        "i" => array(
+            "name" => "DeviceID", "type" => "string", "args" => true
+        ),
+        "D" => array(
+            "name" => "Data", "type" => "int", "args" => true, "default" => 0
+        ),
+        "H" => array(
+            "name" => "High", "type" => "int", "args" => true, "default" => 0
+        ),
+        "L" => array(
+            "name" => "Low", "type" => "int", "args" => true, "default" => 0
+        ),
     ),
     "args",
     $argv
@@ -57,16 +67,18 @@ Copyright Hunt Utilities Group, LLC
 HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
 ."HUGnetLib v".$cli->system()->get("version")."
 
-Sends a series of DAC set packets to HUGnetLab endpoints.
+Sets the level for the level holder.
 
-Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
+Usage: ".$cli->system()->get("program")." -i <DeviceID> -h <Upper Limit> -l <Lower Limit> [-v] [-f <file>]
 Arguments:
-    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
-    -v              Increment the verbosity
-    -f <file>       The config file to use",
+    -i <DeviceID>    The device ID to use.  Should be a hex value up to 6 digits
+    -H <Upper Limit> The highest allowed value on the input
+    -L <Lower Limit> The lowest allowed value on the input
+    -v               Increment the verbosity
+    -f <file>        The config file to use",
     $config->h
 );
-if (strlen($config->i) == 0) {
+if ((strlen($config->i) == 0) || ($config->L <= $config->H)) {
     $cli->help();
     $cli->out();
     $cli->out("DeviceID must be specified");
@@ -140,12 +152,12 @@ $maxVoltage = 1.2;
 
 $levelHolder = array(
     "Driver" => 0x01,
-    "Priority" => 64,
-    "Step" => 0x1,
-    "Data" => $config->D,
+    "Priority" => 34,
+    "Step" => 0x2,
+    "Data" => explode(",", $config->D),
     "Control" => $control,
-    "Low" => 1717235,
-    "High" => 1717435,
+    "Low" => explode(",", $config->L),
+    "High" => explode(",", $config->H),
     "Min" => (int)($CGNDOffset / $stepVoltage),
     "Max" => (int)(($maxVoltage + $CGNDOffset) / $stepVoltage)
 );
@@ -176,24 +188,7 @@ if ($process < 0) {
     $cli->out("No LevelHolder ProcessTable found.");
     if ($open >= 0) {
         $cli->out("Attempting to add one.");
-        $data = sprintf(
-            "%02X%02X%02X%02X%02X",
-            $levelHolder["Driver"],
-            $levelHolder["Priority"],
-            $levelHolder["Step"],
-            $levelHolder["Data"],
-            $levelHolder["Control"]
-        );
-        foreach(array("Low", "High", "Min", "Max") as $key) {
-            $data .= sprintf(
-                "%02X%02X%02X%02X",
-                ($levelHolder[$key] >> 0) & 0xFF,
-                ($levelHolder[$key] >> 8) & 0xFF,
-                ($levelHolder[$key] >> 16) & 0xFF,
-                ($levelHolder[$key] >> 24) & 0xFF
-            );
-
-        }
+        $data = getProcessStr($levelHolder);
 
         $pkt = $dev->action()->send(
             array(
@@ -222,50 +217,89 @@ if ($reboot) {
     $cli->out("Rebooting.");
 }
 
-/* save input control voltage */
-/*
-$ctlVoltage = (float)$config->D;
 
-
-$CGNDOffset = 0.95;
-$stepVoltage = 2.5 / 4095;
-
-$cli->out("DAC Control Voltage: ".sprintf("%4.2f", $ctlVoltage));
-
-$ctlVoltage += $CGNDOffset;
-
-$steps = (int)($ctlVoltage / $stepVoltage);
-
-$dacVal = sprintf(
-    "%02X%02X%02X%02X",
-    ($steps & 0xFF), (($steps >> 8) & 0xFF),
-    (($steps >> 16) & 0xFF), (($steps >> 24) & 0xFF)
-);
-
+$cli->out("Setting the level holder in RAM (Changes won't be saved on reboot)");
 $pkt = $dev->action()->send(
     array(
-        "Command" => '0x64',
-        "Data" => sprintf("%02X", $control).$dacVal,
+        "Command" => 'SETPROCESSTABLERAM',
+        "Data" => sprintf("%02X", $process).getProcessStr($levelHolder),
     )
 );
 if (is_object($pkt)) {
     $reply = $pkt->Reply();
     if (is_null($reply)) {
-        print "No Reply\r\n";
+        $cli->out("No Reply");
     } else if (!empty($reply)) {
-        $dacOut = hexdec(substr($reply, 0, 2)) + (hexdec(substr($reply, 2, 2)) << 8);
-        $dacV = $dacOut * $stepVoltage;
-        $cli->out("Confirm ".round($dacV, 4)." V to AGND");
-        $cli->out("Confirm ".round($dacV - $CGNDOffset, 4)." V to CGND");
+        $cli->out("Done!");
     } else {
-        print "Empty Reply\r\n";
+        $cli->out("Empty Reply");
     }
 } else {
     $cli->out("No Reply");
 }
-*/
 
 print "Finished\n";
 
 exit(0);
+
+
+/**
+ * This builds the string for the levelholder.
+ *
+ * @param array Values This is the values to use
+ *
+ * @return string The string
+ */
+function getProcessStr($Values)
+{
+    $data  = "";
+    $data .= getProcessStrInt8($Values["Driver"]);
+    $data .= getProcessStrInt8($Values["Priority"]);
+    $data .= getProcessStrInt8($Values["Control"]);
+    $data .= getProcessStrInt8($Values["Step"]);
+    $data .= getProcessStrInt32($Values["Min"]);
+    $data .= getProcessStrInt32($Values["Max"]);
+    for ($i = 0; $i < count($Values["Data"]); $i++) {
+        $data .= getProcessStrInt8($Values["Data"][$i]);
+        $data .= getProcessStrInt32($Values["Low"][$i]);
+        $data .= getProcessStrInt32($Values["High"][$i]);
+    }
+
+    return $data;
+}
+/**
+ * This builds the string for the levelholder.
+ *
+ * @param int $val The value to use
+ *
+ * @return string The string
+ */
+function getProcessStrInt32($val)
+{
+    $val = (int)$val;
+    return sprintf(
+        "%02X%02X%02X%02X",
+        ($val >> 0) & 0xFF,
+        ($val >> 8) & 0xFF,
+        ($val >> 16) & 0xFF,
+        ($val >> 24) & 0xFF
+    );
+
+}
+/**
+ * This builds the string for the levelholder.
+ *
+ * @param int $val The value to use
+ *
+ * @return string The string
+ */
+function getProcessStrInt8($val)
+{
+    $val = (int)$val;
+    return sprintf(
+        "%02X",
+        ($val >> 0) & 0xFF,
+    );
+
+}
 ?>
