@@ -1,56 +1,50 @@
 # _HUGnet Scripts_
 
 This is the code that is behind the scenes, running the HUGnet system.  These scripts
-    do polling of data, checking configurations, updating the master server with changes,
-    and various other things.
+do polling of data, checking configurations, updating the master server with changes,
+and various other things.
+
 
 ## Project Setup
 
-_How do I, as a developer, start working on the project?_
+### Directory Structure
+This project is broken up into only a couple of directories:
+1. The include/ directory must be put into the include path as HUGnetScripts/
+2. The bin/ directory contains all of the normally installed scripts
+3. The misc/ directory contains scripts that don't have any other place
+4. The test directory contains the unit tests
 
-1. _What dependencies does it have (where are they expressed) and how do I install them?_
-2. _How can I see the project working before I change anything?_
+### Requirements
+
+The scripts requires HUGnetLib/src/php to be installed in the php include path as HUGnetLib/.
+All of the dependencies for HUGnetLib must be installed.
 
 ## Testing
 
-_How do I run the project's automated tests?_
+There is currently no unit testing for this project.  This is one of the items on the todo list
 
-### Unit Tests
-
-1. `rake spec`
-
-### Integration Tests
-
-1. _Run other local services / provide credentials for external services._
-2. `rake spec:integration`
 
 ## Deploying
 
-### _How to setup the deployment environment_
+### Ubuntu
+Currently there are only build scripts for building .deb files for Ubuntu.  They are
+created by running 'ant deb'.  The debs will be in the ./rel directory.
 
-- _Required heroku addons, packages, or chef recipes._
-- _Required environment variables or credentials not included in git._
-- _Monitoring services and logging._
-
-### _How to deploy_
 
 ## Troubleshooting & Useful Tools
 
-_Examples of common tasks_
-
-> e.g.
->
-> - How to make curl requests while authenticated via oauth.
-> - How to monitor background jobs.
-> - How to run the app through a proxy.
+Most of the code actually resides in HUGnetLib.  These scripts are just a command line
+front end for HUGnetLib.
 
 ## Contributing changes
+Changes can be contributed by either:
+1. Using git to create patches and emailing them to patches@hugllc.com
+2. Creating another github repository to make your changes to and submitting pull requests.
 
-- _Internal git workflow_
-- _Pull request guidelines_
-- _Tracker project_
-- _Google group_
-- _irc channel_
-- _"Please open github issues"_
+## Filing Bug Reports
+The bug tracker for this project is at http://dev.hugllc.com/bugs/ .  If you want an
+account on that site, please email prices@hugllc.com.
 
 ## License
+This is released under the GNU GPL V3.  You can find the complete text in the
+LICENSE file, or at http://opensource.org/licenses/gpl-3.0.html
