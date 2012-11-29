@@ -10,10 +10,14 @@ and various other things.
 ### Directory Structure
 This project is broken up into only a couple of directories:
 
-1. The include/ directory must be put into the include path as HUGnetScripts/
-2. The bin/ directory contains all of the normally installed scripts
-3. The misc/ directory contains scripts that don't have any other place
-4. The test directory contains the unit tests
+- The include/ directory must be put into the include path as HUGnetScripts/
+- The bin/ directory contains all of the normally installed scripts
+- The misc/ directory contains scripts that don't have any other place
+- The test/ directory contains the unit tests
+- The contrib/ directory contains other useful stuff not written by or directly for this project
+- The build/ directory contains build scripts, and other things useful for building the project
+- The deb/ directory contains the base files for the debs
+- The util/ directory contains utilities that are not normally installed scripts.
 
 ### Requirements
 
