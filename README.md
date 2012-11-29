@@ -9,6 +9,7 @@ and various other things.
 
 ### Directory Structure
 This project is broken up into only a couple of directories:
+
 1. The include/ directory must be put into the include path as HUGnetScripts/
 2. The bin/ directory contains all of the normally installed scripts
 3. The misc/ directory contains scripts that don't have any other place
@@ -38,6 +39,7 @@ front end for HUGnetLib.
 
 ## Contributing changes
 Changes can be contributed by either:
+
 1. Using git to create patches and emailing them to patches@hugllc.com
 2. Creating another github repository to make your changes to and submitting pull requests.
 
