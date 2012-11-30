@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests and serializes endpoints
+ * Tests, serializes, and loads bootloader into HUGnetLab endpoints
  *
  * PHP Version 5
  *
@@ -27,14 +27,21 @@
  * @category   Scripts
  * @package    Scripts
  * @subpackage Test
- * @author     Scott Price <prices@hugllc.com>
- * @copyright  2007-2011 Hunt Utilities Group, LLC
- * @copyright  2009 Scott Price
+ * @author     Jeff Liesmaki <jeffl@hugllc.com>
+ * @copyright  2007-2012 Hunt Utilities Group, LLC
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @version    SVN: $Id$
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
  
+/****************************************************************************
+* List below are the objectives for this PHP script:
+*        I.  Initialize the JTAG emulator
+*        II. Load and run test firmware
+*        III Program endpoint with serial number and hardware version
+*        IV  Load the bootloader program
+*/
+
 $GatewayKey = 3;
 define("EPTEST_PARTNUMBER", "0039-26-07-P");
 
