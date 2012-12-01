@@ -1,13 +1,12 @@
 Package: hugnetscripts
 Version: %VERSION%
-Section: hugnet
-Priority: optional
+Section: contrib/science
+Priority: extra
 Architecture: all
 Essential: no
 Depends: php5-sqlite, php5-cli, php5-mysql, hugnetlib (>>0.9.10), hugnetfirmware, openntpd
 Maintainer: Scott Price [prices@hugllc.com]
 Provides: hugnetscripts
 Breaks: hugnetscripts-common
-Description:   This is the HUGnet scripts.
- They are the core of the system that does the actual
- monitoring and control of the HUGnet devices.
+Description: Common files for the HUGnet Scripts
+ These are the common files for HUGnet Scripts.

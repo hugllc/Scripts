@@ -1,13 +1,13 @@
 Package: hugnetscripts-datacollector
 Version: %VERSION%
-Section: hugnet
-Priority: optional
+Section: contrib/science
+Priority: extra
 Architecture: all
 Essential: no
 Depends: hugnetscripts (= %VERSION% )
 Recommends: php5-mysqli
 Maintainer: Scott Price [prices@hugllc.com]
 Provides: hugnetscripts-datacollector
-Description:   This is the HUGnet scripts.
- They are the core of the system that does the actual
- monitoring and control of the HUGnet devices.
+Description: The init scripts required for a datacollector
+ This installs the init scripts that are required to run the right things for a
+ datacollector.

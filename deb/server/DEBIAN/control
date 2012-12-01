@@ -1,13 +1,13 @@
 Package: hugnetscripts-server
 Version: %VERSION%
-Section: hugnet
-Priority: optional
+Section: contrib/science
+Priority: extra
 Architecture: all
 Essential: no
 Depends: hugnetscripts (= %VERSION% )
 Recommends: php5-mysqli
 Maintainer: Scott Price [prices@hugllc.com]
 Provides: hugnetscripts-server
-Description:   This is the HUGnet scripts.
- They are the core of the system that does the actual
- monitoring and control of the HUGnet devices.
+Description: These are the scripts required for a HUGnet Data Server
+ This package installs the init scripts to run the correct daemons for a HUGnet
+ Data Server.
