@@ -39,8 +39,10 @@
 *        I.  Initialize the JTAG emulator - okay
 *        II. Load and run test firmware
 *            A. Should initial test load enough firmware to send and 
-*               and receive packets through serial port?
-*        III Program endpoint with serial number and hardware versio
+*               and receive packets through serial port? Yes.
+*            B. To send and receive packets a test serial number will
+*               need to be programmed in.
+*        III Program endpoint with serial number and hardware version
 *            A. Does this require a modification of program.cfg for 
 *                openocd?
 *        IV  Load the bootloader program
@@ -51,13 +53,18 @@
 
 print "Hello World, lets try starting up the JTAG through openocd!\n";
 
-$Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937test/program.cfg";
+/* $Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937test/program.cfg";
 
-exec($Prog, $out, $return);
+exec($Prog, $out, $return);*/
 
-print "Press the reset on the emulator adaptor board.\j";
+print "Press the reset on the emulator adaptor board.\n";
 $response = readline( "\nIs the amber LED on? (y/n): ");
 
+if (($response[0] == 'y') || ($response[0] == 'Y')){
+    print "yes!";
+} else {
+    print "no!";
+}
 
 
 
