@@ -46,13 +46,13 @@ $config = HUGnetLib::Args(
             "name" => "DeviceID", "type" => "string", "args" => true
         ),
         "D" => array(
-            "name" => "Data", "type" => "int", "args" => true, "default" => 0
+            "name" => "Data", "type" => "string", "args" => true, "default" => 0
         ),
         "H" => array(
-            "name" => "High", "type" => "int", "args" => true, "default" => 0
+            "name" => "High", "type" => "string", "args" => true, "default" => 0
         ),
         "L" => array(
-            "name" => "Low", "type" => "int", "args" => true, "default" => 0
+            "name" => "Low", "type" => "string", "args" => true, "default" => 0
         ),
     ),
     "args",
@@ -69,7 +69,7 @@ HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  
 
 Sets the level for the level holder.
 
-Usage: ".$cli->system()->get("program")." -i <DeviceID> -h <Upper Limit> -l <Lower Limit> [-v] [-f <file>]
+Usage: ".$cli->system()->get("program")." -i <DeviceID> -H <Upper Limit> -L <Lower Limit> [-v] [-f <file>]
 Arguments:
     -i <DeviceID>    The device ID to use.  Should be a hex value up to 6 digits
     -H <Upper Limit> The highest allowed value on the input
@@ -78,7 +78,7 @@ Arguments:
     -f <file>        The config file to use",
     $config->h
 );
-if ((strlen($config->i) == 0) || ($config->L <= $config->H)) {
+if ((strlen($config->i) == 0) || ($config->L >= $config->H)) {
     $cli->help();
     $cli->out();
     $cli->out("DeviceID must be specified");
@@ -188,7 +188,7 @@ if ($process < 0) {
     $cli->out("No LevelHolder ProcessTable found.");
     if ($open >= 0) {
         $cli->out("Attempting to add one.");
-        $data = getProcessStr($levelHolder);
+        $data = getProcessStr($levelHolder, $dev);
 
         $pkt = $dev->action()->send(
             array(
@@ -222,7 +222,7 @@ $cli->out("Setting the level holder in RAM (Changes won't be saved on reboot)");
 $pkt = $dev->action()->send(
     array(
         "Command" => 'SETPROCESSTABLERAM',
-        "Data" => sprintf("%02X", $process).getProcessStr($levelHolder),
+        "Data" => sprintf("%02X", $process).getProcessStr($levelHolder, $dev),
     )
 );
 if (is_object($pkt)) {
@@ -246,11 +246,12 @@ exit(0);
 /**
  * This builds the string for the levelholder.
  *
- * @param array Values This is the values to use
+ * @param array  $Values This is the values to use
+ * @param object &$dev   This is the device to use
  *
  * @return string The string
  */
-function getProcessStr($Values)
+function getProcessStr($Values, &$dev)
 {
     $data  = "";
     $data .= getProcessStrInt8($Values["Driver"]);
@@ -259,12 +260,17 @@ function getProcessStr($Values)
     $data .= getProcessStrInt8($Values["Step"]);
     $data .= getProcessStrInt32($Values["Min"]);
     $data .= getProcessStrInt32($Values["Max"]);
+    $channels = $dev->channels()->toArray();
     for ($i = 0; $i < count($Values["Data"]); $i++) {
-        $data .= getProcessStrInt8($Values["Data"][$i]);
-        $data .= getProcessStrInt32($Values["Low"][$i]);
-        $data .= getProcessStrInt32($Values["High"][$i]);
+        $chan   = $Values["Data"][$i];
+        $data  .= getProcessStrInt8($chan);
+        $sensor = &$dev->sensor((int)$channels[$chan]["sensor"]);
+        $index  = (int)$channels[$chan]["index"];
+        $data  .= $sensor->encodeData((float)$Values["Low"][$i], $index);
+        $data  .= $sensor->encodeData((float)$Values["High"][$i], $index);
+        //$data .= getProcessStrInt32($Values["Low"][$i]);
+        //$data .= getProcessStrInt32($Values["High"][$i]);
     }
-
     return $data;
 }
 /**
@@ -298,7 +304,7 @@ function getProcessStrInt8($val)
     $val = (int)$val;
     return sprintf(
         "%02X",
-        ($val >> 0) & 0xFF,
+        ($val >> 0) & 0xFF
     );
 
 }
