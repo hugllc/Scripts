@@ -46,13 +46,13 @@ $config = HUGnetLib::Args(
             "name" => "DeviceID", "type" => "string", "args" => true
         ),
         "D" => array(
-            "name" => "Data", "type" => "string", "args" => true, "default" => 0
+            "name" => "Data", "type" => "string", "args" => true
         ),
-        "H" => array(
-            "name" => "High", "type" => "string", "args" => true, "default" => 0
+        "V" => array(
+            "name" => "Value", "type" => "string", "args" => true, "default" => 0
         ),
-        "L" => array(
-            "name" => "Low", "type" => "string", "args" => true, "default" => 0
+        "T" => array(
+            "name" => "Low", "type" => "string", "args" => true, "default" => 0.01
         ),
     ),
     "args",
@@ -69,19 +69,32 @@ HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  
 
 Sets the level for the level holder.
 
-Usage: ".$cli->system()->get("program")." -i <DeviceID> -H <Upper Limit> -L <Lower Limit> [-v] [-f <file>]
+Usage: ".$cli->system()->get("program")." -i <DeviceID> -V <Value> -D <DataChannnel> [-T <tolerance>] [-v] [-f <file>]
 Arguments:
     -i <DeviceID>    The device ID to use.  Should be a hex value up to 6 digits
-    -H <Upper Limit> The highest allowed value on the input
-    -L <Lower Limit> The lowest allowed value on the input
+    -D <DataChannel> Comma separated list of the datachannels to use
+    -V <Value>       Comma separated list of the values to hold the datachannel at
+    -T <Tolerance>   Tolerance on the values
     -v               Increment the verbosity
     -f <file>        The config file to use",
     $config->h
 );
-if ((strlen($config->i) == 0) || ($config->L >= $config->H)) {
+if (strlen($config->i) == 0) {
     $cli->help();
     $cli->out();
     $cli->out("DeviceID must be specified");
+    exit(1);
+}
+if (strlen($config->D) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DataChannel must be specified");
+    exit(1);
+}
+if (strlen($config->V) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Value(s) must be specified");
     exit(1);
 }
 
@@ -146,6 +159,15 @@ if ($control < 0) {
     $cli->out("Found a DAC setup on control $control");
 }
 
+$setPoints = explode(",", $config->V);
+$tolerance = (float)$config->T;
+$lows  = array();
+$highs = array();
+foreach ($setPoints as $key => $value) {
+    $lows[$key] = $value - $tolerance;
+    $highs[$key] = $value + $tolerance;
+}
+
 $CGNDOffset = 0.95;
 $stepVoltage = 2.5 / 4095;
 $maxVoltage = 1.2;
@@ -156,8 +178,8 @@ $levelHolder = array(
     "Step" => 0x2,
     "Data" => explode(",", $config->D),
     "Control" => $control,
-    "Low" => explode(",", $config->L),
-    "High" => explode(",", $config->H),
+    "Low" => $lows,
+    "High" => $highs,
     "Min" => (int)($CGNDOffset / $stepVoltage),
     "Max" => (int)(($maxVoltage + $CGNDOffset) / $stepVoltage)
 );
