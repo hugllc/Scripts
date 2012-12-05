@@ -74,9 +74,13 @@ if (pingEndpoint() == true) {
 /******************************************************
 * The next step is to see if I can program or erase 
 * the flash area where the serial number and hardware
-* numbers are stored.
-/
+* numbers are stored.  The data is 10 bytes starting 
+* at 0x87600 in flash.
+*/
 
+$SerialandHW = read_SNandHW();
+
+print "Serial and HW number = ".$SerialandHW."\n";
 
 /* print "Press the reset on the emulator adaptor board.\n";
 $response = readline( "\nIs the amber LED on? (y/n): ");
@@ -102,76 +106,161 @@ exit  (0);
 
 function pingEndpoint( )
 {
-/** Packet log include stuff */
-require_once 'HUGnetLib/HUGnetLib.php';
+    /** Packet log include stuff */
+    require_once 'HUGnetLib/HUGnetLib.php';
 
-$config = HUGnetLib::Args(
-    array(
-        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
-        "D" => array("name" => "Data", "type" => "string", "args" => true),
-        "c" => array("name" => "count", "type" => "int", "args" => true, "default" => 10000),
-        "F" => array("name" => "find", "type" => "bool", "default" => false),
-    ),
-    "args",
-    $argv
-);
-$config->addLocation("/usr/share/HUGnet/config.ini");
-$cli = HUGnetLib::ui($config, "Daemon");
-$cli->help(
-    $cli->system()->get("program")."
-Copyright Hunt Utilities Group, LLC
-HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
-."HUGnetLib v".$cli->system()->get("version")."
-
-Sends ping packets to endpoints.
-
-Usage: ".$cli->system()->get("program")." -i <DeviceID> [-vF] [-f <file>] [-c <count>] [-D <data>]
-Arguments:
-    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
-    -v              Increment the verbosity
-    -F              Use 'find ping' instead of standard ping
-    -c <count>      Send <count> pings
-    -D <data>       ASCII hex data to send in the ping.  Up to 255 bytes.
-    -f <file>       The config file to use",
-    $config->h
-);
-
-$config->i = 0x20;
-
-$cli->out("Starting ".$cli->system()->get("program"));
-
-$dev = $cli->system()->device($config->i);
-
-for ($i = 0; $i < 10; $i++) {
-    $time = microtime(true);
-    $pkt = $dev->network()->ping(
-        $config->F,
-        null,
-        null,
+    $config = HUGnetLib::Args(
         array(
-            "tries" => 1,
-            "find" => false,
-        )
+            "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+            "D" => array("name" => "Data", "type" => "string", "args" => true),
+            "c" => array("name" => "count", "type" => "int", "args" => true, "default" => 10000),
+            "F" => array("name" => "find", "type" => "bool", "default" => false),
+        ),
+        "args",
+        $argv
     );
-    $time = microtime(true) - $time;
-    if (is_string($pkt->reply())) {
-        print $pkt->length()." bytes from ".$pkt->to()." seq=$i ";
-        print "ttl=".$dev->get("packetTimeout")." time=".round($time, 4)."\n";
-        $result = true;
-        $i = 10; /* exit loop if we get a response */
-    } else {
-        print "No Reply seq $i\n";
-        $result = false;
+    $config->addLocation("/usr/share/HUGnet/config.ini");
+    $cli = HUGnetLib::ui($config, "Daemon");
+    $cli->help(
+        $cli->system()->get("program")."
+    Copyright Hunt Utilities Group, LLC
+    HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+    ."HUGnetLib v".$cli->system()->get("version")."
+
+    Sends ping packets to endpoints.
+
+    Usage: ".$cli->system()->get("program")." -i <DeviceID> [-vF] [-f <file>] [-c <count>] [-D <data>]
+    Arguments:
+        -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+        -v              Increment the verbosity
+        -F              Use 'find ping' instead of standard ping
+        -c <count>      Send <count> pings
+        -D <data>       ASCII hex data to send in the ping.  Up to 255 bytes.
+        -f <file>       The config file to use",
+        $config->h
+    );
+
+    $config->i = 0x20;
+
+    $cli->out("Starting ".$cli->system()->get("program"));
+
+    $dev = $cli->system()->device($config->i);
+
+    for ($i = 0; $i < 10; $i++) {
+        $time = microtime(true);
+        $pkt = $dev->network()->ping(
+            $config->F,
+            null,
+            null,
+            array(
+                "tries" => 1,
+                "find" => false,
+            )
+        );
+        $time = microtime(true) - $time;
+        if (is_string($pkt->reply())) {
+            print $pkt->length()." bytes from ".$pkt->to()." seq=$i ";
+            print "ttl=".$dev->get("packetTimeout")." time=".round($time, 4)."\n";
+            $result = true;
+            $i = 10; /* exit loop if we get a response */
+        } else {
+            print "No Reply seq $i\n";
+            $result = false;
+        }
+        $sleep = (1 - $time) * 1000000;
+        if ($sleep > 0) {
+            usleep($sleep);
+        }
     }
-    $sleep = (1 - $time) * 1000000;
-    if ($sleep > 0) {
-        usleep($sleep);
-    }
-}
 
     return ($result);
 }
 
+/********************************************
+* this function will read the serial number
+* and hardware number from flash.
+*/
 
+function read_SNandHW()
+{
+
+    require_once 'HUGnetLib/HUGnetLib.php';
+
+    $config = HUGnetLib::Args(
+        array(
+            "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+            "D" => array("name" => "Data", "type" => "string", "args" => true),
+            "C" => array(
+                "name" => "Command", "type" => "string", "args" => true,
+                "default" => "FINDPING"
+            ),
+        ),
+        "args",
+        $argv
+    );
+
+    $config->addLocation("/usr/share/HUGnet/config.ini");
+    $cli = HUGnetLib::ui($config, "Daemon");
+    $cli->help(
+        $cli->system()->get("program")."
+    Copyright Hunt Utilities Group, LLC
+    HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+    ."HUGnetLib v".$cli->system()->get("version")."
+
+    Sends arbitrary packets to endpoints.
+
+    Usage: ".$cli->system()->get("program")." -i <DeviceID> [-C <Command>] [-D <data>] [-v] [-f <file>]
+    Arguments:
+        -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+        -C <Command>    Command to send the endpoint.  FINDPING is the default
+        -D <data>       ASCII hex data to send in the ping.  Up to 255 bytes.
+        -v              Increment the verbosity
+        -f <file>       The config file to use",
+        $config->h
+    );
+
+    $config->i = 0x20;
+    $config->C = 0x0c;
+    $config->D = "76000A";
+
+    print "Data is ".$config->D."\n";
+
+
+    $dev = $cli->system()->device($config->i);
+    $pkt = $cli->system()->device($config->i)->action()->send(
+        array(
+            "Command" => $config->C,
+            "Data" => $config->D,
+        ),
+        null,
+        array(
+            "timeout" => $dev->get("packetTimeout")
+        )
+    );
+
+    if (is_object($pkt)) {
+        print "From: ".$pkt->From();
+        print " -> To: ".$pkt->To();
+        print "  Command: ".$pkt->Command();
+        print "  Type: ".$pkt->Type();
+        print "\r\n";
+        $data = $pkt->Data();
+        if (!empty($data)) {
+            print "Data: ".$data."\r\n";
+        }
+        $data = $pkt->Reply();
+        if (is_null($data)) {
+            print "No Reply\r\n";
+            $data = "No Reply";
+        } else if (!empty($data)) {
+            print "Reply Data: ".$data."\r\n";
+        } else {
+            print "Empty Reply\r\n";
+            $data = "Empty Reply";
+        }
+    }
+
+    return ($data);
+}
 
 ?>
