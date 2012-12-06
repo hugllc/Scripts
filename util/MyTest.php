@@ -6,7 +6,7 @@
  *
  * <pre>
  * Scripts related to HUGnet
- * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
+ * Copyright (C) 2007-2012 Hunt Utilities Group, LLC
  * Copyright (C) 2009 Scott Price
  *
  * This program is free software; you can redistribute it and/or
@@ -51,50 +51,126 @@
 */
 
 
-print "Hello World, lets try starting up the JTAG through openocd!\n";
+/***************************************************************************/
+/*                                                                         */
+/*                              M A I N                                    */
+/*                                                                         */
+/***************************************************************************/
 
-/******************************************************
-* Load the test firmware through the JTAG emulator
+/***************************************************************************
+* PHP doesn't seem to have a "main" like C so I just added this comment to 
+* indicate the beginning of the main.
 */
+
+
+print "==== Loading HUGnetLab Test Firmware and Beginning Test ====\n";
+
+/* Load the test firmware through the JTAG emulator */
 $Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937test/program.cfg";
 
 exec($Prog, $out, $return);
 
 
 /******************************************************
-* ping the endpoint with serial number 0x000020
+* ping the endpoint with serial number 0x000020.
+* this will eventually be a function call to test
+* board.
 */
 
-if (pingEndpoint() == true) {
-    print "Yeah! Test passed!\n";
+$testResult = pingEndpoint();
+if ($testResult == true) {
+    print "Board Test passed!\n";
+
+    /* program Serial and Hardware numbers */
+    $retVal = write_SerialNum_HardwareVer();
+    
+    if ($retVal == true) {
+
+        $waitForReset = readline("\nHit the resest and press enter!\n");
+
+        $Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937boot/program.cfg";
+
+        exec($Prog, $out, $return);
+    } else {
+        print"     === Board SN & HW Programming Failed ===\n";
+        print"Please verify serial number and hardware partnumber.\n";
+    }
+
+
 } else {
-    print "Boo! Test failed\n";
+    print "       === Board Test Failed ===\n";
+    print "Please repair board before retesting.\n";
 }
 
-/******************************************************
-* The next step is to see if I can program or erase 
-* the flash area where the serial number and hardware
-* numbers are stored.  The data is 10 bytes starting 
-* at 0x87600 in flash.
+
+print "Test and Program End!\n";
+exit  (0);
+
+
+
+/***************************************************************************/
+/*                                                                         */
+/*                       F U N C T I O N S                                 */
+/*                                                                         */
+/***************************************************************************/
+
+/************************************************************
+* This function reads the input serial number and Hardware
+* version, programs them into flash and then verifies them
+* the programming by reading them out.
 */
 
-$SerialandHW = read_SNandHW();
+function write_SerialNum_HardwareVer()
+{
 
-print "Serial and HW number = ".$SerialandHW."\n";
+    $result = false;
+ 
 
-/* print "Press the reset on the emulator adaptor board.\n";
-$response = readline( "\nIs the amber LED on? (y/n): ");
+   
+    $SNresponse = readline("\nEnter the serial number for this board: ");
+    $SNresponse = str_pad($SNresponse, 10, "0", STR_PAD_LEFT);
 
-if (($response[0] == 'y') || ($response[0] == 'Y')){
-    print "yes!";
-} else {
-    print "no!";
-} */
+    $HWresponse = readline("\nEnter Hardware version (A,B or C): ");
 
+    if ($HWresponse == "A") {
+        $HWresponse = "0039370141";
+    } else if ($HWresponse == "B") {
+        $HWresponse = "0039370142";
+    } else if ($HWresponse == "C") {
+        $HWresponse = "0039370143";
+    } else {
+        $exit = true;
+    }
 
+    $response = $SNresponse.$HWresponse;
 
-print "Finished!\n";
-exit  (0);
+    if (strlen($response) == 20) {
+        $GoProg = readline("\nProgram data is : ".$response." continue (Y/N)? ");
+        if (($GoProg == 'Y') || ($GoProg == 'y')) {
+            $idNum = 0x20;
+            $cmdNum = 0x1c;
+            $dataVal = $response;
+            $replyData = Send_Packet($idNum, $cmdNum, $dataVal);
+            print "\nReply Data : ".$replyData."\n";
+            $result = true;
+        } else {
+            print "Program serial and hardware numbers aborted!\n";
+        }
+    } else {
+        print "Invalid program data, programming aborted!\n";
+    }
+
+    $idNum = 0x20;
+    $cmdNum = 0x0c;
+    $dataVal = "76000A";
+
+    $SerialandHW = Send_Packet($idNum, $cmdNum, $dataVal);
+
+    print "Serial and HW number = ".$SerialandHW."\n";
+
+    return ($result);
+
+}
 
 
 /**************************************
@@ -181,7 +257,7 @@ function pingEndpoint( )
 * and hardware number from flash.
 */
 
-function read_SNandHW()
+function Send_Packet($Sn, $Cmd, $DataVal)
 {
 
     require_once 'HUGnetLib/HUGnetLib.php';
@@ -219,9 +295,9 @@ function read_SNandHW()
         $config->h
     );
 
-    $config->i = 0x20;
-    $config->C = 0x0c;
-    $config->D = "76000A";
+    $config->i = $Sn;
+    $config->C = $Cmd;
+    $config->D = $DataVal;
 
     print "Data is ".$config->D."\n";
 
