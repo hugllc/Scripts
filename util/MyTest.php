@@ -4,6 +4,20 @@
  *
  * PHP Version 5
  *
+ * List below are the objectives for this PHP script:
+ *    I.   Initialize the JTAG emulator
+ *    II.  Load and run test firmware
+ *           A. Test Serial number has been fixed in the test program
+ *              itself to 0x000020.
+ *           B. Initial test is simple response to a ping.
+ *    III. Program endpoint with serial number and hardware version
+ *           A. This will be done through a command to test firmware
+ *              which will cause a flash_write to the correct location.
+ *    IV.  Load the bootloader program
+ *           A. This should use current 003937boot install program.cfg
+ *
+ *
+ *
  * <pre>
  * Scripts related to HUGnet
  * Copyright (C) 2007-2012 Hunt Utilities Group, LLC
@@ -34,21 +48,8 @@
  * @link       https://dev.hugllc.com/index.php/Project:Scripts
  */
  
-/****************************************************************************
-* List below are the objectives for this PHP script:
-*        I.  Initialize the JTAG emulator - okay
-*        II. Load and run test firmware
-*            A. Should initial test load enough firmware to send and 
-*               and receive packets through serial port? Yes.
-*            B. Test Serial number has been set in the test program
-*               itself to 0x000020.
-*        III Program endpoint with serial number and hardware version
-*            A. This will be done through a command to test firmware
-*               which will cause a flash_write to the correct location.
-*        IV  Load the bootloader program
-*            A. This should use current 003937boot install program.cfg
-*
-*/
+
+ require_once 'HUGnetLib/HUGnetLib.php';
 
 
 /***************************************************************************/
@@ -58,7 +59,7 @@
 /***************************************************************************/
 
 /***************************************************************************
-* PHP doesn't seem to have a "main" like C so I just added this comment to 
+* PHP doesn't seem to have a "main" like "C" so I just added this comment to 
 * indicate the beginning of the main.
 */
 
@@ -70,14 +71,15 @@ $Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937test/program.c
 
 exec($Prog, $out, $return);
 
-
-/******************************************************
+/**
+******************************************************
 * ping the endpoint with serial number 0x000020.
 * this will eventually be a function call to test
 * board.
 */
 
 $testResult = pingEndpoint();
+
 if ($testResult == true) {
     print "Board Test passed!\n";
 
@@ -114,17 +116,23 @@ exit  (0);
 /*                                                                         */
 /***************************************************************************/
 
-/************************************************************
-* This function reads the input serial number and Hardware
-* version, programs them into flash and then verifies them
-* the programming by reading them out.
-*/
+
+/**
+ ***********************************************************
+ * @brief Write Serial Number and Hardware Version Routine
+ * 
+ * This function reads the input serial number and hardware
+ * version, programs them into flash, and then verifies the
+ * the programming by reading the numbers out.
+ *
+ * @return boolean result, true if pass, false if fail.
+ *
+ */
 
 function write_SerialNum_HardwareVer()
 {
 
     $result = false;
- 
 
    
     $SNresponse = readline("\nEnter the serial number for this board: ");
@@ -155,9 +163,11 @@ function write_SerialNum_HardwareVer()
             $result = true;
         } else {
             print "Program serial and hardware numbers aborted!\n";
+            $result = false;
         }
     } else {
         print "Invalid program data, programming aborted!\n";
+        $result = false;
     }
 
     $idNum = 0x20;
@@ -173,17 +183,24 @@ function write_SerialNum_HardwareVer()
 }
 
 
-/**************************************
-* This function pings the endpoint 
-* with the test serial number and 
-* checks to see that the endpoint 
-* responds.
-*/
+
+/**
+ ***********************************************************
+ * @brief Send a Ping routine
+ *
+ * This function pings the endpoint
+ * with the test serial number and 
+ * checks to see that the endpoint
+ * responds.
+ *
+ * @return true, if endpoint responds
+ *               otherwise false
+ *
+ */
 
 function pingEndpoint( )
 {
     /** Packet log include stuff */
-    require_once 'HUGnetLib/HUGnetLib.php';
 
     $config = HUGnetLib::Args(
         array(
@@ -222,7 +239,7 @@ function pingEndpoint( )
 
     $dev = $cli->system()->device($config->i);
 
-    for ($i = 0; $i < 10; $i++) {
+    for ($i = 0; $i < 5; $i++) {
         $time = microtime(true);
         $pkt = $dev->network()->ping(
             $config->F,
@@ -238,7 +255,7 @@ function pingEndpoint( )
             print $pkt->length()." bytes from ".$pkt->to()." seq=$i ";
             print "ttl=".$dev->get("packetTimeout")." time=".round($time, 4)."\n";
             $result = true;
-            $i = 10; /* exit loop if we get a response */
+            $i = 5; /* exit loop if we get a response */
         } else {
             print "No Reply seq $i\n";
             $result = false;
@@ -252,15 +269,25 @@ function pingEndpoint( )
     return ($result);
 }
 
-/********************************************
-* this function will read the serial number
-* and hardware number from flash.
-*/
+
+/**
+ ***********************************************************
+ * @brief Send a Packet routine
+ *
+ * This function will send a packet
+ * to an endpoint with a command 
+ * and data.
+ *
+ * @param  $Sn       endpoint serial
+ * @param  $Cmd      hex command number
+ * @param  $DataVal  ascii hex data string  
+ *
+ * @return reply data from endpoint
+ *
+ */
 
 function Send_Packet($Sn, $Cmd, $DataVal)
 {
-
-    require_once 'HUGnetLib/HUGnetLib.php';
 
     $config = HUGnetLib::Args(
         array(
