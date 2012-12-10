@@ -63,49 +63,57 @@
 * indicate the beginning of the main.
 */
 
+$selection = Main_Menu();
 
-print "==== Loading HUGnetLab Test Firmware and Beginning Test ====\n";
+if (($selection == "A") || ($selection == "a")){
 
-/* Load the test firmware through the JTAG emulator */
-$Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937test/program.cfg";
+   $StartSN = Get_Serial_Number();
+   print "==== Loading HUGnetLab Test Firmware and Beginning Test ====\n";
 
-exec($Prog, $out, $return);
+    /* Load the test firmware through the JTAG emulator */
+   /* $Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937test/program.cfg";
 
-/**
-******************************************************
-* ping the endpoint with serial number 0x000020.
-* this will eventually be a function call to test
-* board.
-*/
+    exec($Prog, $out, $return);*/
 
-$testResult = pingEndpoint();
+    /**
+    ******************************************************
+    * ping the endpoint with serial number 0x000020.
+    * this will eventually be a function call to test
+    * board.
+    */
 
-if ($testResult == true) {
-    print "Board Test passed!\n";
+   /* $testResult = pingEndpoint();
 
-    /* program Serial and Hardware numbers */
-    $retVal = write_SerialNum_HardwareVer();
-    
-    if ($retVal == true) {
+    if ($testResult == true) {
+        print "Board Test passed!\n"; */
 
-        $waitForReset = readline("\nHit the resest and press enter!\n");
+        /* program Serial and Hardware numbers */
+     /*   $retVal = write_SerialNum_HardwareVer();
+        
+        if ($retVal == true) {
 
-        $Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937boot/program.cfg";
+            $waitForReset = readline("\nHit the resest and press enter!\n");
 
-        exec($Prog, $out, $return);
+            $Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937boot/program.cfg";
+
+            exec($Prog, $out, $return);
+        } else {
+            print"     === Board SN & HW Programming Failed ===\n";
+            print"Please verify serial number and hardware partnumber.\n";
+        }
+
+
     } else {
-        print"     === Board SN & HW Programming Failed ===\n";
-        print"Please verify serial number and hardware partnumber.\n";
+        print "       === Board Test Failed ===\n";
+        print "Please repair board before retesting.\n";
     }
 
-
+    */
+    print "Test and Program End!\n";
 } else {
-    print "       === Board Test Failed ===\n";
-    print "Please repair board before retesting.\n";
+    print "Exit Test Tool\n\r";
 }
 
-
-print "Test and Program End!\n";
 exit  (0);
 
 
@@ -115,6 +123,107 @@ exit  (0);
 /*                       F U N C T I O N S                                 */
 /*                                                                         */
 /***************************************************************************/
+
+/**
+************************************************************
+* @brief Display Header and Menu Routine
+*
+* This function displays the test and program tool header
+* and a menu which allows you to exit the program.
+*
+* @return void
+*/
+
+function Main_Menu()
+{
+    Clear_Screen();
+    print_header();
+    print "\n\r";
+    print "A ) Test, Serialize and Program\n\r";
+    print "B ) Exit\n\r";
+    print "\n\r";
+    $choice = readline("\n\rEnter Choice(A or B): ");
+    
+    return ($choice);
+
+
+}
+
+/**
+************************************************************
+* @brief Clear Screen Routine
+* 
+* This function clears screen area by outputting 24 carriage 
+* returns and line feeds.
+*
+* @return void
+* 
+*/
+
+function Clear_Screen()
+{
+
+    for ($i=0; $i<24; $i++){
+        print "\n\r";
+    }
+}
+
+
+/**
+************************************************************
+* @brief Print Header Routine
+*
+* The function prints the header box and title.
+*
+* @return void
+*
+*/
+
+function print_header()
+{
+   for ($i=0; $i<41; $i++){
+        print "*";
+    }
+    print "\n\r";
+    print "*                                       *\n\r";
+    print "*    HUGnetLab Test & Program Tool      *\n\r";
+    print "*                                       *\n\r";
+
+    for ($i=0; $i<41; $i++) {
+        print "*";
+    }
+    print "\n\r";
+
+}
+    
+
+/**
+************************************************************
+* @brief Get Starting Serial Number Routine
+*
+* This function asks user to input a starting serial number
+* in the correct format.  The program then uses the serial
+* number for the first board and is able to increment the 
+* value for additional boards.
+*
+* @return $SN the serial number in integer form.
+*/
+
+function Get_Serial_Number()
+{
+    do {
+        Clear_Screen();
+        print "Enter a hex value for the starting serial number\n\r";
+        $SNresponse = readline("in the following format- 0xhhhh: ");
+        print "\n\r";
+        print "Your starting serial number is: ".$SNresponse."\n\r";
+        $response = readline("Is this correct (Y/N): ");
+    } while (($response <> 'Y') && ($response <> 'y'));
+
+    $SN = hexdec($SNresponse);
+
+    return ($SN);
+}
 
 
 /**
