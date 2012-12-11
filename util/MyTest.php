@@ -67,48 +67,61 @@ $selection = Main_Menu();
 
 if (($selection == "A") || ($selection == "a")){
 
-   $StartSN = Get_Serial_Number();
-   print "==== Loading HUGnetLab Test Firmware and Beginning Test ====\n";
+    $exitTest = false;
+    $StartSN = getSerialNumber();
+    $snCounter = 0;
 
-    /* Load the test firmware through the JTAG emulator */
-   /* $Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937test/program.cfg";
+    do {
 
-    exec($Prog, $out, $return);*/
-
-    /**
-    ******************************************************
-    * ping the endpoint with serial number 0x000020.
-    * this will eventually be a function call to test
-    * board.
-    */
-
-   /* $testResult = pingEndpoint();
-
-    if ($testResult == true) {
-        print "Board Test passed!\n"; */
-
-        /* program Serial and Hardware numbers */
-     /*   $retVal = write_SerialNum_HardwareVer();
+        $programSN = $StartSN + $snCounter;
+        print "==== Loading HUGnetLab Test Firmware and Beginning Test ====\n";
         
-        if ($retVal == true) {
 
-            $waitForReset = readline("\nHit the resest and press enter!\n");
 
-            $Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937boot/program.cfg";
+        /* Load the test firmware through the JTAG emulator */
+        $Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937test/program.cfg";
 
-            exec($Prog, $out, $return);
+        exec($Prog, $out, $return);
+
+        /**
+        ******************************************************
+        * ping the endpoint with serial number 0x000020.
+        * this will eventually be a function call to test
+        * board.
+        */
+
+        $testResult = pingEndpoint();
+
+        if ($testResult == true) {
+            print "Board Test passed!\n"; 
+
+            /* program Serial and Hardware numbers */
+            $retVal = writeSerialNumAndHardwareVer($programSN);
+            
+            if ($retVal == true) {
+
+                $snCounter++;
+                $waitForReset = readline("\nHit the resest and press enter!\n");
+
+                $Prog = "~/code/HOS/toolchain/bin/openocd -f ~/code/HOS/src/003937boot/program.cfg";
+
+                exec($Prog, $out, $return);
+            } else {
+                print"     === Board SN & HW Programming Failed ===\n";
+                print"Please verify serial number and hardware partnumber.\n";
+            }
+
+
         } else {
-            print"     === Board SN & HW Programming Failed ===\n";
-            print"Please verify serial number and hardware partnumber.\n";
+            print "       === Board Test Failed ===\n";
+            print "Please repair board before retesting.\n";
         }
 
+        
+        $exitTest = repeatTestMenu();
 
-    } else {
-        print "       === Board Test Failed ===\n";
-        print "Please repair board before retesting.\n";
-    }
+    } while ($exitTest == false);
 
-    */
     print "Test and Program End!\n";
 } else {
     print "Exit Test Tool\n\r";
@@ -136,8 +149,8 @@ exit  (0);
 
 function Main_Menu()
 {
-    Clear_Screen();
-    print_header();
+    clearScreen();
+    printHeader();
     print "\n\r";
     print "A ) Test, Serialize and Program\n\r";
     print "B ) Exit\n\r";
@@ -145,9 +158,37 @@ function Main_Menu()
     $choice = readline("\n\rEnter Choice(A or B): ");
     
     return ($choice);
-
-
 }
+
+
+/**
+************************************************************
+* @brief Repeat Test Menu Routine
+* 
+* This function displays a menu which allows the user to 
+* continue testing and programming another board or exit 
+* the test program.
+*
+* @return boolean exit true or false
+*
+*/
+
+function repeatTestMenu()
+{
+    printHeader();
+    print "\n\r";
+    print "\n\r";
+    $choice = readline("\n\rTest Another Board?(Y or N): ");
+    
+    if (($choice == 'Y') || ($choice == 'y')){
+        $exitVal = false;
+    } else {
+        $exitVal = true;
+    }
+
+    return ($exitVal);
+}
+
 
 /**
 ************************************************************
@@ -160,7 +201,7 @@ function Main_Menu()
 * 
 */
 
-function Clear_Screen()
+function clearScreen()
 {
 
     for ($i=0; $i<24; $i++){
@@ -179,7 +220,7 @@ function Clear_Screen()
 *
 */
 
-function print_header()
+function printHeader()
 {
    for ($i=0; $i<41; $i++){
         print "*";
@@ -209,10 +250,10 @@ function print_header()
 * @return $SN the serial number in integer form.
 */
 
-function Get_Serial_Number()
+function getSerialNumber()
 {
     do {
-        Clear_Screen();
+        clearScreen();
         print "Enter a hex value for the starting serial number\n\r";
         $SNresponse = readline("in the following format- 0xhhhh: ");
         print "\n\r";
@@ -225,6 +266,23 @@ function Get_Serial_Number()
     return ($SN);
 }
 
+/**
+************************************************************
+* @brief Get Hardware Version Routine
+*
+* This function reads the xml file with current hardware
+* versions and allows user to select the hardware version
+* number for the board they are programming.
+*
+* @return $HW the hardware version as a string
+*/
+
+function getHardwareNumber()
+{
+
+    /* not done */
+
+}
 
 /**
  ***********************************************************
@@ -238,14 +296,13 @@ function Get_Serial_Number()
  *
  */
 
-function write_SerialNum_HardwareVer()
+function writeSerialNumAndHardwareVer($progSN)
 {
 
     $result = false;
 
-   
-    $SNresponse = readline("\nEnter the serial number for this board: ");
-    $SNresponse = str_pad($SNresponse, 10, "0", STR_PAD_LEFT);
+    $pgmSN = sprintf("%010X",$progSN); 
+    print "Program Serial Number is:  ".$pgmSN."\n\r";
 
     $HWresponse = readline("\nEnter Hardware version (A,B or C): ");
 
@@ -259,7 +316,7 @@ function write_SerialNum_HardwareVer()
         $exit = true;
     }
 
-    $response = $SNresponse.$HWresponse;
+    $response = $pgm.$HWresponse;
 
     if (strlen($response) == 20) {
         $GoProg = readline("\nProgram data is : ".$response." continue (Y/N)? ");
@@ -285,7 +342,7 @@ function write_SerialNum_HardwareVer()
 
     $SerialandHW = Send_Packet($idNum, $cmdNum, $dataVal);
 
-    print "Serial and HW number = ".$SerialandHW."\n";
+    print "Serial and HW number = ".$SerialandHW."\n"; 
 
     return ($result);
 
