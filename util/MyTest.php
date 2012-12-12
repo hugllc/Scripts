@@ -74,6 +74,8 @@ if (($selection == "A") || ($selection == "a")){
     do {
 
         $programSN = $StartSN + $snCounter;
+        $programHW = getHardwareNumber();
+        print "\n\r";
         print "==== Loading HUGnetLab Test Firmware and Beginning Test ====\n";
         
 
@@ -96,7 +98,7 @@ if (($selection == "A") || ($selection == "a")){
             print "Board Test passed!\n"; 
 
             /* program Serial and Hardware numbers */
-            $retVal = writeSerialNumAndHardwareVer($programSN);
+            $retVal = writeSerialNumAndHardwareVer($programSN, $programHW);
             
             if ($retVal == true) {
 
@@ -279,8 +281,22 @@ function getSerialNumber()
 
 function getHardwareNumber()
 {
+    /* not done - need to access HUGnetLib interface */
+    /* for hardware versions.                        */
 
-    /* not done */
+    $HWver = readline("\n\rEnter Hardware version (A,B or C): ");
+
+    if ($HWver == "A") {
+        $HWnum = "0039370141";
+    } else if ($HWver == "B") {
+        $HWnum = "0039370142";
+    } else if ($HWver == "C") {
+        $HWnum = "0039370143";
+    } else {
+        $HWnum = "0039370141";
+    }
+
+    return ($HWnum);
 
 }
 
@@ -296,7 +312,7 @@ function getHardwareNumber()
  *
  */
 
-function writeSerialNumAndHardwareVer($progSN)
+function writeSerialNumAndHardwareVer($progSN, $progHW)
 {
 
     $result = false;
@@ -304,19 +320,8 @@ function writeSerialNumAndHardwareVer($progSN)
     $pgmSN = sprintf("%010X",$progSN); 
     print "Program Serial Number is:  ".$pgmSN."\n\r";
 
-    $HWresponse = readline("\nEnter Hardware version (A,B or C): ");
 
-    if ($HWresponse == "A") {
-        $HWresponse = "0039370141";
-    } else if ($HWresponse == "B") {
-        $HWresponse = "0039370142";
-    } else if ($HWresponse == "C") {
-        $HWresponse = "0039370143";
-    } else {
-        $exit = true;
-    }
-
-    $response = $pgm.$HWresponse;
+    $response = $pgmSN.$progHW;
 
     if (strlen($response) == 20) {
         $GoProg = readline("\nProgram data is : ".$response." continue (Y/N)? ");
