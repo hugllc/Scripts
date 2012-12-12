@@ -286,10 +286,10 @@ function getProcessStr($Values, &$dev)
     for ($i = 0; $i < count($Values["Data"]); $i++) {
         $chan   = $Values["Data"][$i];
         $data  .= getProcessStrInt8($chan);
-        $sensor = &$dev->sensor((int)$channels[$chan]["sensor"]);
+        $input  = &$dev->input((int)$channels[$chan]["input"]);
         $index  = (int)$channels[$chan]["index"];
-        $data  .= $sensor->encodeData((float)$Values["Low"][$i], $index);
-        $data  .= $sensor->encodeData((float)$Values["High"][$i], $index);
+        $data  .= $input->encodeData((float)$Values["Low"][$i], $index);
+        $data  .= $input->encodeData((float)$Values["High"][$i], $index);
         //$data .= getProcessStrInt32($Values["Low"][$i]);
         //$data .= getProcessStrInt32($Values["High"][$i]);
     }
