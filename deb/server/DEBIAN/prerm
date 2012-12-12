@@ -1,7 +1,5 @@
 #!/bin/bash
 
-service hugnet_router stop 2>&1 > /dev/null
-service hugnet_gatherer stop 2>&1 > /dev/null
-service hugnet_updater stop 2>&1 > /dev/null
+service hugnet_analysis stop 2>&1 > /dev/null
 
-exit $?
+exit 0

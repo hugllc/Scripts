@@ -87,7 +87,7 @@ foreach (array_keys($devices) as $key) {
     print sprintf("%06X", $devices[$key])." ";
     $dev = $cli->system()->device($devices[$key]);
     for ($i = 0; $i < $dev->get("physicalSensors"); $i++) {
-        print $dev->sensor($i)->get("unitType")." ";
+        print $dev->input($i)->get("unitType")." ";
     }
     print "\n";
 }
