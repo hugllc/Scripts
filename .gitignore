@@ -12,3 +12,4 @@ rel/
 *.gz
 config.ini
 config.inc.php
+*.elf
