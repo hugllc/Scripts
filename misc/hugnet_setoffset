@@ -70,7 +70,12 @@ Arguments:
     -s <seconds>       The number of seconds in the history to average
     -D <set value>     The value to set the sensors to.  Defaults to 0
     -v                 Increment the verbosity
-    -f <file>          The config file to use",
+    -f <file>          The config file to use
+
+As an example, if you wanted to set data channels 1, 2 and 3 on board 1004 with
+a zero point of 21.5, reading the last 30 seconds of history you would use:
+
+".$cli->system()->get("program")." -i 1004 -d 1,2,3 -s 30 -D 21.5",
     $config->h
 );
 if (strlen($config->i) == 0) {
