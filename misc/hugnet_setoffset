@@ -44,7 +44,7 @@ $config = HUGnetLib::Args(
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
         "D" => array("name" => "Data", "type" => "string", "args" => true),
-        "n" => array("name" => "inputs", "type" => "string", "args" => true),
+        "d" => array("name" => "inputs", "type" => "string", "args" => true),
         "s" => array("name" => "seconds", "type" => "int", "args" => true),
     ),
     "args",
@@ -66,7 +66,7 @@ the first one.
 Usage: ".$cli->system()->get("program")." -i <DeviceID> -n <inputs> -s <seconds> [-D <set value>] [-v] [-f <file>]
 Arguments:
     -i <DeviceID>      The device ID to use.  Should be a hex value up to 6 digits
-    -n <data channels> A comma separated list of one or more data channels to set
+    -d <data channels> A comma separated list of one or more data channels to set
     -s <seconds>       The number of seconds in the history to average
     -D <set value>     The value to set the sensors to.  Defaults to 0
     -v                 Increment the verbosity
@@ -79,7 +79,7 @@ if (strlen($config->i) == 0) {
     $cli->out("DeviceID must be specified");
     exit(1);
 }
-if (strlen($config->n) == 0) {
+if (strlen($config->d) == 0) {
     $cli->help();
     $cli->out();
     $cli->out("DataChannel(s) must be specified");
@@ -92,7 +92,7 @@ if ($config->s == 0) {
     exit(1);
 }
 
-$chans = explode(",", $config->n);
+$chans = explode(",", $config->d);
 $did = hexdec($config->i);
 $dev = $cli->system()->device($did);
 if ($dev->get("DeviceID") === "000000") {
