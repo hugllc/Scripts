@@ -306,6 +306,18 @@ class EndpointTest extends \HUGnet\ui\Daemon
     {
         $Result = $this->_pingEndpoint(self::TEST_ID);
 
+        if ($Result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = 0x20;
+            $dataVal = 0;
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+            if ($ReplyData == "01") {
+                $Result = true;
+            } else {
+                $Result = false;
+            }
+        }
+
         return $Result;
     }
 
