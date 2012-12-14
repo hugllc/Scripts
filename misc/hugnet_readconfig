@@ -74,6 +74,10 @@ if (strlen($config->i) == 0) {
 }
 
 $dev = $cli->system()->device(hexdec($config->i));
+if ($dev->get("DeviceID") === "000000") {
+    $dev->set("DeviceID", $config->i);
+    $dev->store(true);
+}
 $pkt = $dev->action()->config();
 if (!$pkt) {
     $cli->out("Failed");
