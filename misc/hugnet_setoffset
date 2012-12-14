@@ -142,27 +142,29 @@ foreach ($chans as $key => $val) {
 $cli->out("Average is ".$average[0]);
 
 foreach ($chans as $key => $val) {
-    $offset = $config->D - $average[$key];
-    $cli->out("Offset for $val is ".$offset);
     $chan = $channels->dataChannel($val);
     $input = $dev->input($chan->get("input"));
     $text = (array)$input->get("extraText");
     $extra = (array)$input->get("extra");
     $set = $chan->get("index");
     $count = 0;
+    $position = -1;
     for ($i = 0; $i < count($text); $i++) {
         if (trim(strtolower($text[$i])) == "offset") {
             if ($count == $set) {
-                $extra[$i] = $offset;
-                $cli->out("Set offset in position ".$i);
+                $position = $i;
                 break;
             }
             $count++;
         }
     }
-    if ($i == count($text)) {
-        $cli->out("Failed to set offset");
+    if ($position < 0) {
+        $cli->out("Failed to find offset location");
     } else {
+        $offset = $config->D - $average[$key] + $extra[$position];
+        $cli->out("Offset for $val is ".$offset);
+        $extra[$position] = $offset;
+        $cli->out("Set offset in position ".$i);
         $input->set("extra", $extra);
         $input->store();
     }
