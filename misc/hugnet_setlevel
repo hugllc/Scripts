@@ -282,18 +282,16 @@ function getProcessStr($Values, &$dev)
     $data .= getProcessStrInt8($Values["Step"]);
     $data .= getProcessStrInt32($Values["Min"]);
     $data .= getProcessStrInt32($Values["Max"]);
-    $channels = $dev->channels()->toArray();
-    for ($i = 0; $i < count($Values["Data"]); $i++) {
-        $chan   = $Values["Data"][$i];
-        $data  .= getProcessStrInt8($chan);
-        $input  = &$dev->input((int)$channels[$chan]["input"]);
-        $index  = (int)$channels[$chan]["index"];
-        $data  .= $input->encodeData((float)$Values["Low"][$i], $index);
-        $data  .= $input->encodeData((float)$Values["High"][$i], $index);
-        //$data .= getProcessStrInt32($Values["Low"][$i]);
-        //$data .= getProcessStrInt32($Values["High"][$i]);
+    $channels = $dev->channels();
+    foreach ($Values["Data"] as $i => $chan) {
+        $data .= $channels->dataChannel($chan)->encode(
+            (float)$Values["Low"][$i]
+        );
+        $data .= $channels->dataChannel($chan)->encode(
+            (float)$Values["High"][$i]
+        );
     }
-    return $data;
+    return $data.$value;
 }
 /**
  * This builds the string for the levelholder.
