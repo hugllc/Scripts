@@ -69,6 +69,15 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
     private $_device;
 
+    private $_testErrorArray = array(
+                0 => "No Response!",
+                1 => "Board Test Passed!",
+                2 => "Ping Test Failed!",
+                3 => "Test 1 Failed",
+                4 => "Test 2 Failed",
+                5 => "Test 3 Failed",
+            );
+
     /**
     * Sets our configuration
     *
@@ -316,10 +325,13 @@ class EndpointTest extends \HUGnet\ui\Daemon
             } else {
                 $Result = false;
             }
-        }
+        } else {
+            $this->out($_testErrorArray[2]);
+        };
 
         return $Result;
     }
+
 
     /**
     ************************************************************
