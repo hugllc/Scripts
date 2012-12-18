@@ -276,14 +276,16 @@ exit(0);
 function getProcessStr($Values, &$dev)
 {
     $data  = "";
-    $data .= getProcessStrInt8($Values["Driver"]);
-    $data .= getProcessStrInt8($Values["Priority"]);
-    $data .= getProcessStrInt8($Values["Control"]);
-    $data .= getProcessStrInt8($Values["Step"]);
-    $data .= getProcessStrInt32($Values["Min"]);
-    $data .= getProcessStrInt32($Values["Max"]);
+    $data .= getProcessStrInt($Values["Driver"], 1);
+    $data .= getProcessStrInt($Values["Priority"], 1);
+    $data .= getProcessStrInt($Values["Control"], 1);
+    $data .= getProcessStrInt($Values["Step"], 1);
+    $data .= getProcessStrInt($Values["Min"], 4);
+    $data .= getProcessStrInt($Values["Max"], 4);
     $channels = $dev->channels();
     foreach ($Values["Data"] as $i => $chan) {
+        $chan = (int)$chan;
+        $data .= getProcessStrInt($chan, 1);
         $data .= $channels->dataChannel($chan)->encode(
             (float)$Values["Low"][$i]
         );
@@ -291,7 +293,7 @@ function getProcessStr($Values, &$dev)
             (float)$Values["High"][$i]
         );
     }
-    return $data.$value;
+    return $data;
 }
 /**
  * This builds the string for the levelholder.
@@ -300,32 +302,16 @@ function getProcessStr($Values, &$dev)
  *
  * @return string The string
  */
-function getProcessStrInt32($val)
+function getProcessStrInt($val, $bytes = 4)
 {
     $val = (int)$val;
-    return sprintf(
-        "%02X%02X%02X%02X",
-        ($val >> 0) & 0xFF,
-        ($val >> 8) & 0xFF,
-        ($val >> 16) & 0xFF,
-        ($val >> 24) & 0xFF
-    );
-
-}
-/**
- * This builds the string for the levelholder.
- *
- * @param int $val The value to use
- *
- * @return string The string
- */
-function getProcessStrInt8($val)
-{
-    $val = (int)$val;
-    return sprintf(
-        "%02X",
-        ($val >> 0) & 0xFF
-    );
+    for ($i = 0; $i < $bytes; $i++) {
+        $str .= sprintf(
+            "%02X",
+            ($val >> ($i * 8)) & 0xFF
+        );
+    }
+    return $str;
 
 }
 ?>
