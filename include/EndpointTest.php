@@ -31,8 +31,11 @@
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       http://dev.hugllc.com/index.php/Project:HUGnetLib
  */
+
+
 /** This is the HUGnet namespace */
 namespace HUGnet\processes;
+
 /** This is our base class */
 require_once "HUGnetLib/ui/Daemon.php";
 
@@ -77,6 +80,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 4 => "Test 2 Failed",
                 5 => "Test 3 Failed",
             );
+
+    /** ascii string hex value for revision letter **/
+    private $_HWrev;
 
     /**
     * Sets our configuration
@@ -420,11 +426,22 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $HWver = (int)readline(
             "\n\rEnter Hardware version (0 - ". (count($HWarray)-1)."): "
         );
+        $this->out();
 
         $HWnumber = $HWarray[$HWver];
         $this->_device->set("HWPartNum", $HWnumber);
  
-        return $HWnum;
+        print "TESTING, TESTING TESTING\n\r";
+
+        $rev = substr($HWnumber, (strlen($HWnumber)-1), 1);
+        print "rev= ".$rev."\n\r";
+
+        $myData = sprintf("%02X", ord($rev));
+        $this->out("dataVal: ".$myData);
+        print "dataVal: ".$myData."\n\r";
+
+
+        return $HWnumber;
 
     }
 
