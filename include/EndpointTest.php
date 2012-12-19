@@ -385,7 +385,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $SNresponse = readline("in the following format- 0xhhhh: ");
             $this->out();
             $this->out("Your starting serial number is: ".$SNresponse);
-            $response = readline("Is this correct (Y/N): ");
+            $response = readline("Is this correct?(Y/N): ");
         } while (($response <> 'Y') && ($response <> 'y'));
 
         $SN = hexdec($SNresponse);
@@ -431,15 +431,12 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $HWnumber = $HWarray[$HWver];
         $this->_device->set("HWPartNum", $HWnumber);
  
-        print "TESTING, TESTING TESTING\n\r";
-
+ 
         $rev = substr($HWnumber, (strlen($HWnumber)-1), 1);
-        print "rev= ".$rev."\n\r";
 
         $myData = sprintf("%02X", ord($rev));
         $this->out("dataVal: ".$myData);
-        print "dataVal: ".$myData."\n\r";
-
+     
 
         return $HWnumber;
 
