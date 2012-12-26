@@ -1,0 +1,200 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2012 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @author     Jeff Liesmaki <jeffl@hugllc.com>
+ * @copyright  2007-2012 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** Packet log include stuff */
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+        "D" => array("name" => "Data", "type" => "string", "args" => true),
+        "d" => array("name" => "inputs", "type" => "string", "args" => true),
+        "s" => array("name" => "seconds", "type" => "int", "args" => true),
+    ),
+    "args",
+    $argv
+);
+$config->addLocation("/usr/share/HUGnet/config.ini");
+
+$cli = HUGnetLib::ui($config, "CLI");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+Calibrates the 'Scaled Temperature Sensors'.  The first input given gets an
+offset so that it reads the set value given.  The other two get offsets to match
+the first one.
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> -n <inputs> -s <seconds> [-D <set value>] [-v] [-f <file>]
+Arguments:
+    -i <DeviceID>      The device ID to use.  Should be a hex value up to 6 digits
+    -d <data channels> A comma separated list of one or more data channels to set
+    -s <seconds>       The number of seconds in the history to average
+    -D <set value>     The value to set the sensors to.  Defaults to 0
+    -v                 Increment the verbosity
+    -f <file>          The config file to use
+
+As an example, if you wanted to set data channels 1, 2 and 3 on board 1004 with
+a zero point of 21.5, reading the last 30 seconds of history you would use:
+
+".$cli->system()->get("program")." -i 1004 -d 1,2,3 -s 30 -D 21.5",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+if (strlen($config->d) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DataChannel(s) must be specified");
+    exit(1);
+}
+if ($config->s == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("The number of seconds must be specified");
+    exit(1);
+}
+
+$chans = explode(",", $config->d);
+$did = hexdec($config->i);
+$dev = $cli->system()->device($did);
+if ($dev->get("DeviceID") === "000000") {
+    $cli->out("Device not found");
+    exit(-1);
+}
+$channels = $dev->channels();
+$master = $channels->dataChannel($chans[0]);
+
+$until = time();
+$since = $until - $config->s;
+$hist = $dev->historyFactory();
+$res = $hist->getPeriod(
+    $since,
+    $until,
+    $did,
+    "history"
+);
+$count = array();
+$total = array();
+$fields = array();
+foreach (array_keys($chans) as $key) {
+    $fields[$key] = "Data".$chans[$key];
+}
+while ($res) {
+    foreach ($fields as $key => $field) {
+        $data = $hist->get($field);
+        if (!is_null($data)) {
+            $total[$key] += $data;
+            $count[$key]++;
+        }
+    }
+    $res = $hist->nextInto();
+}
+bcscale(12);
+if ($count == 0) {
+    $cli->out("No samples to average");
+    exit(-1);
+}
+$average = array();
+foreach ($chans as $key => $val) {
+    $average[$key] = round(
+        bcdiv($total[$key], $count[$key]),
+        $channels->dataChannel($val)->get("maxDecimals")
+    );
+}
+$cli->out("Average is ".$average[0]);
+
+foreach ($chans as $key => $val) {
+    $chan = $channels->dataChannel($val);
+    $input = $dev->input($chan->get("input"));
+    $text = (array)$input->get("extraText");
+    $extra = (array)$input->get("extra");
+    $set = $chan->get("index");
+    $scount = 0;
+    $ocount = 0;
+    $sposition = -1;
+    $oposition = -1;
+    for ($i = 0; $i < count($text); $i++) {
+        if (substr(trim(strtolower($text[$i])), 0, 5) == "scale") {
+            if ($scount == $set) {
+                $sposition = $i;
+                if ($oposition > 0) {
+                    break;
+                }
+            }
+            $scount++;
+        } else if (substr(trim(strtolower($text[$i])), 0, 6) == "offset") {
+            if ($ocount == $set) {
+                $oposition = $i;
+                if ($sposition > 0) {
+                    break;
+                }
+            }
+            $ocount++;
+        }
+    }
+    if ($sposition < 0) {
+        $cli->out("Failed to find scale location");
+    } else if ($oposition < 0) {
+        $cli->out("Failed to find offset location");
+    } else {
+        $scale = ($average[$key] - $extra[$oposition]) * $extra[$sposition];
+        $scale = $scale / ($config->D - $extra[$oposition]);
+
+        $cli->out("Scale for $val is ".$scale);
+        $extra[$sposition] = $scale;
+        $cli->out("Set scale in position ".$i);
+        $input->set("extra", $extra);
+        $input->store();
+    }
+}
+
+
+
+
+print "Finished\n";
+
+exit(0);
+?>
