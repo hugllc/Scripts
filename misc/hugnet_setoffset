@@ -152,23 +152,40 @@ foreach ($chans as $key => $val) {
     $text = (array)$input->get("extraText");
     $extra = (array)$input->get("extra");
     $set = $chan->get("index");
-    $count = 0;
-    $position = -1;
+    $scount = 0;
+    $ocount = 0;
+    $sposition = -1;
+    $oposition = -1;
     for ($i = 0; $i < count($text); $i++) {
-        if (trim(strtolower($text[$i])) == "offset") {
-            if ($count == $set) {
-                $position = $i;
-                break;
+        if (substr(trim(strtolower($text[$i])), 0, 5) == "scale") {
+            if ($scount == $set) {
+                $sposition = $i;
+                if ($oposition > 0) {
+                    break;
+                }
             }
-            $count++;
+            $scount++;
+        } else if (substr(trim(strtolower($text[$i])), 0, 6) == "offset") {
+            if ($ocount == $set) {
+                $oposition = $i;
+                if ($sposition > 0) {
+                    break;
+                }
+            }
+            $ocount++;
         }
     }
-    if ($position < 0) {
+    if ($sposition < 0) {
+        $cli->out("Failed to find scale location");
+    } else if ($oposition < 0) {
         $cli->out("Failed to find offset location");
     } else {
-        $offset = $config->D - $average[$key] + $extra[$position];
+        $newReading = $config->D / $extra[$sposition];
+        $reading    = ($average[$key] / $extra[$sposition]) - $extra[$oposition];
+        $cli->out("Old Reading: $reading   New Reading: $newReading");
+        $offset     = $newReading - $reading;
         $cli->out("Offset for $val is ".$offset);
-        $extra[$position] = $offset;
+        $extra[$oposition] = $offset;
         $cli->out("Set offset in position ".$i);
         $input->set("extra", $extra);
         $input->store();
