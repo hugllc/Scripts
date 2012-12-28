@@ -77,73 +77,25 @@ if (strlen($config->i) == 0) {
     $cli->out("DeviceID must be specified");
     exit(1);
 }
+$device = $cli->system()->device(hexdec($config->i));
+$channels = $device->channels();
 while ($cli->loop()) {
-    $pkt = $cli->system()->device(hexdec($config->i))->action()->send(
+    $pkt = $device->action()->send(
         "54"
     );
     $output = "";
     if (is_object($pkt)) {
         $string = $pkt->Reply();
-        do {
-            $value = strToInt($string, 4);
+        $values = $channels->decodeRaw($string);
+        foreach ($values as $value) {
             if (!is_null($value)) {
-                $value = getTwosCompliment($value, 32);
                 $output .= str_pad($value, 14, " ", STR_PAD_LEFT);
             }
-        } while (!is_null($value));
+        }
     }
     $cli->out($output);
 }
 print "Finished\n";
 
-
-/**
-* Takes in a raw string from a sensor and makes an int out it
-*
-* The sensor data is stored little-endian, so it just takes that and adds
-* the bytes together.
-*
-* @param string &$string The string to convert
-* @param int    $size    The size to extract
-*
-* @return int
-*/
-function strToInt(&$string, $size)
-{
-    if ($size > strlen($string)) {
-        return null;
-    }
-    $work = substr($string, 0, ($size * 2));
-    $string = (string)substr($string, ($size * 2));
-    $bytes = str_split($work, 2);
-    $shift = 0;
-    $return = 0;
-    foreach ($bytes as $b) {
-        $return += hexdec($b) << $shift;
-        $shift += 8;
-    }
-    return $return;
-}
-/**
-* Changes an n-bit twos compliment number into a signed number PHP can use
-*
-* @param int   $value The incoming number
-* @param float $bits  The number of bits the incoming number is
-*
-* @return int A signed integer for PHP to use
-*/
-function getTwosCompliment($value, $bits = 32)
-{
-    /* Clear off any excess */
-    $value = (int)($value & (pow(2, $bits) - 1));
-    /* Calculate the top bit */
-    $topBit = pow(2, ($bits - 1));
-    /* Check to see if the top bit is set */
-    if (($value & $topBit) == $topBit) {
-        /* This is a negative number */
-        $value = -(pow(2, $bits) - $value);
-    }
-    return $value;
-}
 
 ?>
