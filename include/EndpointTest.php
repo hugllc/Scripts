@@ -319,6 +319,12 @@ class EndpointTest extends \HUGnet\ui\Daemon
     */
     private function _testEndpoint()
     {
+            
+        $this->out("Hit any key to continue");
+        $KeyResponse = readline("Any Key: ");
+        $this->out();
+
+        
         $Result = $this->_pingEndpoint(self::TEST_ID);
 
         if ($Result == true) {
