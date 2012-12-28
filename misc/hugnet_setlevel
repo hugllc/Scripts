@@ -282,7 +282,7 @@ function getProcessStr($Values, &$dev)
     $data .= getProcessStrInt($Values["Step"], 1);
     $data .= getProcessStrInt($Values["Min"], 4);
     $data .= getProcessStrInt($Values["Max"], 4);
-    $channels = $dev->channels();
+    $channels = $dev->dataChannels();
     foreach ($Values["Data"] as $i => $chan) {
         $chan = (int)$chan;
         $data .= getProcessStrInt($chan, 1);

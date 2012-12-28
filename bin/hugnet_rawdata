@@ -78,7 +78,7 @@ if (strlen($config->i) == 0) {
     exit(1);
 }
 $device = $cli->system()->device(hexdec($config->i));
-$channels = $device->channels();
+$channels = $device->dataChannels();
 while ($cli->loop()) {
     $pkt = $device->action()->send(
         "54"
@@ -86,7 +86,9 @@ while ($cli->loop()) {
     $output = "";
     if (is_object($pkt)) {
         $string = $pkt->Reply();
+        var_dump($string);
         $values = $channels->decodeRaw($string);
+        var_export($values);
         foreach ($values as $value) {
             if (!is_null($value)) {
                 $output .= str_pad($value, 14, " ", STR_PAD_LEFT);
