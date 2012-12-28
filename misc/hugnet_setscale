@@ -104,7 +104,7 @@ if ($dev->get("DeviceID") === "000000") {
     $cli->out("Device not found");
     exit(-1);
 }
-$channels = $dev->channels();
+$channels = $dev->dataChannels();
 $master = $channels->dataChannel($chans[0]);
 
 $until = time();
