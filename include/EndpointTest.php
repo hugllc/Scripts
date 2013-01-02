@@ -61,6 +61,20 @@ class EndpointTest extends \HUGnet\ui\Daemon
     /** predefined endpoint serial number used in test firmware **/
     const TEST_ID = 0x20;
 
+    /** digital I/O test response bytes **/
+    const DIG_OUT1_P1_RESPONSE_BYTE0 = 0x05;
+    const DIG_OUT1_P1_RESPONSE_BYTE1 = 0x08;
+    const DIG_OUT1_P2_RESPONSE_BYTE0 = 0x0A;
+    const DIG_OUT1_P2_RESPONSE_BYTE1 = 0x40;
+
+    const DIG_OUT2_P1_RESPONSE_BYTE0 = 0x00;
+    const DIG_OUT2_P1_RESPONSE_BYTE1 = 0x20;
+    const DIG_OUT2_P1_RESPONSE_BYTE2 = 0x03;
+    const DIG_OUT2_P2_RESPONSE_BYTE0 = 0x10;
+    const DIG_OUT2_P2_RESPONSE_BYTE1 = 0x50;
+    const DIG_OUT2_P2_RESPONSE_BYTE2 = 0x00;
+_
+
     /** path to openocd for JTAG emulator **/
     private $_openOcdPath = "~/code/HOS/toolchain/bin/openocd";
 
@@ -342,6 +356,128 @@ class EndpointTest extends \HUGnet\ui\Daemon
         };
 
         return $Result;
+    }
+
+    /**
+    ************************************************************
+    * Test ADC Routine
+    *
+    * This runs the tests on each of the ADC channels and 
+    * evaluates the results to determine a pass or fail of the
+    * channel.
+    *
+    * @return boolean $result true for pass, false for failure
+    *
+    */
+    private function _testADC()
+    {
+        $result = true;
+        /* set power supply output based on board version */
+        /* set up a while loop and a case statement to step 
+           through each channel.  Read results and determine
+           if the channel passes or fails.  If it passes, 
+           continue testing.  If not, then stop testing and
+           return failure. */
+
+        return $result;
+    }
+
+    /**
+    ************************************************************
+    * Test DAC Routine
+    *
+    * This test sets the output of the Digital to Analog 
+    * converter and checks the output voltage through the 
+    * known good board A/D input 1.
+    *
+    * @return boolean $result true for pass, false for failure.
+    *
+    */
+    private function _testDAC()
+    {
+        $result = true;
+        /* config DAC to use internal reference */
+        /* output half of full scale */
+        /* read good board input 1 and check results */
+        /* config DAC to use 2.5v reference */
+        /* output 1.2 volts */
+        /* read good board input 1 and check results */
+       
+        return $result;
+    }
+
+    /**
+    ************************************************************
+    * Test Digital I/O Routine
+    *
+    * This function tests the general purpose I/O ports available
+    * on SV2.
+    *
+    * @return boolean $result true for pass, false for failure.
+    *
+    */
+    private function _testDigital()
+    {
+        $result = true;
+        /* configure P2.1, P1.4-1.6, P2.0 & P0.4 as outputs */
+        /* and configure P0.0-0.3, P1.2 & P1.3 as inputs */
+        /* set output 1 pattern 1 - 
+            P2.1 - high  to input P1.3
+            P1.6 - low   to input P0.3
+            P1.5 - high  to input P0.2
+            P1.4 - low   to input P0.1
+            P2.0 - high  to input P0.0
+            P0.4 - low   to input P1.2
+           
+                                  and read inputs.  
+          reaing the inputs will require the return of 
+          2 bytes of data.  They will be ordered in the 
+          return data buffer as P0 byte 0, and P1, byte 1.
+          The response should be 0x05 and 0x08 respectively. */
+        
+        /* set output 1 pattern 2 and read inputs 
+            P2.1 - low    to input P1.3
+            P1.6 - high   to input P0.3
+            P1.5 - low    to input P0.2
+            P1.4 - high   to input P0.1
+            P2.0 - low    to input P0.0
+            P0.4 - high   to input P1.2 
+                                   and read inputs.
+           reading the inputs will require the return of 
+           2 bytes of data.  They will be odered in them
+           return data buffer as P0 byte 0 and P1, byte 1.
+           The response should be 0x0A and 0x40 respectively. */
+
+        /* configure P2.1, P1.4-1.6, P2.0 & P0.4 as inputs */
+        /* and configure P0.0-0.3, P1.2 & 1.3 as inputs */
+        /* set output 2 pattern 1 
+            P1.3 - high  to input P2.1 
+            P0.3 - low   to input P1.6
+            P0.2 - high  to input P1.5
+            P0.1 - low   to input P1.4
+            P0.0 - high  to input P2.0
+            P1.2 - low   to input P0.4
+
+           and read inputs.  Reading the inputs will 
+           require the return of 3 bytes of data.  They will 
+           be ordered in the return data buffer as P0=byte 0, 
+           P1=byte 1 and P2 = byte 2.  The response should be
+           0x00, 0x20 and 0x03 respectively.  */
+        /* set output 2 pattern 2 
+
+            P1.3 - low   to input P2.1 
+            P0.3 - high  to input P1.6
+            P0.2 - low   to input P1.5
+            P0.1 - high  to input P1.4
+            P0.0 - low   to input P2.0
+            P1.2 - high  to input P0.4
+           and read inputs. Reading the inputs will 
+           require the return of 3 bytes of data.  They will 
+           be ordered in the return data buffer as P0=byte 0, 
+           P1=byte 1 and P2 = byte 2.  The response should be
+           0x10, 0x50 and 0x00 respectively. */
+    
+        return $result;
     }
 
 
