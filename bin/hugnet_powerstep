@@ -51,7 +51,7 @@ $config = HUGnetLib::Args(
 );
 
 $config->addLocation("/usr/share/HUGnet/config.ini");
-$cli = HUGnetLib::ui($config, "CLI");
+$cli = HUGnetLib::ui($config, "Daemon");
 $cli->help(
     $cli->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
@@ -200,7 +200,22 @@ foreach ($stepFile as $line) {
     } else {
         $cli->out("No Reply");
     }
-    sleep($time);
+
+    $wait = time() + $time;
+    $count = 0;
+    while ((time() < $wait) && !$cli->system()->quit()) {
+        $cli->main();
+        sleep(1);
+        $count++;
+        if ($count >= 12) {
+            $cli->out(round(($wait - time()) / 60)." Minutes left");
+            $count = 0;
+        }
+    }
+
+    if ($cli->system()->quit()){
+        break;
+    }
 }
 
 print "Finished\n";
