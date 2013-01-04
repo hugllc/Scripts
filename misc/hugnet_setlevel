@@ -284,14 +284,17 @@ function getProcessStr($Values, &$dev)
     $data .= getProcessStrInt($Values["Max"], 4);
     $channels = $dev->dataChannels();
     foreach ($Values["Data"] as $i => $chan) {
-        $chan = (int)$chan;
+        $chan  = (int)$chan;
         $data .= getProcessStrInt($chan, 1);
-        $data .= $channels->dataChannel($chan)->encode(
+        $low   = $channels->dataChannel($chan)->encode(
             (float)$Values["Low"][$i]
         );
-        $data .= $channels->dataChannel($chan)->encode(
+        $high = $channels->dataChannel($chan)->encode(
             (float)$Values["High"][$i]
         );
+        print "$low (".$channels->dataChannel($chan)->decodeRaw($low).") \n";
+        print "$high (".$channels->dataChannel($chan)->decodeRaw($high).") \n";
+        $data .= $low.$high;
     }
     return $data;
 }
