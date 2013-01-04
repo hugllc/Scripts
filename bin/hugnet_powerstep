@@ -164,12 +164,12 @@ $stepVoltage = 2.5 / 4095;
 $stepFile = file($config->s);
 
 foreach ($stepFile as $line) {
-    list($time, $ctlVoltage) = explode(":", $line);
+    list($time, $setPoint) = explode(":", $line);
     $cli->out(
-        "Setting DAC Control Voltage: ".sprintf("%4.2f", $ctlVoltage)." for $time s"
+        "Setting DAC Control Voltage: ".sprintf("%4.2f", $setPoint)." for $time s"
     );
 
-    $ctlVoltage += $CGNDOffset;
+    $ctlVoltage = $setPoint + $CGNDOffset;
 
     $steps = (int)($ctlVoltage / $stepVoltage);
 
@@ -207,8 +207,11 @@ foreach ($stepFile as $line) {
         $cli->main();
         sleep(1);
         $count++;
-        if ($count >= 12) {
-            $cli->out(round(($wait - time()) / 60)." Minutes left");
+        if ($count >= 60) {
+            $cli->out("DAC Control Voltage: ".sprintf("%4.2f", $setPoint));
+            $cli->out(
+                date("Y-m-d H:i:s")." Next step at ".date("Y-m-d H:i:s", $wait)
+            );
             $count = 0;
         }
     }
