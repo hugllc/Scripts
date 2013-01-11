@@ -73,7 +73,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     const DIG_OUT2_P2_RESPONSE_BYTE0 = 0x10;
     const DIG_OUT2_P2_RESPONSE_BYTE1 = 0x50;
     const DIG_OUT2_P2_RESPONSE_BYTE2 = 0x00;
-_
+
 
     /** path to openocd for JTAG emulator **/
     private $_openOcdPath = "~/code/HOS/toolchain/bin/openocd";
@@ -334,11 +334,8 @@ _
     private function _testEndpoint()
     {
             
-        $this->out("Hit any key to continue");
-        $KeyResponse = readline("Any Key: ");
-        $this->out();
-
-        
+        $this->out("Hey its working!");
+   
         $Result = $this->_pingEndpoint(self::TEST_ID);
 
         if ($Result == true) {
