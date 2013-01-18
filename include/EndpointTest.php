@@ -60,6 +60,13 @@ class EndpointTest extends \HUGnet\ui\Daemon
 {
     /** predefined endpoint serial number used in test firmware **/
     const TEST_ID = 0x20;
+    
+    /** packet commands to test firmware **/
+    const TEST_ANALOG_COMMAND  = 0x20;
+    const SET_DIGITIAL_COMMAND = 0x25;
+    const TEST_DIGITAL_COMMAND = 0x26;
+    const CONFIG_DAC_COMMAND   = 0x27;
+    const TEST_DAC_COMMAND     = 0x28;
 
     /** digital I/O test response bytes **/
     const DIG_OUT1_P1_RESPONSE_BYTE0 = 0x05;
@@ -334,11 +341,11 @@ class EndpointTest extends \HUGnet\ui\Daemon
     private function _testEndpoint()
     {
             
-        $this->out("Hey its working!");
    
         $Result = $this->_pingEndpoint(self::TEST_ID);
 
         if ($Result == true) {
+            $this->out("Hey Ping works!");
             $idNum = self::TEST_ID;
             $cmdNum = 0x20;
             $dataVal = 0;
