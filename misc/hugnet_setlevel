@@ -104,49 +104,45 @@ $dac = array(
 );
 
 $dev = $cli->system()->device(hexdec($config->i));
-$reboot = false;
+$dac = array(
+    "id" => 0x01,
+    "extra" => array(
+        0 => 0, // "Low Power Mode"
+        1 => 0, // "Op Amp Mode"
+        2 => 0, // "Output Buffer"
+        3 => 0, // "Mode"
+        4 => 0, // "Interpolation Clock"
+        5 => 3  // "Range"
+    ),
+    "driver" => "ADuCDAC",
+    "type" => "ADuCDAC",
+    "location" => "DAC Added by setpid",
+);
+
+$reconfig = false;
+$dev = $cli->system()->device(hexdec($config->i));
 $control = -1;
 $open = -1;
 $cli->out("Checking for DAC OutputTable");
 for ($i = 0; $i < $dev->get("OutputTables"); $i++) {
-    $pkt = $dev->action()->send(
-        array(
-            "Command" => "READOUTPUTTABLE",
-            "Data" => sprintf("%02X", $i),
-        )
-    );
-    if (is_null($pkt->reply())) {
-        $cli->out("Failed to contact device");
-        exit(-1);
-    }
-    $driver = substr($pkt->reply(), 0, 2);
-    if (($driver === "FF") && ($open < 0)) {
+    $driver = (int)$dev->output($i)->get("id");
+    if (($driver === 0xFF) && ($open < 0)) {
         $open = $i;
-    } else if ($driver === "01") {
+    } else if ($driver === 0x01) {
         $control = $i;
         break;
     }
 }
+
 if ($control < 0) {
     $cli->out("No DAC OutputTable found.");
     if ($open >= 0) {
         $cli->out("Attempting to add one.");
-        $data = sprintf(
-            "%02X%02X%02X",
-            $dac["Driver"],
-            $dac["DAC0Con"] & 0xFF,
-            ($dac["DAC0Con"] >> 8) & 0xFF
-        );
-        $pkt = $dev->action()->send(
-            array(
-                "Command" => "SETOUTPUTTABLE",
-                "Data" => sprintf("%02X", $open).$data,
-            )
-        );
-        if (trim(strtoupper($pkt->reply())) == $data) {
+        $output = $dev->output($open);
+        if ($output->change($dac)) {
+            $reconfig = true;
             $control = $open;
-            $cli->out("Added one in control $open.");
-            $reboot = true;
+            $cli->out("Added one in output $open.");
         } else {
             $cli->out("Add Failed.");
         }
@@ -159,14 +155,6 @@ if ($control < 0) {
     $cli->out("Found a DAC setup on control $control");
 }
 
-$setPoints = explode(",", $config->V);
-$tolerance = (float)$config->T;
-$lows  = array();
-$highs = array();
-foreach ($setPoints as $key => $value) {
-    $lows[$key] = $value - $tolerance;
-    $highs[$key] = $value + $tolerance;
-}
 
 $CGNDOffset = 0.95;
 $stepVoltage = 2.5 / 4095;
@@ -178,50 +166,72 @@ $levelHolder = array(
     "Step" => 0x2,
     "Data" => explode(",", $config->D),
     "Control" => $control,
-    "Low" => $lows,
-    "High" => $highs,
-    "Min" => (int)($CGNDOffset / $stepVoltage),
-    "Max" => (int)(($maxVoltage + $CGNDOffset) / $stepVoltage)
+    "setpoints" => explode(",", $config->V),
+    "tolerance" => (float)$config->T,
 );
 
+
+
+/*
+"extraText" => array(
+    "Priority",
+    "Control",
+    "Step",
+    "Data Channel 0",
+    "Set Point 0",
+    "Tolerance 0",
+    "Data Channel 1",
+    "Set Point 1",
+    "Tolerance 1",
+    "Data Channel 2",
+    "Set Point 2",
+    "Tolerance 2",
+),
+*/
+$level = array(
+    "id" => 0x01,
+    "type" => "LevelHolderProcess",
+    "extra" => array(
+        0 => $levelHolder["Priority"],
+        1 => $levelHolder["Control"],
+        2 => $levelHolder["Step"],
+        3 => $levelHolder["Data"][0],
+        4 => $levelHolder["setpoints"][0],
+        5 => $levelHolder["tolerance"],
+    ),
+    "location" => "LevelHolder Added by setpid",
+);
+if (!is_null($levelHolder["Data"][1])) {
+    $level["extra"][6] = $levelHolder["Data"][1];
+    $level["extra"][7] = $levelHolder["setpoints"][1];
+    $level["extra"][8] = $levelHolder["tolerance"];
+    if (!is_null($levelHolder["Data"][2])) {
+        $level["extra"][9] = $levelHolder["Data"][2];
+        $level["extra"][10] = $levelHolder["setpoints"][2];
+        $level["extra"][11] = $levelHolder["tolerance"];
+    }
+}
 $process = -1;
 $open = -1;
-$cli->out("Checking for LevelHolder ProcessTable");
+$cli->out("Checking for LevelHolder process");
 for ($i = 0; $i < $dev->get("ProcessTables"); $i++) {
-    $pkt = $dev->action()->send(
-        array(
-            "Command" => "READPROCESSTABLE",
-            "Data" => sprintf("%02X", $i),
-        )
-    );
-    if (is_null($pkt->reply())) {
-        $cli->out("Failed to contact device");
-        exit(-1);
-    }
-    $driver = substr($pkt->reply(), 0, 2);
-    if (($driver === "FF") && ($open < 0)) {
+    $driver = (int)$dev->process($i)->get("id");
+    if (($driver === 0xFF) && ($open < 0)) {
         $open = $i;
-    } else if ($driver === "01") {
+    } else if ($driver === 0x01) {
         $process = $i;
         break;
     }
 }
 if ($process < 0) {
-    $cli->out("No LevelHolder ProcessTable found.");
+    $cli->out("No LevelHolder process found.");
     if ($open >= 0) {
         $cli->out("Attempting to add one.");
-        $data = getProcessStr($levelHolder, $dev);
-
-        $pkt = $dev->action()->send(
-            array(
-                "Command" => "SETPROCESSTABLE",
-                "Data" => sprintf("%02X", $open).$data,
-            )
-        );
-        if (trim(strtoupper($pkt->reply())) == $data) {
+        $proc = $dev->process($open);
+        if ($proc->change($level)) {
             $process = $open;
             $cli->out("Added one in process $open.");
-            $reboot = true;
+            $reconfig = true;
         } else {
             $cli->out("Add Failed.");
         }
@@ -234,87 +244,22 @@ if ($process < 0) {
     $cli->out("Found a LevelHolder setup on process $process");
 }
 
-if ($reboot) {
-    $dev->network()->reboot();
-    $cli->out("Rebooting.");
+if ($reconfig) {
+    $dev->network()->loadConfig();
 }
 
-
 $cli->out("Setting the level holder in RAM (Changes won't be saved on reboot)");
-$pkt = $dev->action()->send(
-    array(
-        "Command" => 'SETPROCESSTABLERAM',
-        "Data" => sprintf("%02X", $process).getProcessStr($levelHolder, $dev),
-    )
-);
-if (is_object($pkt)) {
-    $reply = $pkt->Reply();
-    if (is_null($reply)) {
-        $cli->out("No Reply");
-    } else if (!empty($reply)) {
-        $cli->out("Done!");
-    } else {
-        $cli->out("Empty Reply");
-    }
+
+$proc = $dev->process($process);
+$proc->set("extra", $level["extra"]);
+if ($proc->push()) {
+    $cli->out("Done!");
 } else {
-    $cli->out("No Reply");
+    $cli->out("Failed");
 }
 
 print "Finished\n";
 
 exit(0);
 
-
-/**
- * This builds the string for the levelholder.
- *
- * @param array  $Values This is the values to use
- * @param object &$dev   This is the device to use
- *
- * @return string The string
- */
-function getProcessStr($Values, &$dev)
-{
-    $data  = "";
-    $data .= getProcessStrInt($Values["Driver"], 1);
-    $data .= getProcessStrInt($Values["Priority"], 1);
-    $data .= getProcessStrInt($Values["Control"], 1);
-    $data .= getProcessStrInt($Values["Step"], 1);
-    $data .= getProcessStrInt($Values["Min"], 4);
-    $data .= getProcessStrInt($Values["Max"], 4);
-    $channels = $dev->dataChannels();
-    foreach ($Values["Data"] as $i => $chan) {
-        $chan  = (int)$chan;
-        $data .= getProcessStrInt($chan, 1);
-        $low   = $channels->dataChannel($chan)->encode(
-            (float)$Values["Low"][$i]
-        );
-        $high = $channels->dataChannel($chan)->encode(
-            (float)$Values["High"][$i]
-        );
-        print "$low (".$channels->dataChannel($chan)->decodeRaw($low).") \n";
-        print "$high (".$channels->dataChannel($chan)->decodeRaw($high).") \n";
-        $data .= $low.$high;
-    }
-    return $data;
-}
-/**
- * This builds the string for the levelholder.
- *
- * @param int $val The value to use
- *
- * @return string The string
- */
-function getProcessStrInt($val, $bytes = 4)
-{
-    $val = (int)$val;
-    for ($i = 0; $i < $bytes; $i++) {
-        $str .= sprintf(
-            "%02X",
-            ($val >> ($i * 8)) & 0xFF
-        );
-    }
-    return $str;
-
-}
 ?>
