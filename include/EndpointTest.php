@@ -60,6 +60,13 @@ class EndpointTest extends \HUGnet\ui\Daemon
 {
     /** predefined endpoint serial number used in test firmware **/
     const TEST_ID = 0x20;
+    
+    /** packet commands to test firmware **/
+    const TEST_ANALOG_COMMAND  = 0x20;
+    const SET_DIGITIAL_COMMAND = 0x25;
+    const TEST_DIGITAL_COMMAND = 0x26;
+    const CONFIG_DAC_COMMAND   = 0x27;
+    const TEST_DAC_COMMAND     = 0x28;
 
     /** digital I/O test response bytes **/
     const DIG_OUT1_P1_RESPONSE_BYTE0 = 0x05;
@@ -73,7 +80,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     const DIG_OUT2_P2_RESPONSE_BYTE0 = 0x10;
     const DIG_OUT2_P2_RESPONSE_BYTE1 = 0x50;
     const DIG_OUT2_P2_RESPONSE_BYTE2 = 0x00;
-_
+
 
     /** path to openocd for JTAG emulator **/
     private $_openOcdPath = "~/code/HOS/toolchain/bin/openocd";
@@ -334,14 +341,11 @@ _
     private function _testEndpoint()
     {
             
-        $this->out("Hit any key to continue");
-        $KeyResponse = readline("Any Key: ");
-        $this->out();
-
-        
+   
         $Result = $this->_pingEndpoint(self::TEST_ID);
 
         if ($Result == true) {
+            $this->out("Hey Ping works!");
             $idNum = self::TEST_ID;
             $cmdNum = 0x20;
             $dataVal = 0;
