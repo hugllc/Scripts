@@ -1,7 +1,7 @@
 #!/bin/bash
 
-service hugnet_router start 2>&1 > /dev/null
-service hugnet_gatherer start 2>&1 > /dev/null
-service hugnet_updater start 2>&1 > /dev/null
+service hugnet_router start > /dev/null 2>&1 || true
+service hugnet_gatherer start > /dev/null 2>&1 || true
+service hugnet_updater start > /dev/null 2>&1 || true
 
 exit $?
