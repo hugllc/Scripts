@@ -24,6 +24,8 @@ This project is broken up into only a couple of directories:
 The scripts requires HUGnetLib/src/php to be installed in the php include path as HUGnetLib/.
 All of the dependencies for HUGnetLib must be installed.
 
+- PHP 5.3 or 5.4 CLI
+
 ## Testing
 
 There is currently no unit testing for this project.  This is one of the items on the todo list
@@ -41,11 +43,22 @@ created by running 'ant deb'.  The debs will be in the ./rel directory.
 Most of the code actually resides in HUGnetLib.  These scripts are just a command line
 front end for HUGnetLib.
 
-## Contributing changes
+## Contributing Changes
+
+_All commit messages need to reference bugs in the Mantis bug tracker (see below)_
+
 Changes can be contributed by either:
 
 1. Using git to create patches and emailing them to patches@hugllc.com
 2. Creating another github repository to make your changes to and submitting pull requests.
+
+## Git Checkins
+All git checkins MUST REFERENCE A BUG in Mantis.  This can be done in a number of ways.
+The commit message should contain one of the following forms:
+
+- bug #XXXX
+- fixed #XXXX
+- fixes #XXXX
 
 ## Filing Bug Reports
 The bug tracker for this project is at http://dev.hugllc.com/bugs/ .  If you want an
