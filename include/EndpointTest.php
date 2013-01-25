@@ -67,8 +67,12 @@ class EndpointTest extends \HUGnet\ui\Daemon
     const TEST_DIGITAL_COMMAND = 0x26;
     const CONFIG_DAC_COMMAND   = 0x27;
     const TEST_DAC_COMMAND     = 0x28;
+    
+    /* DAC Configuration bytes */
+    const DAC_CONFIG_IREF = "0010";
+    const DAC_CONFIG_AREF = "0013";
 
-    /** digital I/O test response bytes **/
+   /** digital I/O test response bytes **/
     const DIG_OUT1_P1_RESPONSE_BYTE0 = 0x05;
     const DIG_OUT1_P1_RESPONSE_BYTE1 = 0x08;
     const DIG_OUT1_P2_RESPONSE_BYTE0 = 0x0A;
@@ -345,10 +349,10 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $Result = $this->_pingEndpoint(self::TEST_ID);
 
         if ($Result == true) {
-            $this->out("Hey Ping works!");
+            $this->out("Hey NEW RUN works!");
             $idNum = self::TEST_ID;
             $cmdNum = 0x20;
-            $dataVal = 0;
+            $dataVal = 01;
             $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
             if ($ReplyData == "01") {
                 $Result = true;
@@ -356,8 +360,13 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $Result = false;
             }
         } else {
-            $this->out($_testErrorArray[2]);
+            $this->out($_testErrorArray[3]);
         };
+
+        if ($Result == true) {
+
+            $Result =  $this->_testDAC();
+        } 
 
         return $Result;
     }
@@ -399,15 +408,26 @@ class EndpointTest extends \HUGnet\ui\Daemon
     */
     private function _testDAC()
     {
-        $result = true;
-        /* config DAC to use internal reference */
+        
+        $idNum = self::TEST_ID;
+        $cmdNum = 0x27;
+        $dataVal = "0010";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        if ($ReplyData == "1000") {
+            $Result = true;
+        } else {
+            $Result = false;
+        }
+
+
+
         /* output half of full scale */
         /* read good board input 1 and check results */
         /* config DAC to use 2.5v reference */
         /* output 1.2 volts */
         /* read good board input 1 and check results */
        
-        return $result;
+        return $Result;
     }
 
     /**
