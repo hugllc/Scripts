@@ -69,8 +69,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
     const TEST_DAC_COMMAND     = 0x28;
     
     /* DAC Configuration bytes */
-    const DAC_CONFIG_IREF = "0010";
-    const DAC_CONFIG_AREF = "0013";
+    const DAC_CONFIG_IREF = '0010';
+    const DAC_CONFIG_AREF = '0013';
 
    /** digital I/O test response bytes **/
     const DIG_OUT1_P1_RESPONSE_BYTE0 = 0x05;
@@ -351,7 +351,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         if ($Result == true) {
             $this->out("Hey NEW RUN works!");
             $idNum = self::TEST_ID;
-            $cmdNum = 0x20;
+            $cmdNum = self::TEST_ANALOG_COMMAND;
             $dataVal = 01;
             $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
             if ($ReplyData == "01") {
@@ -364,9 +364,12 @@ class EndpointTest extends \HUGnet\ui\Daemon
         };
 
         if ($Result == true) {
-
             $Result =  $this->_testDAC();
-        } 
+        }
+
+        if ($Result == true) {
+            $Result = $this->_testDigital();
+        }
 
         return $Result;
     }
@@ -410,9 +413,12 @@ class EndpointTest extends \HUGnet\ui\Daemon
     {
         
         $idNum = self::TEST_ID;
-        $cmdNum = 0x27;
-        $dataVal = "0010";
+        $cmdNum = self::CONFIG_DAC_COMMAND;
+        $dataVal = self::DAC_CONFIG_IREF;
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 2 byte response comes back little endian, so the byte */
+        /* order is reversed from send data.                     */
         if ($ReplyData == "1000") {
             $Result = true;
         } else {
@@ -442,66 +448,85 @@ class EndpointTest extends \HUGnet\ui\Daemon
     */
     private function _testDigital()
     {
-        $result = true;
-        /* configure P2.1, P1.4-1.6, P2.0 & P0.4 as outputs */
-        /* and configure P0.0-0.3, P1.2 & P1.3 as inputs */
-        /* set output 1 pattern 1 - 
-            P2.1 - high  to input P1.3
-            P1.6 - low   to input P0.3
-            P1.5 - high  to input P0.2
-            P1.4 - low   to input P0.1
-            P2.0 - high  to input P0.0
-            P0.4 - low   to input P1.2
-           
-                                  and read inputs.  
-          reaing the inputs will require the return of 
-          2 bytes of data.  They will be ordered in the 
-          return data buffer as P0 byte 0, and P1, byte 1.
-          The response should be 0x05 and 0x08 respectively. */
-        
-        /* set output 1 pattern 2 and read inputs 
-            P2.1 - low    to input P1.3
-            P1.6 - high   to input P0.3
-            P1.5 - low    to input P0.2
-            P1.4 - high   to input P0.1
-            P2.0 - low    to input P0.0
-            P0.4 - high   to input P1.2 
-                                   and read inputs.
-           reading the inputs will require the return of 
-           2 bytes of data.  They will be odered in them
-           return data buffer as P0 byte 0 and P1, byte 1.
-           The response should be 0x0A and 0x40 respectively. */
 
-        /* configure P2.1, P1.4-1.6, P2.0 & P0.4 as inputs */
-        /* and configure P0.0-0.3, P1.2 & 1.3 as inputs */
-        /* set output 2 pattern 1 
-            P1.3 - high  to input P2.1 
-            P0.3 - low   to input P1.6
-            P0.2 - high  to input P1.5
-            P0.1 - low   to input P1.4
-            P0.0 - high  to input P2.0
-            P1.2 - low   to input P0.4
+        $idNum = self::TEST_ID;
+        $cmdNum = self::SET_DIGITIAL_COMMAND;
+        $dataVal = "01";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
-           and read inputs.  Reading the inputs will 
-           require the return of 3 bytes of data.  They will 
-           be ordered in the return data buffer as P0=byte 0, 
-           P1=byte 1 and P2 = byte 2.  The response should be
-           0x00, 0x20 and 0x03 respectively.  */
-        /* set output 2 pattern 2 
+        if ($ReplyData == "00") {
+            $Result = true;
+        } else {
+            $Result = false;
+        }
 
-            P1.3 - low   to input P2.1 
-            P0.3 - high  to input P1.6
-            P0.2 - low   to input P1.5
-            P0.1 - high  to input P1.4
-            P0.0 - low   to input P2.0
-            P1.2 - high  to input P0.4
-           and read inputs. Reading the inputs will 
-           require the return of 3 bytes of data.  They will 
-           be ordered in the return data buffer as P0=byte 0, 
-           P1=byte 1 and P2 = byte 2.  The response should be
-           0x10, 0x50 and 0x00 respectively. */
-    
-        return $result;
+        if ($Result == true) {
+            $cmdNum = self::TEST_DIGITAL_COMMAND;
+            $dataVal = "0101";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            if ($ReplyData == "15") {
+                $Result = true;
+            } else {
+                $Result = false;
+            }
+        }
+
+        if ($Result == true) {
+            $cmdNum = self::TEST_DIGITAL_COMMAND;
+            $dataVal = "0102";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            if ($ReplyData == "0A") {
+                $Result = true;
+            } else {
+                $this->out("digital data is".$ReplyData);
+                $Result = false;
+            }
+        }
+
+
+        /*   Setup for test configurations 2  */
+        if ($Result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = self::SET_DIGITIAL_COMMAND;
+            $dataVal = "02";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            if ($ReplyData == "1F") {
+                $Result = true;
+            } else {
+                $this->out("digital data is".$ReplyData);
+                $Result = false;
+            }
+        }
+
+        if ($Result == true) {
+            $cmdNum = self::TEST_DIGITAL_COMMAND;
+            $dataVal = "0201";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            if ($ReplyData == "15") {
+                $Result = true;
+            } else {
+                $Result = false;
+            }
+        }
+
+        if ($Result == true) {
+            $cmdNum = self::TEST_DIGITAL_COMMAND;
+            $dataVal = "0202";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            if ($ReplyData == "0A") {
+                $Result = true;
+            } else {
+                $this->out("digital data is".$ReplyData);
+                $Result = false;
+            }
+        }
+   
+        return $Result;
     }
 
 
