@@ -162,7 +162,7 @@ $maxVoltage = 1.2;
 
 $levelHolder = array(
     "Driver" => 0x01,
-    "Priority" => 34,
+    "Priority" => 10,
     "Step" => 0x2,
     "Data" => explode(",", $config->D),
     "Control" => $control,
