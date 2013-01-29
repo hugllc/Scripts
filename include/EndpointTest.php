@@ -60,31 +60,18 @@ class EndpointTest extends \HUGnet\ui\Daemon
 {
     /** predefined endpoint serial number used in test firmware **/
     const TEST_ID = 0x20;
+    const KNOWN_GOOD_ID = 0x1003;
     
     /** packet commands to test firmware **/
     const TEST_ANALOG_COMMAND  = 0x20;
     const SET_DIGITIAL_COMMAND = 0x25;
     const TEST_DIGITAL_COMMAND = 0x26;
     const CONFIG_DAC_COMMAND   = 0x27;
-    const TEST_DAC_COMMAND     = 0x28;
+    const SET_DAC_COMMAND      = 0x28;
     
     /* DAC Configuration bytes */
     const DAC_CONFIG_IREF = '0010';
     const DAC_CONFIG_AREF = '0013';
-
-   /** digital I/O test response bytes **/
-    const DIG_OUT1_P1_RESPONSE_BYTE0 = 0x05;
-    const DIG_OUT1_P1_RESPONSE_BYTE1 = 0x08;
-    const DIG_OUT1_P2_RESPONSE_BYTE0 = 0x0A;
-    const DIG_OUT1_P2_RESPONSE_BYTE1 = 0x40;
-
-    const DIG_OUT2_P1_RESPONSE_BYTE0 = 0x00;
-    const DIG_OUT2_P1_RESPONSE_BYTE1 = 0x20;
-    const DIG_OUT2_P1_RESPONSE_BYTE2 = 0x03;
-    const DIG_OUT2_P2_RESPONSE_BYTE0 = 0x10;
-    const DIG_OUT2_P2_RESPONSE_BYTE1 = 0x50;
-    const DIG_OUT2_P2_RESPONSE_BYTE2 = 0x00;
-
 
     /** path to openocd for JTAG emulator **/
     private $_openOcdPath = "~/code/HOS/toolchain/bin/openocd";
@@ -422,16 +409,86 @@ class EndpointTest extends \HUGnet\ui\Daemon
         if ($ReplyData == "1000") {
             $Result = true;
         } else {
+            $this->out("Failed DAC Config 1");
+            $this->out("Digital data is:".$ReplyData);
             $Result = false;
         }
 
+        if ($Result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = self::SET_DAC_COMMAND;
+            $dataVal = "07ff";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            /* 2 byte response comes back little endian, so the byte */
+            /* order is reversed from send data.                     */
+            if ($ReplyData == "FF07") {
+                $Result = true;
+            } else {
+                $this->out("Failed DAC Set 1");
+                $this->out("Digital data is:".$ReplyData);
+                $Result = false;
+            }
 
 
-        /* output half of full scale */
-        /* read good board input 1 and check results */
+        }
+
+
+        /*
+        **********************************************
+        * This is where we will insert code to read 
+        * the known good board on input 1 and check 
+        * the DAC output voltage.
+        */
+
+
+
         /* config DAC to use 2.5v reference */
+        if ($Result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = self::CONFIG_DAC_COMMAND;
+            $dataVal = self::DAC_CONFIG_AREF;
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            /* 2 byte response comes back little endian, so the byte */
+            /* order is reversed from send data.                     */
+            if ($ReplyData == "1300") {
+                $Result = true;
+            } else {
+                $this->out("Failed DAC Config 2");
+                $this->out("Digital data is:".$ReplyData);
+                $Result = false;
+            }
+
+
+        }
+
         /* output 1.2 volts */
-        /* read good board input 1 and check results */
+        if ($Result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = self::SET_DAC_COMMAND;
+            $dataVal = "07ff";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            /* 2 byte response comes back little endian, so the byte */
+            /* order is reversed from send data.                     */
+            if ($ReplyData == "FF07") {
+                $Result = true;
+            } else {
+                $this->out("Failed DAC Set 2");
+                $this->out("Digital data is:".$ReplyData);
+                $Result = false;
+            }
+
+
+        }
+
+        /*
+        **********************************************
+        * This is where we will insert code to read 
+        * the known good board on input 1 and check 
+        * the DAC output voltage.
+        */
        
         return $Result;
     }
@@ -457,6 +514,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
         if ($ReplyData == "00") {
             $Result = true;
         } else {
+            $this->out("Failed to configure GPIO 1");
+            $this->out("Digital data is:".$ReplyData);
             $Result = false;
         }
 
@@ -468,6 +527,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
             if ($ReplyData == "15") {
                 $Result = true;
             } else {
+                $this->out("Failed GPIO, Config 1 Test 1");
+                $this->out("Digital data is:".$ReplyData);
                 $Result = false;
             }
         }
@@ -480,7 +541,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
             if ($ReplyData == "0A") {
                 $Result = true;
             } else {
-                $this->out("digital data is".$ReplyData);
+                $this->out("Failed GPIO, Config 1 Test 2");
+                $this->out("Digital data is:".$ReplyData);
                 $Result = false;
             }
         }
@@ -496,7 +558,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
             if ($ReplyData == "1F") {
                 $Result = true;
             } else {
-                $this->out("digital data is".$ReplyData);
+                $this->out("Failed to configure GPIO 2");
+                $this->out("Digital data is:".$ReplyData);
                 $Result = false;
             }
         }
@@ -509,6 +572,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
             if ($ReplyData == "15") {
                 $Result = true;
             } else {
+                $this->out("Failed GPIO, Config 2 Test 1");
+                $this->out("Digital data is:".$ReplyData);
                 $Result = false;
             }
         }
@@ -521,7 +586,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
             if ($ReplyData == "0A") {
                 $Result = true;
             } else {
-                $this->out("digital data is".$ReplyData);
+                $this->out("Failed GPIO, Config 2 Test 2");
+                $this->out("Digital data is:".$ReplyData);
                 $Result = false;
             }
         }
