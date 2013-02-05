@@ -1,5 +1,5 @@
 #!/bin/bash
 
-service hugnet_analysis start > /dev/null 2>&1 || true
+service hugnet_watchdog start > /dev/null 2>&1 || true
 
 exit $?
