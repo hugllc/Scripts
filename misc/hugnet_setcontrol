@@ -44,10 +44,10 @@ $config = HUGnetLib::Args(
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
         "C" => array(
-            "name" => "Control", "type" => "int", "args" => true, "default" => null
+            "name" => "Control", "type" => "string", "args" => true, "default" => null
         ),
         "D" => array(
-            "name" => "Data", "type" => "int", "args" => true, "default" => 0
+            "name" => "Data", "type" => "string", "args" => true, "default" => 0
         ),
     ),
     "args",
@@ -67,10 +67,13 @@ Sends a series of DAC set packets to HUGnetLab endpoints.
 Usage: ".$cli->system()->get("program")." -i <DeviceID> -C <Channel> -D <Value> [-v] [-f <file>]
 Arguments:
     -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
-    -C <Channel>    The control channel to set
-    -D <Value>      The value to set it to
+    -C <Channel>    The comma separated list of the control channels to set
+    -D <Value>      The comma separated list of the values to set it to
     -v              Increment the verbosity
-    -f <file>       The config file to use",
+    -f <file>       The config file to use
+
+There must be one value for every channel.
+",
     $config->h
 );
 if (strlen($config->i) == 0) {
@@ -86,36 +89,48 @@ if (is_null($config->C)) {
     exit(1);
 }
 
-$data = "";
-for ($i = 0; $i < 4; $i++) {
-    $data .= sprintf("%02X", ($config->D >> ($i * 8)) & 0xFF);
-}
-
 $dev = $cli->system()->device(hexdec($config->i));
 
-$pkt = $dev->action()->send(
-    array(
-        "Command" => '0x64',
-        "Data" => sprintf("%02X", $config->C).$data,
-    )
-);
-if (is_object($pkt)) {
-    $reply = $pkt->Reply();
-    if (is_null($reply)) {
-        print "No Reply\r\n";
-    } else if (!empty($reply)) {
-        if ($reply == $data) {
-            $cli->out("Done!");
-        } else {
-            $cli->out("Failure!!!!");
-        }
-    } else {
-        print "Empty Reply\r\n";
-    }
-} else {
-    $cli->out("No Reply");
+$channels = explode(",", (string)$config->C);
+$settings = explode(",", (string)$config->D);
+
+if (count($channels) > count($settings)) {
+    $cli->out(
+        "The number of channels and set points are not the same: "
+            .count($settings)." set points for ".count($channels)." channels"
+    );
+    exit(1);
 }
 
+foreach ($channels as $key => $chan) {
+    $data = "";
+    for ($i = 0; $i < 4; $i++) {
+        $data .= sprintf("%02X", ($settings[$key] >> ($i * 8)) & 0xFF);
+    }
+
+    $pkt = $dev->action()->send(
+        array(
+            "Command" => '0x64',
+            "Data" => sprintf("%02X", $chan).$data,
+        )
+    );
+    if (is_object($pkt)) {
+        $reply = $pkt->Reply();
+        if (is_null($reply)) {
+            print "No reply on channel $chan\r\n";
+        } else if (!empty($reply)) {
+            if ($reply == $data) {
+                $cli->out("Channel $chan set to $settings[$key]!");
+            } else {
+                $cli->out("Failure to set channel $chan!!!!");
+            }
+        } else {
+            print "Empty reply on channel $chan\r\n";
+        }
+    } else {
+        $cli->out("No reply on channel $chan");
+    }
+}
 
 print "Finished\n";
 
