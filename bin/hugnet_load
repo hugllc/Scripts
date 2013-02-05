@@ -90,7 +90,7 @@ $cli->out(
 );
 $ret = false;
 if ($dev->get("loadable")) {
-    $ret = $dev->network()->loadFirmware($firmware);
+    $ret = $dev->action()->loadFirmware($firmware);
 } else if ($dev->get("arch") === "AVR") {
     $Prog = 'avrdude -c avrisp2 -p '.$firmware->Target.' -P usb ';
 
