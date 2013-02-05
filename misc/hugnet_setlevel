@@ -46,13 +46,34 @@ $config = HUGnetLib::Args(
             "name" => "DeviceID", "type" => "string", "args" => true
         ),
         "D" => array(
-            "name" => "Data", "type" => "string", "args" => true
+            "name" => "Data", "type" => "string", "args" => true, "default" => ""
         ),
         "V" => array(
-            "name" => "Value", "type" => "string", "args" => true, "default" => 0
+            "name" => "Value", "type" => "string", "args" => true, "default" => ""
         ),
         "T" => array(
-            "name" => "Low", "type" => "string", "args" => true, "default" => 0.01
+            "name" => "Low", "type" => "string", "args" => true, "default" => null
+        ),
+        "C" => array(
+            "name" => "Control", "type" => "int", "args" => true, "default" => null
+        ),
+        "P" => array(
+            "name" => "Process",
+            "type" => "int",
+            "args" => true,
+            "default" => null
+        ),
+        "p" => array(
+            "name" => "Priority",
+            "type" => "int",
+            "args" => true,
+            "default" => null
+        ),
+        "S" => array(
+            "name" => "Step",
+            "type" => "int",
+            "args" => true,
+            "default" => null
         ),
     ),
     "args",
@@ -72,9 +93,13 @@ Sets the level for the level holder.
 Usage: ".$cli->system()->get("program")." -i <DeviceID> -V <Value> -D <DataChannnel> [-T <tolerance>] [-v] [-f <file>]
 Arguments:
     -i <DeviceID>    The device ID to use.  Should be a hex value up to 6 digits
+    -P <Table>       The process table to set
+    -p <Priority>    The priority to set
+    -C <Channel>     The comma separated list of the control channels to set
+    -S <Step>        The step size to set
     -D <DataChannel> Comma separated list of the datachannels to use
     -V <Value>       Comma separated list of the values to hold the datachannel at
-    -T <Tolerance>   Tolerance on the values
+    -T <Tolerance>   Comma separated list of tolerances on the values
     -v               Increment the verbosity
     -f <file>        The config file to use",
     $config->h
@@ -85,174 +110,81 @@ if (strlen($config->i) == 0) {
     $cli->out("DeviceID must be specified");
     exit(1);
 }
-if (strlen($config->D) == 0) {
-    $cli->help();
-    $cli->out();
-    $cli->out("DataChannel must be specified");
-    exit(1);
-}
 if (strlen($config->V) == 0) {
     $cli->help();
     $cli->out();
     $cli->out("Value(s) must be specified");
     exit(1);
 }
-
-$dac = array(
-    "Driver" => 0x01,
-    "DAC0Con" => 0x0013,  //DAC_DACCLR_NORM | DAC_RANGE_AVDD;
-);
+if (strlen($config->P) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Process must be specified");
+    exit(1);
+}
 
 $dev = $cli->system()->device(hexdec($config->i));
-$dac = array(
-    "id" => 0x01,
-    "extra" => array(
-        0 => 0, // "Low Power Mode"
-        1 => 0, // "Op Amp Mode"
-        2 => 0, // "Output Buffer"
-        3 => 0, // "Mode"
-        4 => 0, // "Interpolation Clock"
-        5 => 3  // "Range"
-    ),
-    "driver" => "ADuCDAC",
-    "type" => "ADuCDAC",
-    "location" => "DAC Added by setpid",
-);
 
-$reconfig = false;
-$dev = $cli->system()->device(hexdec($config->i));
-$control = -1;
-$open = -1;
-$cli->out("Checking for DAC OutputTable");
-for ($i = 0; $i < $dev->get("OutputTables"); $i++) {
-    $driver = (int)$dev->output($i)->get("id");
-    if (($driver === 0xFF) && ($open < 0)) {
-        $open = $i;
-    } else if ($driver === 0x01) {
-        $control = $i;
-        break;
-    }
-}
-
-if ($control < 0) {
-    $cli->out("No DAC OutputTable found.");
-    if ($open >= 0) {
-        $cli->out("Attempting to add one.");
-        $output = $dev->output($open);
-        if ($output->change($dac)) {
-            $reconfig = true;
-            $control = $open;
-            $cli->out("Added one in output $open.");
-        } else {
-            $cli->out("Add Failed.");
-        }
-    }
-}
-if ($control < 0) {
-    $cli->out("No DAC Available.");
-    exit(-1);
-} else {
-    $cli->out("Found a DAC setup on control $control");
-}
-
-
-$CGNDOffset = 0.95;
-$stepVoltage = 2.5 / 4095;
-$maxVoltage = 1.2;
-
-$levelHolder = array(
-    "Driver" => 0x01,
-    "Priority" => 10,
-    "Step" => 0x2,
-    "Data" => explode(",", $config->D),
-    "Control" => $control,
-    "setpoints" => explode(",", $config->V),
-    "tolerance" => (float)$config->T,
-);
-
+$process = $dev->process($config->P);
+$extra   = $process->get("extra");
 
 
 /*
 "extraText" => array(
-    "Priority",
-    "Control",
-    "Step",
-    "Data Channel 0",
-    "Set Point 0",
-    "Tolerance 0",
-    "Data Channel 1",
-    "Set Point 1",
-    "Tolerance 1",
-    "Data Channel 2",
-    "Set Point 2",
-    "Tolerance 2",
+    0 => "Priority",
+    1 => "Control",
+    2 => "Step",
+    3 => "Data Channel 0",
+    4 => "Set Point 0",
+    5 => "Tolerance 0",
+    6 => "Data Channel 1",
+    7 => "Set Point 1",
+    8 => "Tolerance 1",
+    9 => "Data Channel 2",
+    10 => "Set Point 2",
+    11 => "Tolerance 2",
 ),
 */
-$level = array(
-    "id" => 0x01,
-    "type" => "LevelHolderProcess",
-    "extra" => array(
-        0 => $levelHolder["Priority"],
-        1 => $levelHolder["Control"],
-        2 => $levelHolder["Step"],
-        3 => $levelHolder["Data"][0],
-        4 => $levelHolder["setpoints"][0],
-        5 => $levelHolder["tolerance"],
-    ),
-    "location" => "LevelHolder Added by setpid",
-);
-if (!is_null($levelHolder["Data"][1])) {
-    $level["extra"][6] = $levelHolder["Data"][1];
-    $level["extra"][7] = $levelHolder["setpoints"][1];
-    $level["extra"][8] = $levelHolder["tolerance"];
-    if (!is_null($levelHolder["Data"][2])) {
-        $level["extra"][9] = $levelHolder["Data"][2];
-        $level["extra"][10] = $levelHolder["setpoints"][2];
-        $level["extra"][11] = $levelHolder["tolerance"];
-    }
+
+
+if (!is_null($config->p)) {
+    $extra[0] = $config->p;
 }
-$process = -1;
-$open = -1;
-$cli->out("Checking for LevelHolder process");
-for ($i = 0; $i < $dev->get("ProcessTables"); $i++) {
-    $driver = (int)$dev->process($i)->get("id");
-    if (($driver === 0xFF) && ($open < 0)) {
-        $open = $i;
-    } else if ($driver === 0x01) {
-        $process = $i;
-        break;
-    }
+if (!is_null($config->C)) {
+    $extra[1] = $config->C;
 }
-if ($process < 0) {
-    $cli->out("No LevelHolder process found.");
-    if ($open >= 0) {
-        $cli->out("Attempting to add one.");
-        $proc = $dev->process($open);
-        if ($proc->change($level)) {
-            $process = $open;
-            $cli->out("Added one in process $open.");
-            $reconfig = true;
-        } else {
-            $cli->out("Add Failed.");
-        }
-    }
-}
-if ($process < 0) {
-    $cli->out("No LevelHolder Available.");
-    exit(-1);
-} else {
-    $cli->out("Found a LevelHolder setup on process $process");
+if (!is_null($config->S)) {
+    $extra[2] = $config->S;
 }
 
-if ($reconfig) {
-    $dev->network()->loadConfig();
+if (strlen($config->D)) {
+    $data = explode(",", $config->D);
+}
+if (strlen($config->V)) {
+    $setpoints = explode(",", $config->V);
+}
+if (strlen($config->T)) {
+    $tolerance = explode(",", $config->T);
+}
+var_dump($extra);
+for ($i = 0; $i < 3; $i++) {
+    if (isset($data[$i])) {
+        $extra[($i*3) + 3] = $data[$i];
+    }
+    if (isset($setpoints[$i])) {
+        $extra[($i*3) + 4] = $setpoints[$i];
+    }
+    if (isset($tolerance[$i])) {
+        $extra[($i*3) + 5] = $tolerance[$i];
+    }
 }
 
 $cli->out("Setting the level holder in RAM (Changes won't be saved on reboot)");
 
-$proc = $dev->process($process);
-$proc->set("extra", $level["extra"]);
-if ($proc->push()) {
+var_dump($extra);
+
+$process->set("extra", $extra);
+if ($process->push()) {
     $cli->out("Done!");
 } else {
     $cli->out("Failed");
