@@ -1,0 +1,11 @@
+Package: hugnetscripts-watchdog
+Version: %VERSION%
+Section: contrib/science
+Priority: extra
+Architecture: all
+Essential: no
+Depends: hugnetscripts (= %VERSION% )
+Maintainer: Scott Price [prices@hugllc.com]
+Provides: hugnetscripts-watchdog
+Description: This is a watchdog for the HUGnet processes
+ This will email someone when things to pear-shaped.

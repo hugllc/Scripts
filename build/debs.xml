@@ -22,6 +22,7 @@
     <include file="${basedir}/build/deb_datacollector.xml"/>
     <include file="${basedir}/build/deb_misc.xml"/>
     <include file="${basedir}/build/deb_util.xml"/>
+    <include file="${basedir}/build/deb_watchdog.xml"/>
 
     <target name="clean" description="Clean up and create artifact directories">
         <delete dir="${deb.staging}" failonerror="false"/>
@@ -30,11 +31,11 @@
         </delete>
     </target>
 
-    <target name="setup" depends="common.setup,server.setup,datacollector.setup,misc.setup,util.setup" />
-    <target name="deb" depends="common.deb,server.deb,datacollector.deb,misc.deb,util.deb" />
-    <target name="post" depends="build,common.post,server.post,datacollector.post,misc.post,util.post" />
-    <target name="testpost" depends="build,common.testpost,server.testpost,datacollector.testpost,misc.testpost,util.testpost" />
-    <target name="rcpost" depends="build,common.rcpost,server.rcpost,datacollector.rcpost,misc.rcpost,util.rcpost" />
+    <target name="setup" depends="common.setup,server.setup,datacollector.setup,misc.setup,util.setup,watchdog.setup" />
+    <target name="deb" depends="common.deb,server.deb,datacollector.deb,misc.deb,util.deb,watchdog.deb" />
+    <target name="post" depends="build,common.post,server.post,datacollector.post,misc.post,util.post,watchdog.post" />
+    <target name="testpost" depends="build,common.testpost,server.testpost,datacollector.testpost,misc.testpost,util.testpost,watchdog.testpost" />
+    <target name="rcpost" depends="build,common.rcpost,server.rcpost,datacollector.rcpost,misc.rcpost,util.rcpost,watchdog.rcpost" />
 
     <target name="postclean">
         <delete dir="${deb.staging}"/>
