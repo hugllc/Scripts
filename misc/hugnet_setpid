@@ -1,0 +1,184 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2012 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @author     Jeff Liesmaki <jeffl@hugllc.com>
+ * @copyright  2007-2012 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** Packet log include stuff */
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+        "i" => array(
+            "name" => "DeviceID", "type" => "string", "args" => true
+        ),
+        "D" => array(
+            "name" => "Data", "type" => "string", "args" => true
+        ),
+        "V" => array(
+            "name" => "Value", "type" => "float", "args" => true, "default" => 0
+        ),
+        "P" => array(
+            "name" => "P", "type" => "float", "args" => true, "default" => 0.01
+        ),
+        "I" => array(
+            "name" => "I", "type" => "float", "args" => true, "default" => 0
+        ),
+        "d" => array(
+            "name" => "d", "type" => "float", "args" => true, "default" => 0
+        ),
+        "e" => array(
+            "name" => "d", "type" => "float", "args" => true, "default" => 0
+        ),
+        "C" => array(
+            "name" => "Control", "type" => "int", "args" => true, "default" => null
+        ),
+        "T" => array(
+            "name" => "Process",
+            "type" => "int",
+            "args" => true,
+            "default" => null
+        ),
+        "p" => array(
+            "name" => "Priority",
+            "type" => "int",
+            "args" => true,
+            "default" => null
+        ),
+    ),
+    "args",
+    $argv
+);
+
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = HUGnetLib::ui($config, "CLI");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+Sets the level for the PID Controller.
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> -V <Value> -D <DataChannnel> [-T <tolerance>] [-v] [-f <file>]
+Arguments:
+    -i <DeviceID>    The device ID to use.  Should be a hex value up to 6 digits
+    -D <DataChannel> The datachannel to use
+    -T <Table>       The process table to set
+    -p <Priority>    The priority to set
+    -C <Channel>     The comma separated list of the control channels to set
+    -V <Value>       The setpoint values to hold the datachannel at
+    -P <P>           The P value to use
+    -I <I>           The I value to use
+    -d <D>           The D value to use
+    -e <ErrorThresh> Error Threshold to use I and D at
+    -v               Increment the verbosity
+    -f <file>        The config file to use",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+if (strlen($config->T) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Process table must be specified");
+    exit(1);
+}
+
+/*
+"extraText" => array(
+    0 "Priority",
+    1 "Control Channel",
+    2 "Data Channel",
+    3 "Input Offset",
+    4 "Setpoint",
+    5 "Error Threshold",
+    6 "P",
+    7 "I",
+    8 "D",
+    9 "Output Offset",
+),
+*/
+$dev = $cli->system()->device(hexdec($config->i));
+
+$process = $dev->process($config->T);
+$extra   = $process->get("extra");
+
+if (!is_null($config->p)) {
+    $extra[0] = $config->p;
+}
+if (!is_null($config->C)) {
+    $extra[1] = $config->C;
+}
+if (!is_null($config->S)) {
+    $extra[2] = $config->S;
+}
+if (!is_null($config->V)) {
+    $extra[4] = $config->V;
+}
+if (!is_null($config->e)) {
+    $extra[5] = $config->e;
+}
+if (!is_null($config->P)) {
+    $extra[6] = $config->P;
+}
+if (!is_null($config->I)) {
+    $extra[7] = $config->I;
+}
+if (!is_null($config->d)) {
+    $extra[8] = $config->d;
+}
+
+
+
+$cli->out("Setting the PID in RAM (Changes won't be saved on reboot)");
+
+$process->set("extra", $extra);
+if ($process->push()) {
+    $cli->out("Done!");
+} else {
+    $cli->out("Failed");
+}
+
+print "Finished\n";
+
+exit(0);
+
+?>
