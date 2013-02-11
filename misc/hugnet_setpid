@@ -175,13 +175,16 @@ if ($set) {
     } else {
         $cli->out("Failed");
     }
+    $cli->out(str_pad("New Setup: ", 20, " ", STR_PAD_LEFT));
 } else {
     $cli->out(str_pad("Current Setup: ", 20, " ", STR_PAD_LEFT));
+}
+$process->pull();
 
-    $text = $process->get("extraText");
-    foreach ((array)$text as $key => $text) {
-        $cli->out(str_pad("$text: ", 20, " ", STR_PAD_LEFT).$extra[$key]);
-    }
+
+$text = $process->get("extraText");
+foreach ((array)$text as $key => $text) {
+    $cli->out(str_pad("$text: ", 20, " ", STR_PAD_LEFT).$extra[$key]);
 }
 print "Finished\n";
 
