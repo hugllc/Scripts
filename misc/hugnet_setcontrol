@@ -107,10 +107,10 @@ if (count($channels) > count($settings)) {
 
 foreach ($channels as $key => $chan) {
     $data = "";
-    for ($i = 0; $i < 4; $i++) {
-        $data .= sprintf("%02X", ($settings[$key] >> ($i * 8)) & 0xFF);
+    $value = sprintf("%08X", $settings[$key]);
+    for ($i = 6; $i >= 0; $i-=2) {
+        $data .= substr($value, $i, 2);
     }
-
     $pkt = $dev->action()->send(
         array(
             "Command" => '0x64',
