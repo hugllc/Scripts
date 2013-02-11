@@ -61,19 +61,16 @@ $config = HUGnetLib::Args(
             "name" => "d", "type" => "float", "args" => true
         ),
         "e" => array(
-            "name" => "d", "type" => "float", "args" => true
+            "name" => "e", "type" => "float", "args" => true
+        ),
+        "o" => array(
+            "name" => "o", "type" => "int", "args" => true
         ),
         "C" => array(
             "name" => "Control", "type" => "int", "args" => true
         ),
         "T" => array(
             "name" => "Process",
-            "type" => "int",
-            "args" => true,
-            "default" => null
-        ),
-        "p" => array(
-            "name" => "Priority",
             "type" => "int",
             "args" => true,
             "default" => null
@@ -93,20 +90,20 @@ HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  
 
 Sets the level for the PID Controller.
 
-Usage: ".$cli->system()->get("program")." -i <DeviceID> -T <Table> [-V <Value>] [-D <DataChannnel>] [-C <Channel>] [-p <priority>] [-P <P>] [-I <I>] [-D <D>] [-e <ErrorThresh>] [-v] [-f <file>]
+Usage: ".$cli->system()->get("program")." -i <DeviceID> -T <Table> [-V <Value>] [-o <OutputOffset>] [-C <Channel>] [-d <Channel>] [-P <P>] [-I <I>] [-D <D>] [-e <ErrorThresh>] [-v] [-f <file>]
 Arguments:
-    -i <DeviceID>    The device ID to use.  Should be a hex value up to 6 digits *REQUIRED*
-    -T <Table>       The process table to set *REQUIRED*
-    -D <DataChannel> The datachannel to use
-    -p <Priority>    The priority to set
-    -C <Channel>     The control channel to set
-    -V <Value>       The setpoint values to hold the datachannel at
-    -P <P>           The P value to use
-    -I <I>           The I value to use
-    -d <D>           The D value to use
-    -e <ErrorThresh> Error Threshold to use I and D at
-    -v               Increment the verbosity
-    -f <file>        The config file to use
+    -i <DeviceID>     The device ID to use.  Should be a hex value up to 6 digits *REQUIRED*
+    -T <Table>        The process table to set *REQUIRED*
+    -d <Channel>      The data channel to set
+    -C <Channel>      The control channel to set
+    -V <Value>        The setpoint values to hold the datachannel at
+    -P <P>            The P value to use
+    -I <I>            The I value to use
+    -D <D>            The D value to use
+    -e <ErrorThresh>  Error Threshold to use I and D at
+    -o <OutputOffset> The output offset to set
+    -v                Increment the verbosity
+    -f <file>         The config file to use
 
 If no settings are given, it prints out the current settings.",
     $config->h
@@ -126,56 +123,80 @@ if (strlen($config->T) == 0) {
 
 $dev = $cli->system()->device(hexdec($config->i));
 
+/*
+    0 => "Priority",
+    1 => "Control Channel",
+    2 => "Data Channel",
+    3 => "Input Offset",
+    4 => "Setpoint",
+    5 => "Error Threshold",
+    6 => "P",
+    7 => "I",
+    8 => "D",
+    9 => "Output Offset",
+*/
+
+
+
 $process = $dev->process($config->T);
 $process->pull();
 $extra   = $process->get("extra");
 
 $set = false;
-if (!is_null($config->p)) {
-    $extra[0] = $config->p;
-    $set = true;
-}
 if (!is_null($config->C)) {
     $extra[1] = $config->C;
+    $cli->out("Setting Control Channel to ".$extra[1]);
     $set = true;
 }
-if (!is_null($config->S)) {
-    $extra[2] = $config->S;
+if (!is_null($config->d)) {
+    $extra[2] = $config->d;
+    $cli->out("Setting Data Channel to ".$extra[2]);
     $set = true;
 }
 if (!is_null($config->V)) {
     $extra[4] = $config->V;
+    $cli->out("Setting Set Point to ".$extra[4]);
     $set = true;
 }
 if (!is_null($config->e)) {
     $extra[5] = $config->e;
+    $cli->out("Setting Error Threshold to ".$extra[5]);
     $set = true;
 }
 if (!is_null($config->P)) {
     $extra[6] = $config->P;
+    $cli->out("Setting P to ".$extra[6]);
     $set = true;
 }
 if (!is_null($config->I)) {
     $extra[7] = $config->I;
+    $cli->out("Setting I to ".$extra[7]);
     $set = true;
 }
-if (!is_null($config->d)) {
-    $extra[8] = $config->d;
+if (!is_null($config->D)) {
+    $extra[8] = $config->D;
+    $cli->out("Setting D to ".$extra[8]);
+    $set = true;
+}
+if (!is_null($config->o)) {
+    $extra[9] = $config->o;
+    $cli->out("Setting Output Offset to ".$extra[9]);
     $set = true;
 }
 
 
 
 if ($set) {
-    $cli->out("Setting the PID in RAM (Changes won't be saved on reboot)");
+    $cli->out();
+    $cli->out("Setting the values in RAM so changes won't be saved on reboot.");
 
     $process->set("extra", $extra);
     if ($process->push()) {
         $cli->out("Done!");
+        $cli->out(str_pad("New Setup: ", 20, " ", STR_PAD_LEFT));
     } else {
         $cli->out("Failed");
     }
-    $cli->out(str_pad("New Setup: ", 20, " ", STR_PAD_LEFT));
 } else {
     $cli->out(str_pad("Current Setup: ", 20, " ", STR_PAD_LEFT));
 }
