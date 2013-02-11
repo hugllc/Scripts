@@ -49,22 +49,22 @@ $config = HUGnetLib::Args(
             "name" => "Data", "type" => "string", "args" => true
         ),
         "V" => array(
-            "name" => "Value", "type" => "float", "args" => true, "default" => 0
+            "name" => "Value", "type" => "float", "args" => true
         ),
         "P" => array(
-            "name" => "P", "type" => "float", "args" => true, "default" => 0.01
+            "name" => "P", "type" => "float", "args" => true
         ),
         "I" => array(
-            "name" => "I", "type" => "float", "args" => true, "default" => 0
+            "name" => "I", "type" => "float", "args" => true
         ),
         "d" => array(
-            "name" => "d", "type" => "float", "args" => true, "default" => 0
+            "name" => "d", "type" => "float", "args" => true
         ),
         "e" => array(
-            "name" => "d", "type" => "float", "args" => true, "default" => 0
+            "name" => "d", "type" => "float", "args" => true
         ),
         "C" => array(
-            "name" => "Control", "type" => "int", "args" => true, "default" => null
+            "name" => "Control", "type" => "int", "args" => true
         ),
         "T" => array(
             "name" => "Process",
