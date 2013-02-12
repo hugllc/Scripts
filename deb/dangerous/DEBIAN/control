@@ -1,0 +1,13 @@
+Package: hugnetscripts-dangerousutil
+Version: %VERSION%
+Section: contrib/science
+Priority: extra
+Architecture: all
+Essential: no
+Depends: hugnetscripts (= %VERSION% )
+Maintainer: Scott Price [prices@hugllc.com]
+Provides: hugnetscripts-dangerousutil
+Description:   Dangerous utilities for the HUGnet Scripts.
+ These are utilites that, while useful, could easily damage your HUGnet system.  THIS
+ INCLUDES MAKING THE HARDWARE NON-FUNCTIONAL.  Please only use these if you know what
+ you are doing.
