@@ -53,14 +53,18 @@ Copyright Hunt Utilities Group, LLC
 HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
 ."HUGnetLib v".$cli->system()->get("version")."
 
-A utility to load programs into devices
+A utility to update the bootloader in devices
 
 Usage: ".$cli->system()->get("program")." [-v] [-f <file>] -i <DeviceID> -D <file>
 Arguments:
     -i <DeviceID>   The device ID to load.  Should be a hex value up to 6 digits
     -D <file>       The file to load into the device
     -v              Increment the verbosity
-    -f <file>       The config file to use",
+    -f <file>       The config file to use
+
+THIS COULD POTENTIALLY MAKE YOUR DEVICES TOTALLY NON FUNCTIONAL.  PLEASE DO NOT USE
+THIS UNLESS YOU KNOW WHAT YOU ARE DOING!
+",
     $config->h
 );
 if (strlen($config->i) == 0) {
@@ -85,46 +89,29 @@ $DevID = hexdec($config->i);
 $dev = $cli->system()->device($DevID);
 $firmware = $cli->system()->table("Firmware");
 $firmware->fromFile($file, $path);
-if ($firmware->get("FWPartNum") === "0039-38-03-C") {
+if ($firmware->get("FWPartNum") !== "0039-38-03-C") {
     $cli->out();
     $cli->out("Error:  This firmware can not be loaded using this utility");
     $cli->out();
     exit(1);
 }
+
 $cli->out(
     "Found firmware ".$firmware->get("FWPartNum")." v".$firmware->get("Version")
 );
+$cli->out();
+$cli->out("THIS COULD MAKE YOUR HARDWARE NON-FUNCTIONAL.  PLEASE ONLY USE THIS IF");
+$cli->out("YOU KNOW WHAT YOU ARE DOING!");
+$cli->out();
+$cli->out("Are you sure you want to do this?");
+$choice = readline("Please type 'yes' to continue: ");
+if (strtolower(trim($choice)) != "yes") {
+    $cli->out("Bailing Out!");
+    exit(1);
+}
 $ret = false;
 if ($dev->get("loadable")) {
-    $ret = $dev->action()->loadFirmware($firmware);
-} else if ($dev->get("arch") === "AVR") {
-    $Prog = 'avrdude -c avrisp2 -p '.$firmware->Target.' -P usb ';
-
-    // Program the flash
-    $flashname = tempnam("/tmp", "flash");
-
-    $fp = fopen($flashname, "w");
-    fwrite($fp, $firmware->Code);
-    fclose($fp);
-
-    // Program the E2
-    $eename = tempnam("/tmp", "eeprom");
-
-    $fp = fopen($eename, "w");
-    fwrite($fp, $firmware->Data);
-    fclose($fp);
-
-    //    $flash = ' --segment=flash --erase --upload --verify if='.$tempname;
-    $flash = " -e -U flash:w:$flashname -U eeprom:w:$eename";
-    print "Using: ".$Prog.$flash."\n";
-    if (passthru($Prog.$flash) == 0) {
-        $ret = true;
-    } else {
-        $ret = false;
-    }
-
-    unlink($flashname);
-    unlink($eename);
+    $ret = $dev->action()->loadFirmware($firmware, false);
 } else {
     $cli->out("I don't know how to load this\n");
     $cli->out("HW Part: ".$dev->get("HWPartNum"));
