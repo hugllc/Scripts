@@ -42,16 +42,31 @@ require_once 'HUGnetLib/HUGnetLib.php';
 
 $config = HUGnetLib::Args(
     array(
-        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
-        "D" => array("name" => "Data", "type" => "string", "args" => true),
-        "s" => array("name" => "Steps", "type" => "string", "args" => true),
+        "i" => array(
+            "name" => "DeviceID", "type" => "string", "args" => true
+        ),
+        "o" => array(
+            "name" => "OutFile", "type" => "string", "args" => true
+        ),
+        "s" => array("name" => "StepFile", "type" => "string", "args" => true),
+        "P" => array(
+            "name" => "Process",
+            "type" => "int",
+            "args" => true,
+            "default" => null
+        ),
+        "T" => array(
+            "name" => "Tests",
+            "type" => "string",
+            "args" => true,
+        ),
     ),
     "args",
     $argv
 );
 
 $config->addLocation("/usr/share/HUGnet/config.ini");
-$cli = HUGnetLib::ui($config, "Daemon");
+$cli = HUGnetLib::ui($config, "CLI");
 $cli->help(
     $cli->system()->get("program")."
 Copyright Hunt Utilities Group, LLC
@@ -60,10 +75,13 @@ HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  
 
 Sends a series of DAC set packets to HUGnetLab endpoints.
 
-Usage: ".$cli->system()->get("program")." -i <DeviceID> -s <step file> [-v] [-f <file>]
+Usage: ".$cli->system()->get("program")." -i <DeviceID> -s <step file> -P <Table> [-v] [-f <file>]
 Arguments:
     -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -P <Table>      The process table to set
     -s <step file>  The file that the steps are found in
+    -o <out file>   The file that we output CSV data to
+    -T <TestID>     Comma separated list of Device IDs to log
     -v              Increment the verbosity
     -f <file>       The config file to use
 
@@ -85,120 +103,75 @@ if (strlen($config->i) == 0) {
     $cli->out("DeviceID must be specified");
     exit(1);
 }
-if (!file_exists($config->s)) {
+if (strlen($config->s) == 0) {
     $cli->help();
     $cli->out();
-    $cli->out("File ".$config->s." doesn't exist");
+    $cli->out("A step file must be specified");
+    exit(1);
+}
+if (strlen($config->P) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Process must be specified");
     exit(1);
 }
 
-$dac = array(
-    "Driver" => 0x01,
-    "DAC0Con" => 0x0013,  //DAC_DACCLR_NORM | DAC_RANGE_AVDD;
-);
-
 $dev = $cli->system()->device(hexdec($config->i));
-$slot = -1;
-$open = -1;
-$cli->out("Checking for DAC OutputTable");
-for ($i = 0; $i < $dev->get("OutputTables"); $i++) {
-    $pkt = $dev->action()->send(
-        array(
-            "Command" => "READOUTPUTTABLE",
-            "Data" => sprintf("%02X", $i),
-        )
-    );
-    if (is_null($pkt->reply())) {
-        $cli->out("Failed to contact device");
-        exit(-1);
-    }
-    $driver = substr($pkt->reply(), 0, 2);
-    if (($driver === "FF") && ($open < 0)) {
-        $open = $i;
-    } else if ($driver === "01") {
-        $slot = $i;
-        break;
-    }
-}
-if ($slot < 0) {
-    $cli->out("No DAC OutputTable found.");
-    if ($open >= 0) {
-        $cli->out("Attempting to add one.");
-        $data = sprintf(
-            "%02X%02X%02X",
-            $dac["Driver"],
-            $dac["DAC0Con"] & 0xFF,
-            ($dac["DAC0Con"] >> 8) & 0xFF
-        );
-        $pkt = $dev->action()->send(
-            array(
-                "Command" => "SETOUTPUTTABLE",
-                "Data" => sprintf("%02X", $open).$data,
-            )
-        );
-        if (trim(strtoupper($pkt->reply())) == $data) {
-            $slot = $open;
-            $cli->out("Added one in slot $open.");
-            $dev->network()->reboot();
-            $cli->out("Rebooting.");
-            sleep(5);
-        } else {
-            $cli->out("Add Failed.");
-        }
-    }
-}
-if ($slot < 0) {
-    $cli->out("No DAC Available.");
-    exit(-1);
+
+if (strlen($config->T) == 0) {
+    $tests = array($config->i);
 } else {
-    $cli->out("Found a DAC setup on slot $slot");
+    $tests = explode(",", $config->T);
+}
+$testdev = array();
+foreach ($tests as $key) {
+    if (strlen($config->o) == 0) {
+        $outfile = "powerstep";
+    } else {
+        $outfile = $config->o;
+    }
+    $tdev = $cli->system()->device(hexdec($key));
+    $testdev[$outfile.".".$tdev->get("DeviceID")] = $tdev;
 }
 
-/* save input control voltage */
-$ctlVoltage = (float)$config->D;
+foreach ($testdev as $f => $d) {
+    getHistoryHeader($cli, $d, $f);
+}
+$process = $dev->process($config->P);
+$extra   = $process->get("extra");
 
 
-$CGNDOffset = 0.95;
-$stepVoltage = 2.5 / 4095;
+/*
+"extraText" => array(
+    0 => "Priority",
+    1 => "Control",
+    2 => "Step",
+    3 => "Data Channel 0",
+    4 => "Set Point 0",
+    5 => "Tolerance 0",
+    6 => "Data Channel 1",
+    7 => "Set Point 1",
+    8 => "Tolerance 1",
+    9 => "Data Channel 2",
+    10 => "Set Point 2",
+    11 => "Tolerance 2",
+),
+*/
 
 $stepFile = file($config->s);
 
 foreach ($stepFile as $line) {
     list($time, $setPoint) = explode(":", $line);
     $cli->out(
-        "Setting DAC Control Voltage: ".sprintf("%4.2f", $setPoint)." for $time s"
+        "Setting Output to: ".sprintf("%4.2f", $setPoint)." for $time s"
     );
+    $extra[4] = $setPoint;
 
-    $ctlVoltage = $setPoint + $CGNDOffset;
-
-    $steps = (int)($ctlVoltage / $stepVoltage);
-
-    $dacVal = sprintf(
-        "%02X%02X%02X%02X",
-        ($steps & 0xFF), (($steps >> 8) & 0xFF),
-        (($steps >> 16) & 0xFF), (($steps >> 24) & 0xFF)
-    );
-
-    $pkt = $dev->action()->send(
-        array(
-            "Command" => '0x64',
-            "Data" => sprintf("%02X", $slot).$dacVal,
-        )
-    );
-    if (is_object($pkt)) {
-        $reply = $pkt->Reply();
-        if (is_null($reply)) {
-            print "No Reply\r\n";
-        } else if (!empty($reply)) {
-            $dacOut = hexdec(substr($reply, 0, 2)) + (hexdec(substr($reply, 2, 2)) << 8);
-            $dacV = $dacOut * $stepVoltage;
-            $cli->out("Confirm ".round($dacV, 4)." V to AGND");
-            $cli->out("Confirm ".round($dacV - $CGNDOffset, 4)." V to CGND");
-        } else {
-            print "Empty Reply\r\n";
-        }
+    $process->set("extra", $extra);
+    if ($process->push()) {
+        $cli->out("Value set");
     } else {
-        $cli->out("No Reply");
+        $cli->out("Set Failed");
     }
 
     $wait = time() + $time;
@@ -208,12 +181,15 @@ foreach ($stepFile as $line) {
         sleep(1);
         $count++;
         if ($count >= 60) {
-            $cli->out("DAC Control Voltage: ".sprintf("%4.2f", $setPoint));
+            $cli->out("Setpoint: ".sprintf("%4.2f", $setPoint));
             $cli->out(
                 date("Y-m-d H:i:s")." Next step at ".date("Y-m-d H:i:s", $wait)
             );
             $count = 0;
         }
+    }
+    foreach ($testdev as $f => $d) {
+        getHistory($cli, $d, $f);
     }
 
     if ($cli->system()->quit()){
@@ -224,4 +200,65 @@ foreach ($stepFile as $line) {
 print "Finished\n";
 
 exit(0);
+
+
+function getHistory($cli, $dev, $outfile)
+{
+    $hist = $dev->historyFactory(array(), false);
+    $hist->sqlLimit = 1;
+    $hist->sqlStart = 0;
+    $hist->sqlOrderBy = "Date desc";
+    $whereText = "`id` = ? AND Type = ?";
+    $whereData = array($dev->id(), "5MIN");
+    $hist->selectOneInto($whereText, $whereData);
+    $ret = array();
+    if (!$hist->isEmpty()) {
+        $channels = $dev->dataChannels();
+        $chan = $channels->toArray();
+        $ret = $hist->toArray(true);
+        $channels->convert($ret);
+        $sep = ",";
+        $out .= date("Y-m-d H:i:s", $ret["Date"]);
+        $out .= $sep.$ret["Type"];
+        for ($i = 0; $i < count($chan); $i++) {
+            if ($chan[$i]["dataType"] !== 'ignore') {
+                $data = $ret["Data".$i];
+                $out .= $sep.$data;
+            }
+        }
+        $file = fopen($outfile, "a");
+        if ($file) {
+            fwrite($file, $out."\r\n");
+            fclose($file);
+        } else {
+            $cli->out("Can't write to file $outfile");
+        }
+    } else {
+        $cli->out("Bad History");
+    }
+
+}
+
+function getHistoryHeader($cli, $dev, $outfile)
+{
+    $file = fopen($outfile, "w");
+    if ($file) {
+        $channels = $dev->dataChannels();
+        $chan = $channels->toArray();
+        $out = "";
+        $sep = ",";
+        $out .= "Date,Type";
+        for ($i = 0; $i < count($chan); $i++) {
+            if ($chan[$i]["dataType"] !== 'ignore') {
+                $out .= $sep.$chan[$i]['label'];
+                $out .= " (".html_entity_decode($chan[$i]['units']).")";
+                $sep = ",";
+            }
+        }
+        fwrite($file, $out."\r\n");
+        fclose($file);
+    } else {
+        $cli->out("Can't write to file $outfile");
+    }
+}
 ?>

@@ -13,3 +13,4 @@ rel/
 config.ini
 config.inc.php
 *.elf
+powerstep.*
