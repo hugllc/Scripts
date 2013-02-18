@@ -75,7 +75,7 @@ HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  
 
 Sends a series of DAC set packets to HUGnetLab endpoints.
 
-Usage: ".$cli->system()->get("program")." -i <DeviceID> -s <step file> -P <Table> [-v] [-f <file>]
+Usage: ".$cli->system()->get("program")." -i <DeviceID> -s <step file> -P <Table> [-T <TestID>] [-o <out file>] [-v] [-f <file>]
 Arguments:
     -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
     -P <Table>      The process table to set
@@ -84,6 +84,9 @@ Arguments:
     -T <TestID>     Comma separated list of Device IDs to log
     -v              Increment the verbosity
     -f <file>       The config file to use
+
+The levelholder and output need to be set up ahead of time.  This script will not set
+them up.
 
 The step file should have on each line a time in seconds, followed by a colon, followed
 by a setpoint.  The setpoint is in whatever units the data channel is set to.
