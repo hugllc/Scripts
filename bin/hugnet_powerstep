@@ -86,14 +86,14 @@ Arguments:
     -f <file>       The config file to use
 
 The step file should have on each line a time in seconds, followed by a colon, followed
-by a level to set the DAC to:
+by a setpoint.  The setpoint is in whatever units the data channel is set to.
 
-<time 1>:<control voltage 1>
-<time 2>:<control voltage 2
+<time 1>:<setpoint 1>
+<time 2>:<setpoint 2
 .
 .
 .
-<time n>:<control voltage n>
+<time n>:<setpoint n>
 ",
     $config->h
 );
