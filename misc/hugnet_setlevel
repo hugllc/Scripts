@@ -166,7 +166,6 @@ if (strlen($config->V)) {
 if (strlen($config->T)) {
     $tolerance = explode(",", $config->T);
 }
-var_dump($extra);
 for ($i = 0; $i < 3; $i++) {
     if (isset($data[$i])) {
         $extra[($i*3) + 3] = $data[$i];
@@ -180,8 +179,6 @@ for ($i = 0; $i < 3; $i++) {
 }
 
 $cli->out("Setting the level holder in RAM (Changes won't be saved on reboot)");
-
-var_dump($extra);
 
 $process->set("extra", $extra);
 if ($process->push()) {
