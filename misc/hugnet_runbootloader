@@ -57,7 +57,7 @@ Copyright Hunt Utilities Group, LLC
 HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
 ."HUGnetLib v".$cli->system()->get("version")."
 
-Sends a series of DAC set packets to HUGnetLab endpoints.
+This runs the bootloader on a device.
 
 Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
 Arguments:
