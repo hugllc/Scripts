@@ -716,11 +716,15 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         $result = false;
 
-        $response = substr($this->_device->encode(), 0, 20);
+        $response1 = substr($this->_device->encode(), 0, 20);
+        $response2 = substr($this->_device->encode(), 0, 10);
+
+        $response = $response1.$response2;
         $this->out("Serial number and Hardware version");
         $this->out("program data is : ".$response);
+        $this->out("Unique Serial Number is : ".$response2);
 
-        if (strlen($response) == 20) {
+        if (strlen($response) == 30) {
             $idNum = self::TEST_ID;
             $cmdNum = 0x1c;
             $dataVal = $response;
