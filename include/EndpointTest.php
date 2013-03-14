@@ -136,6 +136,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         if (($selection == "A") || ($selection == "a")) {
             $this->_testMain();
+        } else if (($selection == "B") || ($selection == "b")){
+            $this->_cloneMain();
         } else {
             $this->out("Exit Test Tool");
         }
@@ -158,9 +160,10 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $this->_printHeader();
         $this->out();
         $this->out("A ) Test, Serialize and Program");
-        $this->out("B ) Exit");
+        $this->out("B ) Clone and Test");
+        $this->out("C ) Exit");
         $this->out();
-        $choice = readline("\n\rEnter Choice(A or B): ");
+        $choice = readline("\n\rEnter Choice(A,B or C): ");
         
         return $choice;
     }
@@ -241,6 +244,38 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
     }
     
+    /**
+    ************************************************************
+    * Main Clone Routine
+    *
+    * This is the main routine for cloning an existing endpoint
+    * the serial number for the board to be cloned will be written
+    * into the new board, but the unique serial number will 
+    * remain the same and the board will run through program test.
+    * 
+    * @return void
+    *
+    */
+
+    private function _cloneMain()
+    {
+        
+        $this->_clearScreen();
+        $this->out("\n\r");
+        $this->out("\n\r");
+       
+        $this->out("**************************************************");
+        $this->out("*                                                *");
+        $this->out("*      U N D E R   C O N S T R U C T I O N       *");
+        $this->out("*                                                *");
+        $this->out("**************************************************");
+
+
+        $choice = readline("\n\rHit Any Key To Continue: ");
+
+
+    }
+
 
     /**
     ************************************************************
@@ -268,7 +303,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $testResult = $this->_testEndpoint();
 
             if ($testResult == true) {
-                $this->out("Board Test passed!");
+                $this->_displayPassed();
 
                 $retVal = $this->_writeSerialNumAndHardwareVer();
                 
@@ -598,6 +633,32 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
     /**
     ************************************************************
+    * Display Board Passed Routine
+    *
+    * This function displays the board passed message in a
+    * visually obvious way so the user cannot miss it.
+    *
+    * @return void
+    *
+    */
+    private function _displayPassed()
+    {
+        $this->out("\n\r");
+        $this->out("\n\r");
+
+        $this->out("**************************************************");
+        $this->out("*                                                *");
+        $this->out("*      B O A R D   T E S T   P A S S E D !       *");
+        $this->out("*                                                *");
+        $this->out("**************************************************");
+
+        $this->out("\n\r");
+        $this->out("\n\r");
+
+    }
+
+    /**
+    ************************************************************
     * Load Bootloader Firmware Routine
     * 
     * This function loads the endpoint with the correct 
@@ -718,7 +779,10 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         $response1 = substr($this->_device->encode(), 0, 20);
         $response2 = substr($this->_device->encode(), 0, 10);
-
+        /* add new unique serial number */
+        /* for now it is the same as ID number */
+        /* but cloning should allow ID number to change */
+        /* and unique serial number to remain the same */
         $response = $response1.$response2;
         $this->out("Serial number and Hardware version");
         $this->out("program data is : ".$response);
