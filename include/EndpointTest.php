@@ -322,7 +322,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
             $exitTest = $this->_repeatTestMenu();
 
-        } while ($exitTest == false);
+        } while ($exitTest == false);  
 
         $this->out("Test and Program End!");
 
@@ -728,8 +728,11 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $dev = $this->system()->device()->getHardwareTypes();
         
         $HWarray = array();
+        $i=0;
 
         foreach ($dev as $endp) {
+            $i = $i+1;
+            $this->out("Endpoint number ".$i);
             if ($endp['Param']['ARCH'] == "ADuC7060") {
                 $HWarray[] = $endp['HWPartNum'];
             }
