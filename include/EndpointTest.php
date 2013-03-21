@@ -141,7 +141,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $selection = $this->_mainMenu();
 
             if (($selection == "A") || ($selection == "a")) {
-                $result = $this->_checkGoodEndpoint();
+                $result = true;
+                /* $result = $this->_checkGoodEndpoint(); */
                 if ($result = true) {
                     $this->_testMain();
                 } else {
@@ -442,9 +443,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $Result =  $this->_testDAC();
         }
 
-        if ($Result == true) {
+       /* if ($Result == true) {
             $Result = $this->_testDigital();
-        }
+        }*/
 
         return $Result;
     }
