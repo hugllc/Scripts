@@ -83,6 +83,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     private $_programBootPath = "~/code/HOS/src/003937boot/program.cfg";
 
     private $_device;
+    private $_goodDevice;
 
     private $_testErrorArray = array(
                 0 => "No Response!",
@@ -96,7 +97,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     /** ascii string hex value for revision letter **/
     private $_HWrev;
 
-    /**
+    /*
     * Sets our configuration
     *
     * @param mixed &$config The configuration to use
@@ -105,6 +106,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     {
         parent::__construct($config);
         $this->_device = $this->system()->device();
+        $this->_goodDevice = $this->system()->device();
     }
 
     /**
@@ -131,15 +133,28 @@ class EndpointTest extends \HUGnet\ui\Daemon
     */
     public function main()
     {
+        $exitTest = false;
+        $result;
 
-        $selection = $this->_mainMenu();
+        do{
 
-        if (($selection == "A") || ($selection == "a")) {
-            $this->_testMain();
-        } else {
-            $this->out("Exit Test Tool");
-        }
+            $selection = $this->_mainMenu();
 
+            if (($selection == "A") || ($selection == "a")) {
+                $result = $this->_checkGoodEndpoint();
+                if ($result = true) {
+                    $this->_testMain();
+                } else {
+                    $exitTest = true;
+                }
+            } else if (($selection == "B") || ($selection == "b")){
+                $this->_cloneMain();
+            } else {
+                $exitTest = true;
+                $this->out("Exit Test Tool");
+            }
+
+        } while ($exitTest == false);
     }
 
 
@@ -158,9 +173,10 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $this->_printHeader();
         $this->out();
         $this->out("A ) Test, Serialize and Program");
-        $this->out("B ) Exit");
+        $this->out("B ) Clone and Test");
+        $this->out("C ) Exit");
         $this->out();
-        $choice = readline("\n\rEnter Choice(A or B): ");
+        $choice = readline("\n\rEnter Choice(A,B or C): ");
         
         return $choice;
     }
@@ -179,8 +195,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
     */
     private function _repeatTestMenu()
     {
-        $this->out();
-        $this->_printHeader();
         $this->out();
         $choice = readline("\n\rTest Another Board?(y/N): ");
         
@@ -241,6 +255,38 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
     }
     
+    /**
+    ************************************************************
+    * Main Clone Routine
+    *
+    * This is the main routine for cloning an existing endpoint
+    * the serial number for the board to be cloned will be written
+    * into the new board, but the unique serial number will 
+    * remain the same and the board will run through program test.
+    * 
+    * @return void
+    *
+    */
+
+    private function _cloneMain()
+    {
+        
+        $this->_clearScreen();
+        $this->out("\n\r");
+        $this->out("\n\r");
+       
+        $this->out("**************************************************");
+        $this->out("*                                                *");
+        $this->out("*      U N D E R   C O N S T R U C T I O N       *");
+        $this->out("*                                                *");
+        $this->out("**************************************************");
+
+
+        $choice = readline("\n\rHit Enter To Continue: ");
+
+
+    }
+
 
     /**
     ************************************************************
@@ -255,6 +301,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
     private function _testMain()
     {
         $exitTest = false;
+        
+
         $StartSN = $this->_getSerialNumber();
         $snCounter = 0;
         $programHW = $this->_getHardwareNumber();
@@ -268,28 +316,39 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $testResult = $this->_testEndpoint();
 
             if ($testResult == true) {
-                $this->out("Board Test passed!");
+                $this->_displayPassed();
 
                 $retVal = $this->_writeSerialNumAndHardwareVer();
                 
                 if ($retVal == true) {
                     $snCounter++;
-                    $this->_loadBootLoader();
+                    $retVal = $this->_loadBootLoader();
+                    if ($retVal == 0) {
+                        $this->_displayPassed();
+                    } else {
+                        $this->out("*****************************************");
+                        $this->out("*                                       *");
+                        $this->out("*       Load Boot Loader Failed!        *");
+                        $this->out("*                                       *");
+                        $this->out("*****************************************");
+                    }
                 } else {
-                    $this->out("     === Board SN & HW Programming Failed ===");
-                    $this->out("              Please verify:                 ");
-                    $this->out("       Serial number and hardware partnumber.");
+                    $this->out("*********************************************");
+                    $this->out("*                                           *");
+                    $this->out("*     Board SN & HW Programming Failed      *");
+                    $this->out("*             Please verify:                *");
+                    $this->out("*   Serial number and hardware partnumber   *");
+                    $this->out("*                                           *");
+                    $this->out("*********************************************");
                 }
             } else {
-                $this->out("       === Board Test Failed ===");
-                $this->out("Please repair board before retesting.");
+                $this->_displayFailed();
             }
 
             $exitTest = $this->_repeatTestMenu();
 
-        } while ($exitTest == false);
+        } while ($exitTest == false);  
 
-        $this->out("Test and Program End!");
 
     }
 
@@ -307,10 +366,12 @@ class EndpointTest extends \HUGnet\ui\Daemon
     private function _loadTestFirmware()
     {
         $this->out();
-        $this->out(
-            "==== Loading HUGnetLab Test Firmware"
-            ."and Beginning Test ===="
+        $this->out(str_repeat("*", 54));
+        $this->out("* Loading HUGnetLab Test Firmware "
+            ."and Beginning Test *"
         );
+        $this->out(str_repeat("*", 54));
+        $this->out();
         
         /* Load the test firmware through the JTAG emulator */
         $Prog = $this->_openOcdPath." -f ".$this->_programTestPath; 
@@ -318,6 +379,34 @@ class EndpointTest extends \HUGnet\ui\Daemon
         exec($Prog, $out, $return);
 
     }
+
+     /**
+    ************************************************************
+    * Test Endpoint Routine
+    *
+    * This function runs the tests in the endpoint test firmware
+    * and returns the results.
+    *
+    * @return boolean $testResult
+    *
+    */
+    private function _checkGoodEndpoint()
+    {
+        
+        
+        $this->_device->set("id", self:: KNOWN_GOOD_ID);
+
+        $Result = $this->_pingEndpoint(self::KNOWN_GOOD_ID);
+        if ($Result = true) {
+            $this->out("Known Good Endpoint Responding!");
+        } else {
+            $this->out("Known Good Endpoint Failed to Respond!");
+        }
+
+        return $Result;
+
+    }
+
 
     /**
     ************************************************************
@@ -336,7 +425,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $Result = $this->_pingEndpoint(self::TEST_ID);
 
         if ($Result == true) {
-            $this->out("Hey NEW RUN works!");
             $idNum = self::TEST_ID;
             $cmdNum = self::TEST_ANALOG_COMMAND;
             $dataVal = 01;
@@ -354,7 +442,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $Result =  $this->_testDAC();
         }
 
-        if ($Result == true) {
+       if ($Result == true) {
             $Result = $this->_testDigital();
         }
 
@@ -598,6 +686,58 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
     /**
     ************************************************************
+    * Display Board Passed Routine
+    *
+    * This function displays the board passed message in a
+    * visually obvious way so the user cannot miss it.
+    *
+    * @return void
+    *
+    */
+    private function _displayPassed()
+    {
+        $this->out("\n\r");
+        $this->out("\n\r");
+
+        $this->out("**************************************************");
+        $this->out("*                                                *");
+        $this->out("*      B O A R D   T E S T   P A S S E D !       *");
+        $this->out("*                                                *");
+        $this->out("**************************************************");
+
+        $this->out("\n\r");
+        $this->out("\n\r");
+
+    }
+
+    /**
+    ************************************************************
+    * Display Board Passed Routine
+    *
+    * This function displays the board passed message in a
+    * visually obvious way so the user cannot miss it.
+    *
+    * @return void
+    *
+    */
+    private function _displayFailed()
+    {
+        $this->out("\n\r");
+        $this->out("\n\r");
+
+        $this->out("**************************************************");
+        $this->out("*                                                *");
+        $this->out("*      B O A R D   T E S T   F A I L E D !       *");
+        $this->out("*                                                *");
+        $this->out("**************************************************");
+
+        $this->out("\n\r");
+        $this->out("\n\r");
+
+    }
+
+    /**
+    ************************************************************
     * Load Bootloader Firmware Routine
     * 
     * This function loads the endpoint with the correct 
@@ -619,6 +759,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $response = substr($this->_device->encode(), 0, 20);
         $this->out("Serial number and Hardware version");
         $this->out("are :".$response);
+
+        return $return;
 
     }
 
@@ -716,11 +858,18 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         $result = false;
 
-        $response = substr($this->_device->encode(), 0, 20);
+        $response1 = substr($this->_device->encode(), 0, 20);
+        $response2 = substr($this->_device->encode(), 0, 10);
+        /* add new unique serial number */
+        /* for now it is the same as ID number */
+        /* but cloning should allow ID number to change */
+        /* and unique serial number to remain the same */
+        $response = $response1.$response2;
         $this->out("Serial number and Hardware version");
         $this->out("program data is : ".$response);
+        $this->out("Unique Serial Number is : ".$response2);
 
-        if (strlen($response) == 20) {
+        if (strlen($response) == 30) {
             $idNum = self::TEST_ID;
             $cmdNum = 0x1c;
             $dataVal = $response;
