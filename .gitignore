@@ -14,3 +14,5 @@ config.ini
 config.inc.php
 *.elf
 powerstep.*
+.directory
+.gitignore
