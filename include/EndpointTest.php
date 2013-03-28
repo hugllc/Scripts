@@ -107,6 +107,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
         parent::__construct($config);
         $this->_device = $this->system()->device();
         $this->_goodDevice = $this->system()->device();
+        $this->_goodDevice->set("Role","TesterKnownGood");
+        $this->_goodDevice->store();
+        $this->_goodDevice->action()->loadConfig();
     }
 
     /**
@@ -463,6 +466,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
     private function _testADC()
     {
         $result = true;
+
+       $voltageVals = $this->_goodDevice->action()->poll();
         /* set power supply output based on board version */
         /* set up a while loop and a case statement to step 
            through each channel.  Read results and determine
