@@ -107,6 +107,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         parent::__construct($config);
         $this->_device = $this->system()->device();
         $this->_goodDevice = $this->system()->device();
+        $this->_goodDevice->set("id", self:: KNOWN_GOOD_ID);
         $this->_goodDevice->set("Role","TesterKnownGood");
         $this->_goodDevice->store();
         $this->_goodDevice->action()->loadConfig();
@@ -397,7 +398,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
     {
         
         
-        $this->_device->set("id", self:: KNOWN_GOOD_ID);
 
         $Result = $this->_pingEndpoint(self::KNOWN_GOOD_ID);
         if ($Result = true) {
@@ -405,6 +405,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         } else {
             $this->out("Known Good Endpoint Failed to Respond!");
         }
+
 
         return $Result;
 
@@ -442,6 +443,10 @@ class EndpointTest extends \HUGnet\ui\Daemon
         };
 
         if ($Result == true) {
+            $Result = $this->_testADC();
+        }
+
+        if ($Result == true) {
             $Result =  $this->_testDAC();
         }
 
@@ -466,9 +471,19 @@ class EndpointTest extends \HUGnet\ui\Daemon
     private function _testADC()
     {
         $result = true;
+        
+        $voltageVals = $this->_goodDevice->action()->poll();
+        if (is_object($voltageVals)) {
+            $channels = $this->_goodDevice->dataChannels();
+            $this->out("Date: ".date("Y-m-d H:i:s", $voltageVals->get("Date")));
+            for ($i = 0; $i < $channels->count(); $i++) {
+                $chan = $channels->dataChannel($i);
+                $this->out($chan->get("label").": ".$voltageVals->get("Data".$i)." ".html_entity_decode($chan->get("units")));
+            }
+        } else {
+            $this->out("No object returned");
+        }
 
-       $voltageVals = $this->_goodDevice->action()->poll();
-        /* set power supply output based on board version */
         /* set up a while loop and a case statement to step 
            through each channel.  Read results and determine
            if the channel passes or fails.  If it passes, 
