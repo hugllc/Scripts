@@ -109,7 +109,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $this->_goodDevice = $this->system()->device();
         $this->_goodDevice->set("id", self:: KNOWN_GOOD_ID);
         $this->_goodDevice->set("Role","TesterKnownGood");
-        $this->_goodDevice->store();
+        $this->_goodDevice->action()->config();
         $this->_goodDevice->action()->loadConfig();
     }
 
