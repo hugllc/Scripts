@@ -60,7 +60,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
 {
     /** predefined endpoint serial number used in test firmware **/
     const TEST_ID = 0x20;
-    const KNOWN_GOOD_ID = 0x1003;
+    const KNOWN_GOOD_ID = 0x1022;
     
     /** packet commands to test firmware **/
     const TEST_ANALOG_COMMAND  = 0x20;
@@ -472,17 +472,22 @@ class EndpointTest extends \HUGnet\ui\Daemon
     {
         $result = true;
         
+
+        /* read known good board for input voltage values */
         $voltageVals = $this->_goodDevice->action()->poll();
         if (is_object($voltageVals)) {
             $channels = $this->_goodDevice->dataChannels();
             $this->out("Date: ".date("Y-m-d H:i:s", $voltageVals->get("Date")));
             for ($i = 0; $i < $channels->count(); $i++) {
                 $chan = $channels->dataChannel($i);
+                $KnownVolts[$i] = $voltageVals->get("Data".$i);
                 $this->out($chan->get("label").": ".$voltageVals->get("Data".$i)." ".html_entity_decode($chan->get("units")));
             }
         } else {
             $this->out("No object returned");
         }
+
+        /* read test board for input voltage values */
 
         /* set up a while loop and a case statement to step 
            through each channel.  Read results and determine
