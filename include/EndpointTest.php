@@ -428,7 +428,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
    
         $Result = $this->_pingEndpoint(self::TEST_ID);
 
-        if ($Result == true) {
+        /*if ($Result == true) {
             $idNum = self::TEST_ID;
             $cmdNum = self::TEST_ANALOG_COMMAND;
             $dataVal = 01;
@@ -440,7 +440,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             }
         } else {
             $this->out($_testErrorArray[3]);
-        };
+        }; */
 
         if ($Result == true) {
             $Result = $this->_testADC();
@@ -488,6 +488,12 @@ class EndpointTest extends \HUGnet\ui\Daemon
         }
 
         /* read test board for input voltage values */
+
+        $idNum = self::TEST_ID;
+        $cmdNum = self::TEST_ANALOG_COMMAND;
+        $dataVal = 01;
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->out("Reply Data :".$ReplyData);
 
         /* set up a while loop and a case statement to step 
            through each channel.  Read results and determine
