@@ -38,6 +38,8 @@ namespace HUGnet\processes;
 
 /** This is our base class */
 require_once "HUGnetLib/ui/Daemon.php";
+/** This is our units class */
+require_once "HUGnetLib/devices/inputTable/Driver.php";
 
 /**
  * This code tests, serializes and programs endpoints with bootloader code.
@@ -491,9 +493,61 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         $idNum = self::TEST_ID;
         $cmdNum = self::TEST_ANALOG_COMMAND;
-        $dataVal = 01;
+        $dataVal = "01";
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        $this->out("Reply Data :".$ReplyData);
+
+        $myVolts = $this->_convertADCbytes($ReplyData);
+        $this->out("Votage :".$myVolts." V");
+
+        $idNum = self::TEST_ID;
+        $cmdNum = self::TEST_ANALOG_COMMAND;
+        $dataVal = "02";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $myVolts = $this->_convertADCbytes($ReplyData);
+        $this->out("Votage :".$myVolts." V");
+
+        $idNum = self::TEST_ID;
+        $cmdNum = self::TEST_ANALOG_COMMAND;
+        $dataVal = "03";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $myVolts = $this->_convertADCbytes($ReplyData);
+        $this->out("Votage :".$myVolts." V");
+
+        $idNum = self::TEST_ID;
+        $cmdNum = self::TEST_ANALOG_COMMAND;
+        $dataVal = "04";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $myVolts = $this->_convertADCbytes($ReplyData);
+        $this->out("Votage :".$myVolts." V");
+
+        $idNum = self::TEST_ID;
+        $cmdNum = self::TEST_ANALOG_COMMAND;
+        $dataVal = "05";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $myVolts = $this->_convertADCbytes($ReplyData);
+        $this->out("Votage :".$myVolts." V");
+
+        $idNum = self::TEST_ID;
+        $cmdNum = self::TEST_ANALOG_COMMAND;
+        $dataVal = "06";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $myVolts = $this->_convertADCbytes($ReplyData);
+        $this->out("Votage :".$myVolts." V");
+
+        $idNum = self::TEST_ID;
+        $cmdNum = self::TEST_ANALOG_COMMAND;
+        $dataVal = "07";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $myVolts = $this->_convertADCbytes($ReplyData);
+        $this->out("Votage :".$myVolts." V");
+
+
+        $idNum = self::TEST_ID;
+        $cmdNum = self::TEST_ANALOG_COMMAND;
+        $dataVal = "08";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $myVolts = $this->_convertADCbytes($ReplyData);
+        $this->out("Votage :".$myVolts." V");
 
         /* set up a while loop and a case statement to step 
            through each channel.  Read results and determine
@@ -503,6 +557,55 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         return $result;
     }
+
+    /**
+    ************************************************************
+    * Convert Reply Data String
+    *
+    * This function changes the bytes in the input string
+    * from little endian to big endian so the hex string
+    * can be converted to an integer.
+    *
+    * @return int $result of conversion
+    *
+    */
+    private function _convertReplyData(&$inString)
+    {
+        $size = strlen($inString);
+        $newString = substr($inString, 6, 2);
+        $newString = $newString.substr($inString, 4, 2);
+        $newString = $newString.substr($inString, 2, 2);
+        $newString = $newString.substr($inString, 0, 2);
+        $newString = "0x".$newString;
+        $newVal = 0 + $newString;
+        
+        return $newVal;
+
+    }
+
+    /**
+    ************************************************************
+    * Convert ADC bytes to Voltage Routine
+    *
+    * This routine takes in 4 bytes of ADC channel data
+    * and converts them into an output voltage. It uses the 
+    * hardware version to determine the input and bias resistor
+    * values and adjusts the reading based on them.
+    *
+    * @@return float voltage reading
+    *
+    */
+    private function _convertADCbytes(&$inString)
+    {
+        $myValue = $this->_convertReplyData($inString);
+        
+        $steps = 1.2 / pow(2,23);
+        $volts = $steps * $myValue;
+        
+        return $volts;
+    }
+
+
 
     /**
     ************************************************************
@@ -863,6 +966,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
  
  
         $rev = substr($HWnumber, (strlen($HWnumber)-1), 1);
+        $this->_HWrev = $rev;
 
         $myData = sprintf("%02X", ord($rev));
         $this->out("dataVal: ".$myData);
