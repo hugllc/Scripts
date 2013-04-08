@@ -96,6 +96,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 5 => "Test 3 Failed",
             );
 
+
     /** ascii string hex value for revision letter **/
     private $_HWrev;
 
@@ -487,31 +488,74 @@ class EndpointTest extends \HUGnet\ui\Daemon
             }
         } else {
             $this->out("No object returned");
+            $result = false;
         }
 
-        /* read test board for input voltage values */
+        /* read and test input 1 of DUT */
+        if ($result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = self::TEST_ANALOG_COMMAND;
+            $dataVal = "01";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
-        $idNum = self::TEST_ID;
-        $cmdNum = self::TEST_ANALOG_COMMAND;
-        $dataVal = "01";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+            $myVolts = $this->_convertADCbytes($ReplyData);
+            $myMult = $this->_biasResistorAdjust(1);
+            $myVolts = $myVolts * $myMult;
 
-        $myVolts = $this->_convertADCbytes($ReplyData);
-        $this->out("Votage :".$myVolts." V");
+            $this->out("Known Voltage :".$KnownVolts[0]."V  Test Voltage :".$myVolts."V");
+            if (($myVolts >= ($KnownVolts[0] * 0.96)) and ($myVolts <= ($KnownVolts[0] * 1.04))) {
+                $result = true;
+                $this->out("ADC Input 1 Passed!");
+            } else {
+                $result = fail;
+                $this->out("ADC Input 1 Failed!");
+            }
 
-        $idNum = self::TEST_ID;
-        $cmdNum = self::TEST_ANALOG_COMMAND;
-        $dataVal = "02";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        $myVolts = $this->_convertADCbytes($ReplyData);
-        $this->out("Votage :".$myVolts." V");
+        }
 
-        $idNum = self::TEST_ID;
-        $cmdNum = self::TEST_ANALOG_COMMAND;
-        $dataVal = "03";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        $myVolts = $this->_convertADCbytes($ReplyData);
-        $this->out("Votage :".$myVolts." V");
+        /* read and test input 2 of DUT */
+        if ($result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = self::TEST_ANALOG_COMMAND;
+            $dataVal = "02";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            $myVolts = $this->_convertADCbytes($ReplyData);
+            $myMult = $this->_biasResistorAdjust(2);
+            $myVolts = $myVolts * $myMult;
+
+            $this->out("Known Voltage :".$KnownVolts[1]."V  Test Voltage :".$myVolts."V");
+            if (($myVolts >= ($KnownVolts[1] * 0.96)) and ($myVolts <= ($KnownVolts[1] * 1.04))) {
+                $result = true;
+                $this->out("ADC Input 2 Passed!");
+            } else {
+                $result = fail;
+                $this->out("ADC Input 2 Failed!");
+            }
+
+        }
+
+        /* read and test input 3 of DUT */
+        if (result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = self::TEST_ANALOG_COMMAND;
+            $dataVal = "03";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            $myVolts = $this->_convertADCbytes($ReplyData);
+            $myMult = $this->_biasResistorAdjust(3);
+            $myVolts = $myVolts * $myMult;
+
+            $this->out("Known Voltage :".$KnownVolts[2]."V  Test Voltage :".$myVolts."V");
+            if (($myVolts >= ($KnownVolts[2] * 0.96)) and ($myVolts <= ($KnownVolts[2] * 1.04))) {
+                $result = true;
+                $this->out("ADC Input 3 Passed!");
+            } else {
+                $result = fail;
+                $this->out("ADC Input 3 Failed!");
+            }
+
+        }
 
         $idNum = self::TEST_ID;
         $cmdNum = self::TEST_ANALOG_COMMAND;
@@ -605,6 +649,57 @@ class EndpointTest extends \HUGnet\ui\Daemon
         return $volts;
     }
 
+    /**
+    *************************************************************
+    * Bias Resistor Adjust Routine
+    *
+    * This routine looks and the hardware version and the input
+    * number to determine an adjustment multiplier for the input
+    * voltage based on the input and bias resistors.
+    *
+    * @return float adjustment multiplier
+    *
+    */
+    private function _biasResistorAdjust($inputNum)
+    {
+        switch ($inputNum) {
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+                if (($this->_HWrev == "A") | ($this->_HWrev == "C") | ($this->_HWrev == "D")){
+                    $multiplier = 0.90909;
+                }
+                else {
+                    $multiplier = 1.0;
+                }
+                break;
+            case 5:
+            case 6:
+                if (($this->_HWrev == "C") | ($this->_HWrev == "D")){
+                    $multiplier = 0.90909;
+                } else if (($this->_HWrev == "A") | ($this->_HWrev == "F")){
+                    $multiplier = 9.90099;
+                } else {
+                    $multiplier = 1.0;
+                }
+                break;
+            case 7:
+            case 8:
+                if ($this->_HWrev == "D"){
+                    $multiplier = 0.90909;
+                } else if ($this->_HWrev == "B"){
+                    $multiplier = 1.0;
+                } else {
+                    $multiplier = 9.90099;
+                }
+                break;
+        }
+
+        return $multiplier;
+
+    }
+    
 
 
     /**
