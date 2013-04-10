@@ -63,7 +63,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     /** predefined endpoint serial number used in test firmware **/
     const TEST_ID = 0x20;
     const KNOWN_GOOD_ID = 0x1022;
-    const KNOWN_GOOD_ID_TWO = 0x1003;
+    const KNOWN_GOOD_ID_TWO = 0x1010;
     
     /** packet commands to test firmware **/
     const TEST_ANALOG_COMMAND  = 0x20;
@@ -477,12 +477,14 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $voltageVals = $this->_goodDevice->action()->poll();
         if (is_object($voltageVals)) {
             $channels = $this->_goodDevice->dataChannels();
+            $this->out();
             $this->out("Date: ".date("Y-m-d H:i:s", $voltageVals->get("Date")));
             for ($i = 0; $i < $channels->count(); $i++) {
                 $chan = $channels->dataChannel($i);
                 $KnownVolts[$i] = $voltageVals->get("Data".$i);
                 $this->out($chan->get("label").": ".$voltageVals->get("Data".$i)." ".html_entity_decode($chan->get("units")));
             }
+            $this->out();
         } else {
             $this->out("No object returned");
             $result = false;
@@ -588,7 +590,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $myVolts = $myVolts * $myMult;
 
             $this->out("Known Voltage :".$KnownVolts[4]."V  Test Voltage :".$myVolts."V");
-            if (($myVolts >= ($KnownVolts[4] * 0.96)) and ($myVolts <= ($KnownVolts[4] * 1.04))) {
+            if (($myVolts >= ($KnownVolts[4] * 0.90)) and ($myVolts <= ($KnownVolts[4] * 1.10))) {
                 $result = true;
                 $this->out("ADC Input 5 Passed!");
             } else {
@@ -610,7 +612,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $myVolts = $myVolts * $myMult;
 
             $this->out("Known Voltage :".$KnownVolts[5]."V  Test Voltage :".$myVolts."V");
-            if (($myVolts >= ($KnownVolts[5] * 0.96)) and ($myVolts <= ($KnownVolts[5] * 1.04))) {
+            if (($myVolts >= ($KnownVolts[5] * 0.90)) and ($myVolts <= ($KnownVolts[5] * 1.10))) {
                 $result = true;
                 $this->out("ADC Input 6 Passed!");
             } else {
@@ -626,9 +628,14 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $cmdNum = self::TEST_ANALOG_COMMAND;
             $dataVal = "07";
             $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+            $this->out("ReplyData 7 is :".$ReplyData);
 
             $myVolts = $this->_convertADCbytes($ReplyData);
+            $this->out("First myVolts is :".$myVolts);
+
             $myMult = $this->_biasResistorAdjust(7);
+            $this->out("My multiplier is :".$myMult);
+
             $myVolts = $myVolts * $myMult;
 
             $this->out("Known Voltage :".$KnownVolts[6]."V  Test Voltage :".$myVolts."V");
@@ -639,7 +646,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $result = false;
                 $this->out("ADC Input 7 Failed!");
             }
-
+            $result = true;
         }
 
         /* read and test input 8 of DUT */
@@ -782,6 +789,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     {
         
 
+        $voltageVals = $this->_goodDeviceTwo->action()->poll();
 
         $idNum = self::TEST_ID;
         $cmdNum = self::CONFIG_DAC_COMMAND;
@@ -798,6 +806,52 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $Result = false;
         }
 
+
+        /* set DAC output to 1.2 volts */
+        if ($Result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = self::SET_DAC_COMMAND;
+            $dataVal = "0fff";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            /* 2 byte response comes back little endian, so the byte */
+            /* order is reversed from send data.                     */
+            if ($ReplyData == "FF0F") {
+                $Result = true;
+            } else {
+                $this->out("Failed DAC Set 1");
+                $this->out("Digital data is:".$ReplyData);
+                $Result = false;
+            }
+        }
+
+
+        /* read voltage for known good endpoint 2 */
+        $voltageVals = $this->_goodDeviceTwo->action()->poll();
+        $voltageVals = $this->_goodDeviceTwo->action()->poll();
+        if (is_object($voltageVals)) {
+            $channels = $this->_goodDeviceTwo->dataChannels();
+            for ($i = 0; $i < $channels->count(); $i++) {
+                $chan = $channels->dataChannel($i);
+                $KnownVolts[$i] = $voltageVals->get("Data".$i);
+            }
+        } else {
+            $this->out("No object returned");
+            $result = false;
+        }
+        
+        /* test DAC output voltage */
+        $dacVolts = $KnownVolts[6];
+        $this->out("DAC set to 1.2 V Measured : ".$dacVolts);
+        if (($dacVolts > 1.1) and ($dacVolts < 1.3)) {
+            $Result = true;
+            $this->out("DAC Test 1 Passed!");
+        } else {
+            $Result = false;
+            $this->out("DAC Test 1 Failed!");
+        }
+
+        /* set DAC for 0.60 Volts output */
         if ($Result == true) {
             $idNum = self::TEST_ID;
             $cmdNum = self::SET_DAC_COMMAND;
@@ -817,19 +871,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         }
 
-        /* lets kill some time to see if it makes a difference */
-        for ($times = 0; $times < 100; $times++) {
-            $something = 0;
-        }
-
-
-        /*
-        **********************************************
-        * This is where we will insert code to read 
-        * the known good board on input 1 and check 
-        * the DAC output voltage.
-        */
-
+        /* read voltage for known good endpoint 2 */
+        $voltageVals = $this->_goodDeviceTwo->action()->poll();
         $voltageVals = $this->_goodDeviceTwo->action()->poll();
         if (is_object($voltageVals)) {
             $channels = $this->_goodDeviceTwo->dataChannels();
@@ -842,15 +885,67 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $result = false;
         }
 
-        /* adjust voltage measurement of offset between */
-        /* Cgnd and Agnd which is 1.09 volts            */
-        $dacVolts = $KnownVolts[5];
-        $this->out("DAC voltage measurement : ".$dacVolts);
+        /* test DAC output */
+        $dacVolts = $KnownVolts[6];
+        $this->out("DAC set to 0.6 V Measured : ".$dacVolts);
+        if (($dacVolts > 0.5) and ($dacVolts < 0.7)) {
+            $Result = true;
+            $this->out("DAC Test 2 Passed!");
+        } else {
+            $Result = false;
+            $this->out("DAC Test 2 Failed!");
+        }
 
-        $choice = readline("\n\rHit Enter To Continue: ");
+        /* set DAC for 0.0 Volts output */
+        if ($Result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = self::SET_DAC_COMMAND;
+            $dataVal = "0000";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            /* 2 byte response comes back little endian, so the byte */
+            /* order is reversed from send data.                     */
+            if ($ReplyData == "0000") {
+                $Result = true;
+            } else {
+                $this->out("Failed DAC Set 1");
+                $this->out("Digital data is:".$ReplyData);
+                $Result = false;
+            }
 
 
-        /* config DAC to use 2.5v reference */
+        }
+
+        /* read voltage for known good endpoint 2 */
+        $voltageVals = $this->_goodDeviceTwo->action()->poll();
+        $voltageVals = $this->_goodDeviceTwo->action()->poll();
+        if (is_object($voltageVals)) {
+            $channels = $this->_goodDeviceTwo->dataChannels();
+            for ($i = 0; $i < $channels->count(); $i++) {
+                $chan = $channels->dataChannel($i);
+                $KnownVolts[$i] = $voltageVals->get("Data".$i);
+            }
+        } else {
+            $this->out("No object returned");
+            $result = false;
+        }
+        
+        /* test DAC output */
+        $dacVolts = $KnownVolts[6];
+        $this->out("DAC set to 0.0 V Measured : ".$dacVolts);
+        if (($dacVolts > -0.1) and ($dacVolts < 0.1)) {
+            $Result = true;
+            $this->out("DAC Test 3 Passed!");
+        } else {
+            $Result = false;
+            $this->out("DAC Test 3 Failed!");
+        }
+
+        
+        /*
+        ***************************************************
+        * Set DAC configuration to use the 2.5v reference *
+        */
         if ($Result == true) {
             $idNum = self::TEST_ID;
             $cmdNum = self::CONFIG_DAC_COMMAND;
@@ -870,7 +965,52 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         }
 
-        /* output 1.2 volts */
+        /* output 2.50 volts */
+        if ($Result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = self::SET_DAC_COMMAND;
+            $dataVal = "0fff";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            /* 2 byte response comes back little endian, so the byte */
+            /* order is reversed from send data.                     */
+            if ($ReplyData == "FF0F") {
+                $Result = true;
+            } else {
+                $this->out("Failed DAC Set 2");
+                $this->out("Digital data is:".$ReplyData);
+                $Result = false;
+            }
+
+
+        }
+
+        /* read voltage for known good endpoint 2 */
+        $voltageVals = $this->_goodDeviceTwo->action()->poll();
+        $voltageVals = $this->_goodDeviceTwo->action()->poll();
+        if (is_object($voltageVals)) {
+            $channels = $this->_goodDeviceTwo->dataChannels();
+            for ($i = 0; $i < $channels->count(); $i++) {
+                $chan = $channels->dataChannel($i);
+                $KnownVolts[$i] = $voltageVals->get("Data".$i);
+            }
+        } else {
+            $this->out("No object returned");
+            $result = false;
+        }
+
+        $dacVolts = $KnownVolts[6];
+        $this->out("DAC set to 2.5 V Measured : ".$dacVolts);
+        if (($dacVolts > 2.30) and ($dacVolts < 2.70)) {
+            $Result = true;
+            $this->out("DAC Test 4 Passed!");
+        } else {
+            $Result = false;
+            $this->out("DAC Test 4 Failed!");
+        }
+
+
+        /* output 1.25 volts */
         if ($Result == true) {
             $idNum = self::TEST_ID;
             $cmdNum = self::SET_DAC_COMMAND;
@@ -890,12 +1030,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         }
 
-        /*
-        **********************************************
-        * This is where we will insert code to read 
-        * the known good board on input 1 and check 
-        * the DAC output voltage.
-        */
+        /* read voltage for known good endpoint 2 */
+        $voltageVals = $this->_goodDeviceTwo->action()->poll();
         $voltageVals = $this->_goodDeviceTwo->action()->poll();
         if (is_object($voltageVals)) {
             $channels = $this->_goodDeviceTwo->dataChannels();
@@ -907,9 +1043,61 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $this->out("No object returned");
             $result = false;
         }
-        $this->out("DAC voltage measurement : ".$KnownVolts[5]);
 
-        $choice = readline("\n\rHit Enter To Continue: ");
+        $dacVolts = $KnownVolts[6];
+        $this->out("DAC set to 1.25 V Measured : ".$dacVolts);
+        if (($dacVolts > 1.20) and ($dacVolts < 1.30)) {
+            $Result = true;
+            $this->out("DAC Test 5 Passed!");
+        } else {
+            $Result = false;
+            $this->out("DAC Test 5 Failed!");
+        }
+
+
+        /* output 0.0 volts */
+        if ($Result == true) {
+            $idNum = self::TEST_ID;
+            $cmdNum = self::SET_DAC_COMMAND;
+            $dataVal = "0000";
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            /* 2 byte response comes back little endian, so the byte */
+            /* order is reversed from send data.                     */
+            if ($ReplyData == "0000") {
+                $Result = true;
+            } else {
+                $this->out("Failed DAC Set 2");
+                $this->out("Digital data is:".$ReplyData);
+                $Result = false;
+            }
+
+
+        }
+
+        /* read voltage for known good endpoint 2 */
+        $voltageVals = $this->_goodDeviceTwo->action()->poll();
+        $voltageVals = $this->_goodDeviceTwo->action()->poll();
+        if (is_object($voltageVals)) {
+            $channels = $this->_goodDeviceTwo->dataChannels();
+            for ($i = 0; $i < $channels->count(); $i++) {
+                $chan = $channels->dataChannel($i);
+                $KnownVolts[$i] = $voltageVals->get("Data".$i);
+            }
+        } else {
+            $this->out("No object returned");
+            $result = false;
+        }
+
+        $dacVolts = $KnownVolts[6];
+        $this->out("DAC set to 0.0 V Measured : ".$dacVolts);
+        if (($dacVolts > -0.1) and ($dacVolts < 0.1)) {
+            $Result = true;
+            $this->out("DAC Test 6 Passed!");
+        } else {
+            $Result = false;
+            $this->out("DAC Test 6 Failed!");
+        }
        
         return $Result;
     }
@@ -947,6 +1135,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
             if ($ReplyData == "15") {
                 $Result = true;
+                $this->out("Digital Test 1 Passed!");
             } else {
                 $this->out("Failed GPIO, Config 1 Test 1");
                 $this->out("Digital data is:".$ReplyData);
@@ -961,6 +1150,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
             if ($ReplyData == "0A") {
                 $Result = true;
+                $this->out("Digital Test 2 Passed!");
             } else {
                 $this->out("Failed GPIO, Config 1 Test 2");
                 $this->out("Digital data is:".$ReplyData);
@@ -992,6 +1182,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
             if ($ReplyData == "15") {
                 $Result = true;
+                $this->out("Digital Test 3 Passed!");
             } else {
                 $this->out("Failed GPIO, Config 2 Test 1");
                 $this->out("Digital data is:".$ReplyData);
@@ -1006,6 +1197,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
             if ($ReplyData == "0A") {
                 $Result = true;
+                $this->out("Digital Test 4 Passed!");
             } else {
                 $this->out("Failed GPIO, Config 2 Test 2");
                 $this->out("Digital data is:".$ReplyData);
