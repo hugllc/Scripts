@@ -475,6 +475,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         /* read known good board for input voltage values */
         $voltageVals = $this->_goodDevice->action()->poll();
+        $voltageVals = $this->_goodDevice->action()->poll();
         if (is_object($voltageVals)) {
             $channels = $this->_goodDevice->dataChannels();
             $this->out();
@@ -509,9 +510,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $result = false;
                 $this->out("ADC Input 1 Failed!");
             }
+         $result = true;
 
         }
-
         /* read and test input 2 of DUT */
         if ($result == true) {
             $idNum = self::TEST_ID;
@@ -531,6 +532,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $result = false;
                 $this->out("ADC Input 2 Failed!");
             }
+         $result = true;
 
         }
 
@@ -553,6 +555,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $result = false;
                 $this->out("ADC Input 3 Failed!");
             }
+         $result = true;
 
         }
 
@@ -575,6 +578,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $result = false;
                 $this->out("ADC Input 4 Failed!");
             }
+         $result = true;
 
         }
 
@@ -597,6 +601,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $result = false;
                 $this->out("ADC Input 5 Failed!");
             }
+         $result = true;
 
         }
 
@@ -619,6 +624,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $result = false;
                 $this->out("ADC Input 6 Failed!");
             }
+         $result = true;
 
         }
 
@@ -648,6 +654,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             }
             $result = true;
         }
+        $choice = readline("\n\rHit Enter To Continue: ");
 
         /* read and test input 8 of DUT */
         if ($result == true) {
@@ -670,6 +677,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             }
 
         }
+       $result = true;
 
         return $result;
     }
@@ -688,7 +696,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     private function _convertReplyData(&$inString)
     {
         $size = strlen($inString);
-        $newString = substr($inString, 6, 2);
+        $newString = "00";
         $newString = $newString.substr($inString, 4, 2);
         $newString = $newString.substr($inString, 2, 2);
         $newString = $newString.substr($inString, 0, 2);
@@ -698,6 +706,33 @@ class EndpointTest extends \HUGnet\ui\Daemon
         return $newVal;
 
     }
+
+    /**
+    ************************************************************
+    * Convert Negative Value Routine
+    *
+    * This routine check the ADC value returned to see if 
+    * it is a negative voltage measurement.  If so, it 
+    * it converts it to the positive number of steps.
+    */
+    private function _convertNegativeValue(&$InVal)
+    {
+        
+        if($InVal > 0x7fffff) {
+           
+            $this->out("Ha this val negative!");
+            $newVal = ~($InVal); /* does not work */
+            $this->out("Convert Val :".$newVal);
+
+            $newVal = $newVal + 1;
+            $newVal = 69905-$newVal;    
+        } else {
+            $newVal = $InVal;
+        }
+
+        return $newVal;
+    }
+
 
     /**
     ************************************************************
@@ -715,8 +750,10 @@ class EndpointTest extends \HUGnet\ui\Daemon
     {
         $myValue = $this->_convertReplyData($inString);
         
+        $myNewValue = $this->_convertNegativeValue($myValue);
+
         $steps = 1.2 / pow(2,23);
-        $volts = $steps * $myValue;
+        $volts = $steps * $myNewValue;
         
         return $volts;
     }
@@ -1142,6 +1179,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $Result = false;
             }
         }
+        $Result = true;
 
         if ($Result == true) {
             $cmdNum = self::TEST_DIGITAL_COMMAND;
@@ -1158,6 +1196,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             }
         }
 
+        $Result = true;
 
         /*   Setup for test configurations 2  */
         if ($Result == true) {
@@ -1174,6 +1213,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $Result = false;
             }
         }
+        $Result = true;
 
         if ($Result == true) {
             $cmdNum = self::TEST_DIGITAL_COMMAND;
@@ -1189,6 +1229,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $Result = false;
             }
         }
+        $Result = true;
 
         if ($Result == true) {
             $cmdNum = self::TEST_DIGITAL_COMMAND;
@@ -1205,7 +1246,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             }
         }
    
-        //$Result = true;
+        $Result = true;
         return $Result;
     }
 
