@@ -442,6 +442,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
    
         $Result = $this->_pingEndpoint(self::TEST_ID);
 
+        $choice = readline("\n\rDisconnect Emulator and Hit Enter To Continue: ");
+
         if ($Result == true) {
             $Result = $this->_testADC();
         }
@@ -449,6 +451,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         if ($Result == true) {
             $Result =  $this->_testDAC();
         }
+        $choice = readline("\n\rReconnect Emulator Hit Enter To Continue: ");
 
        if ($Result == true) {
             $Result = $this->_testDigital();
@@ -473,6 +476,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $result = true;
         
 
+        
         /* read known good board for input voltage values */
         $voltageVals = $this->_goodDevice->action()->poll();
         $voltageVals = $this->_goodDevice->action()->poll();
@@ -491,12 +495,18 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $result = false;
         }
 
+        $mChannels = $this->_device->dataChannels();
+
         /* read and test input 1 of DUT */
         if ($result == true) {
             $idNum = self::TEST_ID;
             $cmdNum = self::TEST_ANALOG_COMMAND;
             $dataVal = "01";
             $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+            
+            $mChan = $mChannels->dataChannel(0);
+            $newData = $mChan->decodeRaw($dataVal);
+            $this->out("New Data Value is ".$newData);
 
             $myVolts = $this->_convertADCbytes($ReplyData);
             $myMult = $this->_biasResistorAdjust(1);
@@ -634,14 +644,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $cmdNum = self::TEST_ANALOG_COMMAND;
             $dataVal = "07";
             $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-            $this->out("ReplyData 7 is :".$ReplyData);
 
             $myVolts = $this->_convertADCbytes($ReplyData);
-            $this->out("First myVolts is :".$myVolts);
-
             $myMult = $this->_biasResistorAdjust(7);
-            $this->out("My multiplier is :".$myMult);
-
             $myVolts = $myVolts * $myMult;
 
             $this->out("Known Voltage :".$KnownVolts[6]."V  Test Voltage :".$myVolts."V");
@@ -654,7 +659,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
             }
             $result = true;
         }
-        $choice = readline("\n\rHit Enter To Continue: ");
 
         /* read and test input 8 of DUT */
         if ($result == true) {
@@ -719,13 +723,14 @@ class EndpointTest extends \HUGnet\ui\Daemon
     {
         
         if($InVal > 0x7fffff) {
-           
-            $this->out("Ha this val negative!");
-            $newVal = ~($InVal); /* does not work */
-            $this->out("Convert Val :".$newVal);
-
+            /* invert bits and add 1 to convert */
+            /* two's complement value from ADC  */
+            $newVal = 0xffffff-$InVal;
             $newVal = $newVal + 1;
-            $newVal = 69905-$newVal;    
+
+            /* adjust for offset between Agnd and Cgnd */
+            /* measure offset is 0.90 volts. */
+            $newVal = 6291456 - $newVal;    
         } else {
             $newVal = $InVal;
         }
@@ -754,6 +759,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         $steps = 1.2 / pow(2,23);
         $volts = $steps * $myNewValue;
+
         
         return $volts;
     }
@@ -777,7 +783,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             case 3:
             case 4:
                 if (($this->_HWrev == "A") | ($this->_HWrev == "C") | ($this->_HWrev == "D")){
-                    $multiplier = 0.90909;
+                    $multiplier = 1.1;
                 }
                 else {
                     $multiplier = 1.0;
@@ -786,9 +792,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
             case 5:
             case 6:
                 if (($this->_HWrev == "C") | ($this->_HWrev == "D")){
-                    $multiplier = 0.90909;
+                    $multiplier = 1.1;
                 } else if (($this->_HWrev == "A") | ($this->_HWrev == "F")){
-                    $multiplier = 9.90099;
+                    $multiplier = 101;
                 } else {
                     $multiplier = 1.0;
                 }
@@ -796,11 +802,11 @@ class EndpointTest extends \HUGnet\ui\Daemon
             case 7:
             case 8:
                 if ($this->_HWrev == "D"){
-                    $multiplier = 0.90909;
+                    $multiplier = 1.1;
                 } else if ($this->_HWrev == "B"){
                     $multiplier = 1.0;
                 } else {
-                    $multiplier = 9.90099;
+                    $multiplier = 101;
                 }
                 break;
         }
@@ -878,7 +884,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         }
         
         /* test DAC output voltage */
-        $dacVolts = $KnownVolts[6];
+        $dacVolts = $KnownVolts[6] + 0.98;
         $this->out("DAC set to 1.2 V Measured : ".$dacVolts);
         if (($dacVolts > 1.1) and ($dacVolts < 1.3)) {
             $Result = true;
@@ -923,7 +929,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         }
 
         /* test DAC output */
-        $dacVolts = $KnownVolts[6];
+        $dacVolts = $KnownVolts[6] + 0.98;
         $this->out("DAC set to 0.6 V Measured : ".$dacVolts);
         if (($dacVolts > 0.5) and ($dacVolts < 0.7)) {
             $Result = true;
@@ -968,7 +974,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         }
         
         /* test DAC output */
-        $dacVolts = $KnownVolts[6];
+        $dacVolts = $KnownVolts[6] + 0.98;
         $this->out("DAC set to 0.0 V Measured : ".$dacVolts);
         if (($dacVolts > -0.1) and ($dacVolts < 0.1)) {
             $Result = true;
@@ -1036,7 +1042,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $result = false;
         }
 
-        $dacVolts = $KnownVolts[6];
+        $dacVolts = $KnownVolts[6] + 0.98;
         $this->out("DAC set to 2.5 V Measured : ".$dacVolts);
         if (($dacVolts > 2.30) and ($dacVolts < 2.70)) {
             $Result = true;
@@ -1081,7 +1087,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $result = false;
         }
 
-        $dacVolts = $KnownVolts[6];
+        $dacVolts = $KnownVolts[6] + 0.98;
         $this->out("DAC set to 1.25 V Measured : ".$dacVolts);
         if (($dacVolts > 1.20) and ($dacVolts < 1.30)) {
             $Result = true;
@@ -1109,7 +1115,11 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $Result = false;
             }
 
-
+        }
+        
+        /* kill some time */
+        for ($times = 0; $times < 100; $times++) {
+            $nothingatall = 0;
         }
 
         /* read voltage for known good endpoint 2 */
@@ -1126,7 +1136,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $result = false;
         }
 
-        $dacVolts = $KnownVolts[6];
+        $dacVolts = $KnownVolts[6] + 0.98;
         $this->out("DAC set to 0.0 V Measured : ".$dacVolts);
         if (($dacVolts > -0.1) and ($dacVolts < 0.1)) {
             $Result = true;
