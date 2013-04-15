@@ -442,7 +442,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
    
         $Result = $this->_pingEndpoint(self::TEST_ID);
 
-        $choice = readline("\n\rDisconnect Emulator and Hit Enter To Continue: ");
 
         if ($Result == true) {
             $Result = $this->_testADC();
@@ -451,7 +450,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
         if ($Result == true) {
             $Result =  $this->_testDAC();
         }
-        $choice = readline("\n\rReconnect Emulator Hit Enter To Continue: ");
 
        if ($Result == true) {
             $Result = $this->_testDigital();
@@ -505,7 +503,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
             
             $mChan = $mChannels->dataChannel(0);
-            $newData = $mChan->decodeRaw($dataVal);
+            $newData = $mChan->decode($ReplyData);
             $this->out("New Data Value is ".$newData);
 
             $myVolts = $this->_convertADCbytes($ReplyData);
@@ -604,7 +602,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $myVolts = $myVolts * $myMult;
 
             $this->out("Known Voltage :".$KnownVolts[4]."V  Test Voltage :".$myVolts."V");
-            if (($myVolts >= ($KnownVolts[4] * 0.90)) and ($myVolts <= ($KnownVolts[4] * 1.10))) {
+            if (($myVolts >= ($KnownVolts[4] * 0.96)) and ($myVolts <= ($KnownVolts[4] * 1.04))) {
                 $result = true;
                 $this->out("ADC Input 5 Passed!");
             } else {
