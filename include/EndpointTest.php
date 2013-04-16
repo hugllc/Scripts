@@ -98,6 +98,155 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 5 => "Test 3 Failed",
             );
 
+    /**
+    *  This is the input table data
+    */
+    private $_myInput = array(
+        0 => array(            // HUGnetLab Input 1 Voltage
+            "table" => array(
+                "driver0" => 0x41,
+                "name" => "ADuC Input Voltage",
+                "priority" => 0x01,
+                "ADC0EN" => 1,
+                "ADC0CH" => 7,
+                "ADC1EN" => 0,
+                "AF" => 0,
+                "SF" => 9,
+            ),
+            "data" => array(
+                "id" => 0xF9,
+                "extra" => array(1, null, 1.2),
+                "location" => "HUGnetLab Known Good Voltage",
+                "type" => "ADuCInputTable",
+            ),
+        ),
+        1 => array(            // HUGnetLab Input 2 Voltage
+            "table" => array(
+                "driver0" => 0x41,
+                "name" => "ADuC Input Voltage",
+                "priority" => 0x01,
+                "ADC0EN" => 1,
+                "ADC0CH" => 6,
+                "ADC1EN" => 0,
+                "AF" => 0,
+                "SF" => 9,
+            ),
+            "data" => array(
+                "id" => 0xF9,
+                "extra" => array(1, null, 1.2),
+                "location" => "HUGnetLab Known Good Voltage",
+                "type" => "ADuCInputTable",
+            ),
+        ),
+        2 => array(            // HUGnetLab Input 3 Voltage
+            "table" => array(
+                "driver0" => 0x41,
+                "name" => "ADuC Input Voltage",
+                "priority" => 0x01,
+                "ADC0EN" => 1,
+                "ADC0CH" => 2,
+                "ADC1EN" => 0,
+                "AF" => 0,
+                "SF" => 9,
+            ),
+            "data" => array(
+                "id" => 0xF9,
+                "extra" => array(1, null, 1.2),
+                "location" => "HUGnetLab Known Good Voltage",
+                "type" => "ADuCInputTable",
+            ),
+        ),
+        3 => array(            // HUGnetLab Input 4 Voltage
+            "table" => array(
+                "driver0" => 0x41,
+                "name" => "ADuC Input Voltage",
+                "priority" => 0x01,
+                "ADC0EN" => 1,
+                "ADC0CH" => 1,
+                "ADC1EN" => 0,
+                "AF" => 0,
+                "SF" => 9,
+            ),
+            "data" => array(
+                "id" => 0xF9,
+                "extra" => array(1, null, 1.2),
+                "location" => "HUGnetLab Known Good Voltage",
+                "type" => "ADuCInputTable",
+            ),
+        ),
+        4 => array(            // HUGnetLab Input 5 Voltage
+            "table" => array(
+                "driver0" => 0x41,
+                "name" => "ADuC Input Voltage",
+                "priority" => 0x01,
+                "ADC0EN" => 0,
+                "ADC1CH" => 7,
+                "ADC1EN" => 1,
+                "AF" => 0,
+                "SF" => 9,
+            ),
+            "data" => array(
+                "id" => 0xF9,
+                "extra" => array(1, null, 1.2),
+                "location" => "HUGnetLab Known Good Voltage",
+                "type" => "ADuCInputTable",
+            ),
+        ),
+        5 => array(            // HUGnetLab Input 6 Voltage
+            "table" => array(
+                "driver0" => 0x41,
+                "name" => "ADuC Input Voltage",
+                "priority" => 0x01,
+                "ADC0EN" => 0,
+                "ADC1CH" => 8,
+                "ADC1EN" => 1,
+                "AF" => 0,
+                "SF" => 9,
+            ),
+            "data" => array(
+                "id" => 0xF9,
+                "extra" => array(1, null, 1.2),
+                "location" => "HUGnetLab Known Good Voltage",
+                "type" => "ADuCInputTable",
+            ),
+        ),
+        6 => array(            // HUGnetLab Input 7 Voltage
+            "table" => array(
+                "driver0" => 0x41,
+                "name" => "ADuC Input Voltage",
+                "priority" => 0x01,
+                "ADC0EN" => 0,
+                "ADC1CH" => 9,
+                "ADC1EN" => 1,
+                "AF" => 0,
+                "SF" => 9,
+            ),
+            "data" => array(
+                "id" => 0xF9,
+                "extra" => array(100, 1, 1.2),
+                "location" => "HUGnetLab Known Good Voltage",
+                "type" => "ADuCInputTable",
+            ),
+        ),
+        7 => array(            // HUGnetLab Input 8 Voltage
+            "table" => array(
+                "driver0" => 0x41,
+                "name" => "ADuC Input Voltage",
+                "priority" => 0x01,
+                "ADC0EN" => 0,
+                "ADC1CH" => 10,
+                "ADC1EN" => 1,
+                "AF" => 0,
+                "SF" => 9,
+            ),
+            "data" => array(
+                "id" => 0xF9,
+                "extra" => array(100, 1, 1.2),
+                "location" => "HUGnetLab Known Good Voltage",
+                "type" => "ADuCInputTable",
+            ),
+        ),
+    );
 
     /** ascii string hex value for revision letter **/
     private $_HWrev;
@@ -492,6 +641,10 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $this->out("No object returned");
             $result = false;
         }
+
+        //$myArray = array();
+        //$mInput = $this->_device->Input($myArray);
+
 
         $mChannels = $this->_device->dataChannels();
 
@@ -892,6 +1045,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $this->out("DAC Test 1 Failed!");
         }
 
+        $Result = true;
         /* set DAC for 0.60 Volts output */
         if ($Result == true) {
             $idNum = self::TEST_ID;
@@ -936,6 +1090,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $Result = false;
             $this->out("DAC Test 2 Failed!");
         }
+        $Result = true;
 
         /* set DAC for 0.0 Volts output */
         if ($Result == true) {
@@ -982,6 +1137,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $this->out("DAC Test 3 Failed!");
         }
 
+        $Result = true;
         
         /*
         ***************************************************
@@ -1050,6 +1206,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $this->out("DAC Test 4 Failed!");
         }
 
+        $Result = true;
 
         /* output 1.25 volts */
         if ($Result == true) {
@@ -1095,6 +1252,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $this->out("DAC Test 5 Failed!");
         }
 
+        $Result = true;
 
         /* output 0.0 volts */
         if ($Result == true) {
