@@ -539,11 +539,12 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
     private function _troubleshootMain()
     {
-        
+
         $this->_clearScreen();
         $this->out("\n\r");
         $this->out("\n\r");
        
+
         $this->out("**************************************************");
         $this->out("*                                                *");
         $this->out("*    T R O U B L E S H O O T   R O U T I N E     *");
@@ -762,10 +763,33 @@ class EndpointTest extends \HUGnet\ui\Daemon
     */
     private function _testADC()
     {
-        $result = true;
-        
+       
+        $goodVolts = array();
+        $result = $this->_readKnownGoodADC($goodVolts);
+        $adcInput = 1;
 
-        
+        while (($result == true) and ($adcInput < 9)) {
+            $myVolts = $this->_readADCinput($adcInput);
+            $result = $this->_testADCinput($adcInput, $myVolts, $goodVolts);
+            $adcInput++;
+        }
+
+
+        return $result;
+    }
+
+    /**
+    ************************************************************
+    * Read Known Good Board Routine
+    *
+    * This routine reads the ADC inputs of the known good board
+    * and fills in the array with input voltage values.
+    *
+    * @return boolean true or false 
+    *
+    */
+    private function _readKnownGoodADC(&$KnownVolts)
+    {
         /* read known good board for input voltage values */
         $voltageVals = $this->_goodDevice->action()->poll();
         $voltageVals = $this->_goodDevice->action()->poll();
@@ -779,196 +803,77 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $this->out($chan->get("label").": ".$voltageVals->get("Data".$i)." ".html_entity_decode($chan->get("units")));
             }
             $this->out();
+            $result = true;
         } else {
             $this->out("No object returned");
             $result = false;
         }
 
-        //$myArray = array();
-        //$mInput = $this->_device->Input($myArray);
 
+        return $result;
+    }
 
-        $mChannels = $this->_device->dataChannels();
+    /**
+    ************************************************************
+    * Read DUT ADC Input Routine
+    *
+    * This function reads the device under test analog input
+    * specified by the input parameter and returns the reply 
+    * data.
+    * 
+    * @return string $reply data
+    *
+    */
+    private function _readADCinput($inputNum)
+    {
+        $idNum = self::TEST_ID;
+        $cmdNum = self::TEST_ANALOG_COMMAND;
+        $dataVal = sprintf("0%s",$inputNum);
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
-        /* read and test input 1 of DUT */
-        if ($result == true) {
-            $idNum = self::TEST_ID;
-            $cmdNum = self::TEST_ANALOG_COMMAND;
-            $dataVal = "01";
-            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-            
-            $mChan = $mChannels->dataChannel(0);
-            $newData = $mChan->decode($ReplyData);
-            $this->out("New Data Value is ".$newData);
+        $readVolts = $this->_convertADCbytes($ReplyData);
+        $myMult = $this->_biasResistorAdjust($inputNum);
+        $readVolts = $readVolts * $myMult;
 
-            $myVolts = $this->_convertADCbytes($ReplyData);
-            $myMult = $this->_biasResistorAdjust(1);
-            $myVolts = $myVolts * $myMult;
+        return $readVolts;
+    }
 
-            $this->out("Known Voltage :".$KnownVolts[0]."V  Test Voltage :".$myVolts."V");
-            if (($myVolts >= ($KnownVolts[0] * 0.96)) and ($myVolts <= ($KnownVolts[0] * 1.04))) {
-                $result = true;
-                $this->out("ADC Input 1 Passed!");
-            } else {
-                $result = false;
-                $this->out("ADC Input 1 Failed!");
-            }
+    /**
+    ************************************************************
+    * Test ADC Input Routine
+    *
+    * This function tests the input voltage read from the DUT
+    * and compares it to the known good board voltage reading.
+    * If the test voltage is within limits, the test passes
+    * and a true result is returned.
+    *
+    * @return boolean true or false test result
+    *
+    */
+    private function _testADCinput($inputNum, $inVolts, $kVolts)
+    {
+        $kVal = $inputNum - 1;
 
-        }
-        /* read and test input 2 of DUT */
-        if ($result == true) {
-            $idNum = self::TEST_ID;
-            $cmdNum = self::TEST_ANALOG_COMMAND;
-            $dataVal = "02";
-            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-            $myVolts = $this->_convertADCbytes($ReplyData);
-            $myMult = $this->_biasResistorAdjust(2);
-            $myVolts = $myVolts * $myMult;
-
-            $this->out("Known Voltage :".$KnownVolts[1]."V  Test Voltage :".$myVolts."V");
-            if (($myVolts >= ($KnownVolts[1] * 0.96)) and ($myVolts <= ($KnownVolts[1] * 1.04))) {
-                $result = true;
-                $this->out("ADC Input 2 Passed!");
-            } else {
-                $result = false;
-                $this->out("ADC Input 2 Failed!");
-            }
-
-        }
-
-        /* read and test input 3 of DUT */
-        if ($result == true) {
-            $idNum = self::TEST_ID;
-            $cmdNum = self::TEST_ANALOG_COMMAND;
-            $dataVal = "03";
-            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-            $myVolts = $this->_convertADCbytes($ReplyData);
-            $myMult = $this->_biasResistorAdjust(3);
-            $myVolts = $myVolts * $myMult;
-
-            $this->out("Known Voltage :".$KnownVolts[2]."V  Test Voltage :".$myVolts."V");
-            if (($myVolts >= ($KnownVolts[2] * 0.96)) and ($myVolts <= ($KnownVolts[2] * 1.04))) {
-                $result = true;
-                $this->out("ADC Input 3 Passed!");
-            } else {
-                $result = false;
-                $this->out("ADC Input 3 Failed!");
-            }
-
+        if ($inputNum > 4) {
+            $hiTol = 1.10;
+            $loTol = 0.90;
+        } else {
+            $hiTol = 1.04;
+            $loTol = 0.96;
         }
 
-        /* read and test input 4 of DUT */
-        if ($result == true) {
-            $idNum = self::TEST_ID;
-            $cmdNum = self::TEST_ANALOG_COMMAND;
-            $dataVal = "04";
-            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-            $myVolts = $this->_convertADCbytes($ReplyData);
-            $myMult = $this->_biasResistorAdjust(4);
-            $myVolts = $myVolts * $myMult;
-
-            $this->out("Known Voltage :".$KnownVolts[3]."V  Test Voltage :".$myVolts."V");
-            if (($myVolts >= ($KnownVolts[3] * 0.96)) and ($myVolts <= ($KnownVolts[3] * 1.04))) {
-                $result = true;
-                $this->out("ADC Input 4 Passed!");
-            } else {
-                $result = false;
-                $this->out("ADC Input 4 Failed!");
-            }
-
-        }
-
-        /* read and test input 5 of DUT */
-        if ($result == true) {
-            $idNum = self::TEST_ID;
-            $cmdNum = self::TEST_ANALOG_COMMAND;
-            $dataVal = "05";
-            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-            $myVolts = $this->_convertADCbytes($ReplyData);
-            $myMult = $this->_biasResistorAdjust(5);
-            $myVolts = $myVolts * $myMult;
-
-            $this->out("Known Voltage :".$KnownVolts[4]."V  Test Voltage :".$myVolts."V");
-            if (($myVolts >= ($KnownVolts[4] * 0.90)) and ($myVolts <= ($KnownVolts[4] * 1.10))) {
-                $result = true;
-                $this->out("ADC Input 5 Passed!");
-            } else {
-                $result = false;
-                $this->out("ADC Input 5 Failed!");
-            }
-
-        }
-
-        /* read and test input 6 of DUT */
-        if ($result == true) {
-            $idNum = self::TEST_ID;
-            $cmdNum = self::TEST_ANALOG_COMMAND;
-            $dataVal = "06";
-            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-            $myVolts = $this->_convertADCbytes($ReplyData);
-            $myMult = $this->_biasResistorAdjust(6);
-            $myVolts = $myVolts * $myMult;
-
-            $this->out("Known Voltage :".$KnownVolts[5]."V  Test Voltage :".$myVolts."V");
-            if (($myVolts >= ($KnownVolts[5] * 0.90)) and ($myVolts <= ($KnownVolts[5] * 1.10))) {
-                $result = true;
-                $this->out("ADC Input 6 Passed!");
-            } else {
-                $result = false;
-                $this->out("ADC Input 6 Failed!");
-            }
-
-        }
-
-        /* read and test input 7 of DUT */
-        if ($result == true) {
-            $idNum = self::TEST_ID;
-            $cmdNum = self::TEST_ANALOG_COMMAND;
-            $dataVal = "07";
-            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-            $myVolts = $this->_convertADCbytes($ReplyData);
-            $myMult = $this->_biasResistorAdjust(7);
-            $myVolts = $myVolts * $myMult;
-
-            $this->out("Known Voltage :".$KnownVolts[6]."V  Test Voltage :".$myVolts."V");
-            if (($myVolts >= ($KnownVolts[6] * 0.90)) and ($myVolts <= ($KnownVolts[6] * 1.10))) {
-                $result = true;
-                $this->out("ADC Input 7 Passed!");
-            } else {
-                $result = false;
-                $this->out("ADC Input 7 Failed!");
-            }
-        }
-
-        /* read and test input 8 of DUT */
-        if ($result == true) {
-            $idNum = self::TEST_ID;
-            $cmdNum = self::TEST_ANALOG_COMMAND;
-            $dataVal = "08";
-            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-            $myVolts = $this->_convertADCbytes($ReplyData);
-            $myMult = $this->_biasResistorAdjust(8);
-            $myVolts = $myVolts * $myMult;
-
-            $this->out("Known Voltage :".$KnownVolts[7]."V  Test Voltage :".$myVolts."V");
-            if (($myVolts >= ($KnownVolts[7] * 0.90)) and ($myVolts <= ($KnownVolts[7] * 1.10))) {
-                $result = true;
-                $this->out("ADC Input 8 Passed!");
-            } else {
-                $result = false;
-                $this->out("ADC Input 8 Failed!");
-            }
-
+        $this->out("Known Voltage :".$kVolts[$kVal]."V  Test Voltage :".$inVolts."V");
+        if (($inVolts >= ($kVolts[$kVal] * $loTol)) and ($inVolts <= ($kVolts[$kVal] * $hiTol))) {
+            $result = true;
+            $this->out("ADC Input ".$inputNum." Passed!");
+        } else {
+            $result = false;
+            $this->out("ADC Input ".$inputNum." Failed!");
         }
 
         return $result;
+
     }
 
     /**
