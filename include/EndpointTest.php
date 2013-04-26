@@ -774,9 +774,36 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $adcInput++;
         }
 
+        $result = $this->_testRTDinput();
 
         return $result;
     }
+
+    /**
+    ***********************************************************
+    * Test RTD Input Routine
+    *
+    * This routine reads the input voltage on ADC4 which is 
+    * a reflection of the on board resistance temperature
+    * device.
+    *
+    */
+    private function _testRTDinput()
+    {
+        $myVolts = $this->_readADCinput(9);
+
+        $this->out("RTD Input Voltage = ".$myVolts." VDC");
+        if (($myVolts > 0.8) and ($myVolts < 0.95)) {
+            $this->out("RTD Input Passed!");
+            $result = true;
+        } else {
+            $this->out("RTD Input Failed!");
+            $result = false;
+        }
+
+        return $result;
+    }
+
 
     /**
     ************************************************************
@@ -998,6 +1025,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 } else {
                     $multiplier = 101;
                 }
+                break;
+            case 9:
+                $multiplier = 1.0;
                 break;
         }
 
