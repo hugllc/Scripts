@@ -104,20 +104,20 @@ if ($dev->get("loadable")) {
     || ($firmware->get("HWPartNum") == "0039-28")
     || ($firmware->get("HWPartNum") == "0039-12")
 ) {
-    $Prog = 'avrdude -c avrisp2 -p '.$firmware->Target.' -P usb ';
+    $Prog = 'avrdude -c avrisp2 -p '.$firmware->get("Target").' -P usb ';
 
     // Program the flash
     $flashname = tempnam("/tmp", "flash");
 
     $fp = fopen($flashname, "w");
-    fwrite($fp, $firmware->Code);
+    fwrite($fp, $firmware->get("Code"));
     fclose($fp);
 
     // Program the E2
     $eename = tempnam("/tmp", "eeprom");
 
     $fp = fopen($eename, "w");
-    fwrite($fp, $firmware->Data);
+    fwrite($fp, $firmware->get("Data"));
     fclose($fp);
 
     //    $flash = ' --segment=flash --erase --upload --verify if='.$tempname;
