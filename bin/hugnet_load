@@ -81,8 +81,11 @@ if (strlen($file) == 0) {
     exit(1);
 }
 
-$DevID = hexdec($config->i);
-$dev = $cli->system()->device($DevID);
+$DeviceID = trim(strtoupper($config->i));
+$DevID = hexdec($DeviceID);
+$dev = $cli->system()->device(
+    array("DeviceID" => $DeviceID, "id" => $DevID)
+);
 $firmware = $cli->system()->table("Firmware");
 $firmware->fromFile($file, $path);
 if ($firmware->get("FWPartNum") === "0039-38-03-C") {
@@ -97,7 +100,10 @@ $cli->out(
 $ret = false;
 if ($dev->get("loadable")) {
     $ret = $dev->action()->loadFirmware($firmware);
-} else if ($dev->get("arch") === "AVR") {
+} else if (($dev->get("arch") === "AVR") 
+    || ($firmware->get("HWPartNum") == "0039-28")
+    || ($firmware->get("HWPartNum") == "0039-12")
+) {
     $Prog = 'avrdude -c avrisp2 -p '.$firmware->Target.' -P usb ';
 
     // Program the flash
