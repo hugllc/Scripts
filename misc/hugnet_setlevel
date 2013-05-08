@@ -110,12 +110,6 @@ if (strlen($config->i) == 0) {
     $cli->out("DeviceID must be specified");
     exit(1);
 }
-if (strlen($config->V) == 0) {
-    $cli->help();
-    $cli->out();
-    $cli->out("Value(s) must be specified");
-    exit(1);
-}
 if (strlen($config->P) == 0) {
     $cli->help();
     $cli->out();
@@ -145,16 +139,19 @@ $extra   = $process->get("extra");
     11 => "Tolerance 2",
 ),
 */
-
+$set = false;
 
 if (!is_null($config->p)) {
     $extra[0] = $config->p;
+    $set = true;
 }
 if (!is_null($config->C)) {
     $extra[1] = $config->C;
+    $set = true;
 }
 if (!is_null($config->S)) {
     $extra[2] = $config->S;
+    $set = true;
 }
 
 if (strlen($config->D)) {
@@ -169,22 +166,35 @@ if (strlen($config->T)) {
 for ($i = 0; $i < 3; $i++) {
     if (isset($data[$i])) {
         $extra[($i*3) + 3] = $data[$i];
+        $set = true;
     }
     if (isset($setpoints[$i])) {
         $extra[($i*3) + 4] = $setpoints[$i];
+        $set = true;
     }
     if (isset($tolerance[$i])) {
         $extra[($i*3) + 5] = $tolerance[$i];
+        $set = true;
     }
 }
 
-$cli->out("Setting the level holder in RAM (Changes won't be saved on reboot)");
+if ($set) {
+    $cli->out();
+    $cli->out("Setting the level holder in RAM (Changes won't be saved on reboot)");
 
-$process->set("extra", $extra);
-if ($process->push()) {
-    $cli->out("Done!");
+    $process->set("extra", $extra);
+    if ($process->push()) {
+        $cli->out("Done!");
+        $cli->out(str_pad("New Setup: ", 30, " ", STR_PAD_LEFT));
+    } else {
+        $cli->out("Failed");
+    }
 } else {
-    $cli->out("Failed");
+}    $cli->out(str_pad("Current Setup: ", 30, " ", STR_PAD_LEFT));
+
+$text = $process->get("extraText");
+foreach ((array)$text as $key => $text) {
+    $cli->out(str_pad("$text: ", 30, " ", STR_PAD_LEFT).$extra[$key]);
 }
 
 print "Finished\n";
