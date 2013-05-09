@@ -46,12 +46,21 @@ $config = HUGnetLib::Args(
             "name" => "DeviceID", "type" => "string", "args" => true
         ),
         "D" => array(
-            "name" => "Data", "type" => "string", "args" => true, "default" => ""
+            "name" => "Data", "type" => "int", "args" => true, "default" => ""
         ),
         "V" => array(
-            "name" => "Value", "type" => "string", "args" => true, "default" => ""
+            "name" => "Value", "type" => "float", "args" => true, "default" => ""
         ),
         "T" => array(
+            "name" => "Toler", "type" => "float", "args" => true, "default" => null
+        ),
+        "c" => array(
+            "name" => "Limiter", "type" => "string", "args" => true, "default" => ""
+        ),
+        "H" => array(
+            "name" => "High", "type" => "string", "args" => true, "default" => ""
+        ),
+        "L" => array(
             "name" => "Low", "type" => "string", "args" => true, "default" => null
         ),
         "C" => array(
@@ -97,9 +106,12 @@ Arguments:
     -p <Priority>    The priority to set
     -C <Channel>     The comma separated list of the control channels to set
     -S <Step>        The step size to set
-    -D <DataChannel> Comma separated list of the datachannels to use
-    -V <Value>       Comma separated list of the values to hold the datachannel at
-    -T <Tolerance>   Comma separated list of tolerances on the values
+    -c <DataChannel> Comma separated list of the datachannels to use for the limiters
+    -H <Value>       Comma separated list of the values to hold the datachannel for the limiters
+    -L <Tolerance>   Comma separated list of tolerances on the values for the limiters
+    -D <DataChannel> The datachannels to use
+    -V <Value>       The value to hold the datachannel at
+    -T <Tolerance>   The tolerance on the value
     -v               Increment the verbosity
     -f <file>        The config file to use",
     $config->h
@@ -155,15 +167,30 @@ if (!is_null($config->S)) {
 }
 
 if (strlen($config->D)) {
-    $data = explode(",", $config->D);
+    $extra[9] = (int)$config->D;
+    $set = true;
 }
 if (strlen($config->V)) {
-    $setpoints = explode(",", $config->V);
+    $extra[10] = (float)$config->V;
+    $set = true;
 }
 if (strlen($config->T)) {
-    $tolerance = explode(",", $config->T);
+    $extra[11] = (float)$config->T;
+    $set = true;
 }
-for ($i = 0; $i < 3; $i++) {
+if (strlen($config->c)) {
+    $data = explode(",", $config->c);
+    $set = true;
+}
+if (strlen($config->H)) {
+    $setpoints = explode(",", $config->H);
+    $set = true;
+}
+if (strlen($config->L)) {
+    $tolerance = explode(",", $config->L);
+    $set = true;
+}
+for ($i = 0; $i < 2; $i++) {
     if (isset($data[$i])) {
         $extra[($i*3) + 3] = $data[$i];
         $set = true;
@@ -177,7 +204,6 @@ for ($i = 0; $i < 3; $i++) {
         $set = true;
     }
 }
-
 if ($set) {
     $cli->out();
     $cli->out("Setting the level holder in RAM (Changes won't be saved on reboot)");
@@ -190,8 +216,8 @@ if ($set) {
         $cli->out("Failed");
     }
 } else {
-}    $cli->out(str_pad("Current Setup: ", 30, " ", STR_PAD_LEFT));
-
+    $cli->out(str_pad("Current Setup: ", 30, " ", STR_PAD_LEFT));
+}
 $text = $process->get("extraText");
 foreach ((array)$text as $key => $text) {
     $cli->out(str_pad("$text: ", 30, " ", STR_PAD_LEFT).$extra[$key]);
