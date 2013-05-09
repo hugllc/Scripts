@@ -84,7 +84,7 @@ if (strlen($file) == 0) {
 $DeviceID = trim(strtoupper($config->i));
 $DevID = hexdec($DeviceID);
 $dev = $cli->system()->device(
-    array("DeviceID" => $DeviceID, "id" => $DevID)
+    array("DeviceID" => printf("%06X", $DevID), "id" => $DevID)
 );
 $firmware = $cli->system()->table("Firmware");
 $firmware->fromFile($file, $path);
