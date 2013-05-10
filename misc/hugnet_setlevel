@@ -46,10 +46,10 @@ $config = HUGnetLib::Args(
             "name" => "DeviceID", "type" => "string", "args" => true
         ),
         "D" => array(
-            "name" => "Data", "type" => "int", "args" => true, "default" => ""
+            "name" => "Data", "type" => "int", "args" => true, "default" => null
         ),
         "V" => array(
-            "name" => "Value", "type" => "float", "args" => true, "default" => ""
+            "name" => "Value", "type" => "float", "args" => true, "default" => null
         ),
         "T" => array(
             "name" => "Toler", "type" => "float", "args" => true, "default" => null
@@ -166,15 +166,15 @@ if (!is_null($config->S)) {
     $set = true;
 }
 
-if (strlen($config->D)) {
+if (!is_null($config->D)) {
     $extra[9] = (int)$config->D;
     $set = true;
 }
-if (strlen($config->V)) {
+if (!is_null($config->V)) {
     $extra[10] = (float)$config->V;
     $set = true;
 }
-if (strlen($config->T)) {
+if (!is_null($config->T)) {
     $extra[11] = (float)$config->T;
     $set = true;
 }
