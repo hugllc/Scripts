@@ -168,7 +168,7 @@ foreach ($stepFile as $line) {
     $cli->out(
         "Setting Output to: ".sprintf("%4.2f", $setPoint)." for $time s"
     );
-    $extra[4] = $setPoint;
+    $extra[9] = $setPoint;
 
     $process->set("extra", $extra);
     if ($process->push()) {
