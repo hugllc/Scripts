@@ -95,6 +95,7 @@ foreach (array_keys((array)$ids) as $key) {
     $cli->out($dev->get("DeviceID"));
     foreach ($params as $param) {
         $dev->setParam($param, $date);
+        $dev->setParam($param."Try", $date);
         $cli->out($param." set to ".$dev->getParam($param));
     }
     $dev->store();
