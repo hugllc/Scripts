@@ -132,6 +132,7 @@ if (strlen($config->P) == 0) {
 $dev = $cli->system()->device(hexdec($config->i));
 
 $process = $dev->process($config->P);
+$process->pull();
 $extra   = $process->get("extra");
 
 
