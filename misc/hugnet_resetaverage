@@ -43,7 +43,7 @@ require_once 'HUGnetLib/HUGnetLib.php';
 $config = HUGnetLib::Args(
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
-        "D" => array("name" => "Data", "type" => "string", "args" => true),
+        "D" => array("name" => "Date", "type" => "string", "args" => true),
     ),
     "args",
     $argv
@@ -61,6 +61,8 @@ Resets the last average time to 0 so that all averages are recalculated.
 
 Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
 Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits.  Defaults to all
+    -D <Date>       The date to reset the last average dates to
     -v              Increment the verbosity
     -f <file>       The config file to use",
     $config->h
@@ -73,16 +75,27 @@ $params = array(
     "LastAverageMONTHLY", "LastAverageYEARLY", "LastAverage30SEC", "LastAverage1MIN",
     "LastAverage5MIN"
 );
-$ids = $dev->ids(array("Active" => 1));
+if (strlen($config->i) > 0) {
+    $did = hexdec($config->i);
+    $ids = array($did => $did);
+} else {
+    $ids = $dev->ids(array("Active" => 1));
+}
+
+if (strlen($config->D) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Date must be specified");
+    exit(1);
+} else {
+    $date = \HUGnet\db\Table::unixDate($config->D);
+}
 foreach (array_keys((array)$ids) as $key) {
     $dev->load($key);
     $cli->out($dev->get("DeviceID"));
     foreach ($params as $param) {
-        $val = $dev->getParam($param);
-        if (!empty($val)) {
-            $cli->out($param);
-            $dev->setParam($param, 0);
-        }
+        $dev->setParam($param, $date);
+        $cli->out($param." set to ".$dev->getParam($param));
     }
     $dev->store();
 }
