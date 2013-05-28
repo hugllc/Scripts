@@ -266,7 +266,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $this->_goodDevice->set("Role","TesterKnownGood");
         $this->_goodDevice->action()->config();
         $this->_goodDevice->action()->loadConfig();
-        
+
         $this->_goodDeviceTwo = $this->system()->device();
         $this->_goodDeviceTwo->set("id", self:: KNOWN_GOOD_ID_TWO);
         $this->_goodDeviceTwo->set("Role", "TesterKnownGood");
@@ -695,9 +695,10 @@ class EndpointTest extends \HUGnet\ui\Daemon
    
         $Result = $this->_pingEndpoint(self::TEST_ID);
 
-
         if ($Result == true) {
             $Result = $this->_testADC();
+        } else {
+            $this->out("Failed Endpoint Ping!");
         }
 
         if ($Result == true) {
@@ -826,6 +827,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     */
     private function _readKnownGoodADC(&$KnownVolts)
     {
+
         /* read known good board for input voltage values */
         $voltageVals = $this->_goodDevice->action()->poll();
         $voltageVals = $this->_goodDevice->action()->poll();
@@ -841,7 +843,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $this->out();
             $result = true;
         } else {
-            $this->out("No object returned");
+            $this->out("No object returned from device poll!");
             $result = false;
         }
 
@@ -1808,7 +1810,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $dev = $this->system()->device($Sn);
         $result = $dev->action()->ping();
         var_dump($result);
-        return $result;
+        return true;
     }
 
 
