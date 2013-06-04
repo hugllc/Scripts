@@ -157,11 +157,10 @@ foreach ($chans as $key => $val) {
     
     $cli->out("Offset for $val is ".$offset);
     $extra[$set] = $scale;
-    $cli->out("Set scale in position ".$i);
-//    $input->set("extra", $extra);
+    $input->set("extra", $extra);
     $input->store();
 }
-
+$dev->action()->loadConfig();
 
 
 
