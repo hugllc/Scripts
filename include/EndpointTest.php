@@ -75,6 +75,8 @@ class EndpointTest extends \HUGnet\ui\Daemon
     /* DAC Configuration bytes */
     const DAC_CONFIG_IREF = "0010";
     const DAC_CONFIG_AREF = "0013";
+    const DAC_CONFIG_16_IREF = "0018";
+    const DAC_CONFIG_16_AREF = "001B";
 
     /** path to openocd for JTAG emulator **/
     private $_openOcdPath = "~/code/HOS/toolchain/bin/openocd";
@@ -1071,7 +1073,10 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         $Result = $this->_configDAC(1);
 
-        /* set DAC output to 1.2 volts */
+        /*
+        ****************************************************
+        * set DAC output to 1.2 volts                      *
+        */
         if ($Result == true) {
             $Result = $this->_dacTestMax(1);
         }
@@ -1107,6 +1112,50 @@ class EndpointTest extends \HUGnet\ui\Daemon
         /* output 0.0 volts */
         if ($Result == true) {
             $Result = $this->_dacTestMin(2);
+        }
+        
+        /*
+        ****************************************************
+        * Set DAC configuration for 16 bit, 1.2v reference *
+        */
+        if ($Result == true) {
+            $Result = $this->_configDAC(3);
+        }
+
+        if ($Result == true) {
+            $Result = $this->_dacTestMax(3);
+        }
+
+        /* output 0.6 volts */
+        if ($Result == true) {
+            $Result = $this->_dacTestMid(3);
+        }
+
+        /* output 0.0 volts */
+        if ($Result == true) {
+            $Result = $this->_dacTestMin(3);
+        }
+
+        /*
+        ****************************************************
+        * Set DAC configuration for 16 bit, 2.5v reference *
+        */
+        if ($Result == true) {
+            $Result = $this->_configDAC(4);
+        }
+
+        if ($Result == true) {
+            $Result = $this->_dacTestMax(4);
+        }
+
+        /* output 0.6 volts */
+        if ($Result == true) {
+            $Result = $this->_dacTestMid(4);
+        }
+
+        /* output 0.0 volts */
+        if ($Result == true) {
+            $Result = $this->_dacTestMin(4);
         }
 
         return $Result;
@@ -1152,6 +1201,34 @@ class EndpointTest extends \HUGnet\ui\Daemon
                 $this->out("Digital data is:".$ReplyData);
                 $Result = false;
             }
+        } else if ($configNum == 3) {
+            $dataVal = self::DAC_CONFIG_16_IREF;
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            /* 2 byte response comes back little endian, so the byte */
+            /* order is reversed from send data.                     */
+            if ($ReplyData == "1800") {
+                $this->out("Successful set of DAC for 16 bit mode Iref!");
+                $Result = true;
+            } else {
+                $this->out("Failed DAC Config 3");
+                $this->out("Digital data is:".$ReplyData);
+                $Result = false;
+            }
+        } else if ($configNum == 4) {
+            $dataVal = self::DAC_CONFIG_16_AREF;
+            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+            /* 2 byte response comes back little endian, so the byte */
+            /* order is reversed from send data.                     */
+            if ($ReplyData == "1B00") {
+                $this->out("Successful set of DAC for 16 bit mode Aref!");
+                $Result = true;
+            } else {
+                $this->out("Failed DAC Config 4");
+                $this->out("Digital data is:".$ReplyData);
+                $Result = false;
+            }
         } else {
             $this->out("Invalid DAC configuration requested!");
             $Result = false;
@@ -1174,12 +1251,19 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         $idNum = self::TEST_ID;
         $cmdNum = self::SET_DAC_COMMAND;
-        $dataVal = "0fff";
+
+        if ($configNum < 3) {
+            $dataVal = "0fff";
+        } else {
+            $dataVal = "ffff";
+        }
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         /* 2 byte response comes back little endian, so the byte */
         /* order is reversed from send data.                     */
-        if ($ReplyData == "FF0F") {
+        if (($configNum < 3) and ($ReplyData == "FF0F")) {
+            $Result = true;
+        } else if (($configNum > 2) and ($ReplyData == "FFFF")) {
             $Result = true;
         } else {
             $this->out("Failed Config ".$configNum." Set Max");
@@ -1224,6 +1308,25 @@ class EndpointTest extends \HUGnet\ui\Daemon
                         $Result = false;
                         $this->out("DAC Test 4 Failed!");
                     }
+                } else if ($configNum == 3) {
+                    $this->out("DAC set to 1.2 V Measured : ".$dacVolts);
+                    if (($dacVolts > 1.1) and ($dacVolts < 1.3)) {
+                        $Result = true;
+                        $this->out("DAC Test 7 Passed!");
+                    } else {
+                        $Result = false;
+                        $this->out("DAC Test 7 Failed!");
+                    }
+                } else if ($configNum == 4) {
+                    $this->out("DAC set to 2.5 V Measured : ".$dacVolts);
+                    if (($dacVolts > 2.30) and ($dacVolts < 2.70)) {
+                        $Result = true;
+                        $this->out("DAC Test 10 Passed!");
+                    } else {
+                        $Result = false;
+                        $this->out("DAC Test 10 Failed!");
+                    }
+                
                 } else {
                     $this->out("Invalid Configuration Number");
                     $Result == false;
@@ -1249,12 +1352,18 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         $idNum = self::TEST_ID;
         $cmdNum = self::SET_DAC_COMMAND;
-        $dataVal = "07ff";
+        if ($configNum < 3) {
+            $dataVal = "07ff";
+        } else {
+            $dataVal = "7fff";
+        }
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         /* 2 byte response comes back little endian, so the byte */
         /* order is reversed from send data.                     */
-        if ($ReplyData == "FF07") {
+        if (($configNum < 3) and ($ReplyData == "FF07")) {
+            $Result = true;
+        } else if (($configNum > 2) and ($ReplyData == "FF7F")){
             $Result = true;
         } else {
             $this->out("Failed Config ".$configNum." Set Mid");
@@ -1297,6 +1406,24 @@ class EndpointTest extends \HUGnet\ui\Daemon
                     } else {
                         $Result = false;
                         $this->out("DAC Test 5 Failed!");
+                    }
+                } else if ($configNum == 3) {
+                    $this->out("DAC set to 0.6 V Measured : ".$dacVolts);
+                    if (($dacVolts > 0.5) and ($dacVolts < 0.7)) {
+                        $Result = true;
+                        $this->out("DAC Test 8 Passed!");
+                    } else {
+                        $Result = false;
+                        $this->out("DAC Test 8 Failed!");
+                    }
+                } else if ($configNum == 4) {
+                    $this->out("DAC set to 1.25 V Measured : ".$dacVolts);
+                    if (($dacVolts > 1.20) and ($dacVolts < 1.30)) {
+                        $Result = true;
+                        $this->out("DAC Test 11 Passed!");
+                    } else {
+                        $Result = false;
+                        $this->out("DAC Test 11 Failed!");
                     }
                 } else {
                     $this->out("Invalid Configuration Number!");
@@ -1370,6 +1497,22 @@ class EndpointTest extends \HUGnet\ui\Daemon
                         $Result = false;
                         $this->out("DAC Test 6 Failed!");
                     }
+                } else if ($configNum == 3) {
+                    if (($dacVolts > -0.1) and ($dacVolts < 0.1)) {
+                        $Result = true;
+                        $this->out("DAC Test 9 Passed!");
+                    } else {
+                        $Result = false;
+                        $this->out("DAC Test 9 Failed!");
+                    }
+                } else if ($configNum == 4) {
+                    if (($dacVolts > -0.1) and ($dacVolts < 0.1)) {
+                        $Result = true;
+                        $this->out("DAC Test 12 Passed!");
+                    } else {
+                        $Result = false;
+                        $this->out("DAC Test 12 Failed!");
+                    }
                 } else {
                     $this->out("Invalid Configuration Number!");
                     $Result = false;
@@ -1380,8 +1523,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         return $Result;
     }
-
-
 
     /*****************************************************************************/
     /*                                                                           */
