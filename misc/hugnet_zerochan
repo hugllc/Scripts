@@ -151,12 +151,17 @@ foreach ($chans as $key => $val) {
     $extra = (array)$input->get("extra");
     $set = $chan->get("index") + 1;
 
-    $offset = $config->D - $extra[$set] - $average[$key];
-    
+    $offset = $extra[$set] + $average[$key] - $config->D;
+
     $cli->out("Offset for $val is ".$offset);
-    $extra[$set] = $scale;
+    $extra[$set] = $offset;
     $input->set("extra", $extra);
     $input->store();
+    if ($ret) {
+        $cli->out("Offset successfully stored");
+    } else {
+        $cli->out("Storage of offset FAILED");
+    }
 }
 $dev->action()->loadConfig();
 
