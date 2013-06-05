@@ -142,9 +142,9 @@ foreach ($chans as $key => $val) {
         $channels->dataChannel($val)->get("maxDecimals")
     );
 }
-$cli->out("Average is ".$average[0]);
 
 foreach ($chans as $key => $val) {
+    $cli->out("Average is for $val is ".$average[$key]);
     $chan = $channels->dataChannel($val);
     $input = $dev->input($chan->get("input"));
     $text = (array)$input->get("extraText");
