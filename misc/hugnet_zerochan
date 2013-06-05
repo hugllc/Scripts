@@ -59,9 +59,7 @@ Copyright Hunt Utilities Group, LLC
 HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
 ."HUGnetLib v".$cli->system()->get("version")."
 
-Calibrates the 'Scaled Temperature Sensors'.  The first input given gets an
-offset so that it reads the set value given.  The other two get offsets to match
-the first one.
+This calibrates sensors.  It will calibrate one or more sensors to a common value.
 
 Usage: ".$cli->system()->get("program")." -i <DeviceID> -n <inputs> -s <seconds> [-D <set value>] [-v] [-f <file>]
 Arguments:
