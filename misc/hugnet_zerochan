@@ -156,7 +156,7 @@ foreach ($chans as $key => $val) {
     $cli->out("Offset for $val is ".$offset);
     $extra[$set] = $offset;
     $input->set("extra", $extra);
-    $input->store();
+    $ret = $input->store();
     if ($ret) {
         $cli->out("Offset successfully stored");
     } else {
