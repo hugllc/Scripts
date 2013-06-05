@@ -151,7 +151,7 @@ foreach ($chans as $key => $val) {
     $input = $dev->input($chan->get("input"));
     $text = (array)$input->get("extraText");
     $extra = (array)$input->get("extra");
-    $set = $chan->get("index");
+    $set = $chan->get("index") + 1;
 
     $offset = $config->D - $extra[$set] - $average[$key];
     
