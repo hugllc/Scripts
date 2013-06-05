@@ -211,6 +211,7 @@ if ($set) {
 
     $process->set("extra", $extra);
     if ($process->push()) {
+        $process->pull();
         $cli->out("Done!");
         $cli->out(str_pad("New Setup: ", 30, " ", STR_PAD_LEFT));
     } else {
