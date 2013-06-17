@@ -80,7 +80,7 @@ $config = HUGnetLib::Args(
         ),
         "S" => array(
             "name" => "Step",
-            "type" => "int",
+            "type" => "float",
             "args" => true,
             "default" => null
         ),
@@ -163,7 +163,7 @@ if (!is_null($config->C)) {
     $set = true;
 }
 if (!is_null($config->S)) {
-    $extra[2] = $config->S;
+    $extra[2] = (float)$config->S;
     $set = true;
 }
 
@@ -205,6 +205,7 @@ for ($i = 0; $i < 2; $i++) {
         $set = true;
     }
 }
+var_dump($extra);
 if ($set) {
     $cli->out();
     $cli->out("Setting the level holder in RAM (Changes won't be saved on reboot)");
