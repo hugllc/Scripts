@@ -205,7 +205,7 @@ for ($i = 0; $i < 2; $i++) {
         $set = true;
     }
 }
-var_dump($extra);
+
 if ($set) {
     $cli->out();
     $cli->out("Setting the level holder in RAM (Changes won't be saved on reboot)");
