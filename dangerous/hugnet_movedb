@@ -1,0 +1,166 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Loads a program into a controller board
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Test
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007-2011 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+require_once 'HUGnetLib/HUGnetLib.php';
+$config = HUGnetLib::Args(
+    array(
+        "F" => array("name" => "from", "type" => "string", "args" => true),
+        "T" => array("name" => "to", "type" => "string", "args" => true),
+    ),
+    "args",
+    $argv
+);
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = HUGnetLib::ui($config, "CLI");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+A utility to move a database from one server to another
+
+Usage: ".$cli->system()->get("program")." [-v] [-f <file>] -F <from group> -T <to group>
+Arguments:
+    -F <group>      The server group to read from
+    -T <group>      The server group to write the new database to
+    -v              Increment the verbosity
+    -f <file>       The config file to use
+
+THIS COULD POTENTIALLY DO DAMAGE TO YOUR DATABASE.  ONLY USE THIS IF YOU KNOW WHAT YOU
+ARE DOING.
+",
+    $config->h
+);
+if (strlen($config->F) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Group to read data from must be specified");
+    exit(1);
+}
+if (strlen($config->T) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Group to read data from must be specified");
+    exit(1);
+}
+if (!$cli->system()->dbconnect()->available($config->F)) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Group ".$config->F." doesn't exist");
+    exit(1);
+}
+if (!$cli->system()->dbconnect()->available($config->T)) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Group ".$config->T." doesn't exist");
+    exit(1);
+}
+
+$tables = array(
+    "Datacollectors", 
+    "InputTable",
+    "OutputTable", 
+    "ProcessTable",
+    "DeviceInputs",
+    "DeviceOutputs",
+    "DeviceProcesses",
+    "Devices",
+    "E00391200_average",
+    "E00391200_history",
+    "E00391201_average",
+    "E00391201_history",
+    "E00392100_average",
+    "E00392100_history",
+    "E00392800_average",
+    "E00392800_history",
+    "E00393700_average",
+    "E00393700_history",
+    "E00394000_average",
+    "E00394000_history",
+    "EDEFAULT_average",
+    "EDEFAULT_history",
+    "ETEST_average",
+    "ETEST_history",
+    "Errors",
+    "Firmware",
+    "RawHistory",
+    "Tests"
+);
+foreach ($tables as $class) {
+    $cli->out("Doing $class");
+    $to = $cli->system()->table($class);
+    $to->set("group", $config->T);
+    $from = $cli->system()->table($class);
+    $from->set("group", $config->F);
+    $from->sqlLimit = 1000;
+    $count = 0;
+    $to->insertEnd();
+    while ($ret = $from->select(array(), array(), \PDO::FETCH_ASSOC)) {
+        foreach ($ret as $work) {
+            unset($work["group"]);
+            $to->fromArray($work);
+            $to->insert(true);
+        }
+        print ".";
+        $from->sqlStart += $from->sqlLimit;
+    }
+    $to->insertEnd();
+    print "\n";
+    /*
+    $count = 0;
+    while ($ret) {
+        $data = $from->toArray();
+        unset($data["group"]);
+        $to->fromArray($data);
+        $to->set("group", $config->T);
+        $out = $to->insert(true);
+        $ret = $from->nextInto();
+        if ($count++ > 1000) {
+            $count = 0;
+            print ".";
+        }
+    }
+    */
+    $cli->out();
+}
+
+print "Finished\n";
+
+
+?>
