@@ -83,18 +83,10 @@ $dev = $cli->system()->device(hexdec($config->i));
 
 for ($i = 0; ($i < $config->c) && $cli->loop(); $i++) {
     $time = microtime(true);
-    $pkt = $dev->network()->ping(
-        $config->F,
-        null,
-        null,
-        array(
-            "tries" => 1,
-            "find" => false,
-        )
-    );
+    $pkt = $dev->action()->ping($config->F);
     $time = microtime(true) - $time;
-    if (is_string($pkt->reply())) {
-        print $pkt->length()." bytes from ".$pkt->to()." seq=$i ";
+    if ($pkt) {
+        print "seq=$i ";
         print "ttl=".$dev->get("packetTimeout")." time=".round($time, 4)."\n";
     } else {
         print "No Reply seq $i\n";
