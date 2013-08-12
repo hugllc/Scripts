@@ -77,31 +77,26 @@ $dev = $cli->system()->device(hexdec($config->i));
 $role = array();
 for ($i = 0; $i < $dev->get("InputTables"); $i++) {
     $data = $dev->input($i)->toArray(false);
-    if ((int)$data["id"] != 0xFF) {
+    if (isset($data["id"]) && ((int)$data["id"] != 0xFF)) {
         unset($data["RawSetup"]);
-        $role["input"][$i]["data"] = $data;
-        $role["input"][$i]["table"] = $dev->input($i)->toArray("entryonly");
+        unset($data["dev"]);
+        unset($data["input"]);
+        $role["input"][$i] = $data;
     }
 }
 for ($i = 0; $i < $dev->get("OutputTables"); $i++) {
     $data = $dev->output($i)->toArray(false);
-    if ((int)$data["id"] != 0xFF) {
+    if (isset($data["id"]) && ((int)$data["id"] != 0xFF)) {
         unset($data["RawSetup"]);
-        $role["output"][$i]["data"] = $data;
-        $role["output"][$i]["table"] = $dev->output($i)->toArray("entryonly");
+        unset($data["dev"]);
+        unset($data["output"]);
+        $role["output"][$i] = $data;
     }
 }
-/*
-for ($i = 0; $i < $dev->get("ProcessTables"); $i++) {
-    $data = $dev->process($i)->toArray(false);
-    if ((int)$data["id"] != 0xFF) {
-        unset($data["RawSetup"]);
-        $role["process"][$i]["data"] = $data;
-    }
-}
-*/
+$cli->out("// The export starts here");
 var_export($role);
-$cli->out("Finished");
+$cli->out();
+$cli->out("// This is the end of the export");
 exit(0);
 
 ?>
