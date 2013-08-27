@@ -112,9 +112,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
             $selection = $this->_mainMenu();
 
             if (($selection == "A") || ($selection == "a")) {
-                $this->_testMain();
+                $this->_test003937Main();
             } else if (($selection == "B") || ($selection == "b")){
-                $this->_cloneMain();
+                $this->_test003928Main();
             } else if (($selection == "C") || ($selection == "c")){
                 $this->_troubleshootMain();
             } else {
@@ -148,7 +148,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $this->_printHeader();
         $this->out();
         $this->out("A ) Test 003937 HUGnetLab Endpoint");
-        $this->out("B ) Clone, Test and Program");
+        $this->out("B ) Test 003928 HUGnet Endpoint");
         $this->out("C ) Troubleshoot");
         $this->out("D ) Exit");
         $this->out();
@@ -258,7 +258,26 @@ class EndpointTest extends \HUGnet\ui\Daemon
     /*                                                                           */
     /*****************************************************************************/
 
-    
+ 
+    /**
+    ************************************************************
+    * Main Test Routine
+    * 
+    * This is the main routine for testing, serializing and 
+    * programming in the bootloader for HUGnet endpoints.
+    *
+    * @return void
+    *   
+    */
+    private function _test003937Main()
+    {
+        $sys = $this->system();
+        $this->_fixtureTest = E003937Test::factory($config, $sys);
+        $this->_fixtureTest->runTestMain();
+
+    }
+
+   
     /**
     ************************************************************
     * Main Clone Routine
@@ -271,8 +290,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     * @return void
     *
     */
-
-    private function _cloneMain()
+    private function _test003928Main()
     {
         
         $this->_clearScreen();
@@ -281,15 +299,13 @@ class EndpointTest extends \HUGnet\ui\Daemon
        
         $this->out("**************************************************");
         $this->out("*                                                *");
-        $this->out("*          C L O N E   R O U T I N E             *");
+        $this->out("*     0 0 3 9 2 8  M A I N   R O U T I N E       *");
         $this->out("*      U N D E R   C O N S T R U C T I O N       *");
         $this->out("*                                                *");
         $this->out("**************************************************");
 
 
         $choice = readline("\n\rHit Enter To Continue: ");
-
-
     }
 
     /**
@@ -303,7 +319,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
     * @return void
     *
     */
-
     private function _troubleshootMain()
     {
 
@@ -322,29 +337,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
         $choice = readline("\n\rHit Enter To Continue: ");
 
-
-    }
-
-
-    /**
-    ************************************************************
-    * Main Test Routine
-    * 
-    * This is the main routine for testing, serializing and 
-    * programming in the bootloader for HUGnet endpoints.
-    *
-    * @return void
-    *   
-    */
-    private function _testMain()
-    {
-        $sys = $this->system();
-        $this->_fixtureTest = E003937Test::factory($config, $sys);
-        $result =  $this->_fixtureTest->runTest();
-
-        if ($result == true) {
-            $this->_displayPassed();
-        }
     }
 
 

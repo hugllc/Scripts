@@ -5,7 +5,7 @@
  * PHP Version 5
  * <pre>
  * HUGnetLib is a library of HUGnet code
- * Copyright (C) 2012 Hunt Utilities Group, LLC
+ * Copyright (C) 2013 Hunt Utilities Group, LLC
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,7 +27,7 @@
  * @package    HUGnetLib
  * @subpackage UI
  * @author     Scott Price <prices@hugllc.com>
- * @copyright  2012 Hunt Utilities Group, LLC
+ * @copyright  2013 Hunt Utilities Group, LLC
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @link       http://dev.hugllc.com/index.php/Project:HUGnetLib
  */
@@ -42,7 +42,8 @@ require_once "HUGnetLib/ui/Daemon.php";
 require_once "HUGnetLib/devices/inputTable/Driver.php";
 
 /**
- * This code tests, serializes and programs endpoints with bootloader code.
+ * This code tests, serializes and programs HUGnetLab endpoints with 
+ * bootloader code.
  *
  * This is an endpoint test class, essentially.  It loads an endpoint without
  * test firmware, runs the tests, writes the serial number and hardware version
@@ -53,7 +54,7 @@ require_once "HUGnetLib/devices/inputTable/Driver.php";
  * @subpackage UI
  * @author     Scott Price <prices@hugllc.com>
  * @author     Jeff Liesmaki <jeffl@hugllc.com>
- * @copyright  2012 Hunt Utilities Group, LLC
+ * @copyright  2013 Hunt Utilities Group, LLC
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @version    Release: 0.9.7
  * @link       http://dev.hugllc.com/index.php/Project:HUGnetLib
@@ -127,7 +128,6 @@ class E003937Test
         $this->_goodDeviceTwo->action()->config();
         $this->_goodDeviceTwo->action()->loadConfig();
 
-
     }
 
     /**
@@ -147,11 +147,73 @@ class E003937Test
 
     /*****************************************************************************/
     /*                                                                           */
-    /*                     T E S T   R O U T I N E S                             */
+    /*         M A I N   M E N U  &  D I S P L A Y   R O U T I N E S             */
     /*                                                                           */
     /*****************************************************************************/
 
-    
+
+    /**
+    ************************************************************
+    * Run Test Main Routine
+    *
+    * This function is the main routine for the 003937 Endpoint
+    * test.
+    *
+    * @return null                      
+    *
+    */
+    public function runTestMain()
+    {
+        $exitTest = false;
+        $result;
+
+        do{
+
+            $selection = $this->_E003937mainMenu();
+
+            if (($selection == "A") || ($selection == "a")) {
+                $this->_runTest();
+            } else if (($selection == "B") || ($selection == "b")){
+                $this->_cloneMain();
+            } else if (($selection == "C") || ($selection == "c")){
+                $this->_troubleshootMain();
+            } else {
+                $exitTest = true;
+                $this->_system->out("Exit 003937 Test");
+            }
+
+        } while ($exitTest == false);
+    }
+
+    /**
+    ************************************************************
+    * Main 003937 Menu Routine
+    * 
+    * This is the main menu routine for 003937 HUGnetLab 
+    * endpoint.  It displays the menu options, reads the 
+    * user input choice and calls the appropriate routine in 
+    * response.
+    *
+    * @return string $choice
+    *
+    */
+    private function _E003937mainMenu()
+    {
+        EndpointTest::_clearScreen();
+        $this->_printHeader();
+        $this->_system->out("\n\r");
+        $this->_system->out("A ) Test, Program and Serialize");
+        $this->_system->out("B ) Clone, Test and Program");
+        $this->_system->out("C ) Troubleshoot");
+        $this->_system->out("D ) Exit");
+        $this->_system->out("\n\r");
+        $choice = readline("\n\rEnter Choice(A,B,C or D): ");
+        
+        return $choice;
+
+    }
+
+
 
     /**
     ************************************************************
@@ -163,7 +225,7 @@ class E003937Test
     * @return void
     *   
     */
-    public function runTest()
+    private function _runTest()
     {
         $exitTest = false;
         
@@ -175,7 +237,6 @@ class E003937Test
             $programHW = $this->_getHardwareNumber();
 
             do {
-                /* parent::main(); */
                 $programSN = $StartSN + $snCounter;
                 $this->_device->set("id", $programSN);
 
@@ -193,20 +254,10 @@ class E003937Test
                         if ($retVal == 0) {
                             $this->_displayPassed();
                         } else {
-                            $this->_system->out("*****************************************");
-                            $this->_system->out("*                                       *");
-                            $this->_system->out("*       Load Boot Loader Failed!        *");
-                            $this->_system->out("*                                       *");
-                            $this->_system->out("*****************************************");
+                            $this->_displayBootFailed();
                         }
                     } else {
-                        $this->_system->out("*********************************************");
-                        $this->_system->out("*                                           *");
-                        $this->_system->out("*     Board SN & HW Programming Failed      *");
-                        $this->_system->out("*             Please verify:                *");
-                        $this->_system->out("*   Serial number and hardware partnumber   *");
-                        $this->_system->out("*                                           *");
-                        $this->_system->out("*********************************************");
+                        $this->_displayBoardProgramFailed();
                     }
                 } else {
                     $this->_displayFailed();
@@ -222,57 +273,6 @@ class E003937Test
 
     }
 
-    /**
-    ************************************************************
-    * Display Board Passed Routine
-    *
-    * This function displays the board passed message in a
-    * visually obvious way so the user cannot miss it.
-    *
-    * @return void
-    *
-    */
-    private function _displayPassed()
-    {
-        $this->_system->out("\n\r");
-        $this->_system->out("\n\r");
-
-        $this->_system->out("**************************************************");
-        $this->_system->out("*                                                *");
-        $this->_system->out("*      B O A R D   T E S T   P A S S E D !       *");
-        $this->_system->out("*                                                *");
-        $this->_system->out("**************************************************");
-
-        $this->_system->out("\n\r");
-        $this->_system->out("\n\r");
-
-    }
-
-    /**
-    ************************************************************
-    * Display Board Passed Routine
-    *
-    * This function displays the board passed message in a
-    * visually obvious way so the user cannot miss it.
-    *
-    * @return void
-    *
-    */
-    private function _displayFailed()
-    {
-        $this->_system->out("\n\r");
-        $this->_system->out("\n\r");
-
-        $this->_system->out("**************************************************");
-        $this->_system->out("*                                                *");
-        $this->_system->out("*      B O A R D   T E S T   F A I L E D !       *");
-        $this->_system->out("*                                                *");
-        $this->_system->out("**************************************************");
-
-        $this->_system->out("\n\r");
-        $this->_system->out("\n\r");
-
-    }
 
 
     /**
@@ -305,6 +305,194 @@ class E003937Test
 
         return $exitVal;
     }
+
+   
+    /**
+    ************************************************************
+    * Main Clone Routine
+    *
+    * This is the main routine for cloning an existing endpoint
+    * the serial number for the board to be cloned will be written
+    * into the new board, but the unique serial number will 
+    * remain the same and the board will run through program test.
+    * 
+    * @return void
+    *
+    */
+    private function _cloneMain()
+    {
+        
+        EndpointTest::_clearScreen();
+        $this->_system->out("\n\r");
+       
+        $this->_system->out("**************************************************");
+        $this->_system->out("*                                                *");
+        $this->_system->out("*          C L O N E   R O U T I N E             *");
+        $this->_system->out("*      U N D E R   C O N S T R U C T I O N       *");
+        $this->_system->out("*                                                *");
+        $this->_system->out("**************************************************");
+
+
+        $choice = readline("\n\rHit Enter To Continue: ");
+
+
+    }
+
+    /**
+    ************************************************************
+    * Main Troubleshoot Routine
+    *
+    * This is the main routine for troubleshooting an existing 
+    * endpoint.  It will have the option of single stepping 
+    * through the tests or looping on a specific test.
+    * 
+    * @return void
+    *
+    */
+    private function _troubleshootMain()
+    {
+
+        EndpointTest::_clearScreen();
+        $this->_system->out("\n\r");
+       
+
+        $this->_system->out("**************************************************");
+        $this->_system->out("*                                                *");
+        $this->_system->out("*    T R O U B L E S H O O T   R O U T I N E     *");
+        $this->_system->out("*      U N D E R   C O N S T R U C T I O N       *");
+        $this->_system->out("*                                                *");
+        $this->_system->out("**************************************************");
+
+
+        $choice = readline("\n\rHit Enter To Continue: ");
+
+
+    }
+
+    /**
+    ************************************************************
+    * Display Board Passed Routine
+    *
+    * This function displays the board passed message in a
+    * visually obvious way so the user cannot miss it.
+    *
+    * @return void
+    *
+    */
+    private function _displayPassed()
+    {
+        $this->_system->out("\n\r");
+
+        $this->_system->out("**************************************************");
+        $this->_system->out("*                                                *");
+        $this->_system->out("*      B O A R D   T E S T   P A S S E D !       *");
+        $this->_system->out("*                                                *");
+        $this->_system->out("**************************************************");
+
+        $this->_system->out("\n\r");
+
+    }
+
+    /**
+    ************************************************************
+    * Display Board Passed Routine
+    *
+    * This function displays the board passed message in a
+    * visually obvious way so the user cannot miss it.
+    *
+    * @return void
+    *
+    */
+    private function _displayFailed()
+    {
+        $this->_system->out("\n\r");
+
+        $this->_system->out("**************************************************");
+        $this->_system->out("*                                                *");
+        $this->_system->out("*      B O A R D   T E S T   F A I L E D !       *");
+        $this->_system->out("*                                                *");
+        $this->_system->out("**************************************************");
+
+        $this->_system->out("\n\r");
+
+    }
+
+    /**
+    ************************************************************
+    * Display Boot Load Failed Routine
+    *
+    * This function displays the boot load failed message in a
+    * visually obvious way so the user cannot miss it.
+    *
+    * @return void
+    *
+    */
+    private function _displayBootFailed()
+    {
+        $this->_system->out("\n\r");
+
+        $this->_system->out("*****************************************");
+        $this->_system->out("*                                       *");
+        $this->_system->out("*       Load Boot Loader Failed!        *");
+        $this->_system->out("*                                       *");
+        $this->_system->out("*****************************************");
+
+        $this->_system->out("\n\r");
+    }
+
+    /**
+    ************************************************************
+    * Display Board Program Failed Routine
+    *
+    * This function displays the board serial number and 
+    * hardware number programming failed message in a
+    * visually obvious way so the user cannot miss it.
+    *
+    * @return void
+    *
+    */
+    private function _displayBoardProgramFailed()
+    {
+        $this->_system->out("\n\r");
+
+        $this->_system->out("*********************************************");
+        $this->_system->out("*                                           *");
+        $this->_system->out("*     Board SN & HW Programming Failed      *");
+        $this->_system->out("*             Please verify:                *");
+        $this->_system->out("*   Serial number and hardware partnumber   *");
+        $this->_system->out("*                                           *");
+        $this->_system->out("*********************************************");
+
+        $this->_system->out("\n\r");
+    }
+
+
+    /**
+    ************************************************************
+    * Print Header Routine
+    *
+    * The function prints the header box and title.
+    *
+    * @return void
+    *
+    */
+    private function _printHeader()
+    {
+        $this->_system->out(str_repeat("*", 60));
+       
+        $this->_system->out("*                                                          *");
+        $this->_system->out("*        HUGnetLab 003937 Test & Program Tool              *");
+        $this->_system->out("*                                                          *");
+
+        $this->_system->out(str_repeat("*", 60));
+    }
+
+
+    /*****************************************************************************/
+    /*                                                                           */
+    /*                     T E S T   R O U T I N E S                             */
+    /*                                                                           */
+    /*****************************************************************************/
 
     /**
     ************************************************************
