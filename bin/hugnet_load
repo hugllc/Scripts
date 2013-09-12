@@ -41,6 +41,9 @@ $config = HUGnetLib::Args(
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
         "D" => array("name" => "Data", "type" => "string", "args" => true),
+        "a" => array(
+            "name" => "AVR", "type" => "bool", "args" => false, "default" => false,
+        ),
     ),
     "args",
     $argv
@@ -55,10 +58,11 @@ HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  
 
 A utility to load programs into devices
 
-Usage: ".$cli->system()->get("program")." [-v] [-f <file>] -i <DeviceID> -D <file>
+Usage: ".$cli->system()->get("program")." [-v] [-a] [-f <file>] -i <DeviceID> -D <file>
 Arguments:
     -i <DeviceID>   The device ID to load.  Should be a hex value up to 6 digits
     -D <file>       The file to load into the device
+    -a              Force the programmer into AVR mode
     -v              Increment the verbosity
     -f <file>       The config file to use",
     $config->h
@@ -98,11 +102,12 @@ $cli->out(
     "Found firmware ".$firmware->get("FWPartNum")." v".$firmware->get("Version")
 );
 $ret = false;
-if ($dev->get("loadable")) {
+if ($dev->get("loadable") && !$config->a) {
     $ret = $dev->action()->loadFirmware($firmware);
 } else if (($dev->get("arch") === "AVR") 
     || ($firmware->get("HWPartNum") == "0039-28")
     || ($firmware->get("HWPartNum") == "0039-12")
+    || $config->a
 ) {
     $Prog = 'avrdude -c avrisp2 -p '.$firmware->get("Target").' -P usb ';
 
