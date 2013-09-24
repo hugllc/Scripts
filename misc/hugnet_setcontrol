@@ -108,7 +108,7 @@ if (count($channels) > count($settings)) {
 foreach ($channels as $key => $chan) {
     $data = "";
     $value = sprintf("%08X", $settings[$key]);
-    for ($i = 6; $i >= 0; $i-=2) {
+    for ($i = -2; $i >= -8; $i-=2) {
         $data .= substr($value, $i, 2);
     }
     $pkt = $dev->action()->send(
