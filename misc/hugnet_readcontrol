@@ -1,0 +1,134 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2012 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @author     Jeff Liesmaki <jeffl@hugllc.com>
+ * @copyright  2007-2012 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** Packet log include stuff */
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+        "C" => array(
+            "name" => "Control",
+            "type" => "string",
+            "args" => true,
+            "default" => null
+        ),
+    ),
+    "args",
+    $argv
+);
+
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = HUGnetLib::ui($config, "CLI");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+Sends a series of DAC set packets to HUGnetLab endpoints.
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> -C <Channel> -D <Value> [-v] [-f <file>]
+Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -C <Channel>    The comma separated list of the control channels to set
+    -D <Value>      The comma separated list of the values to set it to
+    -v              Increment the verbosity
+    -f <file>       The config file to use
+
+There must be one value for every channel.
+",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+if (is_null($config->C)) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Channel must be specified");
+    exit(1);
+}
+
+$dev = $cli->system()->device(hexdec($config->i));
+
+$channels = explode(",", (string)$config->C);
+$settings = explode(",", (string)$config->D);
+
+if (count($channels) > count($settings)) {
+    $cli->out(
+        "The number of channels and set points are not the same: "
+            .count($settings)." set points for ".count($channels)." channels"
+    );
+    exit(1);
+}
+
+foreach ($channels as $key => $chan) {
+    $data = "";
+    $pkt = $dev->action()->send(
+        array(
+            "Command" => '0x65',
+            "Data" => sprintf("%02X", $chan),
+        )
+    );
+    if (is_object($pkt)) {
+        $reply = $pkt->Reply();
+        if (is_null($reply)) {
+            print "No reply on channel $chan\r\n";
+        } else if (!empty($reply)) {
+            $data = 0;
+            for ($i = 0; $i < 4; $i++) {
+                $data += hexdec(substr($reply, ($i * 2), 2))<<($i * 8);
+            }
+            $cli->out("Channel $chan is set to $data");
+        } else {
+            $cli->out("Empty reply on channel $chan");
+        }
+    } else {
+        $cli->out("No reply on channel $chan");
+    }
+}
+
+print "Finished\n";
+
+exit(0);
+?>
