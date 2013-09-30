@@ -4,7 +4,7 @@ Section: contrib/science
 Priority: extra
 Architecture: all
 Essential: no
-Depends: php5-sqlite, php5-cli, php5-mysql, hugnetlib (>>0.12.2), hugnetfirmware, openntpd
+Depends: php5-sqlite, php5-cli, php5-mysql, hugnetlib (>>0.12.2), hugnetfirmware
 Maintainer: Scott Price [prices@hugllc.com]
 Provides: hugnetscripts
 Breaks: hugnetscripts-common
