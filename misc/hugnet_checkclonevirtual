@@ -76,6 +76,8 @@ if (strlen($config->i) == 0) {
 $dev = $cli->system()->device(hexdec($config->i));
 for ($i = 0; $i < $dev->get("InputTables"); $i++) {
     $input = $dev->input($i);
+    $datachan = $input->dataChannels();
+    var_dump($datachan);
     if ($input->get("driver") == "CloneVirtual") {
         print "Channels:\n";
         var_dump($input->channels());
