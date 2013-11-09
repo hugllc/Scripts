@@ -5,7 +5,6 @@ Priority: extra
 Architecture: all
 Essential: no
 Depends: hugnetscripts (= %VERSION% )
-Recommends: php5-mysqli
 Maintainer: Scott Price [prices@hugllc.com]
 Provides: hugnetscripts-datacollector
 Description: The init scripts required for a datacollector
