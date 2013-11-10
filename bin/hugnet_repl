@@ -56,7 +56,13 @@ Copyright Hunt Utilities Group, LLC
 HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
 ."HUGnetLib v".$daemon->system()->get("version")."
 
-Replcates data from another server.
+Replcates data from another server.  The server should be specified in the config.ini
+in the following section:
+
+[repl]
+uuid = <uuid of the master host>
+url = <full url of the HUGnetLibAPI.php file on the master>
+
 
 Usage: ".$daemon->system()->get("program")."
 Arguments:
