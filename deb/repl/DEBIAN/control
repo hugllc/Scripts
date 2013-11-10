@@ -1,0 +1,12 @@
+Package: hugnetscripts-replication
+Version: %VERSION%
+Section: contrib/science
+Priority: extra
+Architecture: all
+Essential: no
+Depends: hugnetscripts (= %VERSION% )
+Maintainer: Scott Price [prices@hugllc.com]
+Provides: hugnetscripts-replication
+Description: This pulls data from another server.
+  It will pull new data and history records from the server and 
+  put them on the local computer.
