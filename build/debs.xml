@@ -24,6 +24,7 @@
     <include file="${basedir}/build/deb_util.xml"/>
     <include file="${basedir}/build/deb_dangerous.xml"/>
     <include file="${basedir}/build/deb_watchdog.xml"/>
+    <include file="${basedir}/build/deb_repl.xml"/>
 
     <target name="clean" description="Clean up and create artifact directories">
         <delete dir="${deb.staging}" failonerror="false"/>

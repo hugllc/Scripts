@@ -1,0 +1,94 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007-2011 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** HUGnet code */
+//require_once dirname(__FILE__).'/../head.inc.php';
+/** Packet log include stuff */
+require_once 'HUGnetLib/processes/Replicate.php';
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+    ),
+    "args",
+    $argv
+);
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$daemon = &\HUGnet\processes\Replicate::factory($config);
+$daemon->help(
+    $daemon->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$daemon->system()->get("version")."
+
+Replcates data from another server.  The server should be specified in the config.ini
+in the following section:
+
+[repl]
+uuid = <uuid of the master host>
+url = <full url of the HUGnetLibAPI.php file on the master>
+
+
+Usage: ".$daemon->system()->get("program")."
+Arguments:
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+
+);
+$daemon->requireINI();
+$daemon->requireUUID();
+
+$daemon->out("Starting ".$daemon->system()->get("program"));
+
+/* Set up our device */
+$DeviceID = $daemon->system()->get("DeviceID");
+$daemon->device(
+    array(
+        "id" => empty($DeviceID) ? null : $DeviceID,
+        "HWPartNum" => "0039-26-07-P",
+    )
+);
+
+
+while ($daemon->loop()) {
+    $daemon->main();
+}
+print "Finished\n";
+exit(0);
+?>
