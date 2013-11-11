@@ -32,11 +32,11 @@
         </delete>
     </target>
 
-    <target name="setup" depends="common.setup,server.setup,datacollector.setup,misc.setup,util.setup,watchdog.setup,dangerous.setup" />
-    <target name="deb" depends="common.deb,server.deb,datacollector.deb,misc.deb,util.deb,watchdog.deb,dangerous.deb" />
-    <target name="post" depends="build,common.post,server.post,datacollector.post,misc.post,util.post,watchdog.post,dangerous.post" />
-    <target name="testpost" depends="build,common.testpost,server.testpost,datacollector.testpost,misc.testpost,util.testpost,watchdog.testpost,dangerous.testpost" />
-    <target name="rcpost" depends="build,common.rcpost,server.rcpost,datacollector.rcpost,misc.rcpost,util.rcpost,watchdog.rcpost,dangerous.rcpost" />
+    <target name="setup" depends="deb.common.setup,deb.server.setup,deb.datacollector.setup,deb.misc.setup,deb.util.setup,deb.watchdog.setup,deb.dangerous.setup" />
+    <target name="deb" depends="deb.common.deb,deb.server.deb,deb.datacollector.deb,deb.misc.deb,deb.util.deb,deb.watchdog.deb,deb.dangerous.deb" />
+    <target name="post" depends="build,deb.common.post,deb.server.post,deb.datacollector.post,deb.misc.post,deb.util.post,deb.watchdog.post,deb.dangerous.post" />
+    <target name="testpost" depends="build,deb.common.testpost,deb.server.testpost,deb.datacollector.testpost,deb.misc.testpost,deb.util.testpost,deb.watchdog.testpost,deb.dangerous.testpost" />
+    <target name="rcpost" depends="build,deb.common.rcpost,deb.server.rcpost,deb.datacollector.rcpost,deb.misc.rcpost,deb.util.rcpost,deb.watchdog.rcpost,deb.dangerous.rcpost" />
 
     <target name="postclean">
         <delete dir="${deb.staging}"/>
