@@ -134,7 +134,7 @@ foreach ($tests as $key) {
         $outfile = $config->o;
     }
     $tdev = $cli->system()->device(hexdec($key));
-    $testdev[$outfile.".".$tdev->get("DeviceID")] = $tdev;
+    $testdev[$outfile.".".$tdev->get("DeviceID").".csv"] = $tdev;
 }
 
 foreach ($testdev as $f => $d) {
