@@ -1,0 +1,97 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007-2011 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** HUGnet code */
+//require_once dirname(__FILE__).'/../head.inc.php';
+/** Packet log include stuff */
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+    ),
+    "args",
+    $argv
+);
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = HUGnetLib::ui($config, "Daemon");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+Imports the endpoint in the file given
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
+Arguments:
+    -i <file>       The file to import
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("File must be specified");
+    exit(1);
+}
+$cli->out("Starting ".$cli->system()->get("program"));
+
+if (file_exists($config->i)) {
+    $data = file_get_contents($config->i);
+    if (is_string($data)) {
+        $data = stripcslashes($data);
+        $data = json_decode($data, true);
+    }
+    if (is_array($data)) {
+        $fixture = $cli->system()->device()->fixture();
+        $fixture->import($data);
+        $dev = $fixture->mergeDevice(false);
+        $cli->out("Imported ".$dev->get("DeviceID"));
+    } else {
+        $cli->out("Bad file data");
+    }
+} else {
+    $cli->out("File not found");
+}
+
+
+print "Finished\n";
+exit(0);
+?>
