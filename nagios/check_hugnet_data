@@ -138,6 +138,10 @@ fi
 
 data=`${CURL} --silent "http://${hostname}/HUGnetLib/HUGnetLibAPI.php?task=device&action=lastdata&id=${device}&data%5Bchannel%5D=${channel}"`
 
+if [ -z "${data}" ]; then
+    ${ECHO} "NO DATA RETURNED\n"
+    exit $STATE_CRITICAL
+fi
 
 statusbase="HUGNET DATA"
 status="OK"
@@ -148,30 +152,30 @@ IFS=' ' read -ra splitdata <<< "${data}"
 
 # Check the high warning threshold
 if [ -n "${highwarn}" ]; then
-    if [ `echo "${highwarn}<=${splitdata[0]}"|${BC}` ]; then
+    if [ `echo "${highwarn}<=${splitdata[0]}"|${BC}` -eq 1 ]; then
         exitstatus=$STATE_WARNING
-        status="WARNING"
+        status="HIGH WARNING"
     fi
 fi
 # Check the high critical threshold
 if [ -n "${highcrit}" ]; then
-    if [ `echo "${highcrit}<=${splitdata[0]}"|${BC}` ]; then
+    if [ `echo "${highcrit}<=${splitdata[0]}"|${BC}` -eq 1 ]; then
         exitstatus=$STATE_CRITICAL
-        status="CRITICAL"
+        status="HIGH CRITICAL"
     fi
 fi
 # Check the low warning threshold
 if [ -n "${lowwarn}" ]; then
-    if [ `echo "${lowwarn}>=${splitdata[0]}"|${BC}` ]; then
+    if [ `echo "${lowwarn}>=${splitdata[0]}"|${BC}` -eq 1 ]; then
         exitstatus=$STATE_WARNING
-        status="WARNING"
+        status="LOW WARNING"
     fi
 fi
 # Check the high warning threshold
 if [ -n "${lowcrit}" ]; then
-    if [ `echo "${lowcrit}>=${splitdata[0]}"|${BC}` ]; then
+    if [ `echo "${lowcrit}>=${splitdata[0]}"|${BC}` -eq 1 ]; then
         exitstatus=$STATE_CRITICAL
-        status="CRITICAL"
+        status="LOW CRITICAL"
     fi
 fi
 
