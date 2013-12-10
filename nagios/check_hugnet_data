@@ -16,7 +16,7 @@ REVISION="0.8.7"
 
 
 print_usage() {
-    echo "Usage: $PROGNAME "
+    echo "Usage: $PROGNAME -H hostname -d device -c channel"
     echo "Usage: $PROGNAME --help"
     echo "Usage: $PROGNAME --version"
 }
