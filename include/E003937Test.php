@@ -199,7 +199,7 @@ class E003937Test
     */
     private function _E003937mainMenu()
     {
-        EndpointTest::_clearScreen();
+        EndpointTest::clearScreen();
         $this->_printHeader();
         $this->_system->out("\n\r");
         $this->_system->out("A ) Test, Program and Serialize");
@@ -322,7 +322,7 @@ class E003937Test
     private function _cloneMain()
     {
         
-        EndpointTest::_clearScreen();
+        EndpointTest::clearScreen();
         $this->_system->out("\n\r");
        
         $this->_system->out("**************************************************");
@@ -338,36 +338,6 @@ class E003937Test
 
     }
 
-    /**
-    ************************************************************
-    * Main Troubleshoot Routine
-    *
-    * This is the main routine for troubleshooting an existing 
-    * endpoint.  It will have the option of single stepping 
-    * through the tests or looping on a specific test.
-    * 
-    * @return void
-    *
-    */
-    private function _troubleshootMain()
-    {
-
-        EndpointTest::_clearScreen();
-        $this->_system->out("\n\r");
-       
-
-        $this->_system->out("**************************************************");
-        $this->_system->out("*                                                *");
-        $this->_system->out("*    T R O U B L E S H O O T   R O U T I N E     *");
-        $this->_system->out("*      U N D E R   C O N S T R U C T I O N       *");
-        $this->_system->out("*                                                *");
-        $this->_system->out("**************************************************");
-
-
-        $choice = readline("\n\rHit Enter To Continue: ");
-
-
-    }
 
     /**
     ************************************************************
@@ -487,6 +457,236 @@ class E003937Test
         $this->_system->out(str_repeat("*", 60));
     }
 
+    /*****************************************************************************/
+    /*                                                                           */
+    /*                T R O U B L E S H O O T   R O U T I N E S                  */
+    /*                                                                           */
+    /*****************************************************************************/
+
+    /**
+    ************************************************************
+    * Main Troubleshoot Routine
+    *
+    * This is the main routine for troubleshooting an existing 
+    * endpoint.  It will have the option of single stepping 
+    * through the tests or looping on a specific test.
+    * 
+    * @return void
+    *
+    */
+    private function _troubleshootMain()
+    {
+        $exitTest = false;
+        $result;
+
+        do{
+
+            $selection = $this->_troubleshootMenu();
+
+            if (($selection == "A") || ($selection == "a")) {
+                $this->_troubleshootAnalog();
+            } else if (($selection == "B") || ($selection == "b")){
+                $this->_troubleshootDAC();
+            } else if (($selection == "C") || ($selection == "c")){
+                $this->_troubleshootDigital();
+            } else {
+                $exitTest = true;
+                $this->_system->out("Exit Troubleshooting");
+            }
+
+        } while ($exitTest == false);
+    }
+
+    /**
+    ************************************************************
+    * Troubleshoot 003937 Menu Routine
+    * 
+    * This is the main menu routine for 003937 HUGnetLab 
+    * endpoint.  It displays the menu options, reads the 
+    * user input choice and calls the appropriate routine in 
+    * response.
+    *
+    * @return string $choice
+    *
+    */
+    private function _troubleshootMenu()
+    {
+        EndpointTest::clearScreen();
+        $this->_printTroubleshootHeader();
+        $this->_system->out("\n\r");
+        $this->_system->out("A ) Analog Tests");
+        $this->_system->out("B ) DAC Tests");
+        $this->_system->out("C ) Digital Tests");
+        $this->_system->out("D ) Exit");
+        $this->_system->out("\n\r");
+        $choice = readline("\n\rEnter Choice(A,B,C or D): ");
+        
+        return $choice;
+
+    }
+
+    /**
+    ************************************************************
+    * Print Header Routine
+    *
+    * The function prints the header box and title.
+    *
+    * @return void
+    *
+    */
+    private function _printTroubleshootHeader()
+    {
+        $this->_system->out(str_repeat("*", 60));
+       
+        $this->_system->out("*                                                          *");
+        $this->_system->out("*           Troubleshoot HUGnetLab 003937                  *");
+        $this->_system->out("*                                                          *");
+
+        $this->_system->out(str_repeat("*", 60));
+    }
+
+    /**
+    ************************************************************
+    * Troubleshoot Analog Tests Routine
+    *
+    * This is the main routine for troubleshooting the analog
+    * inputs on an existing endpoint.  It will have the option 
+    * of single stepping through the tests or looping on a 
+    * specific test.
+    * 
+    * @return void
+    *
+    */
+    private function _troubleshootAnalog()
+    {
+
+        EndpointTest::clearScreen();
+        $this->_system->out("\n\r");
+       
+        $result = $this->_checkGoodEndpoint();
+        if ($result == true) {
+            $programSN = $this->_getSerialNumber();
+            $programHW = $this->_getHardwareNumber();
+            $this->_device->set("id", $programSN);
+ 
+           $this->_loadTestFirmware();
+            $result = $this->_pingEndpoint(self::TEST_ID);
+            if ($result == true) {
+                $this->_troubleshootADC();
+                
+            } else {
+                $this->_system->out("Failed Endpoint Ping!");
+            }
+        } 
+        $retVal = $this->_writeSerialNumAndHardwareVer();
+        $retVal = $this->_loadBootLoader();
+
+        $choice = readline("\n\rHit Enter To Continue: ");
+    }
+
+    /**
+    ************************************************************
+    * Troubleshoot DAC Tests Routine
+    *
+    * This is the main routine for troubleshooting the DAC
+    * output on an existing endpoint.  It will have the option 
+    * of single stepping through the tests or looping on a 
+    * specific test.
+    * 
+    * @return void
+    *
+    */
+    private function _troubleshootDAC()
+    {
+
+        EndpointTest::clearScreen();
+        $this->_system->out("\n\r");
+       
+
+        $this->_system->out("**************************************************");
+        $this->_system->out("*                                                *");
+        $this->_system->out("*        T R O U B L E S H O O T   D A C         *");
+        $this->_system->out("*      U N D E R   C O N S T R U C T I O N       *");
+        $this->_system->out("*                                                *");
+        $this->_system->out("**************************************************");
+
+
+        $choice = readline("\n\rHit Enter To Continue: ");
+    }
+
+    /**
+    ************************************************************
+    * Troubleshoot Digital Tests Routine
+    *
+    * This is the main routine for troubleshooting the digital
+    * I/O on an existing endpoint.  It will have the option 
+    * of single stepping through the tests or looping on a 
+    * specific test.
+    * 
+    * @return void
+    *
+    */
+    private function _troubleshootDigital()
+    {
+
+        EndpointTest::clearScreen();
+        $this->_system->out("\n\r");
+       
+
+        $this->_system->out("**************************************************");
+        $this->_system->out("*                                                *");
+        $this->_system->out("*    T R O U B L E S H O O T   D I G I T A L     *");
+        $this->_system->out("*      U N D E R   C O N S T R U C T I O N       *");
+        $this->_system->out("*                                                *");
+        $this->_system->out("**************************************************");
+
+
+        $choice = readline("\n\rHit Enter To Continue: ");
+    }
+
+    /**
+    ************************************************************
+    * Troubleshoot Endpoint Routine
+    *
+    * This function runs the tests in the endpoint test firmware
+    * and returns the results.
+    *
+    * @return void
+    *
+    */
+    private function _troubleshootADC()
+    {
+        $exitTrbl = false;
+
+        $goodVolts = array();
+        $result = $this->_readKnownGoodADC($goodVolts);
+            
+        if ($result == true) {
+            do {
+                $adcChan = readline("\n\rEnter ADC input (1-8) to test: ");
+
+                if ($adcChan > 0 and $adcChan < 9) {
+                    $myVolts = $this->_readADCinput($adcChan);
+                    
+                    $this->_system->out("Channel ".$adcChan." Known Voltage: ".$goodVolts[$adcChan-1]."Volts  Test Voltage: ".$myVolts." Volts\n\r");
+
+                } else {
+                    $this->_system->out("Invalid ADC channel!\n\r");
+                }
+        
+                $choice = readline("\n\rType X to Exit or Enter To Continue: ");
+
+                if (($choice == 'x') || ($choice == 'X')) {
+                    $exitTrbl = true;
+                }
+
+            } while ($exitTrbl == false);
+        } else {
+            $this->_system->out("Error reading known good board!\n\r");
+            $choice = readline("Hit any key to continue!");
+        }
+
+    }
 
     /*****************************************************************************/
     /*                                                                           */
@@ -1653,7 +1853,7 @@ class E003937Test
     private function _getSerialNumber()
     {
         do {
-            EndpointTest::_clearScreen();
+            EndpointTest::clearScreen();
             $this->_system->out("Enter a hex value for the starting serial number");
             $SNresponse = readline("in the following format- 0xhhhh: ");
             $this->_system->out("\n\r");
@@ -1775,7 +1975,8 @@ class E003937Test
     * checks to see that the endpoint
     * responds.
     *
-    * @param int $Sn Endpoint Serial Number
+    * @param int $Sn Endpoint Serial Numberd
+
     *
     * @return true, if endpoint responds
     *               otherwise false
