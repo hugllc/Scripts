@@ -144,7 +144,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     */
     private function _mainMenu()
     {
-        $this->_clearScreen();
+        $this->clearScreen();
         $this->_printHeader();
         $this->out();
         $this->out("A ) Test 003937 HUGnetLab Endpoint");
@@ -168,7 +168,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     * @return void
     * 
     */
-    public function _clearScreen()
+    public static function clearScreen()
     {
 
         system("clear");
@@ -293,7 +293,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     private function _test003928Main()
     {
         
-        $this->_clearScreen();
+        $this->clearScreen();
         $this->out("\n\r");
         $this->out("\n\r");
        
@@ -322,7 +322,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     private function _troubleshootMain()
     {
 
-        $this->_clearScreen();
+        $this->clearScreen();
         $this->out("\n\r");
         $this->out("\n\r");
        
@@ -338,29 +338,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $choice = readline("\n\rHit Enter To Continue: ");
 
     }
-
-
-
-    /**
-    ************************************************************
-    * Troubleshoot Endpoint Routine
-    *
-    * This function runs the tests in the endpoint test firmware
-    * and returns the results.
-    *
-    * @return boolean $troubleshootResult
-    *
-    */
-    private function _troubleshootEndpoint()
-    {
-        
-        $Result = true;
-   
-
-        return $Result;
-    }
-
-
 
 
 
