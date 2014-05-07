@@ -16,3 +16,4 @@ config.inc.php
 powerstep.*
 .directory
 .gitignore
+nagios/utils.sh

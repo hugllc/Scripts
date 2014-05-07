@@ -44,10 +44,13 @@ $config = HUGnetLib::Args(
         "a" => array(
             "name" => "AVR", "type" => "bool", "args" => false, "default" => false,
         ),
+        "p" => array("name"=> "Programmer", "type" => "string", "args" => true, 
+        "default" => "avrispv2"),
     ),
     "args",
     $argv
 );
+
 $config->addLocation("/usr/share/HUGnet/config.ini");
 $cli = HUGnetLib::ui($config, "CLI");
 $cli->help(
@@ -58,11 +61,12 @@ HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  
 
 A utility to load programs into devices
 
-Usage: ".$cli->system()->get("program")." [-v] [-a] [-f <file>] -i <DeviceID> -D <file>
+Usage: ".$cli->system()->get("program")." [-v] [-a] [-p] [-f <file>] -i <DeviceID> -D <file>
 Arguments:
     -i <DeviceID>   The device ID to load.  Should be a hex value up to 6 digits
     -D <file>       The file to load into the device
     -a              Force the programmer into AVR mode
+    -p              Programmer to use (default - avrispv2)
     -v              Increment the verbosity
     -f <file>       The config file to use",
     $config->h
@@ -84,6 +88,19 @@ if (strlen($file) == 0) {
     $cli->out("File with firmware must be specified");
     exit(1);
 }
+
+
+$programmer = $config->p;
+if ((strcmp($programmer, "avrispv2") != 0) && 
+    (strcmp($programmer, "dragon_isp") != 0)) {
+    $cli->out("Invalid programmer specified!");
+    exit(1);
+} else {
+    $cli->out();
+    $cli->out("Programmer Selected is ".$programmer);
+    $cli->out();
+}
+
 
 $DeviceID = trim(strtoupper($config->i));
 $DevID = hexdec($DeviceID);
@@ -109,7 +126,7 @@ if ($dev->get("loadable") && !$config->a) {
     || ($firmware->get("HWPartNum") == "0039-12")
     || $config->a
 ) {
-    $Prog = 'avrdude -c avrisp2 -p '.$firmware->get("Target").' -P usb ';
+    $Prog = 'avrdude -c '.$programmer.' -p '.$firmware->get("Target").' -P usb ';
 
     // Program the flash
     $flashname = tempnam("/tmp", "flash");

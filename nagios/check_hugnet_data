@@ -1,0 +1,185 @@
+#!/bin/bash
+#
+# This gets a single piece of data from the HUGnet system and check it against
+# warning and critical thresholds.
+#
+# usage ./check_hugnet_data 
+
+CURL="/usr/bin/curl"
+BC="/usr/bin/bc"
+
+PROGNAME=`/usr/bin/basename $0`
+PROGPATH=`echo $0 | sed -e 's,[\\/][^\\/][^\\/]*$,,'`
+REVISION="0.8.7"
+
+. $PROGPATH/utils.sh
+
+
+print_usage() {
+    echo "Usage: $PROGNAME -H hostname -d device -c channel"
+    echo "Usage: $PROGNAME --help"
+    echo "Usage: $PROGNAME --version"
+}
+
+print_help() {
+    print_revision $PROGNAME $REVISION
+    echo ""
+    print_usage
+    echo ""
+    echo "HUGnet data plugin for Nagios"
+    echo ""
+    echo "Please email prices@hugllc.com for any questions about this software"
+}
+
+# Make sure the correct number of command line
+# arguments have been supplied
+
+if [ $# -lt 1 ]; then
+    print_usage
+    exit $STATE_UNKNOWN
+fi
+
+# Grab the command line arguments
+while test -n "$1"; do
+    case "$1" in
+        --help)
+            print_help
+            exit $STATE_OK
+            ;;
+        -h)
+            print_help
+            exit $STATE_OK
+            ;;
+        --version)
+            print_revision $PROGNAME $REVISION
+            exit $STATE_OK
+            ;;
+        -V)
+            print_revision $PROGNAME $REVISION
+            exit $STATE_OK
+            ;;
+        --hostname)
+            hostname=$2
+            shift
+            ;;
+        -H)
+            hostname=$2
+            shift
+            ;;
+        --device)
+            device=$2
+            shift
+            ;;
+        -d)
+            device=$2
+            shift
+            ;;
+        --channel)
+            channel=$2
+            shift
+            ;;
+        -c)
+            channel=$2
+            shift
+            ;;
+        --highwarning)
+            highwarn=$2
+            shift
+            ;;
+        -w)
+            highwarn=$2
+            shift
+            ;;
+        --highcritical)
+            highcrit=$2
+            shift
+            ;;
+        -W)
+            highcrit=$2
+            shift
+            ;;
+        --lowwarning)
+            lowwarn=$2
+            shift
+            ;;
+        -l)
+            lowwarn=$2
+            shift
+            ;;
+        --lowcritical)
+            lowcrit=$2
+            shift
+            ;;
+        -L)
+            lowcrit=$2
+            shift
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            print_usage
+            exit $STATE_UNKNOWN
+            ;;
+    esac
+    shift
+done
+
+if [ -z "${hostname}" ]; then
+    ${ECHO} "Error: hostname must be set\n"
+    exit $STATE_UNKNOWN
+fi
+if [ -z "${device}" ]; then
+    ${ECHO} "Error: device must be set\n"
+    exit $STATE_UNKNOWN
+fi
+if [ -z "${channel}" ]; then
+    ${ECHO} "Error: channel must be set\n"
+    exit $STATE_UNKNOWN
+fi
+
+data=`${CURL} --silent "http://${hostname}/HUGnetLib/HUGnetLibAPI.php?task=device&action=lastdata&id=${device}&data%5Bchannel%5D=${channel}"`
+
+if [ -z "${data}" ]; then
+    ${ECHO} "NO DATA RETURNED\n"
+    exit $STATE_CRITICAL
+fi
+
+statusbase="HUGNET DATA"
+status="OK"
+exitstatus=$STATE_OK
+
+# Split the number from the units
+IFS=' ' read -ra splitdata <<< "${data}"
+
+# Check the high warning threshold
+if [ -n "${highwarn}" ]; then
+    if [ `echo "${highwarn}<=${splitdata[0]}"|${BC}` -eq 1 ]; then
+        exitstatus=$STATE_WARNING
+        status="HIGH WARNING"
+    fi
+fi
+# Check the high critical threshold
+if [ -n "${highcrit}" ]; then
+    if [ `echo "${highcrit}<=${splitdata[0]}"|${BC}` -eq 1 ]; then
+        exitstatus=$STATE_CRITICAL
+        status="HIGH CRITICAL"
+    fi
+fi
+# Check the low warning threshold
+if [ -n "${lowwarn}" ]; then
+    if [ `echo "${lowwarn}>=${splitdata[0]}"|${BC}` -eq 1 ]; then
+        exitstatus=$STATE_WARNING
+        status="LOW WARNING"
+    fi
+fi
+# Check the high warning threshold
+if [ -n "${lowcrit}" ]; then
+    if [ `echo "${lowcrit}>=${splitdata[0]}"|${BC}` -eq 1 ]; then
+        exitstatus=$STATE_CRITICAL
+        status="LOW CRITICAL"
+    fi
+fi
+
+
+${ECHO} "${statusbase} ${status} - ${data}\n"
+
+exit ${exitstatus}
