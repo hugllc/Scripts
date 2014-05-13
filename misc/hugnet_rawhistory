@@ -99,10 +99,9 @@ if ($end <= $start) {
 }
 $channels = $device->dataChannels();
 $chans    = (string)$config->D;
+$chans    = explode(",", $chans);
 if (empty($chans)) {
     $chans = array_keys((array)$channels->toArray(false));
-} else {
-    $chans = explode(",", $chans);
 }
 $raw   = $cli->system()->table("RawHistory");
 $raw->sqlLimit = (int)$config->l;
@@ -116,25 +115,40 @@ $ret = $raw->getPeriod(
 $header = "Date               ";
 foreach ($chans as $key) {
     $label = $channels->dataChannel($key)->get("label");
-    $header .= str_pad(substr($label, 0, 12), 14, " ", STR_PAD_LEFT);
+    $header .= str_pad(substr($label, 0, 24), 28, " ", STR_PAD_LEFT);
+}
+$header .= "\n                   ";
+foreach ($chans as $key) {
+    $label = $channels->dataChannel($key)->get("label");
+    $header .= str_pad("Raw", 14, " ", STR_PAD_LEFT);
+    $header .= str_pad("Processed", 14, " ", STR_PAD_LEFT);
 }
 $cli->out($header);
-
-
+$prev = array();
+$lastTime = 0;
 while ($ret) {
     $pkt    = json_decode($raw->get("packet"), true);
-    $output = date("Y-m-d H:i:s", $raw->get("Date"));
+    $date   = $raw->get("Date");
+    $output = date("Y-m-d H:i:s", $date);
     if (is_array($pkt) && is_string($pkt["Reply"])) {
         $string = $pkt["Reply"];
         //var_dump($string);
-        $values = $channels->decodeRaw($string);
+        $data   = $device->decodeData(
+            $string,
+            $pkt["Command"],
+            $date - $lastTime,
+            $prev
+        );
+        $lastTime = $date;
         //var_export($values);
         foreach ($chans as $key) {
-            $value = $values[$key];
-            if (!is_null($value)) {
-                $output .= str_pad($value, 14, " ", STR_PAD_LEFT);
-            }
+            $value = $data[$key]["raw"];
+            $output .= str_pad((int)$data[$key]["raw"], 14, " ", STR_PAD_LEFT);
+            $output .= str_pad(
+                $data[$key]["value"]." ".$data[$key]["units"], 14, " ", STR_PAD_LEFT
+            );
         }
+        $prev = $data;
     }
     $cli->out($output);
     $ret = $raw->nextInto();
