@@ -1,0 +1,158 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2012 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007-2012 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** Packet log include stuff */
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+        "S" => array("name" => "Start", "type" => "string", "args" => true),
+        "E" => array("name" => "End", "type" => "string", "args" => true),
+        "l" => array(
+            "name" => "limit", "type" => "int", "args" => true, "default" => 1000
+        ),
+    ),
+    "args",
+    $argv
+);
+
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = HUGnetLib::ui($config, "Daemon");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+This script rebuilds the history for the given endpoint.  It defaults to all the
+history for this endpoint.
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
+Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -S <Date>       The date to start at
+    -E <Date>       The date to end at
+    -l <limit>      The maximum number of records to get.  Default 1000
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+$device   = $cli->system()->device(hexdec($config->i));
+$channels = $device->dataChannels();
+
+$start = \HUGnet\db\Table::unixDate($config->S);
+$end   = \HUGnet\db\Table::unixDate($config->E);
+
+if ($start == $end) {
+    $end   = $cli->system()->now();
+    $start = 0;
+}
+if ($end <= $start) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Start must be before end");
+    exit(1);
+}
+$channels = $device->dataChannels();
+$chans    = (string)$config->D;
+$chans    = explode(",", $chans);
+if (empty($chans)) {
+    $chans = array_keys((array)$channels->toArray(false));
+}
+$raw   = $cli->system()->table("RawHistory");
+$raw->sqlLimit = (int)$config->l;
+$raw->sqlOrderBy = "Date ASC";
+
+$hist = $device->historyFactory();
+
+while ($cli->loop()) {
+    $ret = $raw->getPeriod(
+        (int)$start,
+        (int)$end,
+        $device->get("id")
+    );
+    if (!$ret) {
+        break;
+    }
+    $header = "Processing Records";
+    $cli->out($header);
+    $prev = array();
+    $lastTime = 0;
+    print date("Y-m-d H:i:s", $raw->get("Date"));
+    while ($ret && $cli->loop()) {
+        $pkt    = json_decode($raw->get("packet"), true);
+        $date   = $raw->get("Date");
+        if (is_array($pkt) && is_string($pkt["Reply"])) {
+            $string = $pkt["Reply"];
+            $deltaT = $date - $lastTime;
+            //var_dump($string);
+            $data   = $device->decodeData(
+                $string,
+                $pkt["Command"],
+                $deltaT,
+                $prev
+            );
+            $data["id"]     = $device->get("id");
+            $data["Date"]   = $date;
+            $data["deltaT"] = $deltaT;
+            $hist->clearData();
+            $hist->fromAny($data);
+            if ($hist->insertRow(true)) {
+                print ".";
+            } else {
+                print "F";
+            }
+            $prev  = $data;
+            $start = $date;
+        }
+        $ret = $raw->nextInto();
+    }
+    print date("Y-m-d H:i:s\n", $date);
+}
+
+
+$cli->out("Finished");
+exit(0);
+
+?>
