@@ -150,7 +150,7 @@ while ($ret) {
                 str_pad(
                     (int)$data[$key]["raw"], 12, " ", STR_PAD_LEFT
                 ),
-                0, 14
+                0, 12
             );
             $output .= "  ";
             $units   = html_entity_decode($data[$key]["units"]);
@@ -161,7 +161,7 @@ while ($ret) {
                     " ", 
                     STR_PAD_LEFT
                 ),
-                0, 14
+                0, 12
             );
         }
         $prev = $data;
