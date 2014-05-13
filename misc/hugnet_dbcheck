@@ -57,9 +57,8 @@ HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  
 
 This program checks, repairs, and optimizes the database.
 
-Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
+Usage: ".$cli->system()->get("program")." [-v] [-f <file>]
 Arguments:
-    -i <file>       The file to import
     -v              Increment the verbosity
     -f <file>       The config file to use",
     $config->h
