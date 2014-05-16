@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PW=`php -r '
+    if (file_exists("/etc/hugnet/config.ini")) {
+        $var = @parse_ini_file("/etc/hugnet/config.ini");
+    } else {
+        $var = parse_ini_file("/usr/share/HUGnet/config.ini");
+    }
+    echo $var["default"]["password"];
+'`
+
+echo "Setting up Mysql (enter the mysql root password)"
+mysql -u root -p -vvv << EOF
+CREATE DATABASE IF NOT EXISTS HUGnet; 
+GRANT ALL on HUGnet.* to HUGnet IDENTIFIED BY '${PW}';
+EOF
+
+${DIR}/hugnet_pulldb
