@@ -1,0 +1,126 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007-2011 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** HUGnet code */
+//require_once dirname(__FILE__).'/../head.inc.php';
+/** Packet log include stuff */
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+    ),
+    "args",
+    $argv
+);
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = HUGnetLib::ui($config, "Daemon");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+This program checks, repairs, and optimizes the database.
+
+Usage: ".$cli->system()->get("program")." [-v] [-f <file>]
+Arguments:
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+
+
+$oldimages = $cli->system()->table("jos_hugnet_images");
+$points    = $cli->system()->table("jos_hugnet_imagepoints");
+$images    = $cli->system()->table("Images");
+
+$ret = $oldimages->selectInto(array("id" => 11));
+$index = 1;
+$basepoint = json_decode('{"pretext":"","posttext":"","fontsize":"9","x":"0","y":"0","color":"#000000","background":"#FFFFFF","devid":"","datachan":"0","units":"1","value":"","type":"TEXT"}', true);
+while ($ret) {
+    $properties = unserialize(base64_decode($oldimages->get("properties")));
+    $img = array(
+        "id" => $index++,
+        "baseavg" => $properties["atype"],
+        "name" => $oldimages->get("title"),
+        "desc" => $oldimages->get("title")."\n\n".$oldimages->get("imageLoc"),
+        "height" => $oldimages->get("height"),
+        "width" => $oldimages->get("width"),
+        "points" => array(),
+        "params" => array(
+            "LastModified" => $cli->system()->now(),
+            "Created" => \HUGnet\db\Table::unixDate($oldimages->get("created")),
+        ),
+    );
+    $id = $oldimages->get("id");
+    $pindex = 0;
+    $res = $points->selectInto(array("imageId" => $id));
+    while ($res) {
+        $point = $basepoint;
+        $props = unserialize(base64_decode($points->get("properties")));
+        $point["id"] = $pindex++;
+        $point["devid"] = sprintf("%06X", $props["DeviceKey"]);
+        $point["datachan"] = str_replace("Data", "", $props["DeviceField"]);
+        $point["link"] = $props["link"];
+        $point["linktext"] = $props["linkText"];
+        $point["color"] = "#".$props["fill"];
+        $point["x"] = $points->get("x");
+        $point["y"] = $points->get("y");
+        $point["name"] = $points->get("pointName");
+        if ($points->get("type") == "TEXT") {
+            $point["pretext"] = $props["text"];
+        } else {
+            $point["pretext"] = (string)$props["pretext"];
+            $point["posttext"] = (string)$props["posttext"];
+            $point["units"] = (int)!(bool)$props["hideUnits"];
+        }
+        if (!empty($props["fontsize"])) {
+            $point["fontsize"] = $props["fontsize"];
+        }
+        $img["points"] = array_merge($img["points"], array($point));
+        $res = $points->nextInto();
+    }
+    $images->clearData();
+    $images->fromArray($img);
+    $images->insertRow(true);
+//var_dump($images->toArray());
+    $ret = $oldimages->nextInto();
+}
+
+print "Finished\n";
+exit(0);
+?>
