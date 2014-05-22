@@ -68,9 +68,9 @@ $oldimages = $cli->system()->table("jos_hugnet_images");
 $points    = $cli->system()->table("jos_hugnet_imagepoints");
 $images    = $cli->system()->table("Images");
 
-$ret = $oldimages->selectInto(array("id" => 11));
+$ret = $oldimages->selectInto(1);
 $index = 1;
-$basepoint = json_decode('{"pretext":"","posttext":"","fontsize":"9","x":"0","y":"0","color":"#000000","background":"#FFFFFF","devid":"","datachan":"0","units":"1","value":"","type":"TEXT"}', true);
+$basepoint = json_decode('{"pretext":"","posttext":"","fontsize":"9","x":"0","y":"0","color":"#000000","background":"#FFFFFF","devid":"","datachan":"","units":"1","value":"","type":"TEXT"}', true);
 while ($ret) {
     $properties = unserialize(base64_decode($oldimages->get("properties")));
     $img = array(
@@ -92,12 +92,16 @@ while ($ret) {
     while ($res) {
         $point = $basepoint;
         $props = unserialize(base64_decode($points->get("properties")));
+var_dump($props);
         $point["id"] = $pindex++;
-        $point["devid"] = sprintf("%06X", $props["DeviceKey"]);
-        $point["datachan"] = str_replace("Data", "", $props["DeviceField"]);
+        $devid = (!empty($props["DeviceKey"])) ? $props["DeviceKey"] : $props["id"];
+        if (!empty($devid)) {
+            $point["devid"] = sprintf("%06X", $devid);
+            $point["datachan"] = str_replace("Data", "", $props["DeviceField"]);
+        }
         $point["link"] = $props["link"];
         $point["linktext"] = $props["linkText"];
-        $point["color"] = "#".$props["fill"];
+        //$point["color"] = "#".$props["fill"];
         $point["x"] = $points->get("x");
         $point["y"] = $points->get("y");
         $point["name"] = $points->get("pointName");
@@ -108,9 +112,11 @@ while ($ret) {
             $point["posttext"] = (string)$props["posttext"];
             $point["units"] = (int)!(bool)$props["hideUnits"];
         }
+        var_dump($props["hideUnits"]);
         if (!empty($props["fontsize"])) {
             $point["fontsize"] = $props["fontsize"];
         }
+        var_dump($point);
         $img["points"] = array_merge($img["points"], array($point));
         $res = $points->nextInto();
     }
