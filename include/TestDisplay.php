@@ -1,6 +1,5 @@
 <?php
 /**
- * This file houses the socket class
  *
  * PHP Version 5
  * <pre>
@@ -62,77 +61,10 @@ require_once "E003928Test.php";
  * @version    Release: 0.9.7
  * @link       http://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class EndpointTest extends \HUGnet\ui\Daemon
+class TestDisplay
 {
 
-    private $_fixtureTest;
-    private $_device;
-    private $_goodDevice;
 
-
-    /*
-    * Sets our configuration
-    *
-    * @param mixed &$config The configuration to use
-    */
-    protected function __construct(&$config)
-    {
-        parent::__construct($config);
-        $this->_device = $this->system()->device();
-
-    }
-
-    /**
-    * Creates the object
-    *
-    * @param array &$config The configuration to use
-    *
-    * @return null
-    */
-    static public function &factory(&$config = array())
-    {
-        $obj = new EndpointTest($config);
-        return $obj;
-    }
-
-    /**
-    ************************************************************
-    *
-    *                          M A I N 
-    *
-    ************************************************************
-    *
-    * @return null
-    */
-    public function main()
-    {
-        $exitTest = false;
-        $result;
-
-        do{
-
-            $selection = $this->_mainMenu();
-
-            if (($selection == "A") || ($selection == "a")) {
-                $this->_test003937Main();
-            } else if (($selection == "B") || ($selection == "b")){
-                $this->_test003928Main();
-            } else if (($selection == "C") || ($selection == "c")){
-                $this->_troubleshootMain();
-            } else {
-                $exitTest = true;
-                $this->out("Exit Test Tool");
-            }
-
-        } while ($exitTest == false);
-    }
-
-
-    /*****************************************************************************/
-    /*                                                                           */
-    /*            D I P L A Y   A N D   M E N U   R O U T I N E S                */
-    /*                                                                           */
-    /*****************************************************************************/
 
 
     /**
@@ -144,17 +76,31 @@ class EndpointTest extends \HUGnet\ui\Daemon
     *
     * @return string $choice menu selection
     */
-    private function _mainMenu()
+    public function displayMenu($heading, $menuArray)
     {
         $this->clearScreen();
-        $this->_printHeader();
+        $this->_printHeader($heading);
         $this->out();
-        $this->out("A ) Test 003937 HUGnetLab Endpoint");
-        $this->out("B ) Test 003928 HUGnet Endpoint");
-        $this->out("C ) Troubleshoot");
-        $this->out("D ) Exit");
+
+        $items = count($menuArray);
+
+        for ($i = 0;$i < $items; $i++) {
+
+            /* convert numbers to capital letters */
+            $menuChar = chr($i+65);
+           $menuItem = $menuChar." ) ".$menuArray[$i];
+            $this->out($menuItem);
+        }
+
+
+        /* convert number to capital letter */
+        $menuChar = chr($i+65);
+        $menuItem = $menuChar." ) Exit";
+        $this->out($menuItem);
         $this->out();
-        $choice = readline("\n\rEnter Choice(A,B,C or D): ");
+
+        
+        $choice = readline("\n\rEnter Choice(A - ".$menuChar."): ");
         
         return $choice;
     }
@@ -186,12 +132,38 @@ class EndpointTest extends \HUGnet\ui\Daemon
     * @return void
     *
     */
-    private function _printHeader()
+    public function printHeader($heading)
     {
+        $length = strlen($heading);
+
+        /* if not divisible by 2, then add a space */
+        if (($length % 2) != 0) {
+            $heading .= " ";
+            $length++;
+        }
+
+        $remainder = 60 - $length;
+
+        $blankspc = $remainder/2 -1;
+
+        $outstring = "*";
+        for ($i=0;$i<$blankspc;$i++) {
+            $outstring .= " ";
+        }
+
+        $outstring += .$heading;
+        for ($i=0;$i<$blankspc;$i++) {
+            $outstring .= " ";
+        }
+
+        $outstring .= "*";
+
+        
+
         $this->out(str_repeat("*", 60));
        
         $this->out("*                                                          *");
-        $this->out("*           HUGnet Endpoint Test & Program Tool            *");
+        $this->out($outstring);
         $this->out("*                                                          *");
 
         $this->out(str_repeat("*", 60));
@@ -211,7 +183,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     * @return void
     *
     */
-    public function _displayPassed()
+    public function displayPassed()
     {
         $this->out("\n\r");
         $this->out("\n\r");
@@ -237,7 +209,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     * @return void
     *
     */
-    public function _displayFailed()
+    public function displayFailed()
     {
         $this->out("\n\r");
         $this->out("\n\r");
@@ -253,83 +225,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
 
     }
 
-
-    /*****************************************************************************/
-    /*                                                                           */
-    /*                     T E S T   R O U T I N E S                             */
-    /*                                                                           */
-    /*****************************************************************************/
-
- 
-    /**
-    ************************************************************
-    * Main Test Routine
-    * 
-    * This is the main routine for testing, serializing and 
-    * programming in the bootloader for HUGnet endpoints.
-    *
-    * @return void
-    *   
-    */
-    private function _test003937Main()
-    {
-        $sys = $this->system();
-        $this->_fixtureTest = E003937Test::factory($config, $sys);
-        $this->_fixtureTest->runTestMain();
-
-    }
-
-   
-    /**
-    ************************************************************
-    * Main Clone Routine
-    *
-    * This is the main routine for cloning an existing endpoint
-    * the serial number for the board to be cloned will be written
-    * into the new board, but the unique serial number will 
-    * remain the same and the board will run through program test.
-    * 
-    * @return void
-    *
-    */
-    private function _test003928Main()
-    {
-        
-        $sys = $this->system();
-        $this->_fixtureTest = E003928Test::factory($config, $sys);
-        $this->_fixtureTest->runTestMain();
-    }
-
-    /**
-    ************************************************************
-    * Main Troubleshoot Routine
-    *
-    * This is the main routine for troubleshooting an existing 
-    * endpoint.  It will have the option of single stepping 
-    * through the tests or looping on a specific test.
-    * 
-    * @return void
-    *
-    */
-    private function _troubleshootMain()
-    {
-
-        $this->clearScreen();
-        $this->out("\n\r");
-        $this->out("\n\r");
-       
-
-        $this->out("**************************************************");
-        $this->out("*                                                *");
-        $this->out("*    T R O U B L E S H O O T   R O U T I N E     *");
-        $this->out("*      U N D E R   C O N S T R U C T I O N       *");
-        $this->out("*                                                *");
-        $this->out("**************************************************");
-
-
-        $choice = readline("\n\rHit Enter To Continue: ");
-
-    }
 
 
 
