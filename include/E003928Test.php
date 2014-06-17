@@ -76,14 +76,19 @@ class E003928Test
     const DAC_CONFIG_16_IREF = "0018";
     const DAC_CONFIG_16_AREF = "001B";
 
-    /** path to openocd for JTAG emulator **/
-    private $_openOcdPath = "~/code/HOS/toolchain/bin/openocd";
+    /** path to AVR programmer command **/
+    private $_programInitPath = "~/code/HOS/";
 
-    /** path to program.cfg for loading test elf file through JTAG **/
-    private $_programTestPath = "~/code/HOS/src/003937test/program.cfg";
+    /** path to hugnet load script forloading endpoint program **/
+    private $_programloadPath = "~/code/Scripts/bin";
 
-    /** path to program.cfg for loading boot elf file through JTAG **/
-    private $_programBootPath = "~/code/HOS/src/003937boot/program.cfg";
+    /** command to load intial program into AVR endpoint through programmer **/
+    private $_programInitCommand = "sudo make 003928-install SN=0x0000000020";
+
+    /** command to load current release code into AVR endpoint **/
+    private $_programLoadCommand = " ./hugnet_load -i";
+
+    private $_programDownloadPath = "~/Downloads/003928-00393801C-0.2.1.gz";
 
     private $_device;
     private $_system;
@@ -221,6 +226,12 @@ class E003928Test
         } else {
             $this->_system->out("Bad ping shame on you!\n\r");
         }
+
+        $this->_system->out("Okay let's try programming!\n\r");
+
+        $Prog = $this->_programInitPath." ".$this->_programInitCommand;
+
+        exec($Prog, $out, $return);
 
         $choice = readline("\n\rHit Enter to Continue: ");
     }

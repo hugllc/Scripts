@@ -102,6 +102,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
     *
     ************************************************************
     *
+    * It would be nice to have a test fixture ID test to verify
+    * that the fixture matches the menu selection.
+    * 
     * @return null
     */
     public function main()
