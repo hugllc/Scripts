@@ -42,6 +42,8 @@ require_once "HUGnetLib/ui/Daemon.php";
 require_once "HUGnetLib/devices/inputTable/Driver.php";
 /** This is the HUGnetLab endpoint test */
 require_once "E003937Test.php";
+/** This is the HUGnet endpoint test */
+require_once "E003928Test.php";
 
 /**
  * This code tests, serializes and programs endpoints with bootloader code.
@@ -100,6 +102,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
     *
     ************************************************************
     *
+    * It would be nice to have a test fixture ID test to verify
+    * that the fixture matches the menu selection.
+    * 
     * @return null
     */
     public function main()
@@ -293,19 +298,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
     private function _test003928Main()
     {
         
-        $this->clearScreen();
-        $this->out("\n\r");
-        $this->out("\n\r");
-       
-        $this->out("**************************************************");
-        $this->out("*                                                *");
-        $this->out("*     0 0 3 9 2 8  M A I N   R O U T I N E       *");
-        $this->out("*      U N D E R   C O N S T R U C T I O N       *");
-        $this->out("*                                                *");
-        $this->out("**************************************************");
-
-
-        $choice = readline("\n\rHit Enter To Continue: ");
+        $sys = $this->system();
+        $this->_fixtureTest = E003928Test::factory($config, $sys);
+        $this->_fixtureTest->runTestMain();
     }
 
     /**

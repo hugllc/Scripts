@@ -332,6 +332,17 @@ class E003937Test
         $this->_system->out("*                                                *");
         $this->_system->out("**************************************************");
 
+        $dev = $this->_system->device()->getHardwareTypes();
+
+        $HWarray = array();
+
+        foreach ($dev as $endp) {
+            $HWarray[] = $endp['HWPartNum'];
+        }
+
+        foreach ($HWarray as $key => $HWnum) {
+            $this->_system->out($key."= ".$HWnum);
+        }
 
         $choice = readline("\n\rHit Enter To Continue: ");
 
