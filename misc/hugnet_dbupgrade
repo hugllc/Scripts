@@ -1,0 +1,110 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007-2011 Hunt Utilities Group, LLC
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** HUGnet code */
+//require_once dirname(__FILE__).'/../head.inc.php';
+/** Packet log include stuff */
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+        "A" => array("name" => "apply", "type" => "bool", "args" => false),
+    ),
+    "args",
+    $argv
+);
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = HUGnetLib::ui($config, "Daemon");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+This program upgrades the database tables to the currently set standard.  It is
+totally ruthless and will remove and add columns and indexes.
+
+Usage: ".$cli->system()->get("program")." [-v] [-f <file>]
+Arguments:
+    -A              Actually apply the upgrade.  Otherwise it will just output
+                      what it would have done
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+
+$fake = !(bool)$config->A;
+
+$cli->system()->out("********************************************************");
+if ($fake) {
+    $cli->system()->out("This is a test run.  Not actually modifying the database");
+    $cli->system()->out("");
+    $cli->system()->out("Add the -A command switch to modify the database.");
+} else {
+    $cli->system()->out("********************************************************");
+    $cli->system()->out("**            !MODIFYING THE DATABASE!                **");
+    $cli->system()->out("********************************************************");
+}
+$cli->system()->out("********************************************************");
+$cli->system()->out("");
+$cli->system()->out("Checking Tables");
+
+$db = $cli->system()->table("Generic");
+$tables = $db->getTables();
+foreach ($tables as $table) {
+    $name  = $table;
+    $table = str_replace("_", "", ucfirst($table));
+    $table = str_replace("history", "History", $table);
+    $table = str_replace("average", "Average", $table);
+    $table = str_replace("Errors", "Error", $table);
+    $tab = $cli->system()->table($table);
+    $class = get_class($tab);
+    $class = explode("\\", $class);
+    $class = $class[count($class) - 1];
+    if ($class != "Generic") {
+        $cli->system()->out("Checking table $name using class $class");
+        $tab->upgrade($fake);
+    }
+    if (!$cli->loop()) {
+        break;
+    }
+}
+
+
+print "Finished\n";
+exit(0);
+?>
