@@ -149,7 +149,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     */
     private function _mainMenu()
     {
-        $this->clearScreen();
+        //$this->clearScreen();
         $this->_printHeader();
         $this->out();
         $this->out("A ) Test 003937 HUGnetLab Endpoint");
@@ -297,7 +297,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     */
     private function _test003928Main()
     {
-        
+
         $sys = $this->system();
         $this->_fixtureTest = E003928Test::factory($config, $sys);
         $this->_fixtureTest->runTestMain();
