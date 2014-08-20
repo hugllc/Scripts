@@ -165,9 +165,10 @@ $stepFile = file($config->s);
 
 foreach ($stepFile as $line) {
     list($time, $setPoint) = explode(":", $line);
-    $cli->out(
-        "Setting Output to: ".sprintf("%4.2f", $setPoint)." for $time s"
-    );
+    $output = "Setting Output to: ".sprintf("%4.2f", $setPoint)." for $time s";
+    $cli->out($output);
+    $dev->annotate("Power Step", $cli->system()->now(), $output);
+    
     $extra[10] = $setPoint;
 
     $process->set("extra", $extra);
@@ -200,6 +201,7 @@ foreach ($stepFile as $line) {
     }
 }
 
+$dev->annotate("Power Step", $cli->system()->now(), "Finished");
 print "Finished\n";
 
 exit(0);

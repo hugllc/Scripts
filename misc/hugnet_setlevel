@@ -206,15 +206,25 @@ for ($i = 0; $i < 2; $i++) {
     }
 }
 
+$string = "";
+$text = $process->get("extraText");
+foreach ((array)$text as $key => $text) {
+    $string .= str_pad("$text: ", 30, " ", STR_PAD_LEFT).$extra[$key]."\n";
+}
+
 if ($set) {
     $cli->out();
-    $cli->out("Setting the level holder in RAM (Changes won't be saved on reboot)");
-
+    $header = "Setting the level holder in RAM (Changes won't be saved on reboot)";
+    $cli->out($header);
     $process->set("extra", $extra);
     if ($process->push()) {
         $process->pull();
         $cli->out("Done!");
-        $cli->out(str_pad("New Setup: ", 30, " ", STR_PAD_LEFT));
+        $text = str_pad("New Setup: ", 30, " ", STR_PAD_LEFT);
+        $cli->out($text);
+        $dev->annotate(
+            "Set Level", $cli->system()->now(), $header."\n".$text."\n".$string
+        );
     } else {
         $cli->out("Failed");
     }
