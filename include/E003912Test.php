@@ -57,7 +57,7 @@ require_once "HUGnetLib/devices/inputTable/Driver.php";
  * @version    Release: 0.9.7
  * @link       http://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class E003928Test
+class E003912Test
 {
     /** predefined endpoint serial number used in test firmware **/
     const TEST_ID = 0x20;
@@ -107,7 +107,7 @@ class E003928Test
     */
     static public function &factory(&$config = array(), &$sys)
     {
-        $obj = new E003928Test($config, $sys);
+        $obj = new E003912Test($config, $sys);
         return $obj;
     }
 
@@ -138,7 +138,7 @@ class E003928Test
 
         do{
 
-            $selection = $this->_E003928mainMenu();
+            $selection = $this->_E003912mainMenu();
 
             if (($selection == "A") || ($selection == "a")) {
                 $this->_runTest();
@@ -148,7 +148,7 @@ class E003928Test
                 $this->_troubleshootMain();
             } else {
                 $exitTest = true;
-                $this->_system->out("Exit 003928 Test");
+                $this->_system->out("Exit 003912 Test");
             }
 
         } while ($exitTest == false);
@@ -158,7 +158,7 @@ class E003928Test
     ************************************************************
     * Main 003937 Menu Routine
     * 
-    * This is the main menu routine for 003937 HUGnetLab 
+    * This is the main menu routine for 003912 HUGnet 
     * endpoint.  It displays the menu options, reads the 
     * user input choice and calls the appropriate routine in 
     * response.
@@ -166,7 +166,7 @@ class E003928Test
     * @return string $choice
     *
     */
-    private function _E003928mainMenu()
+    private function _E003912mainMenu()
     {
         EndpointTest::clearScreen();
         $this->_printHeader();
@@ -230,11 +230,6 @@ class E003928Test
             if ($Result) {
                 $Result = $this->_testADC();
                 $this->_system->out("\n\r");
-
-                if ($Result) {
-                    $Result = $this->_runDigitalTests();
-                    $this->_system->out("\n\r");
-                }
             }
 
             if ($Result) {
@@ -251,7 +246,6 @@ class E003928Test
             }
 
             if ($Result) {
-                
                 $Result = $this->_loadFirmware();
                 $this->_system->out("Firmware Loaded");
                 $choice = readLine("\n\rHit any key to verify firmware");
@@ -303,6 +297,7 @@ class E003928Test
 
 
     }
+
 
     /**
     ************************************************************
@@ -373,6 +368,7 @@ class E003928Test
         $this->_system->out("********************************************");
     }
 
+
     /**
     ************************************************************
     * Print Header Routine
@@ -387,7 +383,7 @@ class E003928Test
         $this->_system->out(str_repeat("*", 60));
        
         $this->_system->out("*                                                          *");
-        $this->_system->out("*        HUGnetLab 003928 Test & Program Tool              *");
+        $this->_system->out("*        HUGnetLab 003912 Test & Program Tool              *");
         $this->_system->out("*                                                          *");
 
         $this->_system->out(str_repeat("*", 60));
@@ -423,8 +419,6 @@ class E003928Test
                 $this->_troubleshootPing();
             } else if (($selection == "B") || ($selection == "b")){
                 $this->_troubleshootAnalog();
-            } else if (($selection == "C") || ($selection == "c")) {
-                $this->_troubleshootDigital();
             } else {
                 $exitTest = true;
                 $this->_system->out("Exit Troubleshooting");
@@ -435,7 +429,7 @@ class E003928Test
 
     /**
     ************************************************************
-    * Troubleshoot 003937 Menu Routine
+    * Troubleshoot 003912 Menu Routine
     * 
     * This is the main menu routine for 003937 HUGnetLab 
     * endpoint.  It displays the menu options, reads the 
@@ -452,10 +446,9 @@ class E003928Test
         $this->_system->out("\n\r");
         $this->_system->out("A ) Ping Test");
         $this->_system->out("B ) Analog Tests");
-        $this->_system->out("C ) Digital Tests");
-        $this->_system->out("D ) Exit");
+        $this->_system->out("C ) Exit");
         $this->_system->out("\n\r");
-        $choice = readline("\n\rEnter Choice(A-D): ");
+        $choice = readline("\n\rEnter Choice(A-C): ");
         
         return $choice;
 
@@ -562,52 +555,6 @@ class E003928Test
 
 
     /**
-    ************************************************************
-    * Troubleshoot Digital Tests Routine
-    *
-    * This is the main routine for troubleshooting the digital
-    * I/O on an existing endpoint.  It will have the option 
-    * of single stepping through the tests or looping on a 
-    * specific test.
-    * 
-    * @return void
-    *
-    */
-    private function _troubleshootDigital()
-    {
-
-        EndpointTest::clearScreen();
-        $this->_system->out("\n\r");
-       
-
-        $Result = $this->_loadTestFirmware();
-        if ($Result) {
-
-            $this->_system->out("Test Firmware Loaded!");
-            $choice = readline("\n\rHit any key to begin testing.");
-
-            $this->_system->out("\n\r");
-            $this->_system->out("********************************************");
-            $this->_system->out("*                                          *");
-            $this->_system->out("*      OUTPUTTING DUST SENSOR PULSE        *");
-            $this->_system->out("*                  ON PD0                  *");
-            $this->_system->out("*                                          *");
-            $this->_system->out("********************************************");
-            $this->_system->out("\n\r");
-
-            $this->_testPort();
-
-            $choice = readline("\n\rHit Enter To Continue: ");
-
-        } else {
-            $this->_displayLoadTestFirmwareFailed();
-        }
-
-        $choice = readline("\n\rHit Enter To Continue: ");
-    }
-
-
-    /**
     *************************************************************
     * Display Firmware Menu Routine
     * 
@@ -622,7 +569,7 @@ class E003928Test
         $output = array();
 
  
-        $Prog = "ls ~/Downloads/003928*";
+        $Prog = "ls ~/Downloads/003912*";
         exec($Prog,$output, $return);
 
 
@@ -670,7 +617,7 @@ class E003928Test
     ************************************************************
     * Load test firmware routine
     *
-    * This function loads the 003928 endpoint with the test 
+    * This function loads the 003912 endpoint with the test 
     * firmware.  It programs the device with a test serial 
     * number which will eventually be replaced after testing within
     * the original board serial number entered by the user.  The 
@@ -691,7 +638,7 @@ class E003928Test
         $this->_system->out("\n\r");
 
 
-        $Prog = "make -C ~/code/HOS 003928test-install SN=0x0000000020";
+        $Prog = "make -C ~/code/HOS 003912test-install SN=0x0000000020";
         exec($Prog, $output, $return);
 
         if ($return == 0) {
@@ -754,7 +701,9 @@ class E003928Test
 
         $SN = "SN=0x".$SNstring;
 
-        $Prog = "make -C ~/code/HOS 003928-install ".$SN;
+        
+
+        $Prog = "make -C ~/code/HOS 003912-install ".$SN;
         exec($Prog, $output, $return);
 
         if ($return == 0) {
@@ -835,10 +784,10 @@ class E003928Test
         if ($result) {
             /* check the hardware part number */
             $HWpartNum = substr($ResponseData, 10, 10);
-            if ($HWpartNum == "0039280141") {
+            if ($HWpartNum == "0039120243") {
                 $result = true;
             } else {
-                $this->_system->out("Hardware Part Number Expected :  0039280141");
+                $this->_system->out("Hardware Part Number Expected :  0039120243");
                 $this->_system->out("Hardware Part Number Response : ".$HWpartNum);
                 $result = false;
             }
@@ -862,7 +811,7 @@ class E003928Test
                 $hlet = "0x".$version2;
                 $decNum = hexdec($hlet);
                 $part1 .= $decNum.".";
-        
+      
                 $version3 = substr($FWpartNum, 14,2);
                 $hlet = "0x".$version3;
                 $decNum = hexdec($hlet);
@@ -910,13 +859,13 @@ class E003928Test
         $this->_system->out("********************************************");
        
         $goodVolts = array();
-        for ($i = 0; $i < 8; $i++) {
+        for ($i = 0; $i < 9; $i++) {
             $goodVolts[$i] = (($i + 1) * 0.50);
         }
         $adcInput = 0;
         $result = true;
 
-        while (($result == true) and ($adcInput < 8)) {
+        while (($result == true) and ($adcInput < 9)) {
             $myVolts = $this->_readADCinput($adcInput);
             $result = $this->_testADCinput($adcInput, $myVolts, $goodVolts);
             $adcInput++;
@@ -989,6 +938,8 @@ class E003928Test
         $dataVal = sprintf("0%s",$inputNum);
         
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        print "dataVal is :".$dataVal."\n\r";
+        print "ReplyData is :".$ReplyData."\n\r";
 
         $readVolts = $this->_convertReplyData($ReplyData);
         $readVolts = $readVolts * self::ADC_STEP_VAL;
@@ -1018,298 +969,6 @@ class E003928Test
         $newVal = 0 + $newString;
         
         return $newVal;
-
-    }
-    
-
-
-    /*****************************************************************************/
-    /*                                                                           */
-    /*                      D I G I T A L   T E S T S                            */
-    /*                                                                           */
-    /*****************************************************************************/
-
-    /**
-    ************************************************************
-    * Test Digital I/O Routine
-    *
-    * This function tests the general purpose I/O ports available
-    * on SV2.
-    *
-    * @return boolean $result true for pass, false for failure.
-    *
-    */
-    private function _runDigitalTests()
-    {
-
-        $Result = true;
-        $config = 1;
-        $test = 1;
-        $Done = false;
-
-        $this->_system->out("********************************************");
-        $this->_system->out("*         RUNNING DIGITAL TESTS            *");
-        $this->_system->out("********************************************");
-
-        do {
-            $Result = $this->_configDigital($config);
-            if ($Result) {
-                $Result = $this->_setDigital($test);
-                if ($Result) {
-                    $Result = $this->_testDigital($test);
-                    $test++;
-                    if ($test == 3) {
-                        $config = 2;
-                    } else if ($test > 4) {
-                        $Done = true;
-                    }
-                }
-            }
-        } while ($Result and !$Done);
-
-        $this->_system->out("********************************************");
-        if ($Result) {
-            $this->_system->out("*        DIGITAL TESTS PASSED!             *");
-        } else {
-            $this->_system->out("*        DIGITAL TEST FAILED!              *");
-        }
-        $this->_system->out("********************************************");
-        $this->_system->out("\n\r");
-
-   
-        return $Result;
-    }
-
-    /**
-    ************************************************************
-    * Digital Configuration Routine
-    *
-    * This function sends a command to the test firmware to 
-    * to configure the digital I/O port for testing.
-    *
-    * Configuration 1:
-    *      Outputs              Inputs  
-    *      ---------          ---------
-    *      PD.0 ------------->  PD.1,3 
-    *      PB.2 ------------->  PD.4   
-    *      PD.5 ------------->  PD.6   
-    *      PB.0 ------------->  PB.1   
-    *
-    *
-    * Configuration 2:
-    *      Outputs              Inputs  
-    *      ---------          --------- 
-    *      PD.0 ------------->  PD.1,3 
-    *      PB.2 ------------->  PD.4   
-    *      PD.5 ------------->  PD.6   
-    *      PB.0 ------------->  PB.1   
-    *
-    * @param int $configNum  configuration number
-    *
-    *
-    * @return boolean $result  0 for fail, 1 for success
-    *
-    */
-    private function _configDigital($configNum)
-    {
-        $idNum = self::TEST_ID;
-        $cmdNum = self::CONFIG_DIGITIAL_COMMAND;
-        
-        if ($configNum == 1) {
-            $dataVal = "01";
-            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-            $dataVal = $this->_convertDigitalBytes($ReplyData);
-            $wordVal = hexdec($dataVal);            
-            $wordVal &= self::DIGITAL_CONFIG_MASK;
-
-            if ($wordVal == self::DIGITAL_CONFIG_1) {
-                $Result = true;
-            } else {
-                $this->_system->out("Failed to configure GPIO 1");
-                $this->_system->out("Digital data is:".$wordVal);
-                $Result = false;
-            }
-        } else if ($configNum == 2) {
-            $dataVal = "02";
-            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-            $dataVal = $this->_convertDigitalBytes($ReplyData);
-            $wordVal = hexdec($dataVal);            
-            $wordVal &= self::DIGITAL_CONFIG_MASK;
-
-            if ($wordVal == self::DIGITAL_CONFIG_2) {
-                $Result = true;
-            } else {
-                $this->_system->out("Failed to configure GPIO 2");
-                $this->_system->out("Digital data is:".$worVal);
-                $Result = false;
-            }
-        } else {
-            $this->_system->out("Invalid Configuration");
-            $Result = false;
-        }
-
-        return $Result;
-        
-    }
-
-
-    /**
-    ************************************************************
-    * Set Digital Ports Routine
-    *
-    * This function sets the digital output pins for the 
-    * given test number.
-    *
-    * @param int $testNum  number of digital test
-    *
-    * @return boolean $Result  0 for fail, 1 for success
-    *
-    */
-    private function _setDigital($testNum)
-    {
-
-        $idNum = self::TEST_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND;
-
-        switch ($testNum) {
-            case 1:
-                $dataVal = "0101";
-                break;
-            case 2:
-                $dataVal = "0102";
-                break;
-            case 3:
-                $dataVal = "0201";
-                break;
-            case 4:
-                $dataVal = "0202";
-                break;
-        }
-
-
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        if ($ReplyData == "01") {
-            $Result = true;
-        } else {
-            $this->_system->out("Set Digital Failed!");
-            $this->_system->out("Set Digital response is:".$ReplyData);
-            $Result = false;
-        }
-
-        return $Result;
-
-    }
-
-    /**
-    *******************************************************************
-    * Test Digital Ports Routine
-    * 
-    * This function reads the digital port for the given test number
-    * and checks the returned value against the expected value.
-    *
-    * @param int $testNum    number of digital test
-    * 
-    * 
-    * @return boolean $Result  0 for fail, 1 for sucess
-    */
-    private function _testDigital($testNum)
-    {
-        $result = false;
-        $idNum = self::TEST_ID;
-        $cmdNum = self::TEST_DIGITAL_COMMAND;
-        $dataVal = "00";
-
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        $portVal = $this->_convertDigitalBytes($ReplyData);
-        $wordVal = hexdec($portVal);            
-
-        switch ($testNum) {
-            case 1:
-                $wordVal &= 0x5A02;
-                if ($wordVal == 0x4A00) {
-                    $result = true;
-                    $this->_system->out("Digital Test 1 Passed!");
-                }
-                break;
-            case 2:
-                $wordVal &=0x5A02;
-                if ($wordVal == 0x1002) {
-                    $result = true;
-                    $this->_system->out("Digital Test 2 Passed!");
-               }
-                break;
-            case 3:
-                $wordVal &= 0x2905;
-                if ($wordVal == 0x2900) {
-                    $result = true;
-                    $this->_system->out("Digital Test 3 Passed!");
-                }
-                break;
-            case 4:
-                $wordVal &= 0x2905;
-                if ($wordVal == 0x0005) {
-                    $result = true;
-                    $this->_system->out("Digital Test 4 Passed!");
-                }
-                break;
-        }
-
-        if (!$result) {
-            $this->_system->out("TestNum ".$testNum." Reply Data :".$ReplyData);
-        }
-        
-        return $result;
-
-    }
-
-
-    /**
-    ************************************************************
-    * Convert Digital Reply Data String
-    *
-    * This function changes the bytes in the input string
-    * from little endian to big endian so the hex string
-    * can be tested.
-    *
-    * @param string &$inString     2 byte, hex string, little endian 
-    *
-    *
-    * @return string $newString   2 byte hex string, big endian
-    *
-    */
-    private function _convertDigitalBytes(&$inString)
-    {
-        $newString = substr($inString, 2, 2);
-        $newString = $newString.substr($inString, 0, 2);
-        $newString = "0x".$newString;
-         
-        return $newString;
-
-    }
-
-
-    /**
-    ***************************************************************
-    * Run Digital Port Test 
-    *
-    * This function outputs a digital pulse signal with 10 ms
-    * between pulses and a 320 nanoSecond wide pulse.
-    *
-    * @return void
-    */
-    private function _testPort()
-    {
-
-        $Result = $this->_configDigital(1);
-
-        $idNum = self::TEST_ID;
-        $cmdNum = self::PULSE_DIGITIAL_COMMAND;
-        $dataVal = "00";
-        
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
     }
     

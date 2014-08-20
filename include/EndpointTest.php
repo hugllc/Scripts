@@ -42,8 +42,10 @@ require_once "HUGnetLib/ui/Daemon.php";
 require_once "HUGnetLib/devices/inputTable/Driver.php";
 /** This is the HUGnetLab endpoint test */
 require_once "E003937Test.php";
-/** This is the HUGnet endpoint test */
+/** This is the HUGnet endpoint 003928 test */
 require_once "E003928Test.php";
+/** This is the HUGnet endpoint 003912 test */
+require_once "E003912Test.php";
 
 /**
  * This code tests, serializes and programs endpoints with bootloader code.
@@ -121,7 +123,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
             } else if (($selection == "B") || ($selection == "b")){
                 $this->_test003928Main();
             } else if (($selection == "C") || ($selection == "c")){
-                $this->_troubleshootMain();
+                $this->_test003912Main();
             } else {
                 $exitTest = true;
                 $this->out("Exit Test Tool");
@@ -154,7 +156,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $this->out();
         $this->out("A ) Test 003937 HUGnetLab Endpoint");
         $this->out("B ) Test 003928 HUGnet Endpoint");
-        $this->out("C ) Troubleshoot");
+        $this->out("C ) Test 003912 HUGnet Endpoint");
         $this->out("D ) Exit");
         $this->out();
         $choice = readline("\n\rEnter Choice(A,B,C or D): ");
@@ -214,19 +216,19 @@ class EndpointTest extends \HUGnet\ui\Daemon
     * @return void
     *
     */
-    public function _displayPassed()
+    public function displayPassed()
     {
-        $this->out("\n\r");
-        $this->out("\n\r");
+        echo ("\n\r");
+        echo ("\n\r");
 
-        $this->out("**************************************************");
-        $this->out("*                                                *");
-        $this->out("*      B O A R D   T E S T   P A S S E D !       *");
-        $this->out("*                                                *");
-        $this->out("**************************************************");
+        echo ("**************************************************\n\r");
+        echo ("*                                                *\n\r");
+        echo ("*      B O A R D   T E S T   P A S S E D !       *\n\r");
+        echo ("*                                                *\n\r");
+        echo ("**************************************************\n\r");
 
-        $this->out("\n\r");
-        $this->out("\n\r");
+        echo ("\n\r");
+        echo ("\n\r");
 
     }
 
@@ -240,19 +242,19 @@ class EndpointTest extends \HUGnet\ui\Daemon
     * @return void
     *
     */
-    public function _displayFailed()
+    public function displayFailed()
     {
-        $this->out("\n\r");
-        $this->out("\n\r");
+        echo ("\n\r");
+        echo ("\n\r");
 
-        $this->out("**************************************************");
-        $this->out("*                                                *");
-        $this->out("*      B O A R D   T E S T   F A I L E D !       *");
-        $this->out("*                                                *");
-        $this->out("**************************************************");
+        echo ("**************************************************\n\r");
+        echo ("*                                                *\n\r");
+        echo ("*      B O A R D   T E S T   F A I L E D !       *\n\r");
+        echo ("*                                                *\n\r");
+        echo ("**************************************************\n\r");
 
-        $this->out("\n\r");
-        $this->out("\n\r");
+        echo ("\n\r");
+        echo ("\n\r");
 
     }
 
@@ -287,17 +289,15 @@ class EndpointTest extends \HUGnet\ui\Daemon
     ************************************************************
     * Main Clone Routine
     *
-    * This is the main routine for cloning an existing endpoint
-    * the serial number for the board to be cloned will be written
-    * into the new board, but the unique serial number will 
-    * remain the same and the board will run through program test.
+    * This is the main routine for testing, serializing and 
+    * programming the 003912 endpoint.  
     * 
     * @return void
     *
     */
     private function _test003928Main()
     {
-        
+
         $sys = $this->system();
         $this->_fixtureTest = E003928Test::factory($config, $sys);
         $this->_fixtureTest->runTestMain();
@@ -307,30 +307,19 @@ class EndpointTest extends \HUGnet\ui\Daemon
     ************************************************************
     * Main Troubleshoot Routine
     *
-    * This is the main routine for troubleshooting an existing 
-    * endpoint.  It will have the option of single stepping 
-    * through the tests or looping on a specific test.
+    * This is the main routine for testing, serializing and 
+    * programming the 003912 endpoint.  
     * 
     * @return void
     *
     */
-    private function _troubleshootMain()
+    private function _test003912Main()
     {
 
-        $this->clearScreen();
-        $this->out("\n\r");
-        $this->out("\n\r");
-       
 
-        $this->out("**************************************************");
-        $this->out("*                                                *");
-        $this->out("*    T R O U B L E S H O O T   R O U T I N E     *");
-        $this->out("*      U N D E R   C O N S T R U C T I O N       *");
-        $this->out("*                                                *");
-        $this->out("**************************************************");
-
-
-        $choice = readline("\n\rHit Enter To Continue: ");
+        $sys = $this->system();
+        $this->_fixtureTest = E003912Test::factory($config, $sys);
+        $this->_fixtureTest->runTestMain();
 
     }
 
