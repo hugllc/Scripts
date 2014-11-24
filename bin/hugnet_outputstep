@@ -1,0 +1,246 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2014 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @author     Jeff Liesmaki <jeffl@hugllc.com>
+ * @copyright  2007-2014 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** Packet log include stuff */
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+        "i" => array(
+            "name" => "DeviceID", "type" => "string", "args" => true
+        ),
+        "s" => array("name" => "StepFile", "type" => "string", "args" => true),
+        "C" => array(
+            "name" => "Control",
+            "type" => "string",
+            "args" => true,
+            "default" => null
+        ),
+        "D" => array(
+            "name" => "Data", "type" => "string", "args" => true, "default" => 0
+        ),
+    ),
+    "args",
+    $argv
+);
+
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = HUGnetLib::ui($config, "CLI");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+Sends output control packets to HUGnetLab endpoints.
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> -s <step file> -P <Table> [-T <TestID>] [-o <out file>] [-v] [-f <file>]
+Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -C <Channel>    The control channel to set
+    -s <step file>  The file that the steps are found in
+    -v              Increment the verbosity
+    -f <file>       The config file to use
+
+The output needs to be set up ahead of time.  This script will not set
+them up.
+
+The step file should have on each line a time in seconds, followed by a colon, followed
+by a setpoint.  The setpoint is in whatever units the data channel is set to.
+
+<time 1>:<setpoint 1>
+<time 2>:<setpoint 2
+.
+.
+.
+<time n>:<setpoint n>
+",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+if (strlen($config->s) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("A step file must be specified");
+    exit(1);
+}
+if (strlen($config->C) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Channel must be specified");
+    exit(1);
+}
+
+$dev = $cli->system()->device(hexdec($config->i));
+
+
+$stepFile = file($config->s);
+$chan = $config->C;
+
+$cli->out("Channnel : ".$chan);
+
+foreach ($stepFile as $line) {
+    list($time, $setPoint) = explode(":", $line);
+    $output = "Setting Output to: ".sprintf("%4.2f", $setPoint)." for $time s";
+    $cli->out($output);
+    $dev->annotate("Output Step", $cli->system()->now(), $output);
+
+    
+/* here is where we need to insert the setcontrol code */
+
+    $data = "";
+    $value = sprintf("%08X", $setPoint);
+    for ($i = -2; $i >= -8; $i-=2) {
+        $data .= substr($value, $i, 2);
+    }
+    $pkt = $dev->action()->send(
+        array(
+            "Command" => '0x64',
+            "Data" => sprintf("%02X", $chan).$data,
+        )
+    );
+    if (is_object($pkt)) {
+        $reply = $pkt->Reply();
+        if (is_null($reply)) {
+            print "No reply on channel $chan\r\n";
+        } else if (!empty($reply)) {
+            if ($reply == $data) {
+                $setOut = "Channel ".$chan." set to ".$setPoint;
+                $cli->out($setOut);
+            } else {
+                $cli->out("Failure to set channel $chan!!!!");
+            }
+        } else {
+            print "Empty reply on channel $chan\r\n";
+        }
+    } else {
+        $cli->out("No reply on channel $chan");
+    }
+/******************************************************/
+    $wait = time() + $time;
+    $count = 0;
+    while ((time() < $wait) && !$cli->system()->quit()) {
+        $cli->main();
+        sleep(1);
+        $count++;
+        if ($count >= 60) {
+            $cli->out("Setpoint: ".sprintf("%4.2f", $setPoint));
+            $cli->out(
+                date("Y-m-d H:i:s")." Next step at ".date("Y-m-d H:i:s", $wait)
+            );
+            $count = 0;
+        }
+    }
+
+    if ($cli->system()->quit()){
+        break;
+    }
+}
+
+$dev->annotate("Output Step", $cli->system()->now(), "Finished");
+print "Finished\n";
+
+exit(0);
+
+
+/* function getHistory($cli, $dev, $outfile)
+{
+    $hist = $dev->historyFactory(array(), false);
+    $hist->sqlLimit = 1;
+    $hist->sqlStart = 0;
+    $hist->sqlOrderBy = "Date desc";
+    $whereText = "`id` = ? AND Type = ?";
+    $whereData = array($dev->id(), "5MIN");
+    $hist->selectOneInto($whereText, $whereData);
+    $ret = array();
+    if (!$hist->isEmpty()) {
+        $channels = $dev->dataChannels();
+        $chan = $channels->toArray();
+        $ret = $hist->toArray(true);
+        $channels->convert($ret);
+        $sep = ",";
+        $out .= date("Y-m-d H:i:s", $ret["Date"]);
+        $out .= $sep.$ret["Type"];
+        for ($i = 0; $i < count($chan); $i++) {
+            if ($chan[$i]["dataType"] !== 'ignore') {
+                $data = $ret["Data".$i];
+                $out .= $sep.$data;
+            }
+        }
+        $file = fopen($outfile, "a");
+        if ($file) {
+            fwrite($file, $out."\r\n");
+            fclose($file);
+        } else {
+            $cli->out("Can't write to file $outfile");
+        }
+    } else {
+        $cli->out("Bad History");
+    }
+
+}
+
+function getHistoryHeader($cli, $dev, $outfile)
+{
+    $file = fopen($outfile, "w");
+    if ($file) {
+        $channels = $dev->dataChannels();
+        $chan = $channels->toArray();
+        $out = "";
+        $sep = ",";
+        $out .= "Date,Type";
+        for ($i = 0; $i < count($chan); $i++) {
+            if ($chan[$i]["dataType"] !== 'ignore') {
+                $out .= $sep.$chan[$i]['label'];
+                $out .= " (".html_entity_decode($chan[$i]['units']).")";
+                $sep = ",";
+            }
+        }
+        fwrite($file, $out."\r\n");
+        fclose($file);
+    } else {
+        $cli->out("Can't write to file $outfile");
+    }
+} */
+?>
