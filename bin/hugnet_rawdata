@@ -49,6 +49,10 @@ $config = HUGnetLib::Args(
             "name" => "Command", "type" => "string", "args" => true,
             "default" => "FINDPING"
         ),
+        "p" => array(
+            "name" => "Pause", "type" => "int", "args" => true,
+            "default" => 0
+        ),
     ),
     "args",
     $argv
@@ -67,6 +71,7 @@ Reads and prints raw data from the endpoint
 Usage: ".$cli->system()->get("program")." -i <DeviceID> [-C <Command>] [-D <data>] [-v] [-f <file>]
 Arguments:
     -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -p <seconds>    The number of seconds to pause between readings.  Default 0
     -v              Increment the verbosity
     -f <file>       The config file to use",
     $config->h
@@ -80,6 +85,7 @@ if (strlen($config->i) == 0) {
 $device = $cli->system()->device(hexdec($config->i));
 $channels = $device->dataChannels();
 while ($cli->loop()) {
+    $now = time();
     $pkt = $device->action()->send(
         "54"
     );
@@ -96,6 +102,7 @@ while ($cli->loop()) {
         }
     }
     $cli->out($output);
+    while (time() < ($now + $config->p));
 }
 print "Finished\n";
 
