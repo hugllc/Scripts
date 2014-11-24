@@ -53,6 +53,7 @@ $config = HUGnetLib::Args(
             "name" => "Pause", "type" => "int", "args" => true,
             "default" => 0
         ),
+        "d" => array("name" => "date", "type" => "bool", "args" => false),
     ),
     "args",
     $argv
@@ -90,6 +91,9 @@ while ($cli->loop()) {
         "54"
     );
     $output = "";
+    if ($config->d) {
+        $output = date("Y-m-d H:i:s ");
+    }
     if (is_object($pkt)) {
         $string = $pkt->Reply();
         //var_dump($string);
