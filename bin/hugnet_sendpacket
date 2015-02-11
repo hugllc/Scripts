@@ -92,7 +92,7 @@ $pkt = $cli->system()->device(hexdec($config->i))->action()->send(
 if (is_object($pkt)) {
     print "From: ".$pkt->From();
     print " -> To: ".$pkt->To();
-    print "  Command: ".$pkt->Command();
+    print "  Command: ".sprintf("%02X", hexdec($pkt->Command()) & 0x7F)." (".$pkt->Command().")";
     print "  Type: ".$pkt->Type();
     print "\r\n";
     $data = $pkt->Data();

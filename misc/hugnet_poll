@@ -79,7 +79,6 @@ $history = $dev->action()->poll();
 $chans = $dev->dataChannels();
 $hist = $history->toArray(true);
 $chans->convert($hist);
-
 if (is_object($history)) {
     $channels = $dev->dataChannels();
     $cli->out("Date: ".date("Y-m-d H:i:s", $history->get("Date")));
