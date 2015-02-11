@@ -75,6 +75,7 @@ if (strlen($config->i) == 0) {
 
 $dev = $cli->system()->device(hexdec($config->i));
 $history = $dev->action()->poll();
+
 $chans = $dev->dataChannels();
 $hist = $history->toArray(true);
 $chans->convert($hist);
