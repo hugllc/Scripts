@@ -40,6 +40,8 @@ namespace HUGnet\processes;
 require_once "HUGnetLib/ui/Daemon.php";
 /** This is our units class */
 require_once "HUGnetLib/devices/inputTable/Driver.php";
+/** Test Display class */
+require_once "components/TestDisplays.php";
 
 /**
  * This code tests, serializes and programs endpoints with bootloader code.
@@ -64,13 +66,22 @@ class E104602Test extends \HUGnet\ui\Daemon
  
     const TESTER_BOARD1_ID = 0x1051;
 
+    const HEADER_STR    = "Battery Socializer Program & Test Tool";
+
+
     private $_fixtureTest;
     private $_device;
     private $_system;
     private $_testerDevice;
     private $_testerDeviceTwo;
+    private $_batMainMenu = array(
+                            0 => "Test, Program and Serialize",
+                            1 => "Troubleshoot",
+                            );
 
+    public $display;
 
+    
     /*
     * Sets our configuration
     *
@@ -87,6 +98,9 @@ class E104602Test extends \HUGnet\ui\Daemon
         $this->_testerDevice->set("id", self:: TESTER_BOARD1_ID);
         $this->_testerDevice->action()->config();
         $this->_testerDevice->action()->loadConfig();
+
+        $this->display = \HUGnet\processes\TestDisplays::factory($config, $sys);
+
     }
 
     /**
@@ -118,11 +132,12 @@ class E104602Test extends \HUGnet\ui\Daemon
     {
         $exitTest = false;
         $result;
-
-
+        
         do{
+            $this->display->clearScreen();
 
-            $selection = $this->_mainMenu();
+            $selection = $this->display->displayMenu(self::HEADER_STR, 
+                                                        $this->_batMainMenu);
 
             if (($selection == "A") || ($selection == "a")) {
                 $this->_test1046Main();
@@ -139,135 +154,38 @@ class E104602Test extends \HUGnet\ui\Daemon
 
     /*****************************************************************************/
     /*                                                                           */
-    /*            D I P L A Y   A N D   M E N U   R O U T I N E S                */
-    /*                                                                           */
-    /*****************************************************************************/
-
-
-    /**
-    ************************************************************
-    * Display Header and Menu Routine
-    *
-    * This function displays the test and program tool header
-    * and a menu which allows you to exit the program.
-    *
-    * @return string $choice menu selection
-    */
-    private function _mainMenu()
-    {
-        //$this->clearScreen();
-        $this->_printHeader();
-        $this->out();
-        $this->out("A ) Test, Program and Serialize");
-        $this->out("B ) Troubleshoot");
-        $this->out("C ) Exit");
-        $this->out();
-        $choice = readline("\n\rEnter Choice(A,B or C): ");
-        
-        return $choice;
-    }
-
-
-    /**
-    ************************************************************
-    * Clear Screen Routine
-    * 
-    * This function clears screen area by outputting 24 carriage 
-    * returns and line feeds.
-    *
-    * @return void
-    * 
-    */
-    public static function clearScreen()
-    {
-
-        system("clear");
-    }
-
-
-    /**
-    ************************************************************
-    * Print Header Routine
-    *
-    * The function prints the header box and title.
-    *
-    * @return void
-    *
-    */
-    private function _printHeader()
-    {
-        $this->out(str_repeat("*", 60));
-       
-        $this->out("*                                                          *");
-        $this->out("*        Battery Socializer Program & Test Tool            *");
-        $this->out("*                                                          *");
-
-        $this->out(str_repeat("*", 60));
-
-        $this->out();
-
-    }
-
-
-    /**
-    ************************************************************
-    * Display Board Passed Routine
-    *
-    * This function displays the board passed message in a
-    * visually obvious way so the user cannot miss it.
-    *
-    * @return void
-    *
-    */
-    public function displayPassed()
-    {
-        echo ("\n\r");
-        echo ("\n\r");
-
-        echo ("**************************************************\n\r");
-        echo ("*                                                *\n\r");
-        echo ("*      B O A R D   T E S T   P A S S E D !       *\n\r");
-        echo ("*                                                *\n\r");
-        echo ("**************************************************\n\r");
-
-        echo ("\n\r");
-        echo ("\n\r");
-
-    }
-
-    /**
-    ************************************************************
-    * Display Board Passed Routine
-    *
-    * This function displays the board passed message in a
-    * visually obvious way so the user cannot miss it.
-    *
-    * @return void
-    *
-    */
-    public function displayFailed()
-    {
-        echo ("\n\r");
-        echo ("\n\r");
-
-        echo ("**************************************************\n\r");
-        echo ("*                                                *\n\r");
-        echo ("*      B O A R D   T E S T   F A I L E D !       *\n\r");
-        echo ("*                                                *\n\r");
-        echo ("**************************************************\n\r");
-
-        echo ("\n\r");
-        echo ("\n\r");
-
-    }
-
-
-    /*****************************************************************************/
-    /*                                                                           */
     /*                     T E S T   R O U T I N E S                             */
     /*                                                                           */
     /*****************************************************************************/
 
+
+    /*****************************************************************************/
+    /*                    R E L A Y    T A B L E                                 */
+    /*                                                                           */
+    /*  POWER1   +12V  ---->  K1 - ON                                            */
+    /*  POWER1   LOAD  ---->  K1 - OFF                                           */
+    /*                                                                           */
+    /*  POWER2   +12V  ---->  K2 - ON,  K3 - OFF, K4 - OFF                       */
+    /*  POWER2   LOAD  ---->  K2 - OFF, K3 - OFF, K4 - OFF                       */
+    /*                                                                           */
+    /*  POWER3   +12V  ---->  K2 - ON,  K3 - OFF, K4 - ON                        */
+    /*  POWER3   LOAD  ---->  K2 - OFF, K3 - OFF, K4 - ON                        */
+    /*                                                                           */
+    /*  POWER4   +12V  ---->  K2 - ON,  K3 - ON,  K5 - OFF, K6 - OFF             */
+    /*  POWER4   LOAD  ---->  K2 - OFF, K3 - ON,  K5 - OFF, K6 - OFF             */
+    /*                                                                           */
+    /*  POWER5   +12V  ---->  K2 - ON,  K3 - ON,  K5 - OFF, K6 - ON              */
+    /*  POWER5   LOAD  ---->  K2 - OFF, K3 - ON,  K5 - OFF, K6 - ON              */
+    /*                                                                           */
+    /*  POWER6   +12V  ---->  K2 - ON,  K3 - ON,  K5 - ON,  K7 - OFF             */
+    /*  POWER6   LOAD  ---->  K2 - OFF, K3 - ON,  K5 - ON,  K7 - OFF             */
+    /*                                                                           */
+    /*  POWER7   +12V  ---->  K2 - ON,  K3 - ON,  K5 - ON,  K7 - ON              */
+    /*  POWER7   LOAD  ---->  K2 - OFF, K3 - ON,  K5 - ON,  K7 - ON              */
+    /*                                                                           */
+    /*  BUS      +12V  ---->  K8 - ON                                            */
+    /*  BUS      LOAD  ---->  K8 - OFF                                           */
+    /*****************************************************************************/
 
     /**
     ************************************************************
@@ -296,9 +214,11 @@ class E104602Test extends \HUGnet\ui\Daemon
        // $serialNumber = $this->_getSerialNumber();
         //$this->out("Serial Number : ".$serialNumber."\n\r");
 
+        $_relayStatus = 0;
+
         $Result = $this->_checkTesterEndpoint();
 
-        $Result = $this->_powerDUT(1);
+        $Result = $this->_powerONE(1);
 
         if ($Result) {
             $this->out("Power Up Success!\n\r");
@@ -309,7 +229,7 @@ class E104602Test extends \HUGnet\ui\Daemon
 
 
 
-        $Result = $this->_powerDUT(0);
+        $Result = $this->_powerONE(0);
         if ($Result) {
             $this->out("Power Down Success!\n\r");
         } else {
@@ -360,7 +280,7 @@ class E104602Test extends \HUGnet\ui\Daemon
     * @param $state integer - 1 is power up, 0 is power down
     * @return boolean $result
     */
-    private function _powerDUT($state)
+    private function _powerONE($state)
     {
 
         if ($state == 1) {
@@ -372,6 +292,211 @@ class E104602Test extends \HUGnet\ui\Daemon
             $result = $this->_setRelay(1,0);
         }
         return $result;
+    }
+
+    /**
+    ***********************************************************
+    * POWER2 Input Set Routine
+    *
+    * This function sets up the Power2 input to the battery
+    * socializer for either a 1 amp load or a +12VDC input.
+    *
+    * @param $state  integer value to indicate power(1) or 
+    *                  load(0) connect to Power input.
+    *
+    * @return $result boolean value 0=failure, 1=success
+    */
+    private function _powerTWO($state)
+    {
+
+        if (state == 1) {
+            $this->_setRelay(4,0);
+            $this->_setRelay(3,0);
+            $this->_setRelay(2,1);
+        } else { 
+            $this->_setRelay(4,0);
+            $this->_setRelay(3,0);
+            $this->_setRelay(2,0);
+        }
+    }
+
+    /**
+    ***********************************************************
+    * POWER3 Input Set Routine
+    *
+    * This function sets up the Power3 input to the battery
+    * socializer for either a 1 amp load or a +12VDC input.
+    *
+    * @param $state  integer value to indicate power(1) or 
+    *                  load(0) connect to Power input.
+    *
+    * @return $result boolean value 0=failure, 1=success
+    */
+    private function _powerTHREE($state)
+    {
+
+        if (state == 1) {
+            $this->_setRelay(4,1);
+            $this->_setRelay(3,0);
+            $this->_setRelay(2,1);
+        } else { 
+            $this->_setRelay(4,1);
+            $this->_setRelay(3,0);
+            $this->_setRelay(2,0);
+        }
+
+    }
+
+    /**
+    ***********************************************************
+    * POWER4 Input Set Routine
+    *
+    * This function sets up the Power4 input to the battery
+    * socializer for either a 1 amp load or a +12VDC input.
+    *
+    * @param $state  integer value to indicate power(1) or 
+    *                  load(0) connect to Power input.
+    *
+    * @return $result boolean value 0=failure, 1=success
+    */
+    private function _powerFOUR($state)
+    {
+
+        if (state == 1) {
+            $this->_setRelay(6,0);
+            $this->_setRelay(5,0);
+            $this->_setRelay(3,1);
+            $this->_setRelay(2,1);
+        } else { 
+            $this->_setRelay(6,0);
+            $this->_setRelay(5,0);
+            $this->_setRelay(3,1);
+            $this->_setRelay(2,0);
+        }
+
+    }
+
+    /**
+    ***********************************************************
+    * POWER5 Input Set Routine
+    *
+    * This function sets up the Power5 input to the battery
+    * socializer for either a 1 amp load or a +12VDC input.
+    *
+    * @param $state  integer value to indicate power(1) or 
+    *                  load(0) connect to Power input.
+    *
+    * @return $result boolean value 0=failure, 1=success
+    */
+    private function _powerFIVE($state)
+    {
+
+        if (state == 1) {
+            $this->_setRelay(6,1);
+            $this->_setRelay(5,0);
+            $this->_setRelay(3,1);
+            $this->_setRelay(2,1);
+        } else { 
+            $this->_setRelay(6,1);
+            $this->_setRelay(5,0);
+            $this->_setRelay(3,1);
+            $this->_setRelay(2,0);
+        }
+
+    }
+
+    /**
+    ***********************************************************
+    * POWER6 Input Set Routine
+    *
+    * This function sets up the Power6 input to the battery
+    * socializer for either a 1 amp load or a +12VDC input.
+    *
+    * @param $state  integer value to indicate power(1) or 
+    *                  load(0) connect to Power input.
+    *
+    * @return $result boolean value 0=failure, 1=success
+    */
+    private function _powerSIX($state)
+    {
+
+        if (state == 1) {
+            $this->_setRelay(7,0);
+            $this->_setRelay(5,1);
+            $this->_setRelay(3,1);
+            $this->_setRelay(2,1);
+        } else { 
+            $this->_setRelay(7,0);
+            $this->_setRelay(5,1);
+            $this->_setRelay(3,1);
+            $this->_setRelay(2,0);
+        }
+
+    }
+
+    /**
+    ***********************************************************
+    * POWER7 Input Set Routine
+    *
+    * This function sets up the Power7 input to the battery
+    * socializer for either a 1 amp load or a +12VDC input.
+    *
+    * @param $state  integer value to indicate power(1) or 
+    *                  load(0) connect to Power input.
+    *
+    * @return $result boolean value 0=failure, 1=success
+    */
+    private function _powerSEVEN($state)
+    {
+
+        if (state == 1) {
+            $this->_setRelay(7,1);
+            $this->_setRelay(5,1);
+            $this->_setRelay(3,1);
+            $this->_setRelay(2,1);
+        } else { 
+            $this->_setRelay(7,1);
+            $this->_setRelay(5,1);
+            $this->_setRelay(3,1);
+            $this->_setRelay(2,0);
+        }
+
+    }
+
+    /**
+    **************************************************************
+    * Set Power Bus Routine
+    *
+    * This function sets the BUS input to either a load or +12VDC
+    *
+    * @param $state integer 1= +12VDC, 0= Load
+    *
+    * @return $result boolean 0=failure, 1=success
+    */
+    private function _powerBUS($state)
+    {
+        if ($state == 1) {
+            $this->_setRelay(8,1);
+        } else {
+            $this->_setRelay(8,0);
+        }
+    }
+
+
+
+    /**
+    **************************************************************
+    * Set Power Default 
+    *
+    * This function sets the relays for setting inputs to Power2
+    * - Power7 to the default position.  This is setting a load 
+    * on the Power2 input.
+    */
+    private function _powerDefault()
+    {
+        $this->_setRelay(4,0);
+        $this->_setRelay(3,0);
+        $this->_setRelay(2,0);
     }
 
 
@@ -418,7 +543,7 @@ class E104602Test extends \HUGnet\ui\Daemon
         if ($state == 1) {
             $dataVal .= "01000000";
         } else {
-            $dataVal .= "FFFFFFFF";
+            $dataVal .= "FFFFFFFF";      /* Default to relay off */
         }
 
         $Result = $this->_sendPacket(self::TESTER_BOARD1_ID, "64", $dataVal);
