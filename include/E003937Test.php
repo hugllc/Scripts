@@ -40,6 +40,8 @@ namespace HUGnet\processes;
 require_once "HUGnetLib/ui/Daemon.php";
 /** This is our units class */
 require_once "HUGnetLib/devices/inputTable/Driver.php";
+/** Displays class */
+require_once "HUGnetLib/ui/Displays.php";
 
 /**
  * This code tests, serializes and programs HUGnetLab endpoints with 
@@ -79,7 +81,11 @@ class E003937Test
     const DAC_CONFIG_16_IREF = "0018";
     const DAC_CONFIG_16_AREF = "001B";
 
-    /** path to openocd for JTAG emulator **/
+    const HEADER_STR      = "HUGnetLab 003937 Test & Program Tool";
+    const TRBL_HEADER_STR = "Troubleshoot HUGnetLab 003937";
+
+
+   /** path to openocd for JTAG emulator **/
     private $_openOcdPath = "~/code/HOS/toolchain/bin/openocd";
 
     /** path to program.cfg for loading test elf file through JTAG **/
@@ -102,7 +108,18 @@ class E003937Test
                 5 => "Test 3 Failed",
             );
 
+    private $_e003937MainMenu = array(
+                                0 => "Test, Program and Serialize",
+                                1 => "Clone, Test and Program",
+                                2 => "Troubleshoot",
+                                );
 
+    private $_troubleShootMenu = array(
+                                0 => "Analog Tests",
+                                1 => "DAC Tests",
+                                2 => "Digital Tests",
+                                );
+    public $display;
     /** ascii string hex value for revision letter **/
     private $_HWrev;
 
@@ -128,6 +145,7 @@ class E003937Test
         $this->_goodDeviceTwo->action()->config();
         $this->_goodDeviceTwo->action()->loadConfig();
 
+        $this->display = \HUGnet\ui\Displays::factory($config);
     }
 
     /**
@@ -168,8 +186,9 @@ class E003937Test
         $result;
 
         do{
-
-            $selection = $this->_E003937mainMenu();
+            $this->display->clearScreen();
+            $selection = $this->display->displayMenu(self::HEADER_STR,
+                            $this->_e003937MainMenu);
 
             if (($selection == "A") || ($selection == "a")) {
                 $this->_runTest();
@@ -183,34 +202,6 @@ class E003937Test
             }
 
         } while ($exitTest == false);
-    }
-
-    /**
-    ************************************************************
-    * Main 003937 Menu Routine
-    * 
-    * This is the main menu routine for 003937 HUGnetLab 
-    * endpoint.  It displays the menu options, reads the 
-    * user input choice and calls the appropriate routine in 
-    * response.
-    *
-    * @return string $choice
-    *
-    */
-    private function _E003937mainMenu()
-    {
-        EndpointTest::clearScreen();
-        $this->_printHeader();
-        $this->_system->out("\n\r");
-        $this->_system->out("A ) Test, Program and Serialize");
-        $this->_system->out("B ) Clone, Test and Program");
-        $this->_system->out("C ) Troubleshoot");
-        $this->_system->out("D ) Exit");
-        $this->_system->out("\n\r");
-        $choice = readline("\n\rEnter Choice(A,B,C or D): ");
-        
-        return $choice;
-
     }
 
 
@@ -244,7 +235,7 @@ class E003937Test
                 $testResult = $this->_testEndpoint();
 
                 if ($testResult == true) {
-                    $this->_displayPassed();
+                    $this->display->displayPassed();
 
                     $retVal = $this->_writeSerialNumAndHardwareVer();
                     
@@ -252,7 +243,7 @@ class E003937Test
                         $snCounter++;
                         $retVal = $this->_loadBootLoader();
                         if ($retVal == 0) {
-                            $this->_displayPassed();
+                            $this->display->displayPassed();
                         } else {
                             $this->_displayBootFailed();
                         }
@@ -260,7 +251,7 @@ class E003937Test
                         $this->_displayBoardProgramFailed();
                     }
                 } else {
-                    $this->_displayFailed();
+                    $this->display->displayFailed();
                 }
 
                 $exitTest = $this->_repeatTestMenu();
@@ -322,7 +313,7 @@ class E003937Test
     private function _cloneMain()
     {
         
-        EndpointTest::clearScreen();
+        $this->display->clearScreen();
         $this->_system->out("\n\r");
        
         $this->_system->out("**************************************************");
@@ -350,53 +341,6 @@ class E003937Test
     }
 
 
-    /**
-    ************************************************************
-    * Display Board Passed Routine
-    *
-    * This function displays the board passed message in a
-    * visually obvious way so the user cannot miss it.
-    *
-    * @return void
-    *
-    */
-    private function _displayPassed()
-    {
-        $this->_system->out("\n\r");
-
-        $this->_system->out("**************************************************");
-        $this->_system->out("*                                                *");
-        $this->_system->out("*      B O A R D   T E S T   P A S S E D !       *");
-        $this->_system->out("*                                                *");
-        $this->_system->out("**************************************************");
-
-        $this->_system->out("\n\r");
-
-    }
-
-    /**
-    ************************************************************
-    * Display Board Passed Routine
-    *
-    * This function displays the board passed message in a
-    * visually obvious way so the user cannot miss it.
-    *
-    * @return void
-    *
-    */
-    private function _displayFailed()
-    {
-        $this->_system->out("\n\r");
-
-        $this->_system->out("**************************************************");
-        $this->_system->out("*                                                *");
-        $this->_system->out("*      B O A R D   T E S T   F A I L E D !       *");
-        $this->_system->out("*                                                *");
-        $this->_system->out("**************************************************");
-
-        $this->_system->out("\n\r");
-
-    }
 
     /**
     ************************************************************
@@ -448,25 +392,6 @@ class E003937Test
     }
 
 
-    /**
-    ************************************************************
-    * Print Header Routine
-    *
-    * The function prints the header box and title.
-    *
-    * @return void
-    *
-    */
-    private function _printHeader()
-    {
-        $this->_system->out(str_repeat("*", 60));
-       
-        $this->_system->out("*                                                          *");
-        $this->_system->out("*        HUGnetLab 003937 Test & Program Tool              *");
-        $this->_system->out("*                                                          *");
-
-        $this->_system->out(str_repeat("*", 60));
-    }
 
     /*****************************************************************************/
     /*                                                                           */
@@ -491,8 +416,9 @@ class E003937Test
         $result;
 
         do{
-
-            $selection = $this->_troubleshootMenu();
+            $this->display->clearScreen();
+            $selection = $this->display->displayMenu(self::TRBL_HEADER_STR,
+                            $this->_troubleShootMenu);
 
             if (($selection == "A") || ($selection == "a")) {
                 $this->_troubleshootAnalog();
@@ -508,53 +434,6 @@ class E003937Test
         } while ($exitTest == false);
     }
 
-    /**
-    ************************************************************
-    * Troubleshoot 003937 Menu Routine
-    * 
-    * This is the main menu routine for 003937 HUGnetLab 
-    * endpoint.  It displays the menu options, reads the 
-    * user input choice and calls the appropriate routine in 
-    * response.
-    *
-    * @return string $choice
-    *
-    */
-    private function _troubleshootMenu()
-    {
-        EndpointTest::clearScreen();
-        $this->_printTroubleshootHeader();
-        $this->_system->out("\n\r");
-        $this->_system->out("A ) Analog Tests");
-        $this->_system->out("B ) DAC Tests");
-        $this->_system->out("C ) Digital Tests");
-        $this->_system->out("D ) Exit");
-        $this->_system->out("\n\r");
-        $choice = readline("\n\rEnter Choice(A,B,C or D): ");
-        
-        return $choice;
-
-    }
-
-    /**
-    ************************************************************
-    * Print Header Routine
-    *
-    * The function prints the header box and title.
-    *
-    * @return void
-    *
-    */
-    private function _printTroubleshootHeader()
-    {
-        $this->_system->out(str_repeat("*", 60));
-       
-        $this->_system->out("*                                                          *");
-        $this->_system->out("*           Troubleshoot HUGnetLab 003937                  *");
-        $this->_system->out("*                                                          *");
-
-        $this->_system->out(str_repeat("*", 60));
-    }
 
     /**
     ************************************************************
@@ -571,7 +450,7 @@ class E003937Test
     private function _troubleshootAnalog()
     {
 
-        EndpointTest::clearScreen();
+        $this->display->clearScreen();
         $this->_system->out("\n\r");
        
         $result = $this->_checkGoodEndpoint();
@@ -610,7 +489,7 @@ class E003937Test
     private function _troubleshootDAC()
     {
 
-        EndpointTest::clearScreen();
+        $this->display->clearScreen();
         $this->_system->out("\n\r");
        
 
@@ -640,7 +519,7 @@ class E003937Test
     private function _troubleshootDigital()
     {
 
-        EndpointTest::clearScreen();
+        $this->display->clearScreen();
         $this->_system->out("\n\r");
        
 
@@ -1869,7 +1748,7 @@ class E003937Test
     private function _getSerialNumber()
     {
         do {
-            EndpointTest::clearScreen();
+            $this->display->clearScreen();
             $this->_system->out("Enter a hex value for the starting serial number");
             $SNresponse = readline("in the following format- 0xhhhh: ");
             $this->_system->out("\n\r");

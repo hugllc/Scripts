@@ -40,6 +40,8 @@ namespace HUGnet\processes;
 require_once "HUGnetLib/ui/Daemon.php";
 /** This is our units class */
 require_once "HUGnetLib/devices/inputTable/Driver.php";
+/** Displays class */
+require_once "HUGnetLib/ui/Displays.php";
 /** This is the HUGnetLab endpoint test */
 require_once "E003937Test.php";
 /** This is the HUGnet endpoint 003928 test */
@@ -67,11 +69,18 @@ require_once "E003912Test.php";
 class EndpointTest extends \HUGnet\ui\Daemon
 {
 
+    const HEADER_STR    = "HUGnet Endpoint Test & Program Tool";
+
     private $_fixtureTest;
     private $_device;
     private $_goodDevice;
+    private $_eptestMainMenu = array(
+                                0 => "Test 003937 HUGnetLab Endpoint",
+                                1 => "Test 003928 HUGnet Endpoint",
+                                2 => "Test 003912 HUGnet Endpoint",
+                                );
 
-
+    public $display;
     /*
     * Sets our configuration
     *
@@ -81,6 +90,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     {
         parent::__construct($config);
         $this->_device = $this->system()->device();
+        $this->display = \HUGnet\ui\Displays::factory($config);
 
     }
 
@@ -115,8 +125,9 @@ class EndpointTest extends \HUGnet\ui\Daemon
         $result;
 
         do{
-
-            $selection = $this->_mainMenu();
+            $this->display->clearScreen();
+            $selection = $this->display->displayMenu(self::HEADER_STR, 
+                            $this->_eptestMainMenu);
 
             if (($selection == "A") || ($selection == "a")) {
                 $this->_test003937Main();
@@ -133,130 +144,6 @@ class EndpointTest extends \HUGnet\ui\Daemon
     }
 
 
-    /*****************************************************************************/
-    /*                                                                           */
-    /*            D I P L A Y   A N D   M E N U   R O U T I N E S                */
-    /*                                                                           */
-    /*****************************************************************************/
-
-
-    /**
-    ************************************************************
-    * Display Header and Menu Routine
-    *
-    * This function displays the test and program tool header
-    * and a menu which allows you to exit the program.
-    *
-    * @return string $choice menu selection
-    */
-    private function _mainMenu()
-    {
-        $this->clearScreen();
-        $this->_printHeader();
-        $this->out();
-        $this->out("A ) Test 003937 HUGnetLab Endpoint");
-        $this->out("B ) Test 003928 HUGnet Endpoint");
-        $this->out("C ) Test 003912 HUGnet Endpoint");
-        $this->out("D ) Exit");
-        $this->out();
-        $choice = readline("\n\rEnter Choice(A,B,C or D): ");
-        
-        return $choice;
-    }
-
-
-    /**
-    ************************************************************
-    * Clear Screen Routine
-    * 
-    * This function clears screen area by outputting 24 carriage 
-    * returns and line feeds.
-    *
-    * @return void
-    * 
-    */
-    public static function clearScreen()
-    {
-
-        system("clear");
-    }
-
-
-    /**
-    ************************************************************
-    * Print Header Routine
-    *
-    * The function prints the header box and title.
-    *
-    * @return void
-    *
-    */
-    private function _printHeader()
-    {
-        $this->out(str_repeat("*", 60));
-       
-        $this->out("*                                                          *");
-        $this->out("*           HUGnet Endpoint Test & Program Tool            *");
-        $this->out("*                                                          *");
-
-        $this->out(str_repeat("*", 60));
-
-        $this->out();
-
-    }
-
-
-    /**
-    ************************************************************
-    * Display Board Passed Routine
-    *
-    * This function displays the board passed message in a
-    * visually obvious way so the user cannot miss it.
-    *
-    * @return void
-    *
-    */
-    public function displayPassed()
-    {
-        echo ("\n\r");
-        echo ("\n\r");
-
-        echo ("**************************************************\n\r");
-        echo ("*                                                *\n\r");
-        echo ("*      B O A R D   T E S T   P A S S E D !       *\n\r");
-        echo ("*                                                *\n\r");
-        echo ("**************************************************\n\r");
-
-        echo ("\n\r");
-        echo ("\n\r");
-
-    }
-
-    /**
-    ************************************************************
-    * Display Board Passed Routine
-    *
-    * This function displays the board passed message in a
-    * visually obvious way so the user cannot miss it.
-    *
-    * @return void
-    *
-    */
-    public function displayFailed()
-    {
-        echo ("\n\r");
-        echo ("\n\r");
-
-        echo ("**************************************************\n\r");
-        echo ("*                                                *\n\r");
-        echo ("*      B O A R D   T E S T   F A I L E D !       *\n\r");
-        echo ("*                                                *\n\r");
-        echo ("**************************************************\n\r");
-
-        echo ("\n\r");
-        echo ("\n\r");
-
-    }
 
 
     /*****************************************************************************/

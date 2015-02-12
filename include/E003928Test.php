@@ -39,6 +39,8 @@ use \HUGnetLib as HUGnetLib;
 require_once "HUGnetLib/ui/Daemon.php";
 /** This is our units class */
 require_once "HUGnetLib/devices/inputTable/Driver.php";
+/** Displays class */
+require_once "HUGnetLib/ui/Displays.php";
 
 /**
  * This code tests, serializes and programs HUGnet endpoints with 

@@ -41,7 +41,7 @@ require_once "HUGnetLib/ui/Daemon.php";
 /** This is our units class */
 require_once "HUGnetLib/devices/inputTable/Driver.php";
 /** Test Display class */
-require_once "components/TestDisplays.php";
+require_once "HUGnetLib/ui/Displays.php";
 
 /**
  * This code tests, serializes and programs endpoints with bootloader code.
@@ -99,7 +99,7 @@ class E104602Test extends \HUGnet\ui\Daemon
         $this->_testerDevice->action()->config();
         $this->_testerDevice->action()->loadConfig();
 
-        $this->display = \HUGnet\processes\TestDisplays::factory($config, $sys);
+        $this->display = \HUGnet\ui\Displays::factory($config);
 
     }
 
@@ -137,7 +137,7 @@ class E104602Test extends \HUGnet\ui\Daemon
             $this->display->clearScreen();
 
             $selection = $this->display->displayMenu(self::HEADER_STR, 
-                                                        $this->_batMainMenu);
+                                $this->_batMainMenu);
 
             if (($selection == "A") || ($selection == "a")) {
                 $this->_test1046Main();
@@ -187,6 +187,26 @@ class E104602Test extends \HUGnet\ui\Daemon
     /*  BUS      LOAD  ---->  K8 - OFF                                           */
     /*****************************************************************************/
 
+
+    /******************************************************************************/
+    /*                T E S T   S T E P S   C H E C K L I S T                     */
+    /*                                                                            */
+    /******************************************************************************/
+    /**
+    * 1. Load HUGnetLab Test Boards and Check Response    
+    * 2. Load bootloader code into lower and upper MCU's
+    * 3. Load test firmware into lower and upper MCU's
+    * 4. Calibrate ADC's and DAC's saving offset and gain values in signature area
+    * 5. Check board supply voltages.
+    * 6. Test LED's
+    * 7. Test Bat Switches for load and voltages
+    * 8. Test Power converter output and input
+    * 9. Test thermistor inputs.
+    * 10.  Load release firmware into lower and upper MCU's
+    * 11.  Verify firmware is operating.
+    * 12.  Power down device under test.
+    */
+
     /**
     ************************************************************
     * Main Test Routine
@@ -199,17 +219,8 @@ class E104602Test extends \HUGnet\ui\Daemon
     */
     private function _test1046Main()
     {
-        $this->clearScreen();
-
-        echo ("\n\r");
-        echo ("\n\r");
-
-        echo ("***********************************************\n\r");
-        echo ("*                                             *\n\r");
-        echo ("*        T E S T   N O T   D O N E !          *\n\r");
-        echo ("*                                             *\n\r");
-        echo ("***********************************************\n\r");
-        echo ("\n\r");
+        $this->display->clearScreen();
+        $this->display->displayHeader("T E S T   N O T   D O N E !");
                 
        // $serialNumber = $this->_getSerialNumber();
         //$this->out("Serial Number : ".$serialNumber."\n\r");
@@ -236,7 +247,7 @@ class E104602Test extends \HUGnet\ui\Daemon
             $this->out("Power Down Failed!\n\r");
         }
 
-
+        $this->display->displayPassed();
         $choice = readline("\n\rEnter to Continue: ");
 
     }
@@ -573,16 +584,8 @@ class E104602Test extends \HUGnet\ui\Daemon
     */
     private function _troubleshoot1046Main()
     {
-        $this->clearScreen();
-
-        echo ("\n\r");
-        echo ("\n\r");
-
-        echo ("***********************************************\n\r");
-        echo ("*                                             *\n\r");
-        echo ("* T R O U B L E S H O O T   N O T   D O N E ! *\n\r");
-        echo ("*                                             *\n\r");
-        echo ("***********************************************\n\r");
+        $this->display->clearScreen();
+        $this->display->displayHeader("T R O U B L E S H O O T   N O T   D O N E !");
 
 
         $choice = readline("\n\rEnter to Continue: ");
