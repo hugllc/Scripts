@@ -76,6 +76,9 @@ class E003928Test
     const DIGITAL_CONFIG_1 = 0x2105;
     const DIGITAL_CONFIG_2 = 0x5202;
 
+    const HEADER_STR     = "Testing HUGnetLab 003928";
+    const TESTING_STR    = "T E S T I N G";
+    const TRBL_SHOOT_HDR = "Troubleshoot HUGnetLab 003928";
     
 
     private $_device;
@@ -83,7 +86,19 @@ class E003928Test
 
     private $_devSN;
     private $_devFWN;
+    private $_e003928MainMenu = array(
+                                0 => "Test, Program and Serialize",
+                                1 => "Clone, Test and Program",
+                                2 => "Troubleshoot",
+                                );
+    private $_troubleshootMenu = array(
+                                0 => "Ping Test",
+                                1 => "Analog Tests",
+                                2 => "Digital Tests",
+                                );
 
+
+    private $display;
 
     /** ascii string hex value for revision letter **/
     private $_HWrev;
@@ -97,6 +112,8 @@ class E003928Test
     {
         $this->_system = &$sys; 
         $this->_device = $this->_system->device();
+
+        $this->display = \HUGnet\ui\Displays::factory($config);
 
     }
 
@@ -139,8 +156,9 @@ class E003928Test
 
 
         do{
-
-            $selection = $this->_E003928mainMenu();
+            $this->display->clearScreen();
+            $selection = $this->display->displayMenu(self::HEADER_STR,
+                            $this->_e003928MainMenu);
 
             if (($selection == "A") || ($selection == "a")) {
                 $this->_runTest();
@@ -155,35 +173,6 @@ class E003928Test
 
         } while ($exitTest == false);
     }
-
-    /**
-    ************************************************************
-    * Main 003937 Menu Routine
-    * 
-    * This is the main menu routine for 003937 HUGnetLab 
-    * endpoint.  It displays the menu options, reads the 
-    * user input choice and calls the appropriate routine in 
-    * response.
-    *
-    * @return string $choice
-    *
-    */
-    private function _E003928mainMenu()
-    {
-        EndpointTest::clearScreen();
-        $this->_printHeader();
-        $this->_system->out("\n\r");
-        $this->_system->out("A ) Test, Program and Serialize");
-        $this->_system->out("B ) Clone, Test and Program");
-        $this->_system->out("C ) Troubleshoot");
-        $this->_system->out("D ) Exit");
-        $this->_system->out("\n\r");
-        $choice = readline("\n\rEnter Choice(A,B,C or D): ");
-        
-        return $choice;
-
-    }
-
 
 
     /**
@@ -200,6 +189,7 @@ class E003928Test
     {
         
 
+        $this->display->clearScreen();
         $this->_devSN = $this->_getSerialNumber();
 
 
@@ -209,17 +199,10 @@ class E003928Test
             $this->_system->out("Test Firmware Loaded!");
             $choice = readline("\n\rHit any key to begin testing.");
 
-            $this->_system->out("\n\r");
-            $this->_system->out("********************************************");
-            $this->_system->out("*                                          *");
-            $this->_system->out("*             T E S T I N G                *");
-            $this->_system->out("*                                          *");
-            $this->_system->out("********************************************");
-            $this->_system->out("\n\r");
+            $this->display->displayHeader(self::TESTING_STR);
 
-            $this->_system->out("********************************************");
-            $this->_system->out("*            RUNNING PING TEST             *");
-            $this->_system->out("********************************************");
+            $this->display->displayHeader("Running Ping Test!");
+
             $Result = $this->_pingEndpoint(self::TEST_ID);
             
             $this->_system->out("\n\r");
@@ -247,7 +230,7 @@ class E003928Test
                     $Result = $this->_pingEndpoint($this->_devSN);
                     $this->_displayPingTestResult($Result);
                 } else {
-                    $this->_displayInitProgramFailed();
+                    $this->display->displayHeader("Init Serial Number Programming Failed!");
                 }
                 $choice = readline("\n\rHit any key to continue.");
             }
@@ -260,13 +243,13 @@ class E003928Test
                 $Result = $this->_verifyFirmware();
             }
         } else {
-            $this->_displayLoadTestFirmwareFailed();
+            $this->display->displayHeader("Load Test Firmware Failed!");
         }
 
         if ($Result) {
-            EndpointTest::displayPassed();
+            $this->display->displayPassed();
         } else {
-            EndpointTest::displayFailed();
+            $this->display->displayFailed();
 
         }
 
@@ -290,7 +273,7 @@ class E003928Test
     private function _cloneMain()
     {
         
-        EndpointTest::clearScreen();
+        $this->display->clearScreen();
         $this->_system->out("\n\r");
        
         $this->_system->out("**************************************************");
@@ -306,52 +289,7 @@ class E003928Test
 
     }
 
-    /**
-    ************************************************************
-    * Display Load Test Firmware Failed Routine
-    *
-    * This function displays the load failed message in a
-    * visually obvious way so the user cannot miss it.
-    *
-    * @return void
-    *
-    */
-    private function _displayLoadTestFirmwareFailed()
-    {
-        $this->_system->out("\n\r");
 
-        $this->_system->out("*****************************************");
-        $this->_system->out("*                                       *");
-        $this->_system->out("*     Load Test Firmware Failed!        *");
-        $this->_system->out("*                                       *");
-        $this->_system->out("*****************************************");
-
-        $this->_system->out("\n\r");
-    }
-
-    /**
-    ************************************************************
-    * Display Board Program Failed Routine
-    *
-    * This function displays the board serial number and 
-    * hardware number programming failed message in a
-    * visually obvious way so the user cannot miss it.
-    *
-    * @return void
-    *
-    */
-    private function _displayInitProgramFailed()
-    {
-        $this->_system->out("\n\r");
-
-        $this->_system->out("*********************************************");
-        $this->_system->out("*                                           *");
-        $this->_system->out("*   Init Serial Number Programming Failed   *");
-        $this->_system->out("*                                           *");
-        $this->_system->out("*********************************************");
-
-        $this->_system->out("\n\r");
-    }
 
     /**
     ************************************************************
@@ -366,34 +304,13 @@ class E003928Test
     */
     private function _displayPingTestResult($result)
     {
-        $this->_system->out("********************************************");
         if ($result) {
-            $this->_system->out("*            PING TEST PASSED!             *");
+            $this->display->displayHeader("PING TEST PASSED!");
         } else {
-            $this->_system->out("*            PING TEST FAILED!             *");
+            $this->display->displayHeader("PING TEST FAILED!");
         }
-        $this->_system->out("********************************************");
     }
 
-    /**
-    ************************************************************
-    * Print Header Routine
-    *
-    * The function prints the header box and title.
-    *
-    * @return void
-    *
-    */
-    private function _printHeader()
-    {
-        $this->_system->out(str_repeat("*", 60));
-       
-        $this->_system->out("*                                                          *");
-        $this->_system->out("*        HUGnetLab 003928 Test & Program Tool              *");
-        $this->_system->out("*                                                          *");
-
-        $this->_system->out(str_repeat("*", 60));
-    }
 
     /*****************************************************************************/
     /*                                                                           */
@@ -418,8 +335,9 @@ class E003928Test
         $result;
 
         do{
-
-            $selection = $this->_troubleshootMenu();
+            $this->display->clearScreen();
+            $selection = $this->display->displayMenu(self::TRBL_SHOOT_HDR,
+                            $this->_troubleshootMenu);
 
             if (($selection == "A") || ($selection == "a")) {
                 $this->_troubleshootPing();
@@ -435,53 +353,7 @@ class E003928Test
         } while ($exitTest == false);
     }
 
-    /**
-    ************************************************************
-    * Troubleshoot 003937 Menu Routine
-    * 
-    * This is the main menu routine for 003937 HUGnetLab 
-    * endpoint.  It displays the menu options, reads the 
-    * user input choice and calls the appropriate routine in 
-    * response.
-    *
-    * @return string $choice
-    *
-    */
-    private function _troubleshootMenu()
-    {
-        EndpointTest::clearScreen();
-        $this->_printTroubleshootHeader();
-        $this->_system->out("\n\r");
-        $this->_system->out("A ) Ping Test");
-        $this->_system->out("B ) Analog Tests");
-        $this->_system->out("C ) Digital Tests");
-        $this->_system->out("D ) Exit");
-        $this->_system->out("\n\r");
-        $choice = readline("\n\rEnter Choice(A-D): ");
-        
-        return $choice;
 
-    }
-
-    /**
-    ************************************************************
-    * Print Header Routine
-    *
-    * The function prints the header box and title.
-    *
-    * @return void
-    *
-    */
-    private function _printTroubleshootHeader()
-    {
-        $this->_system->out(str_repeat("*", 60));
-       
-        $this->_system->out("*                                                          *");
-        $this->_system->out("*           Troubleshoot HUGnetLab 003928                  *");
-        $this->_system->out("*                                                          *");
-
-        $this->_system->out(str_repeat("*", 60));
-    }
 
     /**
     *************************************************************
@@ -496,15 +368,17 @@ class E003928Test
     private function _troubleshootPing()
     {
         $Done = false;
-        EndpointTest::clearScreen();
-        $this->_system->out("Repeat Ping Command");
+        $this->display->clearScreen();
+
+        $this->display->displayHeader("Repeat Ping Command");
+        $this->_devSN = $this->_getSerialNumber();
 
         do {
             $repeatNum = readline("\n\rEnter number of times to repeat: ");
 
             if (is_numeric($repeatNum)) {
                 for ($i = 0; $i < $repeatNum; $i++) {
-                    $Result = $this->_pingEndpoint(self::TEST_ID);
+                    $Result = $this->_pingEndpoint($this->_devSN);
                     if ($Result) {
                         $this->_system->out("Ping ".($i+1)." Passed!");
                     } else {
@@ -523,6 +397,7 @@ class E003928Test
             }
         } while (!$Done);
 
+        $choice = readline("\n\rHit Enter To Continue: ");
     }
 
     /**
@@ -541,7 +416,7 @@ class E003928Test
     {
 
         $Done = false;
-        EndpointTest::clearScreen();
+        $this->display->clearScreen();
         $this->_system->out("Read Analog Channel Command");
         $this->_system->out("\n\r");
        
@@ -578,34 +453,21 @@ class E003928Test
     private function _troubleshootDigital()
     {
 
-        EndpointTest::clearScreen();
+        $this->display->clearScreen();
         $this->_system->out("\n\r");
        
 
-        $Result = $this->_loadTestFirmware();
-        if ($Result) {
 
-            $this->_system->out("Test Firmware Loaded!");
-            $choice = readline("\n\rHit any key to begin testing.");
+        $this->_system->out("**************************************************");
+        $this->_system->out("*                                                *");
+        $this->_system->out("*    T R O U B L E S H O O T   D I G I T A L     *");
+        $this->_system->out("*      U N D E R   C O N S T R U C T I O N       *");
+        $this->_system->out("*                                                *");
+        $this->_system->out("**************************************************");
 
-            $this->_system->out("\n\r");
-            $this->_system->out("********************************************");
-            $this->_system->out("*                                          *");
-            $this->_system->out("*      OUTPUTTING DUST SENSOR PULSE        *");
-            $this->_system->out("*                  ON PD0                  *");
-            $this->_system->out("*                                          *");
-            $this->_system->out("********************************************");
-            $this->_system->out("\n\r");
-
-            $this->_testPort();
-
-            $choice = readline("\n\rHit Enter To Continue: ");
-
-        } else {
-            $this->_displayLoadTestFirmwareFailed();
-        }
 
         $choice = readline("\n\rHit Enter To Continue: ");
+
     }
 
 
@@ -684,13 +546,7 @@ class E003928Test
     {
         $output = array();
 
-        $this->_system->out("\n\r");
-        $this->_system->out("********************************************");
-        $this->_system->out("*                                          *");
-        $this->_system->out("*         Loading Test Firmware            *");
-        $this->_system->out("*                                          *");
-        $this->_system->out("********************************************");
-        $this->_system->out("\n\r");
+        $this->display->displayHeader("Loading Test Firmware");
 
 
         $Prog = "make -C ~/code/HOS 003928test-install SN=0x0000000020";
@@ -721,7 +577,6 @@ class E003928Test
     private function _getSerialNumber()
     {
         do {
-            EndpointTest::clearScreen();
             $this->_system->out("Enter the hex value of the board serial number");
             $SNresponse = readline("in the following format- 0xhhhh: ");
             $this->_system->out("\n\r");
@@ -1078,6 +933,7 @@ class E003928Test
         $this->_system->out("********************************************");
         $this->_system->out("\n\r");
 
+        $Result = true;
    
         return $Result;
     }
@@ -1215,7 +1071,7 @@ class E003928Test
     * @param int $testNum    number of digital test
     * 
     * 
-    * @return boolean $Result  0 for fail, 1 for sucess
+    * @return boolean $Result  0 for fail, 1 for success
     */
     private function _testDigital($testNum)
     {
@@ -1293,27 +1149,6 @@ class E003928Test
     }
 
 
-    /**
-    ***************************************************************
-    * Run Digital Port Test 
-    *
-    * This function outputs a digital pulse signal with 10 ms
-    * between pulses and a 320 nanoSecond wide pulse.
-    *
-    * @return void
-    */
-    private function _testPort()
-    {
-
-        $Result = $this->_configDigital(1);
-
-        $idNum = self::TEST_ID;
-        $cmdNum = self::PULSE_DIGITIAL_COMMAND;
-        $dataVal = "00";
-        
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-    }
     
 
 
