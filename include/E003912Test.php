@@ -269,14 +269,12 @@ class E003912Test
     {
         
         $this->_display->clearScreen();
-        $this->_system->out("\n\r");
-       
-        $this->_system->out("**************************************************");
-        $this->_system->out("*                                                *");
-        $this->_system->out("*          C L O N E   R O U T I N E             *");
-        $this->_system->out("*      U N D E R   C O N S T R U C T I O N       *");
-        $this->_system->out("*                                                *");
-        $this->_system->out("**************************************************");
+        $headings = array(
+                    0 => "C L O N E   R O U T I N E",
+                    1 => "U N D E R   C O N S T R U C T I O N",
+                );
+
+        $this->_display->displayMLHeader($headings);
 
 
         $choice = readline("\n\rHit Enter To Continue: ");
@@ -413,19 +411,13 @@ class E003912Test
         $this->_system->out("Read Analog Channel Command");
         $this->_system->out("\n\r");
        
+        $headings = array(
+                        0 => "T R O U B L E S H O O T   A N A L O G",
+                        1 => "U N D E R   C O N S T R U C T I O N",
+                    );
 
-        $this->_system->out("**************************************************");
-        $this->_system->out("*                                                *");
-        $this->_system->out("*     T R O U B L E S H O O T   A N A L O G      *");
-        $this->_system->out("*      U N D E R   C O N S T R U C T I O N       *");
-        $this->_system->out("*                                                *");
-        $this->_system->out("**************************************************");
+        $this->_display->displayMLHeader($headings);
 
-        do {
-            $inputNum = readline("\n\rEnter the adc number of the channel to read: ");
-
-            $Done = true;
-        } while (!$Done);
 
         $choice = readline("\n\rHit Enter To Continue: ");
      }
