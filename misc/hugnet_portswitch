@@ -44,7 +44,7 @@ require_once 'HUGnetLib/HUGnetLib.php';
 $config = HUGnetLib::Args(
     array(
         "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
-        "P" => array("name" => "Port", "type" => "int", "args" => true, 'default' => -1),
+        "P" => array("name" => "Port", "type" => "string", "args" => true,),
         "C" => array(
             "name" => "Command", "type" => "string", "args" => true,
             "default" => "FINDPING"
@@ -67,7 +67,7 @@ Usage: ".$cli->system()->get("program")." -i <DeviceID> -C (on|off) -P <port> [-
 Arguments:
     -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
     -C (on|off)     Must be 'on' or 'off'
-    -P <port>       The port to turn on or off.  Between 0 and the number of ports.
+    -P <port>       A port number in decimal
     -v              Increment the verbosity
     -f <file>       The config file to use",
     $config->h
@@ -85,10 +85,10 @@ if (($command != 'on') && ($command != 'off')) {
     $cli->out("Command must be either 'on' or 'off'");
     exit(1);
 }
-if ($config->P < 0) {
+if (strlen($config->i) == 0) {
     $cli->help();
     $cli->out();
-    $cli->out("Port must be specified");
+    $cli->out("A port must be specified");
     exit(1);
 }
 $dev = $cli->system()->device(hexdec($config->i));
@@ -98,10 +98,17 @@ if ($config->P > $dev->get("PowerTables")) {
 }
 $cmd = ($command == 'on') ? '30' : '31';
 
+$ports = explode(",", $config->P);
+$data = "";
+foreach ($ports as $port) {
+    $data .= sprintf("%02X", (int)$port);
+    break;
+}
+
 $pkt = $cli->system()->device(hexdec($config->i))->action()->send(
     array(
         "Command" => $cmd,
-        "Data" => sprintf("%2X", $config->P),
+        "Data" => $data,
     ),
     null,
     array(
