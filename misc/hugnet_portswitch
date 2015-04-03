@@ -127,10 +127,14 @@ if (is_object($pkt)) {
                 $cli->out("Error ($error): MCU to MCU communication error");
                 break;
             case 2:
+            case 5:
                 $cli->out("Error ($error): Port not ready");
                 break;
             case 3:
                 $cli->out("Error ($error): Port not online");
+                break;
+            case 4:
+                $cli->out("Error ($error): M2M communication errror");
                 break;
             default:
                 $cli->out("Error ($error): Unknown error");
