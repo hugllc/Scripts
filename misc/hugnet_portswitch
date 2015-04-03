@@ -1,0 +1,131 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2011 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @copyright  2007-2011 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** HUGnet code */
+//require_once dirname(__FILE__).'/../head.inc.php';
+/** Packet log include stuff */
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+        "P" => array("name" => "Port", "type" => "int", "args" => true, 'default' => -1),
+        "C" => array(
+            "name" => "Command", "type" => "string", "args" => true,
+            "default" => "FINDPING"
+        ),
+    ),
+    "args",
+    $argv
+);
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = HUGnetLib::ui($config, "Daemon");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+Turns ports on and off.
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> -C (on|off) -P <port> [-v] [-f <file>]
+Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -C (on|off)     Must be 'on' or 'off'
+    -P <port>       The port to turn on or off.  Between 0 and the number of ports.
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+$command = trim(strtolower($config->C));
+if (($command != 'on') && ($command != 'off')) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Command must be either 'on' or 'off'");
+    exit(1);
+}
+if ($config->P < 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("Port must be specified");
+    exit(1);
+}
+$dev = $cli->system()->device(hexdec($config->i));
+if ($config->P > $dev->get("PowerTables")) {
+    $cli->out("This device only has ".$dev->get("PowerTables")." ports");
+    exit(1);
+}
+$cmd = ($command == 'on') ? '30' : '31';
+
+$pkt = $cli->system()->device(hexdec($config->i))->action()->send(
+    array(
+        "Command" => $cmd,
+        "Data" => sprintf("%2X", $config->P),
+    ),
+    null,
+    array(
+        "timeout" => $dev->get("packetTimeout")
+    )
+);
+
+if (is_object($pkt)) {
+    if ($pkt->Reply()) {
+        $error = hexdec(substr($pkt->Reply(), 0, 2));
+        switch ($error) {
+            case 0:
+                $cli->out("Port ".$config->P." successfully turned ".$command);
+                break;
+            default:
+                $cli->out("Error ($error): Unknown error");
+                break;
+        }
+    } else {
+        $cli->out("No reply");
+    }
+} else {
+    $cli->out("Failed to send packet");
+}
+$cli->out("Finished");
+
+?>
