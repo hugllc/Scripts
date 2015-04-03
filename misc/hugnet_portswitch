@@ -123,6 +123,15 @@ if (is_object($pkt)) {
             case 0:
                 $cli->out("Port ".$config->P." successfully turned ".$command);
                 break;
+            case 1:
+                $cli->out("Error ($error): MCU to MCU communication error");
+                break;
+            case 2:
+                $cli->out("Error ($error): Port not ready");
+                break;
+            case 3:
+                $cli->out("Error ($error): Port not online");
+                break;
             default:
                 $cli->out("Error ($error): Unknown error");
                 break;
