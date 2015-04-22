@@ -99,7 +99,7 @@ for ($i = 0; ($i < $config->c) && $cli->loop(); $i++) {
     }
 }
 $cli->out("--- ".$dev->get("DeviceID")." ping statistics ---");
-$perc = (($sent - $recv) / $sent) * 100;
+$perc = round((($sent - $recv) / $sent), 3) * 100;
 $cli->out("$sent packets transmitted, $recv packets received, $perc% packet loss");
 $cli->out("Finished");
 exit(0);
