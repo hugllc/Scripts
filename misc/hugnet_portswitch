@@ -136,6 +136,9 @@ if (is_object($pkt)) {
             case 4:
                 $cli->out("Error ($error): M2M communication errror");
                 break;
+            case 0xFF:
+                $cli->out("Error ($error): Not in Manual Mode");
+                break;
             default:
                 $cli->out("Error ($error): Unknown error");
                 break;
