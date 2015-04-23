@@ -98,7 +98,7 @@ for ($i = 0; ($i < $config->c) && $cli->loop(); $i++) {
         usleep($sleep);
     }
 }
-$cli->out("--- ".$dev->get("DeviceID")." ping statistics ---");
+$cli->out("--- ".sprintf("%06X", $dev->id())." ping statistics ---");
 $perc = round((($sent - $recv) / $sent), 3) * 100;
 $cli->out("$sent packets transmitted, $recv packets received, $perc% packet loss");
 $cli->out("Finished");
