@@ -79,11 +79,11 @@ if ($config->a) {
     $cli->out("Sending a broadcast packet");
     $cli->system()->device(hexdec($config->i))->network()->timeBroadcast();
 } else {
-    $ret = $cli->system()->device(hexdec($config->i))->network()->setRTC();
+    $ret = $cli->system()->device(hexdec($config->i))->network()->getRTC();
     if ($ret) {
-        $cli->out("Set time to ".gmdate("Y-m-d H:i:s e", $ret));
-    } else {
-        $cli->out("Failed to set time on device ".$config->i);
+        $cli->out("Time set to ".gmdate("Y-m-d H:i:s e", $ret));
+     } else {
+        $cli->out("Failed to get time from device ".$config->i);
     }
 }
 print "Finished\n";
