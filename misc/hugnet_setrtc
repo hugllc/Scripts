@@ -82,6 +82,7 @@ if ($config->a) {
     $ret = $cli->system()->device(hexdec($config->i))->network()->setRTC();
     if ($ret) {
         $cli->out("Set time to ".gmdate("Y-m-d H:i:s e", $ret));
+        $cli->out("Current time is ".gmdate("Y-m-d H:i:s e"));
     } else {
         $cli->out("Failed to set time on device ".$config->i);
     }
