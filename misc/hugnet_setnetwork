@@ -62,7 +62,7 @@ Copyright Hunt Utilities Group, LLC
 HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
 ."HUGnetLib v".$cli->system()->get("version")."
 
-Turns ports on and off.
+This sets the WiFi credentials for the 1046-04 boards.
 
 Usage: ".$cli->system()->get("program")." -i <DeviceID> [-C (NONE|WEP|WPA|WPA2)] -S <ssid> [-K <key>] [-v] [-f <file>]
 Arguments:
