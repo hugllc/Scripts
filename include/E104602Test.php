@@ -248,6 +248,10 @@ class E104602Test extends \HUGnet\ui\Daemon
         }
 
         $this->display->displayPassed();
+
+        $this->out("TESTING RELAYS!");
+        $this->_testRelays();
+
         $choice = readline("\n\rEnter to Continue: ");
 
     }
@@ -509,6 +513,31 @@ class E104602Test extends \HUGnet\ui\Daemon
         $this->_setRelay(3,0);
         $this->_setRelay(2,0);
     }
+
+    /**
+    **************************************************************
+    * Relay Test Routine
+    *
+    * This function steps through the relays to check power on 
+    * and power off functions.
+    * 
+    * @return void
+    */
+    private function _testRelays()
+    {
+        for ($i=1; $i<9; $i++) {
+            $this->_setRelay($i,1);
+            time_nanosleep(2,0);
+        }
+
+        time_nanosleep(5,0);
+
+        for ($i=1; $i<9; $i++) {
+            $this->_setRelay($i,0);
+            time_nanosleep(2,0);
+        }
+    }
+
 
 
     /**
