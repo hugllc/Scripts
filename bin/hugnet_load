@@ -107,8 +107,8 @@ $DevID = hexdec($DeviceID);
 $dev = $cli->system()->device(
     array("DeviceID" => sprintf("%06X", $DevID), "id" => $DevID)
 );
-$firmware = $cli->system()->table("Firmware");
-$firmware->fromFile($file, $path);
+$firmware = $dev->firmware();
+$firmware->table()->fromFile($file, $path);
 if ($firmware->get("FWPartNum") === "0039-38-03-C") {
     $cli->out();
     $cli->out("Error:  This firmware can not be loaded using this utility");
@@ -153,6 +153,32 @@ if ($dev->get("loadable") && !$config->a) {
 
     unlink($flashname);
     unlink($eename);
+} else if (strtolower($firmware->get("Target")) == "photon") {
+    if ($dev->action()->ping(true)) {
+        $pkt = $dev->action()->send(
+            array(
+                "Command" => "BOOTLOADER",
+                "Data" => "DEADBEEF"
+            ),
+            null,
+            array(
+                "NoReply" => true
+            )
+        );
+        sleep(2);
+    }
+    $flashname = tempnam("/tmp", "flash").".dfu";
+    $fp = fopen($flashname, "w");
+    fwrite($fp, pack("H*", $firmware->getCode()[0]));
+    fclose($fp);
+    passthru("dfu-util -d 0x2B04:0xD006 -a 0 -s 0x80A0000:leave -D $flashname", $ret);
+    if (($ret == 0) || ($ret == 74)) {
+        $ret = true;
+    } else {
+        $ret = false;
+    }
+    unlink($flashname);
+    
 } else {
     $cli->out("I don't know how to load this\n");
     $cli->out("HW Part: ".$dev->get("HWPartNum"));
