@@ -454,8 +454,6 @@ class E003928Test
 
         $this->display->displayMLHeader($headings);
 
-
-
         $choice = readline("\n\rHit Enter To Continue: ");
 
     }
