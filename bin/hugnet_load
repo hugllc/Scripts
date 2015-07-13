@@ -71,12 +71,14 @@ Arguments:
     -f <file>       The config file to use",
     $config->h
 );
+/*
 if (strlen($config->i) == 0) {
     $cli->help();
     $cli->out();
     $cli->out("DeviceID must be specified");
     exit(1);
 }
+*/
 $path = dirname($config->D);
 if (empty($path)) {
     $path = ".";
@@ -103,10 +105,14 @@ if ((strcmp($programmer, "avrispv2") != 0) &&
 
 
 $DeviceID = trim(strtoupper($config->i));
-$DevID = hexdec($DeviceID);
-$dev = $cli->system()->device(
-    array("DeviceID" => sprintf("%06X", $DevID), "id" => $DevID)
-);
+if (!empty($DeviceID)) {
+    $DevID = hexdec($DeviceID);
+    $dev = $cli->system()->device(
+        array("DeviceID" => sprintf("%06X", $DevID), "id" => $DevID)
+    );
+} else {
+    $dev = $cli->system()->device();
+}
 $firmware = $dev->firmware();
 $firmware->table()->fromFile($file, $path);
 $fwpart = $firmware->get("FWPartNum");
