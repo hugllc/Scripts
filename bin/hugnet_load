@@ -109,29 +109,52 @@ $dev = $cli->system()->device(
 );
 $firmware = $dev->firmware();
 $firmware->table()->fromFile($file, $path);
-if ($firmware->get("FWPartNum") === "0039-38-03-C") {
+$fwpart = $firmware->get("FWPartNum");
+if ($fwpart === "0039-38-03-C") {
     $cli->out();
     $cli->out("Error:  This firmware can not be loaded using this utility");
     $cli->out();
     exit(1);
 }
 $cli->out(
-    "Found firmware ".$firmware->get("FWPartNum")." v".$firmware->get("Version")
+    "Found firmware ".$fwpart." v".$firmware->get("Version")
 );
+
+$loadable = (bool)$dev->get("loadable");
+$loadable = $loadable && ($fwpart != "0039-38-02-C");
+$loadable = $loadable && ($fwpart != "0039-38-82-C");
+$loadable = $loadable && ($fwpart != "0039-38-81-C");
+
 $ret = false;
-if ($dev->get("loadable") && !$config->a) {
+
+if ($loadable && !$config->a) {
     $ret = $dev->action()->loadFirmware($firmware);
 } else if (($dev->get("arch") === "AVR") 
     || ($firmware->get("HWPartNum") == "0039-28")
     || ($firmware->get("HWPartNum") == "0039-12")
+    || (($fwpart == "0039-38-81-C") && (strtolower($firmware->get("Target")) == "atxmegae5"))
     || $config->a
 ) {
-    $Prog = 'avrdude -c '.$programmer.' -p '.$firmware->get("Target").' -P usb ';
+    switch (strtolower($firmware->get("Target"))) {
+        case "atxmegae5":
+            $ptarget = "x32e5";
+            break;
+        case "ATMega168":
+            $ptarget = "m168";
+            break;
+        case "ATTiny861":
+            $ptarget = "t861";
+            break;
+    }
+
+
+    $Prog = 'avrdude -c '.$programmer.' -p '.$ptarget.' -P usb -B 10 -i 100';
 
     // Program the flash
     $flashname = tempnam("/tmp", "flash");
 
     $fp = fopen($flashname, "w");
+
     fwrite($fp, $firmware->get("Code"));
     fclose($fp);
 
@@ -182,7 +205,7 @@ if ($dev->get("loadable") && !$config->a) {
 } else {
     $cli->out("I don't know how to load this\n");
     $cli->out("HW Part: ".$dev->get("HWPartNum"));
-    $cli->out("FW Part: ".$dev->get("FWPartNum"));
+    $cli->out("FW Part: ".$fwpart);
 }
 /*
 if ($ret) {
