@@ -183,7 +183,6 @@ if ($loadable && !$config->a) {
     unlink($flashname);
     unlink($eename);
 } else if (strtolower($firmware->get("Target")) == "photon") {
-/*
     if ($dev->action()->ping(true)) {
         $pkt = $dev->action()->send(
             array(
@@ -197,7 +196,6 @@ if ($loadable && !$config->a) {
         );
         sleep(2);
     }
-    */
     $allcode = $firmware->getCode();
     $count = count($allcode);
     foreach ($allcode as $key => $code) {
