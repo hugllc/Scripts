@@ -183,6 +183,7 @@ if ($loadable && !$config->a) {
     unlink($flashname);
     unlink($eename);
 } else if (strtolower($firmware->get("Target")) == "photon") {
+/*
     if ($dev->action()->ping(true)) {
         $pkt = $dev->action()->send(
             array(
@@ -196,18 +197,38 @@ if ($loadable && !$config->a) {
         );
         sleep(2);
     }
-    $flashname = tempnam("/tmp", "flash").".dfu";
-    $fp = fopen($flashname, "w");
-    fwrite($fp, pack("H*", $firmware->getCode()[0]));
-    fclose($fp);
-    passthru("dfu-util -d 0x2B04:0xD006 -a 0 -s 0x80A0000:leave -D $flashname", $ret);
-    if (($ret == 0) || ($ret == 74)) {
-        $ret = true;
-    } else {
-        $ret = false;
+    */
+    $allcode = $firmware->getCode();
+    $count = count($allcode);
+    foreach ($allcode as $key => $code) {
+        $flashname = tempnam("/tmp", "flash");
+        $fp = fopen("$flashname.elf", "w");
+        fwrite($fp, pack("H*", $code));
+        fclose($fp);
+        passthru("dfu-suffix -v 2B04 -p D006 -a $flashname.elf");
+        /*
+    #dfu-suffix -v 2B04 -p D006 -a ../../../build/target/system-part1/platform-6-m-lto/system-part1.dfu
+    #dfu-util -d 0x2B04:0xD006 -a 0 -s 0x8020000 -D ../../../build/target/system-part1/platform-6-m-lto/system-part1.dfu
+    #dfu-suffix -v 2B04 -p D006 -a ../../../build/target/system-part2/platform-6-m-lto/system-part2.dfu
+    #dfu-util -d 0x2B04:0xD006 -a 0 -s 0x8060000 -D ../../../build/target/system-part2/platform-6-m-lto/system-part2.dfu
+    #dfu-suffix -v 2B04 -p D006 -a ../../../build/target/user-part/platform-6-m/user-part.dfu
+    #dfu-util -d 0x2B04:0xD006 -a 0 -s 0x80A0000:leave -D ../../../build/target/user-part/platform-6-m/user-part.dfu
+        */
+        $address = sprintf("0x%X", $key);
+        if ($count == 1) {
+            $address .= ":leave";
+        }
+        $command = "dfu-util -d 0x2B04:0xD006 -a 0 -s $address -D $flashname.elf";
+        $cli->out($command);
+        passthru($command, $ret);
+        if (($ret == 0) || ($ret == 74)) {
+            $ret = true;
+        } else {
+            $ret = false;
+        }
+        unlink("$flashname.elf");
+        $count--;
     }
-    unlink($flashname);
-    
 } else {
     $cli->out("I don't know how to load this\n");
     $cli->out("HW Part: ".$dev->get("HWPartNum"));
