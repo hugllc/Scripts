@@ -1,0 +1,118 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Monitors incoming packets
+ *
+ * PHP Version 5
+ *
+ * <pre>
+ * Scripts related to HUGnet
+ * Copyright (C) 2007-2012 Hunt Utilities Group, LLC
+ * Copyright (C) 2009 Scott Price
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * </pre>
+ *
+ * @category   Scripts
+ * @package    Scripts
+ * @subpackage Misc
+ * @author     Scott Price <prices@hugllc.com>
+ * @author     Jeff Liesmaki <jeffl@hugllc.com>
+ * @copyright  2007-2012 Hunt Utilities Group, LLC
+ * @copyright  2009 Scott Price
+ * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @version    SVN: $Id$
+ * @link       https://dev.hugllc.com/index.php/Project:Scripts
+ *
+ */
+/** Packet log include stuff */
+require_once 'HUGnetLib/HUGnetLib.php';
+
+$config = HUGnetLib::Args(
+    array(
+        "i" => array("name" => "DeviceID", "type" => "string", "args" => true),
+        "D" => array("name" => "Data", "type" => "string", "args" => true),
+    ),
+    "args",
+    $argv
+);
+
+$config->addLocation("/usr/share/HUGnet/config.ini");
+$cli = HUGnetLib::ui($config, "CLI");
+$cli->help(
+    $cli->system()->get("program")."
+Copyright Hunt Utilities Group, LLC
+HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
+."HUGnetLib v".$cli->system()->get("version")."
+
+Sends a series of DAC set packets to HUGnetLab endpoints.
+
+Usage: ".$cli->system()->get("program")." -i <DeviceID> [-v] [-f <file>]
+Arguments:
+    -i <DeviceID>   The device ID to use.  Should be a hex value up to 6 digits
+    -v              Increment the verbosity
+    -f <file>       The config file to use",
+    $config->h
+);
+if (strlen($config->i) == 0) {
+    $cli->help();
+    $cli->out();
+    $cli->out("DeviceID must be specified");
+    exit(1);
+}
+
+$dev = $cli->system()->device(hexdec($config->i));
+$pkt = $dev->action()->send(
+    array(
+        "Command" => 0x53,
+    ),
+    null,
+    array(
+        "timeout" => $dev->get("packetTimeout")
+    )
+);
+
+
+
+if (is_object($pkt)) {
+    $byte = 0;
+    $value = 0;
+    $reply = str_split($pkt->reply(), 2);
+    while ($byte < count($reply)) {
+        $value = hexdec($reply[$byte++]);
+        $value += hexdec($reply[$byte++])<<8;
+        $value += hexdec($reply[$byte++])<<16;
+        $value += hexdec($reply[$byte++])<<24;
+        /* Clear off any excess */
+        $value = (int)($value & (pow(2, 32) - 1));
+        /* Calculate the top bit */
+        $topBit = pow(2, (32 - 1));
+        /* Check to see if the top bit is set */
+        if (($value & $topBit) == $topBit) {
+            /* This is a negative number */
+            $value = -(pow(2, 32) - $value);
+        }
+        $cli->out($value/1000);
+    }
+
+} else {
+    $cli->out("Failed");
+    exit(-1);
+}
+
+$cli->out("Finished");
+exit(0);
+
+?>
