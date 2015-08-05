@@ -1,9 +1,22 @@
 #!/usr/bin/env php
 <?php
 /**
- * Tests, serializes, and loads bootloaders and firmware into both MCU's
+ * Tests, serializes, and loads firmware into battery socializer endpoints
  *
  * PHP Version 5
+ *
+ * List below are the objectives for this PHP script:
+ *    I.   Initialize the Xmega-E5 Eval Board
+ *    II.  Load and run test firmware
+ *           A. Test Serial number has been fixed in the test program
+ *              itself to 0x000020.
+ *           B. Initial test is simple response to a ping.
+ *    III. Program endpoint with serial number and hardware version
+ *           A. This will be done through a command to test firmware
+ *              which will cause a flash_write to the correct location.
+ *    IV.  Load the bootloader program
+ *           A. This should use current 104603boot install program.cfg
+ *
  *
  *
  * <pre>
@@ -39,13 +52,12 @@
 
 /* ===========  Includes =============== */
 require_once 'HUGnetLib/HUGnetLib.php';
-require_once 'HUGnetScripts/E104602Test.php';
+require_once 'HUGnetScripts/E104603Test.php';
 
 $config = HUGnetLib::Args(array(), "args", $argv);
 $config->addLocation("/usr/share/HUGnet/config.ini");
 
-
-$cli =  \HUGnet\processes\E104602Test::factory($config);
+$cli =  \HUGnet\processes\E104603Test::factory($config);
 
 
 $cli->help(
@@ -54,7 +66,7 @@ Copyright Hunt Utilities Group, LLC
 HUGnet Scripts v".trim(file_get_contents("HUGnetScripts/VERSION.TXT", true))."  "
 ."HUGnetLib v".$cli->system()->get("version")."
 
-Tests, serializes, and loads bootloader and firmware for Battery Socializer.
+Tests, serializes, and loads bootloader for Battery Socializer Endpoints.
 
 Usage: ".$cli->system()->get("program")." [-v] [-f <file>] 
 Arguments:
