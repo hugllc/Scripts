@@ -68,8 +68,21 @@ class E104603Test extends \HUGnet\ui\Daemon
     const EVAL_BOARD_ID = 0x30;
 
     const TEST_ANALOG_COMMAND  = 0x20;
+    const SET_DIGITAL_COMMAND = 0x26;
+    const CLR_DIGITAL_COMMAND = 0x27;
 
     const HEADER_STR    = "Battery Socializer Test & Program Tool";
+    
+    const VCC_PORT = 0;
+    const VBUS_PORT = 1;
+    const P2_PORT = 2;
+    const P1_PORT = 3;
+    const SW3V_PORT = 4;
+    
+    const ON 1;
+    const OFF 0:
+    
+    
 
     private $_fixtureTest;
     private $_system;
@@ -196,13 +209,216 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $result = $this->_checkEvalBoard();
 
-        $dataStr = $this->_readADCinput(4);
+        $dataStr = $this->_readVCC();
+        $this->out("Vcc Voltage = ".$dataStr." volts");
 
+        $dataStr = $this->_readBusVolt();
         $this->out("Bus Voltage = ".$dataStr." volts");
 
-        $choice = readline("\n\rHit Enter to Continue: ");
+        $dataStr = $this->_readP2Volt();
+        $this->out("Port 2 Voltage = ".$dataStr." volts");
+
+        $dataStr = $this->_readP1Volt();
+        $this->out("Port 1 Voltage = ".$dataStr." volts");
+
+        $dataStr = $this->_readSW3();
+        $this->out("Switch Voltage = ".$dataStr." volts");
+        
+        $result = $this->_powerDUTtest();
+        
+        $result = $this->_powerDUT(self::OFF);
+
+       $choice = readline("\n\rHit Enter to Continue: ");
+    }
+    
+    
+    /**
+    ************************************************************
+    * Power Up Battery Socializer Test
+    *
+    * This functions sends a command to the Eval Board to apply
+    * +12 volts to the Battery Socializer VBus.  It then 
+    * measures the VBus and the Vcc voltage from the socializer
+    * board to verify that it powered up okay.
+    *
+    * @return $result  boolean, true=pass, false=Failed
+    */
+    private function _powerDUTtest()
+    {
+       $result = $this->_powerDUT(self::ON);
+       
+       if ($result) {
+	  $volt1 = $this->_readBusVolt();
+	  $volt2 = $this->_readVCC();
+	    
+	  if (($volt1 <= 13.0) and ($volt1 >= 11.5 )) {
+	      $this->out("Bus Voltage = ".$volt1." volts - Passed");
+	      $result1 = true;
+	  } else {
+	      $this->out ("Bus Voltage = ".$volt1." volts - Failed");
+	      $result1 - false;
+	  }
+	  
+	  if (($volt2 <= 3.5) and ($volt2 >= 3.0)) {
+	      $this->out("Vcc Voltage = ".$volt2." volts - Passed");
+	      $result2 = true;
+	  } else {
+	      $this->out ("Vcc Voltage = ".$volt2." volts - Failed");
+	      $result1 - false;
+	  }
+	  
+	  if (!$result1 || !$result2) {
+	      $result = false;
+	  } else { 
+	      $result = true;
+	  }
+	  
+       } else {
+	  $this->out("Battery Socializer Power Up Failed!");
+       }
+       
+       return $result;
     }
 
+    /**
+    ***********************************************************
+    * Power DUT Routine
+    * 
+    * This function powers up the 10460301 board, measures the 
+    * bus voltage and the 3.3V to verify operation for the next
+    * step which is loading the test firmware.
+    *
+    * @return boolean result
+    */
+    private function _powerDUT($state)
+    {
+        $idNum = self::EVAL_BOARD_ID;
+        
+        if ($state == self:ON) {
+	  $cmdNum = self::SET_DIGITAL_COMMAND;
+	} else {
+	  $cmdNum = self::CLR_DIGITAL_COMMAND;
+	}
+	
+        $dataVal = "0300";
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->Out("ReplyData is ".$ReplyData." val");
+        
+        if ($ReplyData == "1E") {
+	    $result = true;
+	} else { 
+	    $result = false;
+	}
+	return $result;
+    }
+
+    
+
+    /**
+    ************************************************************
+    * Read Board Vcc Voltage
+    * 
+    * This function reads the Battery Socializer +3.3VDC supply
+    * voltage and returns the value.
+    * 
+    * @return $volts a floating point value for Vcc 
+    */
+    private function _readVCC()
+    {
+    
+	$rawVal = $this->_readADCinput(self::VCC_PORT);
+      
+        $steps = 1.0/ pow(2,11);
+        $volts = $steps * $rawVal;
+	$volts = $volts * 6.6;
+	
+	return $volts;
+    }
+
+     /**
+    ************************************************************
+    * Read BusVoltage
+    * 
+    * This function reads the Battery Socializer Bus
+    * voltage and returns the value.
+    * 
+    * @return $volts  a floating point value for Bus voltage 
+    */
+    private function _readBusVolt()
+    {
+    
+	$rawVal = $this->_readADCinput(self::VBUS_PORT);
+      
+        $steps = 1.0/ pow(2,11);
+        $volts = $steps * $rawVal;
+	$volts = $volts * 21;
+	
+	return $volts;
+    }
+    
+    /**
+    ************************************************************
+    * Read Port 2 Voltage
+    * 
+    * This function reads the Battery Socializer Port 2 
+    * voltage and returns the value.
+    * 
+    * @return $volts  a floating point value for Bus voltage 
+    */
+    private function _readP2Volt()
+    {
+    
+	$rawVal = $this->_readADCinput(self::P2_PORT);
+      
+        $steps = 1.0/ pow(2,11);
+        $volts = $steps * $rawVal;
+	$volts = $volts * 21;
+	
+	return $volts;
+    }
+  
+    /**
+    ************************************************************
+    * Read Port 1 Voltage
+    * 
+    * This function reads the Battery Socializer Port 1 
+    * voltage and returns the value.
+    * 
+    * @return $volts  a floating point value for Bus voltage 
+    */
+    private function _readP1Volt()
+    {
+    
+	$rawVal = $this->_readADCinput(self::P1_PORT);
+      
+        $steps = 1.0/ pow(2,11);
+        $volts = $steps * $rawVal;
+	$volts = $volts * 21;
+	
+	return $volts;
+    }
+    
+    /**
+    ************************************************************
+    * Read Switch 3V Voltage
+    * 
+    * This function reads the Battery Socializer switched supply
+    * voltage and returns the value.
+    * 
+    * @return $volts a floating point value for Vcc 
+    */
+    private function _readSW3()
+    {
+    
+	$rawVal = $this->_readADCinput(self::SW3V_PORT);
+      
+        $steps = 1.0/ pow(2,11);
+        $volts = $steps * $rawVal;
+	$volts = $volts * 6.6;
+	
+	return $volts;
+    }
 
     /**
     ************************************************************
@@ -212,7 +428,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     * specified by the input parameter and returns the reply 
     * data.
     * 
-    * @return string $reply data
+    * @return $newData hex value representing adc reading.
     *
     */
     private function _readADCinput($inputNum)
@@ -225,11 +441,8 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $newData = $this->_convertReplyData($ReplyData);
 
-        $steps = 1.0/ pow(2,11);
-        $volts = $steps * $newData;
-        $volts = $volts * 21;
 
-        return $volts;
+        return $newData;
     }
 
 
@@ -246,7 +459,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _troubleshoot104603Main()
     {
-
+	$this->display->clearScreen();
         $this->out("Not Done!");
         $choice = readline("\n\rHit Enter to Continue: ");
     }
@@ -278,27 +491,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     }
 
 
-    /**
-    ***********************************************************
-    * Power DUT Routine
-    * 
-    * This function powers up the 10460301 board, measures the 
-    * bus voltage and the 3.3V to verify operation for the next
-    * step which is loading the test firmware.
-    *
-    * @return boolean result
-    */
-    private function _powerDUTtest()
-    {
-        /* not done */
-        /* steps in Power DUT test */
-        /* 1: Send command to functional tester */
-        /* 2: Test Results */
-
-
-    }
-
-
+ 
     /**
     ************************************************************
     * Load test firmware routine
