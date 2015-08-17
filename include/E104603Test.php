@@ -79,8 +79,8 @@ class E104603Test extends \HUGnet\ui\Daemon
     const P1_PORT = 3;
     const SW3V_PORT = 4;
     
-    const ON 1;
-    const OFF 0:
+    const ON = 1;
+    const OFF = 0;
     
     
 
@@ -248,33 +248,34 @@ class E104603Test extends \HUGnet\ui\Daemon
        $result = $this->_powerDUT(self::ON);
        
        if ($result) {
-	  $volt1 = $this->_readBusVolt();
-	  $volt2 = $this->_readVCC();
+            $volt1 = $this->_readBusVolt();
+            $volt2 = $this->_readVCC();
+        
 	    
-	  if (($volt1 <= 13.0) and ($volt1 >= 11.5 )) {
-	      $this->out("Bus Voltage = ".$volt1." volts - Passed");
-	      $result1 = true;
-	  } else {
-	      $this->out ("Bus Voltage = ".$volt1." volts - Failed");
-	      $result1 - false;
-	  }
+            if (($volt1 <= 13.0) and ($volt1 >= 11.5 )) {
+                $this->out("Bus Voltage = ".$volt1." volts - Passed");
+                $result1 = true;
+            } else {
+                $this->out ("Bus Voltage = ".$volt1." volts - Failed");
+                $result1 - false;
+            }
 	  
-	  if (($volt2 <= 3.5) and ($volt2 >= 3.0)) {
-	      $this->out("Vcc Voltage = ".$volt2." volts - Passed");
-	      $result2 = true;
-	  } else {
-	      $this->out ("Vcc Voltage = ".$volt2." volts - Failed");
-	      $result1 - false;
-	  }
+            if (($volt2 <= 3.5) and ($volt2 >= 3.0)) {
+                $this->out("Vcc Voltage = ".$volt2." volts - Passed");
+                $result2 = true;
+            } else {
+                $this->out ("Vcc Voltage = ".$volt2." volts - Failed");
+                $result1 - false;
+            }
 	  
-	  if (!$result1 || !$result2) {
-	      $result = false;
-	  } else { 
-	      $result = true;
-	  }
+            if (!$result1 || !$result2) {
+                $result = false;
+            } else { 
+                $result = true;
+            }
 	  
        } else {
-	  $this->out("Battery Socializer Power Up Failed!");
+            $this->out("Battery Socializer Power Up Failed!");
        }
        
        return $result;
@@ -294,11 +295,11 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $idNum = self::EVAL_BOARD_ID;
         
-        if ($state == self:ON) {
-	  $cmdNum = self::SET_DIGITAL_COMMAND;
-	} else {
-	  $cmdNum = self::CLR_DIGITAL_COMMAND;
-	}
+        if ($state == self::ON) {
+            $cmdNum = self::SET_DIGITAL_COMMAND;
+        } else {
+            $cmdNum = self::CLR_DIGITAL_COMMAND;
+        }
 	
         $dataVal = "0300";
         
@@ -306,11 +307,15 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->Out("ReplyData is ".$ReplyData." val");
         
         if ($ReplyData == "1E") {
-	    $result = true;
-	} else { 
-	    $result = false;
-	}
-	return $result;
+            $result = true;
+        } else { 
+            $result = false;
+        }
+
+        $dataVal = "0301";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        return $result;
     }
 
     
@@ -327,13 +332,13 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _readVCC()
     {
     
-	$rawVal = $this->_readADCinput(self::VCC_PORT);
+        $rawVal = $this->_readADCinput(self::VCC_PORT);
       
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
-	$volts = $volts * 6.6;
+        $volts = $volts * 6.6;
 	
-	return $volts;
+        return $volts;
     }
 
      /**
@@ -352,9 +357,9 @@ class E104603Test extends \HUGnet\ui\Daemon
       
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
-	$volts = $volts * 21;
+        $volts = $volts * 21;
 	
-	return $volts;
+        return $volts;
     }
     
     /**
@@ -369,13 +374,13 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _readP2Volt()
     {
     
-	$rawVal = $this->_readADCinput(self::P2_PORT);
+        $rawVal = $this->_readADCinput(self::P2_PORT);
       
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
-	$volts = $volts * 21;
+        $volts = $volts * 21;
 	
-	return $volts;
+        return $volts;
     }
   
     /**
@@ -390,13 +395,13 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _readP1Volt()
     {
     
-	$rawVal = $this->_readADCinput(self::P1_PORT);
+        $rawVal = $this->_readADCinput(self::P1_PORT);
       
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
-	$volts = $volts * 21;
+        $volts = $volts * 21;
 	
-	return $volts;
+        return $volts;
     }
     
     /**
@@ -411,13 +416,13 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _readSW3()
     {
     
-	$rawVal = $this->_readADCinput(self::SW3V_PORT);
+        $rawVal = $this->_readADCinput(self::SW3V_PORT);
       
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
-	$volts = $volts * 6.6;
+        $volts = $volts * 6.6;
 	
-	return $volts;
+        return $volts;
     }
 
     /**
@@ -459,7 +464,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _troubleshoot104603Main()
     {
-	$this->display->clearScreen();
+        $this->display->clearScreen();
         $this->out("Not Done!");
         $choice = readline("\n\rHit Enter to Continue: ");
     }
@@ -475,9 +480,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _checkEvalBoard()
     {
-        
-        
-
         $Result = $this->_pingEndpoint(self::EVAL_BOARD_ID);
         if ($Result = true) {
             $this->_system->out("Eval Board Responding!");
@@ -487,7 +489,6 @@ class E104603Test extends \HUGnet\ui\Daemon
 
 
         return $Result;
-
     }
 
 
@@ -507,11 +508,10 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _loadTestFirmware()
     {
         $output = array();
-
         $this->display->displayHeader("Loading Test Firmware");
 
 
-        $Prog = "make -C ~/code/HOS 104607test-install SN=0x0000000020";
+        $Prog = "make -C ~/code/HOS 104603test-install SN=0x0000000020";
         exec($Prog, $output, $return);
 
         if ($return == 0) {
