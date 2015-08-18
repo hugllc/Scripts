@@ -208,24 +208,17 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->display->clearScreen();
 
         $result = $this->_checkEvalBoard();
+        if ($result) {
+            $result = $this->_powerDUTtest();
+            if ($result) {
+                /* next step is to load DUT test firmware */
+                /* next test is to receive powerup packet */
+                $this->display->displayPassed();
+            } else {
+                $this->display->displayFailed();
+            }
+        }
 
-        $dataStr = $this->_readVCC();
-        $this->out("Vcc Voltage = ".$dataStr." volts");
-
-        $dataStr = $this->_readBusVolt();
-        $this->out("Bus Voltage = ".$dataStr." volts");
-
-        $dataStr = $this->_readP2Volt();
-        $this->out("Port 2 Voltage = ".$dataStr." volts");
-
-        $dataStr = $this->_readP1Volt();
-        $this->out("Port 1 Voltage = ".$dataStr." volts");
-
-        $dataStr = $this->_readSW3();
-        $this->out("Switch Voltage = ".$dataStr." volts");
-        
-        $result = $this->_powerDUTtest();
-        
         $result = $this->_powerDUT(self::OFF);
 
        $choice = readline("\n\rHit Enter to Continue: ");
@@ -246,6 +239,9 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _powerDUTtest()
     {
        $result = $this->_powerDUT(self::ON);
+
+       /* sleep 30mS */
+       usleep(30000);
        
        if ($result) {
             $volt1 = $this->_readBusVolt();
@@ -296,24 +292,37 @@ class E104603Test extends \HUGnet\ui\Daemon
         $idNum = self::EVAL_BOARD_ID;
         
         if ($state == self::ON) {
-            $cmdNum = self::SET_DIGITAL_COMMAND;
+            $cmdNum = self::SET_DIGITAL_COMMAND; /* ON */
         } else {
-            $cmdNum = self::CLR_DIGITAL_COMMAND;
+            $cmdNum = self::CLR_DIGITAL_COMMAND; /* OFF */
         }
 	
         $dataVal = "0300";
-        
+        /* set or clear relay K1 */
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        $this->Out("ReplyData is ".$ReplyData." val");
         
         if ($ReplyData == "1E") {
-            $result = true;
+            $result1 = true;
         } else { 
-            $result = false;
+            $result1 = false;
         }
 
         $dataVal = "0301";
+        /* set or clear relay K2 */
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        if ($ReplyData == "1F") {
+            $result2 = true;
+        } else {
+            $result2 = false;
+        }
+
+        if (($result1 == true) and ($result2 == true)) {
+            $result = true;
+        } else {
+            $result = false;
+        }
+
 
         return $result;
     }
@@ -465,6 +474,9 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _troubleshoot104603Main()
     {
         $this->display->clearScreen();
+
+
+        $this->out("Delay time = ".$difftime." seconds");
         $this->out("Not Done!");
         $choice = readline("\n\rHit Enter to Continue: ");
     }
@@ -590,6 +602,8 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     }
 
+        
+
 
 
     /*****************************************************************************/
@@ -644,7 +658,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _sendPacket($Sn, $Cmd, $DataVal)
     {
 
-        $this->_system->out("Data is ".$DataVal);
 
 
         $dev = $this->_system->device($Sn);
