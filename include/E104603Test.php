@@ -66,7 +66,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     const TEST_ID = 0x20;
     const EVAL_BOARD_ID = 0x30;
-    const UUT_BOARD_ID = 0x8013;
+    const UUT_BOARD_ID = 0x8012;
 
     const TEST_ANALOG_COMMAND  = 0x20;
     const SET_DIGITAL_COMMAND = 0x26;
@@ -495,7 +495,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _checkEvalBoard()
     {
         $Result = $this->_pingEndpoint(self::EVAL_BOARD_ID);
-        if ($Result = true) {
+        if ($Result == true) {
             $this->_system->out("Eval Board Responding!");
         } else {
             $this->_system->out("Eval Board Failed to Respond!");
@@ -517,7 +517,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _checkUUTBoard()
     {
         $Result = $this->_pingEndpoint(self::UUT_BOARD_ID);
-        if ($Result = true) {
+        if ($Result == true) {
             $this->_system->out("UUT Board Responding!");
         } else {
             $this->_system->out("UUT Board Failed to Respond!");
@@ -658,8 +658,8 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $dev = $this->_system->device($Sn);
         $result = $dev->action()->ping();
-        //var_dump($result);
-        return true;
+        var_dump($result);
+        return $result;
     }
 
 
