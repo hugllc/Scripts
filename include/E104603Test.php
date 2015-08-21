@@ -68,17 +68,32 @@ class E104603Test extends \HUGnet\ui\Daemon
     const EVAL_BOARD_ID = 0x30;
     const UUT_BOARD_ID = 0x8012;
 
-    const TEST_ANALOG_COMMAND  = 0x20;
-    const SET_DIGITAL_COMMAND = 0x26;
-    const CLR_DIGITAL_COMMAND = 0x27;
+    const TEST_ANALOG_COMMAND   = 0x23;
+    const SET_DIGITAL_COMMAND   = 0x24;
+    const CLR_DIGITAL_COMMAND   = 0x25;
+    const SET_LED_COMMAND       = 0x26;
+    const SET_3V_SW_COMMAND     = 0x27;
+    const SET_POWERPORT_COMMAND = 0x28;
 
     const HEADER_STR    = "Battery Socializer Test & Program Tool";
     
-    const VCC_PORT = 0;
-    const VBUS_PORT = 1;
-    const P2_PORT = 2;
-    const P1_PORT = 3;
-    const SW3V_PORT = 4;
+    const TSTR_VCC_PORT  = 0;
+    const TSTR_VBUS_PORT = 1;
+    const TSTR_P2_PORT   = 2;
+    const TSTR_P1_PORT   = 3;
+    const TSTR_SW3V_PORT = 4;
+    
+    const UUT_P2_VOLT    = 0;
+    const UUT_BUS_TEMP   = 1;
+    const UUT_P2_TEMP    = 2;
+    const UUT_P1_CURRENT = 3;
+    const UUT_P2_CURRENT = 4;
+    const UUT_BUS_VOLT   = 5;
+    const UUT_EXT_TEMP2  = 6;
+    const UUT_EXT_TEMP3  = 7;
+    const UUT_P1_TEMP    = 8;
+    const UUT_P1_VOLT    = 9;
+    const UUT_VCC_VOLT   = 10;
     
     const ON = 1;
     const OFF = 0;
@@ -329,7 +344,12 @@ class E104603Test extends \HUGnet\ui\Daemon
         return $result;
     }
 
-    
+    /*****************************************************************************/
+    /*                                                                           */
+    /*               T E S T E R   A N A L O G   R O U T I N E S                 */
+    /*                                                                           */
+    /*****************************************************************************/
+   
 
     /**
     ************************************************************
@@ -340,10 +360,10 @@ class E104603Test extends \HUGnet\ui\Daemon
     * 
     * @return $volts a floating point value for Vcc 
     */
-    private function _readVCC()
+    private function _readTesterVCC()
     {
     
-        $rawVal = $this->_readADCinput(self::VCC_PORT);
+        $rawVal = $this->_readTesterADCinput(self::TSTR_VCC_PORT);
       
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
@@ -361,10 +381,10 @@ class E104603Test extends \HUGnet\ui\Daemon
     * 
     * @return $volts  a floating point value for Bus voltage 
     */
-    private function _readBusVolt()
+    private function _readTesterBusVolt()
     {
     
-	$rawVal = $this->_readADCinput(self::VBUS_PORT);
+	$rawVal = $this->_readTesterADCinput(self::TSTR_VBUS_PORT);
       
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
@@ -382,10 +402,10 @@ class E104603Test extends \HUGnet\ui\Daemon
     * 
     * @return $volts  a floating point value for Bus voltage 
     */
-    private function _readP2Volt()
+    private function _readTesterP2Volt()
     {
     
-        $rawVal = $this->_readADCinput(self::P2_PORT);
+        $rawVal = $this->_readTesterADCinput(self::TSTR_P2_PORT);
       
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
@@ -403,10 +423,10 @@ class E104603Test extends \HUGnet\ui\Daemon
     * 
     * @return $volts  a floating point value for Bus voltage 
     */
-    private function _readP1Volt()
+    private function _readTesterP1Volt()
     {
     
-        $rawVal = $this->_readADCinput(self::P1_PORT);
+        $rawVal = $this->_readTesterADCinput(self::TSTR_P1_PORT);
       
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
@@ -424,10 +444,10 @@ class E104603Test extends \HUGnet\ui\Daemon
     * 
     * @return $volts a floating point value for Vcc 
     */
-    private function _readSW3()
+    private function _readTesterSW3()
     {
     
-        $rawVal = $this->_readADCinput(self::SW3V_PORT);
+        $rawVal = $this->_readTesterADCinput(self::TSTR_SW3V_PORT);
       
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
@@ -447,7 +467,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     * @return $newData hex value representing adc reading.
     *
     */
-    private function _readADCinput($inputNum)
+    private function _readTesterADCinput($inputNum)
     {
         $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::TEST_ANALOG_COMMAND;
@@ -461,6 +481,41 @@ class E104603Test extends \HUGnet\ui\Daemon
         return $newData;
     }
 
+    /*****************************************************************************/
+    /*                                                                           */
+    /*                 U U T   A N A L O G   R O U T I N E S                     */
+    /*                                                                           */
+    /*****************************************************************************/
+    
+    
+     /**
+    ************************************************************
+    * Read Unit Under Test ADC Input Routine
+    *
+    * This function reads the UUT board analog inputs
+    * specified by the input parameter and returns the reply 
+    * data.
+    * 
+    * @return $newData hex value representing adc reading.
+    *
+    */
+    private function _readUUT_ADCinput($inputNum)
+    {
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::TEST_ANALOG_COMMAND;
+        $dataVal = sprintf("0%s",$inputNum);
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        $newData = $this->_convertReplyData($ReplyData);
+
+
+        return $newData;
+    }
+   
+    
+    
+    
 
    
     /**
