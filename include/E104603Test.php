@@ -66,7 +66,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     const TEST_ID = 0x20;
     const EVAL_BOARD_ID = 0x30;
-    const UUT_BOARD_ID = 0x8012;
+    const UUT_BOARD_ID = 0x20;
 
     const TEST_ANALOG_COMMAND   = 0x23;
     const SET_DIGITAL_COMMAND   = 0x24;
@@ -90,7 +90,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     const UUT_P2_CURRENT = 4;
     const UUT_BUS_VOLT   = 5;
     const UUT_EXT_TEMP2  = 6;
-    const UUT_EXT_TEMP3  = 7;
+    const UUT_EXT_TEMP1  = 7;
     const UUT_P1_TEMP    = 8;
     const UUT_P1_VOLT    = 9;
     const UUT_VCC_VOLT   = 10;
@@ -225,9 +225,11 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $result = $this->_checkEvalBoard();
         if ($result) {
-            $result = $this->_powerDUTtest();
+            $result = true; //$this->_powerUUTtest();
             if ($result) {
                 $result = $this->_checkUUTBoard();
+
+                $this->_readUUTVoltages();
                 /* next step is to load DUT test firmware */
                 /* next test is to receive powerup packet */
                 $this->display->displayPassed();
@@ -236,12 +238,12 @@ class E104603Test extends \HUGnet\ui\Daemon
             }
         }
 
-        $result = $this->_powerDUT(self::OFF);
+        //$result = $this->_powerUUT(self::OFF);
 
        $choice = readline("\n\rHit Enter to Continue: ");
     }
     
-    
+
     /**
     ************************************************************
     * Power Up Battery Socializer Test
@@ -253,9 +255,9 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return $result  boolean, true=pass, false=Failed
     */
-    private function _powerDUTtest()
+    private function _powerUUTtest()
     {
-       $result = $this->_powerDUT(self::ON);
+       $result = $this->_powerUUT(self::ON);
 
        /* sleep 30mS */
        usleep(30000);
@@ -304,7 +306,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return boolean result
     */
-    private function _powerDUT($state)
+    private function _powerUUT($state)
     {
         $idNum = self::EVAL_BOARD_ID;
         
@@ -343,6 +345,86 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         return $result;
     }
+
+    /**
+    ************************************************************
+    * Test UUT Routine
+    *
+    * This function steps through the tests for the Unit Under
+    * Test (UUT) after the test firmware has been loaded.
+    *
+    * @return $result  
+    */
+    private function _testUUT()
+    {
+
+
+        $result = true;
+        /************************************************************/
+        /* list below are the test steps and functions to implement */
+        /* 1.  3.3V_Switched Test                                   */
+        /* 2.  On Board Thermistor tests                            */
+        /* 3.  LED tests                                            */
+        /* 4.  Port 1 load test                                     */
+        /* 5.  Port 1 overcurrent trip test                         */
+        /* 6.  Port 2 load test                                     */
+        /* 7.  Port 2 overcurrent trip test                         */
+        /* 8.  Vbus load test                                       */
+        /* 9.  External thermistor test                             */
+        /************************************************************/
+
+        return $result;
+    }
+
+    /**
+    ************************************************************
+    * Switched 3.3V test routine
+    *
+    * This function sends a command to the UUT to turn on the 
+    * switched 3.3V and then measures the 3.3V Switched 
+    * voltage to verify the response.
+    *
+    * @return $result
+    */
+    private function _testUUTswitched3V3()
+    {
+
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_3V_SW_COMMAND;
+        $dataVal = "01";
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        $newData = $this->_convertReplyData($ReplyData);
+        $this->out("3v3 reply data :".$newData." !");
+
+        $volts = $this->_readTesterSW3();
+        $this->out("3.3V measures ".$volts." volts!");
+
+        return true;
+
+    }
+
+    /**
+    *****************************************************************
+    * Test On Board Thermistors Routine
+    *
+    * This function reads the temperatures for the on board
+    * thermistors located at the Vbus, at Port 1 and at Port 2.
+    * Tests will be made shortly after power up and before load 
+    * testing so they will be near ambient temperature.
+    *
+    * @return $result
+    */
+    private function testUUTThermistors()
+    {
+        $busTemp = $this->_readUUTBusTemp();
+        $p1Temp = $this->_readUUTP1Temp();
+        $p2Temp = $this->_readUUTP2Temp();
+
+    }
+
+
 
     /*****************************************************************************/
     /*                                                                           */
@@ -487,7 +569,264 @@ class E104603Test extends \HUGnet\ui\Daemon
     /*                                                                           */
     /*****************************************************************************/
     
-    
+    /**
+    ************************************************************
+    * Read UUT Voltages Routine
+    *
+    * This routine reads the voltages measured internally by the
+    * UUT and displays those values.
+    *
+    * @return void
+    */
+    private function _readUUTVoltages()
+    {
+        $p2Volts = $this->_readUUTP2Volts();
+        $this->out("Port 2 voltage is ".$p2Volts." volts!");
+
+        $busTemp = $this->_readUUTBusTemp();
+        $this->out("Bus temp data is ".$busTemp." !");
+
+        $p2Temp = $this->_readUUTP2Temp();
+        $this->out("Port 2 temp data is ".$p2Temp." !");
+
+        $p1Current = $this->_readUUTP1Current();
+        $this->out("Port 1 current data is ".$p1Current." !");
+
+        $p2Current = $this->_readUUTP2Current();
+        $this->out("Port 2 current data is ".$p2Current." !");
+
+        $BusVolts = $this->_readUUTBusVolts();
+        $this->out("Bus Voltage is ".$BusVolts." volts!");
+
+        $extTemp2 = $this->_readUUTExtTemp2();
+        $this->out("External temp 2 data is ".$extTemp2." !");
+
+        $extTemp1 = $this->_readUUTExtTemp1();
+        $this->out("External temp 1 data is ".$extTemp1." !");
+
+        $p1Temp = $this->_readUUTP1Temp();
+        $this->out("Port 1 temp data is ".$p1Temp." !");
+
+        $p1Volts = $this->_readUUTP1Volts();
+        $this->out("Port 1 voltage is ".$p1Volts." volts!");
+
+        $vccVolts = $this->_readUUTVccVolts();
+        $this->out("Vcc Voltage is ".$vccVolts." volts!");
+
+
+    }
+
+    /**
+    ************************************************************
+    * Read UUT Port 2 Voltage Routine
+    * 
+    * This function reads the Port 2 Voltage internally measured 
+    * by the Unit Under Test (UUT).  Index 0
+    *
+    * @return $volts 
+    */
+    private function _readUUTP2Volts()
+    {
+        $rawVal = $this->_readUUT_ADCinput(self::UUT_P2_VOLT);
+
+        $steps = 1.0/ pow(2,11);
+        $volts = $steps * $rawVal;
+        $volts = $volts * 21;
+        
+        return $volts;
+
+    }
+
+     /**
+    ************************************************************
+    * Read UUT Bus Temperature Routine
+    * 
+    * This function reads the Bus temperature internally measured 
+    * by the Unit Under Test (UUT). Index 1
+    *
+    * @return $rawVal 
+    */
+    private function _readUUTBusTemp()
+    {
+        $rawVal = $this->_readUUT_ADCinput(self::UUT_BUS_TEMP);
+
+        
+        return $rawVal;
+
+    }
+
+     /**
+    *****************************************************************
+    * Read UUT Port 2 Temperature Routine
+    * 
+    * This function reads the Port 2 temperature internally measured 
+    * by the Unit Under Test (UUT). Index 2
+    *
+    * @return $rawVal 
+    */
+    private function _readUUTP2Temp()
+    {
+        $rawVal = $this->_readUUT_ADCinput(self::UUT_P2_TEMP);
+
+        
+        return $rawVal;
+
+    }
+
+     /**
+    ************************************************************
+    * Read UUT Port 1 Current Routine
+    * 
+    * This function reads the Port 1 Current flow measured 
+    * by the Unit Under Test (UUT).  Index 3
+    *
+    * @return $volts 
+    */
+    private function _readUUTP1Current()
+    {
+        $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_CURRENT);
+
+        
+        return $rawVal;
+
+    }
+
+     /**
+    ************************************************************
+    * Read UUT Port 2 Current Routine
+    * 
+    * This function reads the Port 2 Current flow measured 
+    * by the Unit Under Test (UUT).  Index 4
+    *
+    * @return $rawVal
+    */
+    private function _readUUTP2Current()
+    {
+        $rawVal = $this->_readUUT_ADCinput(self::UUT_P2_CURRENT);
+
+        
+        return $rawVal;
+
+    }
+   /**
+    ************************************************************
+    * Read UUT Bus Voltage Routine
+    * 
+    * This function reads the Bus Voltage internally measured 
+    * by the Unit Under Test (UUT). Index 5
+    *
+    * @return $volts 
+    */
+    private function _readUUTBusVolts()
+    {
+        $rawVal = $this->_readUUT_ADCinput(self::UUT_BUS_VOLT);
+
+        $steps = 1.0/ pow(2,11);
+        $volts = $steps * $rawVal;
+        $volts = $volts * 21;
+        
+        return $volts;
+
+    }
+
+     /**
+    *****************************************************************
+    * Read UUT External Temperature 2 Routine
+    * 
+    * This function reads the external temperature 2 measured 
+    * by the Unit Under Test (UUT). Index 6
+    *
+    * @return $rawVal 
+    */
+    private function _readUUTExtTemp2()
+    {
+        $rawVal = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP2);
+
+        
+        return $rawVal;
+
+    }
+     /**
+    *****************************************************************
+    * Read UUT External Temperature 1 Routine
+    * 
+    * This function reads the external temperature 1 measured 
+    * by the Unit Under Test (UUT). Index 7
+    *
+    * @return $rawVal 
+    */
+    private function _readUUTExtTemp1()
+    {
+        $rawVal = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP1);
+
+        
+        return $rawVal;
+
+    }
+
+     /**
+    *****************************************************************
+    * Read UUT Port 1 Temperature Routine
+    * 
+    * This function reads the Port 1 temperature internally measured 
+    * by the Unit Under Test (UUT). Index 8
+    *
+    * @return $rawVal 
+    */
+    private function _readUUTP1Temp()
+    {
+        $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_TEMP);
+
+        
+        return $rawVal;
+
+    }
+
+
+    /**
+    ************************************************************
+    * Read UUT Port 1 Voltage Routine
+    * 
+    * This function reads the Port 1 Voltage internally measured 
+    * by the Unit Under Test (UUT).  Index 9
+    *
+    * @return $volts 
+    */
+    private function _readUUTP1Volts()
+    {
+        $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
+
+        $steps = 1.0/ pow(2,11);
+        $volts = $steps * $rawVal;
+        $volts = $volts * 21;
+        
+        return $volts;
+
+    }
+
+
+    /**
+    ************************************************************
+    * Read UUT Vcc Voltage Routine
+    * 
+    * This function reads the Vcc Voltage internally measured 
+    * by the Unit Under Test (UUT). Index A
+    *
+    * @return $volts 
+    */
+    private function _readUUTVccVolts()
+    {
+        $rawVal = $this->_readUUT_ADCinput(self::UUT_VCC_VOLT);
+
+        $steps = 1.0/ pow(2,11);
+        $volts = $steps * $rawVal;
+        $volts = $volts * 21;
+        
+        return $volts;
+
+    }
+
+
      /**
     ************************************************************
     * Read Unit Under Test ADC Input Routine
