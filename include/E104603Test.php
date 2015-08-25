@@ -416,7 +416,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return $result
     */
-    private function testUUTThermistors()
+    private function testUUTthermistors()
     {
         $busTemp = $this->_readUUTBusTemp();
         $p1Temp = $this->_readUUTP1Temp();
@@ -424,7 +424,406 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     }
 
+    /**
+    **************************************************************
+    * Test LEDs Routine
+    *
+    * This function sets the LED's in different patterns of 
+    * on and off states and asks the operator to verify these 
+    * states.
+    *
+    * @return $result
+    */
+    private function testUUTleds()
+    {
+        /* turn on all LEDs */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_LED_COMMAND;
+        $dataVal = "03";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
+       $choice = readline("\n\rAre all 8 LEDs on? (Y/N) ");
+
+         /* turn on all Green LEDs */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_LED_COMMAND;
+        $dataVal = "01";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+       $choice = readline("\n\rAre all 4 Green LEDs on? (Y/N) ");
+       
+         /* turn on all Red LEDs */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_LED_COMMAND;
+        $dataVal = "02";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+       $choice = readline("\n\rAre all 4 Red LEDs on? (Y/N) ");
+
+        /* turn off all LEDs */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_LED_COMMAND;
+        $dataVal = "00";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+       $choice = readline("\n\rAre all 8 LEDs off? (Y/N) ");
+        
+        $result = true;
+
+        return $result;
+
+    }
+
+    /**
+    ***************************************************************
+    * Port 1 Load Test Routine
+    *
+    * This function connects a load to Port 1 and turns on the 
+    * FET.  It then measures the port voltage and reads the 
+    * Port voltage and current from the UUT.  It tests the 
+    * voltage and current against expected values for each.  Then
+    * it applies the fault signal to verify that the port is 
+    * turned off during a fault condition.
+    * 
+    * @return $result
+    */
+    private function testUUTport1()
+    {
+        /******** test steps ********/
+        /* 1.  connect 12 ohm load  to port 1 */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0303"; /* Relay K4 on */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 2.  turn on Port 1 */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWWERPORT_COMMAND; /* ON */
+        $dataVal = "0101";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 3.  delay 100mS */
+        usleep(100000);
+
+        /* 4.  Eval Board Measure Port 1 Voltage */
+        $voltsP1 = $this->_readTesterP1Volt();
+
+        /* 5.  Get UUT Port 1 voltage */
+        $p1Volts = $this->_readUUTP1Volts();
+
+        /* 6.  Get UUT Port 1 Current */
+        $p1Amps = $this->_readUUTP1Current();
+        /* 7.  Test voltage & current */
+
+        /* 8.  Set the fault signal */
+        /* 9.  delay 100mS */
+        usleep(100000);
+
+        /* 10. Eval Board Measure Port 1 voltage */
+        $voltsP2 = $this->_readTesterP1Volt();
+
+        /* 11. Get UUT Port 1 voltage */
+        $p1Volts = $this->_readUUTP1Volts();
+
+        /* 12. Get UUT Port 1 Current */
+        $p1Amps = $this->_readUUTP1Current();
+
+        /* 13. Remove the fault signal */
+        /* 14. delay 100mS */
+        usleep(100000);
+
+        /* 15. Turn off Port 1 */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWWERPORT_COMMAND; 
+        $dataVal = "0100"; /* PORT 1 OFF */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 16.  Disconnect load resistor */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0303"; /* Relay K4 off */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+    }
+
+    /**
+    ***************************************************************
+    * Port 2 Load Test Routine
+    *
+    * This function connects a load to Port 2 and turns on the 
+    * FET.  It then measures the port voltage and reads the 
+    * Port voltage and current from the UUT.  It tests the 
+    * voltage and current against expected values for each.  Then
+    * it applies the fault signal to verify that the port is 
+    * turned off during a fault condition.
+    * 
+    * @return $result
+    */
+    private function testUUTport2()
+    {
+        /******** test steps ********/
+        /* 1.  connect 12 ohm load  to port 2 */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0205"; /* Relay K6 ON */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 2.  turn on Port 2 */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWWERPORT_COMMAND; 
+        $dataVal = "0201";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 3.  delay 100mS */
+        usleep(100000);
+
+        /* 4.  Eval Board Measure Port 2 Voltage */
+        $voltsP2 = $this->_readTesterP2Volt();
+
+        /* 5.  Get UUT Port 2 voltage */
+        $p2Volts = $this->_readUUTP2Volts();
+
+        /* 6.  Get UUT Port 2 Current */
+        $p2Amps = $this->_readUUTP2Current();
+        /* 7.  Test voltage & current */
+
+        /* 8.  Set the fault signal */
+        /* 9.  delay 100mS */
+        usleep(100000);
+
+        /* 10. Eval Board Measure Port 2 voltage */
+        $voltsP2 = $this->_readTesterP2Volt();
+
+        /* 11. Get UUT Port 2 voltage */
+        $p2Volts = $this->_readUUTP2Volts();
+
+        /* 12. Get UUT Port 2 Current */
+        $p2Amps = $this->_readUUTP2Current();
+
+        /* 13. Remove the fault signal */
+        /* 14. delay 100mS */
+        usleep(100000);
+
+        /* 15. Turn off Port 2 */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWWERPORT_COMMAND; 
+        $dataVal = "0200"; /* PORT 2 OFF */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 16.  Disconnect load resistor */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0205"; /* Relay K6 Off */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+    }
+
+
+    /**
+    ***************************************************************
+    * VBus Load Test Routine
+    *
+    * This function connects +12V to Port1, disconnects +12V from
+    * VBus, turns on Port 1 and connects a load to VBus.  It then
+    * measures the VBus voltage and reads the Port voltage and 
+    * current from the UUT.  It tests the voltage and current 
+    * against expected values for each.  
+    * 
+    * @return $result
+    */
+    private function testUUTvbus()
+    {
+        /******** test steps **********/
+        /* 1.  Connect +12V to Port 1  */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0302"; /* Relay K3 ON Selects +12V */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0303"; /* Relay K4 on connects +12V to Port 1 */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 2.  Delay 100mS             */
+        usleep(100000);
+
+        /* 3.  Disconnect +12V from Vbus */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0301"; /* Relay K2 Off removes +12V from Vbus */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 4.  Connect 12 Ohm Load to Vbus */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0300"; /* Relay K1 Off selects 12 Ohm Load */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0301"; /* Relay K2 On connects 12 Ohm load to Vbus */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 5.  Turn on Port 1 */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWWERPORT_COMMAND; /* ON */
+        $dataVal = "0101";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 6.  Delay 100mS */
+        usleep(100000);
+
+        /* 7.  Eval measure Vbus voltage */
+        $vbusVolts = $this->_readTesterBusVolt();
+
+        /* 8.  Get UUT Port 1 voltage */
+        $p1Volts = $this->_readUUTP1Volts();
+
+        /* 9.  Get UUT Port 1 current */
+        $p1Amps = $this->_readUUTP1Current();
+
+        /* 10. Test current & voltage values. */
+
+        /* 11. Turn off Port 1 */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWWERPORT_COMMAND; 
+        $dataVal = "0100"; /* PORT 1 OFF */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 12. Delay 100mS */
+        usleep(100000);
+
+        /* 13. Eval measure Vbus Voltage */
+        $vbusVolts = $this->_readTesterBusVolt();
+
+        /* 14. Connect +12V to Port 2 */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0204"; /* Relay K5 On selects +12V */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0205"; /* Relay K6 On connects +12V to Port 2 */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 15. Disconnect +12V from Port 1 */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0303"; /* Relay K4 Off disconnects +12V  from Port 1*/
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0302"; /* Relay K3 Off selects 12 Ohm load  */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 16. Turn on Port 2 */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWWERPORT_COMMAND; 
+        $dataVal = "0201";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 17. Eval measure Vbus voltage */
+        $vbusVolts = $this->_readTesterBusVolt();
+
+        /* 18. Get UUT Port 2 voltage */
+        $p2Volts = $this->_readUUTP2Volts();
+
+        /* 19. Get UUT Port 2 Current */
+        $p2Amps = $this->_readUUTP2Current();
+
+        /* 20. Test current and voltage values */
+
+        /* 21. Turn off Port 2 */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWWERPORT_COMMAND; 
+        $dataVal = "0200"; /* PORT 2 OFF */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 22. Delay 100mS */
+        usleep(100000);
+
+        /* 23. Eval measure Vbus voltage */
+        $vbusVolts = $this->_readTesterBusVolt();
+
+        /* 24. Disconnect load from Vbus */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0301"; /* Relay K2 Off removes load from Vbus */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 25. Connect +12V to Vbus */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0301"; /* Relay K1 On selects +12 Volts */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0301"; /* Relay K2 On connects +12V to Vbus */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 26. Disconnect +12V from Port 2 */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0205"; /* Relay K6 Off removes +12V from Port 2*/
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0204"; /* Relay K5 Off selects 12 Ohm load */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+   }
+
+    /**
+    *******************************************************************
+    * External Thermistor Test Routine
+    *
+    * This function tests the external thermistor connections by 
+    * connecting known resistance values to the thermistor connections
+    * and then testing the UUT measurement values.
+    *
+    * @return $result
+    */
+    private function _testUUTexttherms()
+    {
+        /*********** test steps ***********/
+        /* 1. connect resistor to ext therm 1 */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0206"; /* Relay K7 On connects resistor to ext therm 1 */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 2. connect resistor to ext therm 2 */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0207"; /* Relay K8 On connects resistor to ext therm 2 */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 3. read ext therm 1 value from UUT */
+        $extTemp1 = $this->_readUUTExtTemp1();
+
+        /* 4. read ext therm 2 value from UUT */
+        $extTemp1 = $this->_readUUTExtTemp1();
+
+        /* 5. Test thermistor values          */
+
+        /* 6. disconnect resistor from ext therm 1 */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0206"; /* Relay K7 Off disconnects resistor */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 7. disconnect resistor from ext therm 2 */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0207"; /* Relay K8 Off disconnects resistor */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+    }
 
     /*****************************************************************************/
     /*                                                                           */
