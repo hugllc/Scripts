@@ -93,7 +93,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     const UUT_EXT_TEMP1  = 7;
     const UUT_P1_TEMP    = 8;
     const UUT_P1_VOLT    = 9;
-    const UUT_VCC_VOLT   = 10;
+    const UUT_VCC_VOLT   = 0xA;
     
     const ON = 1;
     const OFF = 0;
@@ -230,6 +230,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                 $result = $this->_checkUUTBoard();
 
                 $this->_readUUTVoltages();
+                $this->_testUUTleds();
                 /* next step is to load DUT test firmware */
                 /* next test is to receive powerup packet */
                 $this->display->displayPassed();
@@ -416,7 +417,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return $result
     */
-    private function testUUTthermistors()
+    private function _testUUTthermistors()
     {
         $busTemp = $this->_readUUTBusTemp();
         $p1Temp = $this->_readUUTP1Temp();
@@ -434,7 +435,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return $result
     */
-    private function testUUTleds()
+    private function _testUUTleds()
     {
         /* turn on all LEDs */
         $idNum = self::UUT_BOARD_ID;
@@ -487,7 +488,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     * 
     * @return $result
     */
-    private function testUUTport1()
+    private function _testUUTport1()
     {
         /******** test steps ********/
         /* 1.  connect 12 ohm load  to port 1 */
@@ -559,7 +560,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     * 
     * @return $result
     */
-    private function testUUTport2()
+    private function _testUUTport2()
     {
         /******** test steps ********/
         /* 1.  connect 12 ohm load  to port 2 */
@@ -631,7 +632,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     * 
     * @return $result
     */
-    private function testUUTvbus()
+    private function _testUUTvbus()
     {
         /******** test steps **********/
         /* 1.  Connect +12V to Port 1  */
@@ -1028,6 +1029,9 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_P2_VOLT);
 
+        if ($rawVal > 0x7FFF) {
+            $rawVal = 0x0000;
+        }
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
         $volts = $volts * 21;
@@ -1195,6 +1199,9 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
 
+        if ($rawVal > 0x7fff) {
+            $rawVal = 01;
+        }
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
         $volts = $volts * 21;
@@ -1215,11 +1222,11 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _readUUTVccVolts()
     {
-        $rawVal = $this->_readUUT_ADCinput(self::UUT_VCC_VOLT);
+        $rawVal = $this->_readUUT_ADCinput("a");
 
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
-        $volts = $volts * 21;
+        $volts = $volts * 10;
         
         return $volts;
 
