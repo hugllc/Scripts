@@ -225,21 +225,26 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $result = $this->_checkEvalBoard();
         if ($result) {
-            $result = true; //$this->_powerUUTtest();
+            $result = $this->_powerUUT(self::ON);
+            /* sleep 1 seconds */
+            sleep(1);
             if ($result) {
                 $result = $this->_checkUUTBoard();
-
-                $this->_readUUTVoltages();
-                $this->_testUUTleds();
-                /* next step is to load DUT test firmware */
-                /* next test is to receive powerup packet */
-                $this->display->displayPassed();
+                if ($result) {
+                    $this->_readUUTVoltages();
+                    //$this->_testUUTleds();
+                    /* next step is to load DUT test firmware */
+                    /* next test is to receive powerup packet */
+                    $this->display->displayPassed();
+                } else {
+                    $this->display->displayFailed();
+                }
             } else {
                 $this->display->displayFailed();
             }
         }
 
-        //$result = $this->_powerUUT(self::OFF);
+        $result = $this->_powerUUT(self::OFF);
 
        $choice = readline("\n\rHit Enter to Continue: ");
     }
@@ -326,7 +331,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         } else { 
             $result1 = false;
         }
-
+        sleep(1);
         $dataVal = "0301";
         /* set or clear relay K2 */
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
