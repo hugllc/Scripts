@@ -195,23 +195,13 @@ class E104603Test extends \HUGnet\ui\Daemon
     * 
     * Test Steps 
     *   1: Check Eval Board
-    *   2: Power Up DUT test
-    *   3: Load test firmware into DUT
-    *   4: Ping DUT
-    *   5: DUT to turn on switched 3V
-    *   6: DUT to return Bus Voltage
-    *   7: Tester measures Bus & 3V_SW
-    *   8: DUT to return board thermistor values
-    *   9: DUT to cycle through LED's
-    *  10: Run Port 1 Load Test
-    *  11: Run Port 2 Load Test
-    *  12: Run Port 1 Fault Test
-    *  13: Run Port 2 Fault Test
-    *  14: Run External Therm 1 Test
-    *  15: Run External Therm 2 Test
-    *  16: Load DUT bootloader and config data
-    *  17: Load DUT application code
-    *  18: Power cycle DUT & verify communications
+    *   2: Power Up UUT Test
+    *   3: Load test firmware into UUT
+    *   4: Ping UUT to test communications
+    *   5: Run UUT tests
+    *  16: Load UUT bootloader and config data
+    *  17: Load UUT application code
+    *  18: Power cycle UUT & verify communications
     *  19: Power Down
     *  20: Display passed and log data
     *
@@ -222,93 +212,87 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $exitTest = false;
         $this->display->clearScreen();
+        $this->display->displayHeader("Testing 104603 Dual Battery Socializer");
 
         $result = $this->_checkEvalBoard();
         if ($result) {
-            $result = $this->_powerUUT(self::ON);
-            /* sleep 1 seconds */
-            sleep(1);
+            $result = $this->_testUUTpower();
             if ($result) {
+                $this->out("UUT Power UP - Passed");
+                sleep(1);
+                //$this->_loadTestFirmware();
                 $result = $this->_checkUUTBoard();
                 if ($result) {
-                    $this->_readUUTVoltages();
-                    //$this->_testUUTleds();
-                    /* next step is to load DUT test firmware */
-                    /* next test is to receive powerup packet */
+                    
+                    $result = $this->_testUUT();
+
+                    //$this->_readUUTVoltages();
+                    $result = $this->_powerUUT(self::OFF);                    
                     $this->display->displayPassed();
                 } else {
+                    $result = $this->_powerUUT(self::OFF);                    
+                    $this->out("\n\rUUT Communications Failed!\n\r");
                     $this->display->displayFailed();
                 }
             } else {
+                $this->out("\n\rUUT power failed!\n\r");
                 $this->display->displayFailed();
             }
+        } else {
+            $this->out("\n\rEval Board Communications Failed!\n\r");
+            $this->displayFailed();
         }
 
-        $result = $this->_powerUUT(self::OFF);
 
        $choice = readline("\n\rHit Enter to Continue: ");
     }
     
-
     /**
-    ************************************************************
-    * Power Up Battery Socializer Test
+    ***********************************************************
+    * Power UUT Test
     *
-    * This functions sends a command to the Eval Board to apply
-    * +12 volts to the Battery Socializer VBus.  It then 
-    * measures the VBus and the Vcc voltage from the socializer
-    * board to verify that it powered up okay.
+    * This function powers up the 10460301 board, measures the 
+    * bus voltage and the 3.3V to verify operation for the next
+    * step which is loading the test firmware.
     *
-    * @return $result  boolean, true=pass, false=Failed
+    *
+    * @return $result
     */
-    private function _powerUUTtest()
+    private function _testUUTpower()
     {
-       $result = $this->_powerUUT(self::ON);
-
-       /* sleep 30mS */
-       usleep(30000);
-       
-       if ($result) {
-            $volt1 = $this->_readBusVolt();
-            $volt2 = $this->_readVCC();
-        
-	    
-            if (($volt1 <= 13.0) and ($volt1 >= 11.5 )) {
-                $this->out("Bus Voltage = ".$volt1." volts - Passed");
-                $result1 = true;
+        $result = $this->_powerUUT(self::ON);
+        sleep(1);
+        if ($result) {
+            $volts = $this->_readTesterBusVolt();
+            $busv = number_format($volts, 2);
+            $this->out("Bus Voltage = ".$busv." volts");
+            if (($volts > 11.5) and ($volts < 13.00)) {
+                $volts = $this->_readTesterVCC();
+                $vccv = number_format($volts, 2);
+                $this->out("Vcc = ".$vccv." volts");
+                if (($volts > 3.1) and ($volts < 3.4)) {
+                    $result = true;
+                } else {
+                    $result = false;
+                    $this->_powerUUT(self::OFF);
+                }
             } else {
-                $this->out ("Bus Voltage = ".$volt1." volts - Failed");
-                $result1 - false;
-            }
-	  
-            if (($volt2 <= 3.5) and ($volt2 >= 3.0)) {
-                $this->out("Vcc Voltage = ".$volt2." volts - Passed");
-                $result2 = true;
-            } else {
-                $this->out ("Vcc Voltage = ".$volt2." volts - Failed");
-                $result1 - false;
-            }
-	  
-            if (!$result1 || !$result2) {
                 $result = false;
-            } else { 
-                $result = true;
+                $this->_powerUUT(self::OFF);
             }
-	  
-       } else {
-            $this->out("Battery Socializer Power Up Failed!");
-       }
-       
-       return $result;
+        }
+        
+        return $result;
     }
 
     /**
     ***********************************************************
-    * Power DUT Routine
+    * Power UUT through VBUS Routine
     * 
-    * This function powers up the 10460301 board, measures the 
-    * bus voltage and the 3.3V to verify operation for the next
-    * step which is loading the test firmware.
+    * This function controls the +12V supply to the UUT through  
+    * opening or closing of relays K1 & K2.
+    * +12V On  = K1 closed & K2 closed
+    * +12V Off = K1 open & K2 open
     *
     * @return boolean result
     */
@@ -359,32 +343,57 @@ class E104603Test extends \HUGnet\ui\Daemon
     * This function steps through the tests for the Unit Under
     * Test (UUT) after the test firmware has been loaded.
     *
+    * list below are the test steps and functions to implement
+    *   1. On Board Thermistor tests                            
+    *   2. Port 1 test                                         
+    *   3. Port 2 test                                          
+    *   4. Vbus load test                                       
+    *   5. External thermistor test                            
+    *   6. LED tests   
+    *
     * @return $result  
     */
     private function _testUUT()
     {
+ 
+        $testNum = 0;
 
+        do {
+            $testNum += 1;
+            switch ($testNum) {
+                case 1:
+                    $result = $this->_testUUTThermistors();
+                    break;
+                case 2: 
+                    $result = $this->_testUUTport1();
+                    break;
+                case 3: 
+                    $result = $this->_testUUTport2();
+                    break;
+                case 4:
+                    $result = $this->_testUUTvbus();
+                    break;
+                case 5:
+                    $result = $this->_testUUTexttherms();
+                    break;
+                case 6:
+                    $result = $this->_testUUTleds();
+                    break;
+            }
 
-        $result = true;
-        /************************************************************/
-        /* list below are the test steps and functions to implement */
-        /* 1.  3.3V_Switched Test                                   */
-        /* 2.  On Board Thermistor tests                            */
-        /* 3.  LED tests                                            */
-        /* 4.  Port 1 load test                                     */
-        /* 5.  Port 1 overcurrent trip test                         */
-        /* 6.  Port 2 load test                                     */
-        /* 7.  Port 2 overcurrent trip test                         */
-        /* 8.  Vbus load test                                       */
-        /* 9.  External thermistor test                             */
-        /************************************************************/
+        } while ($result and ($testNum < 6));
+
 
         return $result;
     }
 
     /**
-    ************************************************************
+    **************************************************************
     * Switched 3.3V test routine
+    *
+    * ***** NOTE ****** Further testing must be done to see if 
+    * this test is even viable.  Pulling the 3V3_SW line appears
+    * to stop all serial communications to the one wire interface. 
     *
     * This function sends a command to the UUT to turn on the 
     * switched 3.3V and then measures the 3.3V Switched 
@@ -424,60 +433,18 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _testUUTthermistors()
     {
-        $busTemp = $this->_readUUTBusTemp();
-        $p1Temp = $this->_readUUTP1Temp();
-        $p2Temp = $this->_readUUTP2Temp();
-
-    }
-
-    /**
-    **************************************************************
-    * Test LEDs Routine
-    *
-    * This function sets the LED's in different patterns of 
-    * on and off states and asks the operator to verify these 
-    * states.
-    *
-    * @return $result
-    */
-    private function _testUUTleds()
-    {
-        /* turn on all LEDs */
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_LED_COMMAND;
-        $dataVal = "03";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-       $choice = readline("\n\rAre all 8 LEDs on? (Y/N) ");
-
-         /* turn on all Green LEDs */
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_LED_COMMAND;
-        $dataVal = "01";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-       $choice = readline("\n\rAre all 4 Green LEDs on? (Y/N) ");
-       
-         /* turn on all Red LEDs */
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_LED_COMMAND;
-        $dataVal = "02";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-       $choice = readline("\n\rAre all 4 Red LEDs on? (Y/N) ");
-
-        /* turn off all LEDs */
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_LED_COMMAND;
-        $dataVal = "00";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        
-       $choice = readline("\n\rAre all 8 LEDs off? (Y/N) ");
-        
+        $this->out("Testing Thermistors");
         $result = true;
+        sleep(2);
+        $busTemp = $this->_readUUTBusTemp();
+        $this->out("Bus Temp : ".$busTemp." raw data");
+        $this->_convertTempData($busTemp);
+        $p1Temp = $this->_readUUTP1Temp();
+        $this->out("Port 1 Temp : ".$p1Temp." raw data");
+        $p2Temp = $this->_readUUTP2Temp(); 
+        $this->out("Port 2 Temp : ".$p2Temp." raw data");
 
         return $result;
-
     }
 
     /**
@@ -495,30 +462,32 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _testUUTport1()
     {
+        $this->out("Testing UUT Port 1");
+        sleep(1);
         /******** test steps ********/
         /* 1.  connect 12 ohm load  to port 1 */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0303"; /* Relay K4 on */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0303"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); */
 
         /* 2.  turn on Port 1 */
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_POWWERPORT_COMMAND; /* ON */
+        /* $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWWERPORT_COMMAND; 
         $dataVal = "0101";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); */
 
         /* 3.  delay 100mS */
         usleep(100000);
 
         /* 4.  Eval Board Measure Port 1 Voltage */
-        $voltsP1 = $this->_readTesterP1Volt();
+        //$voltsP1 = $this->_readTesterP1Volt();
 
         /* 5.  Get UUT Port 1 voltage */
-        $p1Volts = $this->_readUUTP1Volts();
+        //$p1Volts = $this->_readUUTP1Volts();
 
         /* 6.  Get UUT Port 1 Current */
-        $p1Amps = $this->_readUUTP1Current();
+        //$p1Amps = $this->_readUUTP1Current();
         /* 7.  Test voltage & current */
 
         /* 8.  Set the fault signal */
@@ -526,29 +495,32 @@ class E104603Test extends \HUGnet\ui\Daemon
         usleep(100000);
 
         /* 10. Eval Board Measure Port 1 voltage */
-        $voltsP2 = $this->_readTesterP1Volt();
+        //$voltsP2 = $this->_readTesterP1Volt();
 
         /* 11. Get UUT Port 1 voltage */
-        $p1Volts = $this->_readUUTP1Volts();
+        //$p1Volts = $this->_readUUTP1Volts();
 
         /* 12. Get UUT Port 1 Current */
-        $p1Amps = $this->_readUUTP1Current();
+        //$p1Amps = $this->_readUUTP1Current();
 
         /* 13. Remove the fault signal */
         /* 14. delay 100mS */
         usleep(100000);
 
         /* 15. Turn off Port 1 */
-        $idNum = self::UUT_BOARD_ID;
+        /*$idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_POWWERPORT_COMMAND; 
-        $dataVal = "0100"; /* PORT 1 OFF */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0100"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 16.  Disconnect load resistor */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0303"; /* Relay K4 off */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0303"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
+
+        $result = true;
+        return $result;
 
     }
 
@@ -567,30 +539,32 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _testUUTport2()
     {
+        $this->out("Testing UUT Port 2 ");
+        sleep(1);
         /******** test steps ********/
         /* 1.  connect 12 ohm load  to port 2 */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0205"; /* Relay K6 ON */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0205"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 2.  turn on Port 2 */
-        $idNum = self::UUT_BOARD_ID;
+        /* $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_POWWERPORT_COMMAND; 
         $dataVal = "0201";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 3.  delay 100mS */
         usleep(100000);
 
         /* 4.  Eval Board Measure Port 2 Voltage */
-        $voltsP2 = $this->_readTesterP2Volt();
+        //$voltsP2 = $this->_readTesterP2Volt();
 
         /* 5.  Get UUT Port 2 voltage */
-        $p2Volts = $this->_readUUTP2Volts();
+        //$p2Volts = $this->_readUUTP2Volts();
 
         /* 6.  Get UUT Port 2 Current */
-        $p2Amps = $this->_readUUTP2Current();
+        //$p2Amps = $this->_readUUTP2Current();
         /* 7.  Test voltage & current */
 
         /* 8.  Set the fault signal */
@@ -598,29 +572,32 @@ class E104603Test extends \HUGnet\ui\Daemon
         usleep(100000);
 
         /* 10. Eval Board Measure Port 2 voltage */
-        $voltsP2 = $this->_readTesterP2Volt();
+        //$voltsP2 = $this->_readTesterP2Volt();
 
         /* 11. Get UUT Port 2 voltage */
-        $p2Volts = $this->_readUUTP2Volts();
+        //$p2Volts = $this->_readUUTP2Volts();
 
         /* 12. Get UUT Port 2 Current */
-        $p2Amps = $this->_readUUTP2Current();
+        //$p2Amps = $this->_readUUTP2Current();
 
         /* 13. Remove the fault signal */
         /* 14. delay 100mS */
         usleep(100000);
 
         /* 15. Turn off Port 2 */
-        $idNum = self::UUT_BOARD_ID;
+        /* $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_POWWERPORT_COMMAND; 
-        $dataVal = "0200"; /* PORT 2 OFF */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0200"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 16.  Disconnect load resistor */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0205"; /* Relay K6 Off */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0205"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
+
+        $result = true;
+        return $result;
 
     }
 
@@ -639,149 +616,154 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _testUUTvbus()
     {
+        $this->out("Testing UUT VBUS");
+        sleep(1);
         /******** test steps **********/
         /* 1.  Connect +12V to Port 1  */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0302"; /* Relay K3 ON Selects +12V */
+        $dataVal = "0302"; 
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0303"; /* Relay K4 on connects +12V to Port 1 */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0303"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); */
 
         /* 2.  Delay 100mS             */
         usleep(100000);
 
         /* 3.  Disconnect +12V from Vbus */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0301"; /* Relay K2 Off removes +12V from Vbus */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0301"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 4.  Connect 12 Ohm Load to Vbus */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0300"; /* Relay K1 Off selects 12 Ohm Load */
+        $dataVal = "0300"; 
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0301"; /* Relay K2 On connects 12 Ohm load to Vbus */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0301"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); */
 
         /* 5.  Turn on Port 1 */
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_POWWERPORT_COMMAND; /* ON */
+        /* $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWWERPORT_COMMAND; 
         $dataVal = "0101";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); */
 
         /* 6.  Delay 100mS */
         usleep(100000);
 
         /* 7.  Eval measure Vbus voltage */
-        $vbusVolts = $this->_readTesterBusVolt();
+        //$vbusVolts = $this->_readTesterBusVolt();
 
         /* 8.  Get UUT Port 1 voltage */
-        $p1Volts = $this->_readUUTP1Volts();
+        //$p1Volts = $this->_readUUTP1Volts();
 
         /* 9.  Get UUT Port 1 current */
-        $p1Amps = $this->_readUUTP1Current();
+        //$p1Amps = $this->_readUUTP1Current();
 
         /* 10. Test current & voltage values. */
 
         /* 11. Turn off Port 1 */
-        $idNum = self::UUT_BOARD_ID;
+        /* $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_POWWERPORT_COMMAND; 
-        $dataVal = "0100"; /* PORT 1 OFF */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0100"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 12. Delay 100mS */
         usleep(100000);
 
         /* 13. Eval measure Vbus Voltage */
-        $vbusVolts = $this->_readTesterBusVolt();
+        //$vbusVolts = $this->_readTesterBusVolt();
 
         /* 14. Connect +12V to Port 2 */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0204"; /* Relay K5 On selects +12V */
+        $dataVal = "0204"; 
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0205"; /* Relay K6 On connects +12V to Port 2 */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0205"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 15. Disconnect +12V from Port 1 */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0303"; /* Relay K4 Off disconnects +12V  from Port 1*/
+        $dataVal = "0303"; 
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0302"; /* Relay K3 Off selects 12 Ohm load  */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0302"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 16. Turn on Port 2 */
-        $idNum = self::UUT_BOARD_ID;
+        /* $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_POWWERPORT_COMMAND; 
         $dataVal = "0201";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 17. Eval measure Vbus voltage */
-        $vbusVolts = $this->_readTesterBusVolt();
+        //$vbusVolts = $this->_readTesterBusVolt();
 
         /* 18. Get UUT Port 2 voltage */
-        $p2Volts = $this->_readUUTP2Volts();
+        //$p2Volts = $this->_readUUTP2Volts();
 
         /* 19. Get UUT Port 2 Current */
-        $p2Amps = $this->_readUUTP2Current();
+        //$p2Amps = $this->_readUUTP2Current();
 
         /* 20. Test current and voltage values */
 
         /* 21. Turn off Port 2 */
-        $idNum = self::UUT_BOARD_ID;
+        /* $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_POWWERPORT_COMMAND; 
-        $dataVal = "0200"; /* PORT 2 OFF */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0200"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 22. Delay 100mS */
         usleep(100000);
 
         /* 23. Eval measure Vbus voltage */
-        $vbusVolts = $this->_readTesterBusVolt();
+        //$vbusVolts = $this->_readTesterBusVolt();
 
         /* 24. Disconnect load from Vbus */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0301"; /* Relay K2 Off removes load from Vbus */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0301"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 25. Connect +12V to Vbus */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0301"; /* Relay K1 On selects +12 Volts */
+        $dataVal = "0301"; 
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
 
         $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0301"; /* Relay K2 On connects +12V to Vbus */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0301"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 26. Disconnect +12V from Port 2 */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0205"; /* Relay K6 Off removes +12V from Port 2*/
+        $dataVal = "0205"; 
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0204"; /* Relay K5 Off selects 12 Ohm load */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0204"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
+
+        $result = true;
+        return $result;
    }
 
     /**
@@ -796,40 +778,99 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _testUUTexttherms()
     {
+        $this->out("Testing UUT External Thermistors");
+        sleep(2);
+
         /*********** test steps ***********/
         /* 1. connect resistor to ext therm 1 */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0206"; /* Relay K7 On connects resistor to ext therm 1 */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0206"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 2. connect resistor to ext therm 2 */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0207"; /* Relay K8 On connects resistor to ext therm 2 */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0207"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 3. read ext therm 1 value from UUT */
-        $extTemp1 = $this->_readUUTExtTemp1();
+        //$extTemp1 = $this->_readUUTExtTemp1();
 
         /* 4. read ext therm 2 value from UUT */
-        $extTemp1 = $this->_readUUTExtTemp1();
+        //$extTemp1 = $this->_readUUTExtTemp1();
 
         /* 5. Test thermistor values          */
 
         /* 6. disconnect resistor from ext therm 1 */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0206"; /* Relay K7 Off disconnects resistor */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0206"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
 
         /* 7. disconnect resistor from ext therm 2 */
-        $idNum = self::EVAL_BOARD_ID;
+        /* $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0207"; /* Relay K8 Off disconnects resistor */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $dataVal = "0207"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
+        
+        $result = true;
+        return $result;
 
     }
+
+    /**
+    **************************************************************
+    * Test LEDs Routine
+    *
+    * This function sets the LED's in different patterns of 
+    * on and off states and asks the operator to verify these 
+    * states.
+    *
+    * @return $result
+    */
+    private function _testUUTleds()
+    {
+        $this->out("Testing LEDs");
+
+        /* turn on all LEDs */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_LED_COMMAND;
+        $dataVal = "03";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+       $choice = readline("\n\rAre all 8 LEDs on? (Y/N) ");
+
+         /* turn on all Green LEDs */
+        /* $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_LED_COMMAND;
+        $dataVal = "01";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+       $choice = readline("\n\rAre all 4 Green LEDs on? (Y/N) ");*/
+       
+         /* turn on all Red LEDs */
+        /* $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_LED_COMMAND;
+        $dataVal = "02";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); 
+
+       $choice = readline("\n\rAre all 4 Red LEDs on? (Y/N) ");*/
+
+        /* turn off all LEDs */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_LED_COMMAND;
+        $dataVal = "00";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+       $choice = readline("\n\rAre all 8 LEDs off? (Y/N) ");
+        
+        $result = true;
+
+        return $result;
+
+    }
+
 
     /*****************************************************************************/
     /*                                                                           */
@@ -1288,6 +1329,12 @@ class E104603Test extends \HUGnet\ui\Daemon
         $choice = readline("\n\rHit Enter to Continue: ");
     }
 
+    /*****************************************************************************/
+    /*                                                                           */
+    /*               T E S T   U T I L I T I E S   R O U T I N E S               */
+    /*                                                                           */
+    /*****************************************************************************/
+
      /**
     ************************************************************
     * Check Eval Board Routine
@@ -1349,6 +1396,8 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $output = array();
         $this->display->displayHeader("Loading Test Firmware");
+        $choice = readline("\n\rConnect Programmer and Hit Enter to Continue: ");
+        
 
 
         $Prog = "make -C ~/code/HOS 104603test-install SN=0x0000000020";
@@ -1364,38 +1413,6 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     }
 
-    /**
-    ************************************************************
-    * Test Socializer Routine
-    *
-    * This function runs the tests in the endpoint test firmware
-    * and returns the results.
-    *
-    * @return boolean $testResult
-    *
-    */
-    private function _testEndpoint()
-    {
-        $Result = true;    
-   
-        /*****************************/
-        /* Steps in endpoint test    */
-        /* 1: 3.3V Switched Test     */
-        /* 2: Board Thermistors Test */
-        /* 3: LED Test               */
-        /* 4: Port 1 Load Test       */
-        /* 5: Port 1 default Test    */
-        /* 6: Port 2 Load Test       */
-        /* 7: Port 2 default Test    */
-        /* 8: Vbus Load Test         */
-        /* 9: Ext Thermistor 1 Test  */
-        /* 10: Ext Thermistor 2 Test */
-        /*****************************/
-
-        return $Result;
-    }
-
-    
 
 
     /*****************************************************************************/
@@ -1403,6 +1420,153 @@ class E104603Test extends \HUGnet\ui\Daemon
     /*              D A T A   C O N V E R S I O N   R O U T I N E S              */
     /*                                                                           */
     /*****************************************************************************/
+
+    /**
+    ************************************************************
+    * Convert UUT Temperature Values
+    *
+    * This function takes in raw data from UUT adc for on board
+    * temperature sensors and converts the value into degrees.
+    *
+    * @param $dataVal
+    *
+    * @return $degreesC
+    */
+    private function _convertTempData($dataval)
+    {
+        $adcTable = array(
+            2252,
+            1968,
+            1698,
+            1448,
+            1224,
+            1028,
+            859,
+            716,
+            595,
+            495,
+            412,
+            344,
+            287,
+            241,
+            202,
+            170,
+            144,
+            122,
+            104,
+            88,
+            76,
+            65,
+            56,
+            49,
+            42,
+            37,
+            32,
+            28,
+            25,
+            22,
+            19,
+            17,
+            15,
+            14,
+        );
+
+        $tempTable = array(
+            -40000,
+            -35000,
+            -30000,
+            -25000,
+            -20000,
+            -15000,
+            -10000,
+            -5000,
+                0,
+            5000,
+            10000,
+            15000,
+            20000,
+            25000,
+            30000,
+            35000,
+            40000,
+            45000,
+            50000,
+            55000,
+            60000,
+            65000,
+            70000,
+            75000,
+            80000,
+            85000,
+            90000,
+            95000,
+            100000,
+            105000,
+            110000,
+            115000,
+            120000,
+            125000,
+        );
+
+        $multTable = array(
+            -17, /* 0 */
+            -18,
+            -20,
+            -22,
+            -25,
+            -29,
+            -34,
+            -41,
+            -50,
+            -60,
+            -73, /* 10 */
+            -87,
+            -108,
+            -128,
+            -156,
+            -192,
+            -227,
+            -277,
+            -312,
+            -416,
+            -454, /* 20 */
+            -555, 
+            -714,
+            -714,
+            -1000,
+            -1000,
+            -1250,
+            -1666,
+            -1666,
+            -1666,
+            -2500, /* 30 */
+            -2500,
+            -5000, 
+        );
+         
+        $tableLength = 34;
+
+        for ($i=0; i<$tableLength; $i++) {
+            if ($dataVal == $adcTable[$i]) {
+                $myIndex = $i;
+                $tempC = $tempTable[$i];
+                break;
+            } else if ($dataVal > $adcTable[$i]) {
+                if ($i > 0) {
+                    $myIndex = $i;
+                    $tempC = $tempTable[$i];
+                    //$tempC = interpolateValue($dataVal, $myIndex, newTable);
+                }
+                break;
+            }
+        }
+
+        $tempC /= 1000;
+ 
+        return $tempC;
+    }
+
+
 
 
     /**
@@ -1463,7 +1627,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $dev = $this->_system->device($Sn);
         $result = $dev->action()->ping();
-        var_dump($result);
+        //var_dump($result);
         return $result;
     }
 
