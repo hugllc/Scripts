@@ -225,10 +225,13 @@ class E104603Test extends \HUGnet\ui\Daemon
                 if ($result) {
                     
                     $result = $this->_testUUT();
-
-                    //$this->_readUUTVoltages();
+                    $this->_readUUTVoltages();
+                    if ($result) {
+                        $this->display->displayPassed();
+                    } else {
+                        $this->display->displayFailed();
+                    }
                     $result = $this->_powerUUT(self::OFF);                    
-                    $this->display->displayPassed();
                 } else {
                     $result = $this->_powerUUT(self::OFF);                    
                     $this->out("\n\rUUT Communications Failed!\n\r");
@@ -431,18 +434,50 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return $result
     */
-    private function _testUUTthermistors()
+    private function _testUUTThermistors()
     {
         $this->out("Testing Thermistors");
-        $result = true;
         sleep(2);
-        $busTemp = $this->_readUUTBusTemp();
-        $this->out("Bus Temp : ".$busTemp." raw data");
-        $this->_convertTempData($busTemp);
-        $p1Temp = $this->_readUUTP1Temp();
-        $this->out("Port 1 Temp : ".$p1Temp." raw data");
-        $p2Temp = $this->_readUUTP2Temp(); 
-        $this->out("Port 2 Temp : ".$p2Temp." raw data");
+
+        $busData = $this->_readUUTBusTemp();
+        $busTemp = $this->_convertTempData($busData);
+        $busTemp = number_format($busTemp, 2);
+        $this->out("Bus Temp : ".$busTemp." C");
+
+        if (($busTemp > 18.00) and ($busTemp < 24.00)) {
+            $resultT1 = true;
+        } else {
+            $resultT1 = false;
+        }
+
+        $p1Data = $this->_readUUTP1Temp();
+        $p1Temp = $this->_convertTempData($p1Data);
+        $p1Temp = number_format($p1Temp, 2);
+        $this->out("Port 1 Temp : ".$p1Temp." C");
+
+        if (($p1Temp > 18.00) and ($p1Temp < 24.00)) {
+            $resultT2 = true;
+        } else {
+            $resultT2 = false;
+        }
+        
+
+        $p2Data = $this->_readUUTP2Temp(); 
+        $p2Temp = $this->_convertTempData($p2Data);
+        $p2Temp = number_format($p2Temp, 2);
+        $this->out("Port 2 Temp : ".$p2Temp." C");
+
+        if (($p2Temp > 18.00) and ($p2Temp < 24.00)) {
+            $resultT3 = true;
+        } else {
+            $resultT3 = false;
+        }
+
+        if ($resultT1 and $resultT2 and $resultT3) {
+            $result = true;
+        } else {
+            $result = false;
+        }
 
         return $result;
     }
@@ -1308,13 +1343,18 @@ class E104603Test extends \HUGnet\ui\Daemon
     
     
 
+    /*****************************************************************************/
+    /*                                                                           */
+    /*             T R O U B L E S H O O T I N G   R O U T I N E S               */
+    /*                                                                           */
+    /*****************************************************************************/
    
     /**
     ************************************************************
-    * Main Clone Routine
+    *Troubleshoot Main Routine
     *
-    * This is the main routine for testing, serializing and 
-    * programming the 003912 endpoint.  
+    * This is the main routine for troubleshooting the tester 
+    * or the 10460301 Dual Battery Socializer.  
     * 
     * @return void
     *
@@ -1322,12 +1362,120 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _troubleshoot104603Main()
     {
         $this->display->clearScreen();
+        $this->_relayTest();
 
-
-        $this->out("Delay time = ".$difftime." seconds");
         $this->out("Not Done!");
         $choice = readline("\n\rHit Enter to Continue: ");
     }
+
+    /**
+    ************************************************************
+    * Relay Test Routine
+    *
+    * This function steps through the relays K1-K8, closing and
+    * opening each one.
+    *
+    */
+    private function _relayTest()
+    {
+        $idNum = self::EVAL_BOARD_ID;
+
+        /* close K1 */
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0300";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        sleep(1);
+        /* open K1 */
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0300";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        sleep(1);
+        /* close K2 */
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0301";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        sleep(1);
+        /* open K2 */
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0301";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+         sleep(1);
+       /* close K3 */
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0302";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        sleep(1);
+        /* open K3 */
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0302";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+         sleep(1);
+       /* close K4 */
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0303";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        sleep(1);
+        /* open K4 */
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0303";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+         sleep(1);
+       /* close K5 */
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0204";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        sleep(1);
+        /* open K5 */
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0204";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+         sleep(1);
+       /* close K6 */
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0205";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        sleep(1);
+        /* open K6 */
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0205";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+         sleep(1);
+       /* close K7 */
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0206";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        sleep(1);
+        /* open K7 */
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0206";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+         sleep(1);
+       /* close K8 */
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0207";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        sleep(1);
+        /* open K8 */
+        $cmdNum = self::CLR_DIGITAL_COMMAND; 
+        $dataVal = "0207";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+    }
+
 
     /*****************************************************************************/
     /*                                                                           */
@@ -1432,7 +1580,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return $degreesC
     */
-    private function _convertTempData($dataval)
+    private function _convertTempData($dataVal)
     {
         $adcTable = array(
             2252,
@@ -1545,8 +1693,8 @@ class E104603Test extends \HUGnet\ui\Daemon
         );
          
         $tableLength = 34;
-
-        for ($i=0; i<$tableLength; $i++) {
+        $tempC = 0.0;
+        for ($i=0; $i<$tableLength; $i++) {
             if ($dataVal == $adcTable[$i]) {
                 $myIndex = $i;
                 $tempC = $tempTable[$i];
@@ -1554,15 +1702,18 @@ class E104603Test extends \HUGnet\ui\Daemon
             } else if ($dataVal > $adcTable[$i]) {
                 if ($i > 0) {
                     $myIndex = $i;
-                    $tempC = $tempTable[$i];
-                    //$tempC = interpolateValue($dataVal, $myIndex, newTable);
+                    $tabVal = $adcTable[$i];
+                    $inputDiff = $dataVal - $tabVal;
+                    $multVal = $multTable[$i-1];
+                    $tempVal = $tempTable[$i];
+                    $tempC = $tempVal + ($inputDiff * $multVal);
                 }
                 break;
             }
         }
 
         $tempC /= 1000;
- 
+
         return $tempC;
     }
 
