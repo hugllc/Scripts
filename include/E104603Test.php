@@ -501,33 +501,36 @@ class E104603Test extends \HUGnet\ui\Daemon
         sleep(1);
         /******** test steps ********/
         /* 1.  connect 12 ohm load  to port 1 */
-        /* $idNum = self::EVAL_BOARD_ID;
+        $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::SET_DIGITAL_COMMAND; 
         $dataVal = "0303"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); 
 
         /* 2.  turn on Port 1 */
-        /* $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_POWWERPORT_COMMAND; 
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWERPORT_COMMAND; 
         $dataVal = "0101";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); */
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         /* 3.  delay 100mS */
         usleep(100000);
 
         /* 4.  Eval Board Measure Port 1 Voltage */
-        //$voltsP1 = $this->_readTesterP1Volt();
+        $voltsP1 = $this->_readTesterP1Volt();
+        $p1v = number_format($voltsP1, 2);
+        $this->out("Port 1  Tester = ".$p1v." volts");
 
         /* 5.  Get UUT Port 1 voltage */
-        //$p1Volts = $this->_readUUTP1Volts();
+        $p1Volts = $this->_readUUTP1Volts();
+        $this->out("Port 1 UUT = ".$p1Volts." volts!");
 
         /* 6.  Get UUT Port 1 Current */
-        //$p1Amps = $this->_readUUTP1Current();
+        $p1Amps = $this->_readUUTP1Current();
         /* 7.  Test voltage & current */
 
         /* 8.  Set the fault signal */
         /* 9.  delay 100mS */
-        usleep(100000);
+       // usleep(100000);
 
         /* 10. Eval Board Measure Port 1 voltage */
         //$voltsP2 = $this->_readTesterP1Volt();
@@ -540,19 +543,27 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         /* 13. Remove the fault signal */
         /* 14. delay 100mS */
-        usleep(100000);
+        //usleep(100000);
 
         /* 15. Turn off Port 1 */
-        /*$idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_POWWERPORT_COMMAND; 
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWERPORT_COMMAND; 
         $dataVal = "0100"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        usleep(100000);
+        $voltsP1 = $this->_readTesterP1Volt();
+        $p1v = number_format($voltsP1, 2);
+        $this->out("Port 1 Tester = ".$p1v." volts");
+
+        $p1Volts = $this->_readUUTP1Volts();
+        $this->out("Port 1 UUT = ".$p1Volts." volts!");
 
         /* 16.  Disconnect load resistor */
-        /* $idNum = self::EVAL_BOARD_ID;
+        $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
         $dataVal = "0303"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         $result = true;
         return $result;
