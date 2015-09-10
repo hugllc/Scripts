@@ -40,6 +40,8 @@ namespace HUGnet\processes;
 require_once "HUGnetLib/ui/Daemon.php";
 /** This is our units class */
 require_once "HUGnetLib/devices/inputTable/Driver.php";
+/** This is needed */
+require_once "HUGnetLib/devices/inputTable/DriverAVR.php";
 /** Displays class */
 require_once "HUGnetLib/ui/Displays.php";
 
@@ -223,9 +225,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                 //$this->_loadTestFirmware();
                 $result = $this->_checkUUTBoard();
                 if ($result) {
-                    
                     $result = $this->_testUUT();
-                    $this->_readUUTVoltages();
                     if ($result) {
                         $this->display->displayPassed();
                     } else {
@@ -910,43 +910,60 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _testUUTexttherms()
     {
-        $this->out("Testing UUT External Thermistors");
-        $this->out("******************************");
+        $this->out("Testing UUT External Thermistor Circuits");
+        $this->out("****************************************");
+        $this->out("EXT THERM CIRCUITS OPEN:");
 
-        sleep(2);
-
-        /*********** test steps ***********/
-        /* 1. connect resistor to ext therm 1 */
-        /* $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0206"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
-
-        /* 2. connect resistor to ext therm 2 */
-        /* $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0207"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
-
-        /* 3. read ext therm 1 value from UUT */
-        //$extTemp1 = $this->_readUUTExtTemp1();
+        /* read ext therm 1 voltage from UUT */
+        $extTemp1 = $this->_readUUTExtTemp1();
+        $Tv1 = number_format($extTemp1, 2);
+        $this->out("ExtTemp 1 Voltage = ".$Tv1." volts");
 
         /* 4. read ext therm 2 value from UUT */
-        //$extTemp1 = $this->_readUUTExtTemp1();
+        $extTemp2 = $this->_readUUTExtTemp2();
+        $Tv2 = number_format($extTemp2, 2);
+        $this->out("ExtTemp 2 Voltage = ".$Tv2." volts");
 
+        /*********** test steps ***********/
+        /* 1. Close ext therm 1 circuit   */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0206"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        /* 2. Close ext therm 2 circuit */
+        $idNum = self::EVAL_BOARD_ID;
+        $cmdNum = self::SET_DIGITAL_COMMAND; 
+        $dataVal = "0207"; 
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        $this->out("EXT THERM CIRCUITS CLOSED:");
+        sleep(2);
+
+        /* 3. read ext therm 1 value from UUT */
+        $extTemp1 = $this->_readUUTExtTemp1();
+        $Tv1 = number_format($extTemp1, 2);
+        $this->out("ExtTemp 1 Voltage = ".$Tv1." volts");
+
+        /* 4. read ext therm 2 value from UUT */
+        $extTemp2 = $this->_readUUTExtTemp2();
+        $Tv2 = number_format($extTemp2, 2);
+        $this->out("ExtTemp 2 Voltage = ".$Tv2." volts");
+
+        $choice = readline("\n\rHit Enter to continue: ");
         /* 5. Test thermistor values          */
 
         /* 6. disconnect resistor from ext therm 1 */
-        /* $idNum = self::EVAL_BOARD_ID;
+        $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
         $dataVal = "0206"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         /* 7. disconnect resistor from ext therm 2 */
-        /* $idNum = self::EVAL_BOARD_ID;
+        $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self::CLR_DIGITAL_COMMAND; 
         $dataVal = "0207"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
         
         $result = true;
         $this->out("");
@@ -1192,10 +1209,10 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Bus Voltage is ".$BusVolts." volts!");
 
         $extTemp2 = $this->_readUUTExtTemp2();
-        $this->out("External temp 2 data is ".$extTemp2." !");
+        $this->out("External temp 2 voltage is ".$extTemp2." volts!");
 
         $extTemp1 = $this->_readUUTExtTemp1();
-        $this->out("External temp 1 data is ".$extTemp1." !");
+        $this->out("External temp 1 voltage is ".$extTemp1." volts!");
 
         $p1Temp = $this->_readUUTP1Temp();
         $this->out("Port 1 temp data is ".$p1Temp." !");
@@ -1222,9 +1239,10 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_P2_VOLT);
 
-        if ($rawVal > 0x7FFF) {
-            $rawVal = 0x0000;
+        if ($rawVal > 0x7fff) {
+            $rawVal = 0xffff - $rawVal;
         }
+
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
         $volts = $volts * 21;
@@ -1347,9 +1365,16 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _readUUTExtTemp2()
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP2);
+        if ($rawVal > 0x7fff) {
+            $rawVal = 0xffff - $rawVal;
+        }
 
+        $steps = 1.65/ pow(2,11);
+        $volts = $steps * $rawVal;
+
+        $volts *= 2;
         
-        return $rawVal;
+        return $volts;
 
     }
      /**
@@ -1364,9 +1389,19 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _readUUTExtTemp1()
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP1);
+        if ($rawVal > 0x7fff) {
 
+            $newVal = $this->twosCompliment($rawVal, $bits);
+            $this->out("Twos compliment val = ".$newVal);
+            $rawVal = 0xffff - $rawVal;
+        }
+
+        $steps = 1.65/ pow(2,11);
+        $volts = $steps * $rawVal;
+
+        $volts *= 2;
         
-        return $rawVal;
+        return $volts;
 
     }
 
@@ -1403,8 +1438,9 @@ class E104603Test extends \HUGnet\ui\Daemon
         $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
 
         if ($rawVal > 0x7fff) {
-            $rawVal = 01;
+            $rawVal = 0xffff - $rawVal;
         }
+
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
         $volts = $volts * 21;
@@ -1869,6 +1905,27 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     }
 
+    /**
+    * Changes an n-bit twos compliment number into a signed number PHP can use
+    *
+    * @param int   $value The incoming number
+    * @param float $bits  The number of bits the incoming number is
+    *
+    * @return int A signed integer for PHP to use
+    */
+    protected function twosCompliment($value, $bits = 16)
+    {
+        /* Clear off any excess */
+        $value = (int)($value & (pow(2, $bits) - 1));
+        /* Calculate the top bit */
+        $topBit = pow(2, ($bits - 1));
+        /* Check to see if the top bit is set */
+        if (($value & $topBit) == $topBit) {
+            /* This is a negative number */
+            $value = -(pow(2, $bits) - $value);
+        }
+        return $value;
+    }
         
 
 
