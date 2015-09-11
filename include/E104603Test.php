@@ -86,15 +86,15 @@ class E104603Test extends \HUGnet\ui\Daemon
     const TSTR_SW3V_PORT = 4;
     
     const UUT_P2_VOLT    = 0;
-    const UUT_BUS_TEMP   = 1;
-    const UUT_P2_TEMP    = 2;
-    const UUT_P1_CURRENT = 3;
-    const UUT_P2_CURRENT = 4;
-    const UUT_BUS_VOLT   = 5;
-    const UUT_EXT_TEMP2  = 6;
-    const UUT_EXT_TEMP1  = 7;
-    const UUT_P1_TEMP    = 8;
-    const UUT_P1_VOLT    = 9;
+    const UUT_P1_VOLT    = 1;
+    const UUT_BUS_VOLT   = 2;
+    const UUT_BUS_TEMP   = 3;
+    const UUT_P2_TEMP    = 4;
+    const UUT_P1_CURRENT = 5;
+    const UUT_P2_CURRENT = 6;
+    const UUT_EXT_TEMP2  = 7;
+    const UUT_EXT_TEMP1  = 8;
+    const UUT_P1_TEMP    = 9;
     const UUT_VCC_VOLT   = 0xA;
     
     const ON = 1;
@@ -449,7 +449,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $busTemp = number_format($busTemp, 2);
         $this->out("Bus Temp : ".$busTemp." C");
 
-        if (($busTemp > 17.00) and ($busTemp < 24.00)) {
+        if (($busTemp > 10.00) and ($busTemp < 24.00)) {
             $resultT1 = true;
         } else {
             $resultT1 = false;
@@ -460,7 +460,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p1Temp = number_format($p1Temp, 2);
         $this->out("Port 1 Temp : ".$p1Temp." C");
 
-        if (($p1Temp > 17.00) and ($p1Temp < 24.00)) {
+        if (($p1Temp > 10.00) and ($p1Temp < 24.00)) {
             $resultT2 = true;
         } else {
             $resultT2 = false;
@@ -472,7 +472,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p2Temp = number_format($p2Temp, 2);
         $this->out("Port 2 Temp : ".$p2Temp." C");
 
-        if (($p2Temp > 17.00) and ($p2Temp < 24.00)) {
+        if (($p2Temp > 10.00) and ($p2Temp < 24.00)) {
             $resultT3 = true;
         } else {
             $resultT3 = false;
@@ -510,11 +510,9 @@ class E104603Test extends \HUGnet\ui\Daemon
         sleep(1);
         /******** test steps ********/
         /* 1.  connect 12 ohm load  to port 1 */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0303"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); 
-
+	$this->_setRelay(4, 1);
+	
+	
         /* 2.  turn on Port 1 */
         $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_POWERPORT_COMMAND; 
@@ -576,10 +574,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Port 1 UUT = ".$pv1." volts!");
 
         /* 16.  Disconnect load resistor */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0303"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->_setRelay(4, 0);
 
         $result = true;
         $this->out("");
@@ -608,10 +603,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         sleep(1);
         /******** test steps ********/
         /* 1.  connect 12 ohm load  to port 2 */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0205"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->_setRelay(6, 1);
 
         /* 2.  turn on Port 2 */
         $idNum = self::UUT_BOARD_ID;
@@ -674,11 +666,8 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Port 2 UUT = ".$pv2." volts!");
 
         /* 16.  Disconnect load resistor */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0205"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
+	$this->_setRelay(6, 0);
+	
         $result = true;
         $this->out("");
         return $result;
@@ -702,34 +691,21 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $this->out("Testing UUT VBUS");
         $this->out("******************************");
-
         sleep(1);
-        /******** test steps **********/
+
         /* 1.  Connect +12V to Port 1  */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0302"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0303"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        $this->out("PORT 1 +12V ON:");
-        /* 2.  Delay 100mS             */
-        usleep(100000);
+	$this->_setRelay(3, 1);  /* close K3 to select +12V */
+        $this->_setRelay(4, 1);  /* close K4 to connect +12V to Port 1 */
+        $this->out("PORT 1 +12V CONNECTED:");
+        sleep(1);
+        
         $voltsP1 = $this->_readTesterP1Volt();
         $p1v = number_format($voltsP1, 2);
         $this->out("Port 1  Tester = ".$p1v." volts");
 
         /* 3.  Disconnect +12V from Vbus */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0301"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        $this->out("Bus Voltage OFF:");
+        $this->_setRelay(1, 0);  /* open K2 to remove +12V from VBus */
+        $this->out("VBUS +12V DISCONNECTED:");
         sleep(1);
 
         $voltsVB = $this->_readTesterBusVolt();
@@ -738,16 +714,11 @@ class E104603Test extends \HUGnet\ui\Daemon
 
 
         /* 4.  Connect 12 Ohm Load to Vbus */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::CLR_DIGITAL_COMMAND; /* Select 12 Ohm Load */
-        $dataVal = "0300"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; /* Connect to Vbus */
-        $dataVal = "0301"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
+        $this->_setRelay(1, 0);  /* open K1 to select 12 Ohm Load */
+        $this->_setRelay(2, 1);  /* close K2 to connect load to Vbus */
+        $this->out("VBUS 12 OHM LOAD CONNECTED:");
+        sleep(1);
+        
         /* 5.  Turn on Port 1 */
         $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_POWERPORT_COMMAND; 
@@ -756,7 +727,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $this->out("PORT 1 ON:");
         /* 6.  Delay 100mS */
-        usleep(100000);
+        sleep(1);
 
         /* 7.  Eval measure Vbus voltage */
         $voltsVB = $this->_readTesterBusVolt();
@@ -782,8 +753,8 @@ class E104603Test extends \HUGnet\ui\Daemon
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         $this->out("PORT 1 OFF:");
-        /* 12. Delay 100mS */
-        usleep(100000);
+        /* 12. Delay 1 Second */
+        sleep(1);
 
         /* 13. Eval measure Vbus Voltage */
         $voltsVB = $this->_readTesterBusVolt();
@@ -795,78 +766,76 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Port 1 current = ".$p1A." A");
 
         /* 14. Connect +12V to Port 2 */
-        /* $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0204"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
         $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0205"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
-
+        $this->_setRelay(5, 1);  /* close K5 to select +12V */
+        $this->_setRelay(6, 1);  /* close K6 to connect +12V to Port 2 */
+        $this->out("PORT 2 +12V CONNECTED:");
+        sleep(1);
+        
+        $voltsP2 = $this->_readTesterP2Volt();
+        $p2v = number_format($voltsP2, 2);
+        $this->out("Port 2  Tester = ".$p2v." volts");
+        
         /* 15. Disconnect +12V from Port 1 */
-        /* $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0303"; 
+        $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
+        $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
+        $this->out("Port 1 +12V OFF:");
+        sleep(1);
+        
+        $voltsP1 = $this->_readTesterP1Volt();
+        $p1v = number_format($voltsP1, 2);
+        $this->out("Port 1  Tester = ".$p1v." volts");
+        
+       /* 16. Turn on Port 2 */
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWERPORT_COMMAND; 
+        $dataVal = "0201";
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0302"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
-
-        /* 16. Turn on Port 2 */
-        /* $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_POWWERPORT_COMMAND; 
-        $dataVal = "0201";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
-
+        $this->out("PORT 2 ON:");
+        /* 6.  Delay 1 Second */
+        sleep(1);
+        
         /* 17. Eval measure Vbus voltage */
-        //$vbusVolts = $this->_readTesterBusVolt();
+        $voltsVB = $this->_readTesterBusVolt();
+        $Bv = number_format($voltsVB, 2);
+        $this->out("Bus Volts Tester = ".$Bv." volts");
 
         /* 18. Get UUT Port 2 voltage */
-        //$p2Volts = $this->_readUUTP2Volts();
+        $p2Volts = $this->_readUUTP2Volts();
+        $pv2 = number_format($p2Volts, 2);
+        $this->out("Port 2 UUT = ".$pv2." volts!");
 
         /* 19. Get UUT Port 2 Current */
-        //$p2Amps = $this->_readUUTP2Current();
+        $p2Amps = $this->_readUUTP2Current();
+        $p2A = number_format($p2Amps, 2);
+        $this->out("Port 2 current = ".$p2A." A");
 
         /* 20. Test current and voltage values */
 
         /* 21. Turn off Port 2 */
-        /* $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_POWWERPORT_COMMAND; 
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_POWERPORT_COMMAND; 
         $dataVal = "0200"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
-        /* 22. Delay 100mS */
-        usleep(100000);
+        $this->out("PORT 2 OFF:");
+        /* 22. Delay 1 Second */
+        sleep(1);
 
         /* 23. Eval measure Vbus voltage */
-        //$vbusVolts = $this->_readTesterBusVolt();
+        $voltsVB = $this->_readTesterBusVolt();
+        $Bv = number_format($voltsVB, 2);
+        $this->out("Bus Volts Tester = ".$Bv." volts");
 
-        /* 24. Disconnect load from Vbus */
-        /* $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0301"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);*/
-
+        $p2Amps = $this->_readUUTP2Current();
+        $p2A = number_format($p2Amps, 2);
+        $this->out("Port 2 current = ".$p2A." A");
+        
         /* 25. Connect +12V to Vbus */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::CLR_DIGITAL_COMMAND; /* open connection to Vbus */
-        $dataVal = "0301";                   /* to remove 12 Ohm load   */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; /* select +12V */
-        $dataVal = "0300"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND;  /* connect to Vbus */
-        $dataVal = "0301"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
+        $this->_setRelay(2, 0);  /* open K2 to remove load from Vbus */
+        $this->_setRelay(1, 1);  /* close K1 to select +12V */
+        $this->_setRelay(2, 1);  /* close K2 to connect +12V to Vbus */
         $this->out("Bus Voltage ON:");
         sleep(1);
 
@@ -874,23 +843,15 @@ class E104603Test extends \HUGnet\ui\Daemon
         $Bv = number_format($voltsVB, 2);
         $this->out("Bus Volts Tester = ".$Bv." volts");
 
-        /* 26. Disconnect +12V from Port 1 */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::CLR_DIGITAL_COMMAND; /* Open connection to Port 1 */
-        $dataVal = "0303"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::CLR_DIGITAL_COMMAND; /* set to 12 Ohm Load */
-        $dataVal = "0302"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        $this->out("Port 1 +12V OFF:");
-
-        usleep(100000);
-        $voltsP1 = $this->_readTesterP1Volt();
-        $p1v = number_format($voltsP1, 2);
-        $this->out("Port 1  Tester = ".$p1v." volts");
+        /* 26. Disconnect +12V from Port 2 */
+        $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
+        $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
+        $this->out("Port 2 +12V OFF:");
+        sleep(1);
+        
+        $voltsP2 = $this->_readTesterP2Volt();
+        $p2v = number_format($voltsP2, 2);
+        $this->out("Port 2  Tester = ".$p2v." volts");
 
         $result = true;
 
@@ -926,19 +887,13 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         /*********** test steps ***********/
         /* 1. Close ext therm 1 circuit   */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0206"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->_setRelay(7, 1);
 
         /* 2. Close ext therm 2 circuit */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0207"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->_setRelay(8, 1);
 
         $this->out("EXT THERM CIRCUITS CLOSED:");
-        sleep(2);
+        sleep(1);
 
         /* 3. read ext therm 1 value from UUT */
         $extTemp1 = $this->_readUUTExtTemp1();
@@ -954,16 +909,10 @@ class E104603Test extends \HUGnet\ui\Daemon
         /* 5. Test thermistor values          */
 
         /* 6. disconnect resistor from ext therm 1 */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0206"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
+	$this->_setRelay(7, 0);
+	
         /* 7. disconnect resistor from ext therm 2 */
-        $idNum = self::EVAL_BOARD_ID;
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0207"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->_setRelay(8, 0);
         
         $result = true;
         $this->out("");
@@ -1642,6 +1591,63 @@ class E104603Test extends \HUGnet\ui\Daemon
     /*****************************************************************************/
 
      /**
+    ************************************************************
+    * Set Relay Routine
+    *
+    * This function sets the given relay either closed or open.
+    * 
+    * @param $relay relay number 1-8
+    * @param $state 0 = open or 1 = closed
+    *
+    * @return $result true = success; false = failure
+    *
+    */
+    private function _setRelay($relay, $state)
+    {
+        $idNum = self::EVAL_BOARD_ID;
+        
+        if ($state == 1) {
+	    $cmdNum = self::SET_DIGITAL_COMMAND;
+	} else {
+	    $cmdNum = self::CLR_DIGITAL_COMMAND;
+	}
+	
+	switch ($relay) {
+	  case 1:
+	    $dataVal = "0300";
+	    break;
+	  case 2:
+	    $dataVal = "0301";
+	    break;
+	  case 3:
+	    $dataVal = "0302";
+	    break;
+	  case 4:
+	    $dataVal = "0303";
+	    break;
+	  case 5:
+	    $dataVal = "0204";
+	    break;
+	  case 6:
+	    $dataVal = "0205";
+	    break;
+	  case 7:
+	    $dataVal = "0206";
+	    break;
+	  case 8:
+	    $dataVal = "0207";
+	    break;
+	}
+	
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        $result = true;
+        
+	return $result;
+    }
+    
+    
+    /**
     ************************************************************
     * Check Eval Board Routine
     *
