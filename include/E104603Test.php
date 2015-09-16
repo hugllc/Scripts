@@ -370,7 +370,8 @@ class E104603Test extends \HUGnet\ui\Daemon
             $testNum += 1;
             switch ($testNum) {
                 case 1:
-                    $result = $this->_testUUTThermistors();
+                    $result = true;
+                    //$this->_testUUTThermistors();
                     break;
                 case 2: 
                     $result = $this->_testUUTport1();
@@ -1285,7 +1286,8 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _readUUTExtTemp2()
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP2);
-        if ($rawVal > 0x7fff) {
+        if ($rawVal > 0x7ff) {
+            $this->out("Raw Value = ".$rawVal." !");
             $rawVal = 0xffff - $rawVal;
         }
 
@@ -1310,9 +1312,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP1);
         if ($rawVal > 0x7fff) {
-
-            $newVal = $this->twosCompliment($rawVal, $bits);
-            $this->out("Twos compliment val = ".$newVal);
             $rawVal = 0xffff - $rawVal;
         }
 
@@ -1357,7 +1356,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
 
-        if ($rawVal > 0x7fff) {
+        if ($rawVal > 0x7ff) {
             $rawVal = 0xffff - $rawVal;
         }
 
@@ -1531,13 +1530,15 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("\n\rReading Port 1 Voltage");
 
         for ($i = 1; $i < 32; $i++) {
-            $p1Volts = $this->_readUUTP1Volts();
-            $pv1total += $p1Volts;
+            $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
+            $rawTotal += $rawVal;
         }
-            $p1Vav = $pv1total/$i;
-
-        $pV1av = number_format($p1Vav, 2);
-        $this->out("Port 1 Voltage = ".$pV1av." A");
+        $rawAvg = $rawTotal/$i;
+        if ($rawAvg > 0x7ff) {
+            $rawAvg = 0xffff - $rawAvg;
+        }
+        
+        $this->out("Port 1 Voltage raw average = ".$rawAvg." !");
 
         $this->_setRelay(4, 0);
         sleep(1);
