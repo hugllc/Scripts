@@ -371,7 +371,7 @@ class E104603Test extends \HUGnet\ui\Daemon
             switch ($testNum) {
                 case 1:
                     $result = true;
-                    //$this->_testUUTThermistors();
+                    $this->_testUUTThermistors();
                     break;
                 case 2: 
                     $result = $this->_testUUTport1();
@@ -1490,28 +1490,6 @@ class E104603Test extends \HUGnet\ui\Daemon
         /* 7.  Test voltage & current */
         sleep(1);
 
-        /* 8.  Set the fault signal */
-        /* 9.  delay 100mS */
-        // usleep(100000);
-
-        /* 10. Eval Board Measure Port 1 voltage */
-        //$voltsP2 = $this->_readTesterP1Volt();
-
-        /* 11. Get UUT Port 1 voltage */
-        //$p1Volts = $this->_readUUTP1Volts();
-
-        /* 12. Get UUT Port 1 Current */
-        //$p1Amps = $this->_readUUTP1Current();
-
-        /* 13. Remove the fault signal */
-        /* 14. delay 100mS */
-        //usleep(100000);
-
-        /* 15. Turn off Port 1 */
-        /* $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_POWERPORT_COMMAND; 
-        $dataVal = "0100"; 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); */
 
         $this->_setPort(1, 0);
         $this->out("PORT 1 OFF:");
@@ -1529,24 +1507,95 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $this->out("\n\rReading Port 1 Voltage");
 
+        $rawTotal = 0;
+
         for ($i = 1; $i < 32; $i++) {
             $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
+            if ($rawVal > 0x7ff) {
+                $rawVal -= 65536;
+            }
             $rawTotal += $rawVal;
         }
         $rawAvg = $rawTotal/$i;
-        if ($rawAvg > 0x7ff) {
-            $rawAvg = 0xffff - $rawAvg;
-        }
-        
-        $this->out("Port 1 Voltage raw average = ".$rawAvg." !");
 
+        $this->out("Raw Average = ".$rawAvg);
+        
+        $choice = readline("Remove Ground from Port 2 and Enter to Continue!");
+
+        /* remove 12 Ohm load */
         $this->_setRelay(4, 0);
         sleep(1);
 
+
+        /*********************************************************/
+        /*  Now let's try Port 2 ADC                             */
+        /********************************************************/
+
+        /* 1.  connect 12 ohm load  to port 2 */
+        $this->_setRelay(6, 1);
+        sleep(1);
+
+        /* 2.  turn on Port 2 */
+        $this->_setPort(2, 1);
+        $this->out("PORT 2 ON:");
+        /* 3.  delay 1 Second */
+        sleep(1);
+
+        /* 4.  Eval Board Measure Port 2 Voltage */
+        $voltsP2 = $this->_readTesterP2Volt();
+        $p2v = number_format($voltsP2, 2);
+        $this->out("Port 2  Tester = ".$p2v." volts");
+
+        /* 5.  Get UUT Port 2 voltage */
+        $p2Volts = $this->_readUUTP2Volts();
+        $pv2 = number_format($p2Volts, 2);
+        $this->out("Port 2 UUT = ".$pv2." volts!");
+
+        /* 6.  Get UUT Port 2 Current */
+        $p2Amps = $this->_readUUTP2Current();
+        $p2A = number_format($p2Amps, 2);
+        $this->out("Port 2 current = ".$p2A." A");
+
+        sleep(1);
+
+        /* 15. Turn off Port 2 */
+        $this->_setPort(2, 0);
+        $this->out("PORT 2 OFF:");
+        sleep(1);
+
+        $voltsP2 = $this->_readTesterP2Volt();
+        $p2v = number_format($voltsP2, 2);
+        $this->out("Port 2 Tester = ".$p2v." volts");
+
+        $p2Volts = $this->_readUUTP2Volts();
+        $pv2 = number_format($p2Volts, 2);
+        $this->out("Port 2 UUT = ".$pv2." volts!");
+
+        $choice = readline("Connect Port 2 to Ground and Hit Enter to Continue!");
+
+        $this->out("\n\rReading Port 2 Voltage");
+
+        $rawTotal = 0;
+
+        for ($i = 1; $i < 32; $i++) {
+            $rawVal = $this->_readUUT_ADCinput(self::UUT_P2_VOLT);
+            if ($rawVal > 0x7ff) {
+                $rawVal -= 65536;
+            }
+            $rawTotal += $rawVal;
+        }
+        $rawAvg = $rawTotal/$i;
+
+        $this->out("Raw Average = ".$rawAvg);
+
+
+        /* 16.  Disconnect load resistor */
+        $this->_setRelay(6, 0);
+        
         $this->_powerUUT(self::OFF);
        
 
-        $this->out("Remove Ground Connection from Port 1");
+        $this->out("Remove Ground Connection from Port 2");
         $choice = readline("\n\rHit Enter to Continue: ");
 
 
