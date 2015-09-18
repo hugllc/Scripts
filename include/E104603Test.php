@@ -77,6 +77,9 @@ class E104603Test extends \HUGnet\ui\Daemon
     const SET_3V_SW_COMMAND     = 0x27;
     const SET_POWERPORT_COMMAND = 0x28;
     const RESET_DIGITAL_COMMAND = 0x29;
+    
+    const READ_USERSIG_COMMAND  = 0x36;
+    const WRITE_USERSIG_COMMAND = 0x37;
 
     const HEADER_STR    = "Battery Socializer Test & Program Tool";
     
@@ -386,7 +389,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                     $result = $this->_testUUTexttherms();
                     break;
                 case 6:
-                    $result = $this->_testUUTleds();
+                    //$result = $this->_testUUTleds();
                     break;
             }
 
@@ -1286,6 +1289,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _readUUTExtTemp2()
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP2);
+        $this->out("Raw Value for EXT Temp 2 : ".$rawVal." !");
         if ($rawVal > 0x7ff) {
             $this->out("Raw Value = ".$rawVal." !");
             $rawVal = 0xffff - $rawVal;
@@ -1311,6 +1315,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _readUUTExtTemp1()
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP1);
+        $this->out("Raw Value for EXT Temp 1 : ".$rawVal." !");
         if ($rawVal > 0x7fff) {
             $rawVal = 0xffff - $rawVal;
         }
@@ -1439,13 +1444,49 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _troubleshoot104603Main()
     {
         $this->display->clearScreen();
-        $this->_calibrateUUTadc();
+        //$this->_calibrateUUTadc();
+        $this->_testUserSig();
 
         $this->out("Not Done!");
         $choice = readline("\n\rHit Enter to Continue: ");
     }
 
+    /**
+    ************************************************************
+    * Test User Signature routines
+    *
+    * This function will send packet commands to the UUT test
+    * firmware to read the user signature bytes and write them.
+    *
+    */
+    private function _testUserSig()
+    {
+	$this->out("Sending Read User Signature Command!");
+	$this->out("Powering UUT");
+        $this->_powerUUT(self::ON);
 
+	sleep(1);
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::READ_USERSIG_COMMAND;
+        $dataVal = "08F4";
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->out("Reply Data = ".$ReplyData);
+ 
+	sleep(1);
+	$cmdNm = self::WRITE_USERSIG_COMMAND;
+	$dataVal = "07F41040";
+
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->out("Reply Data = ".$ReplyData);
+        sleep(1);
+        
+        $this->_powerUUT(self::OFF);
+        $choice = readline("\n\rHit Enter to Continue: ");
+    
+    }
+    
+    
     /**
     ************************************************************
     * Calibrate ADC Routine
