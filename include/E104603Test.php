@@ -79,7 +79,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     const RESET_DIGITAL_COMMAND = 0x29;
     
     const READ_USERSIG_COMMAND  = 0x36;
-    const WRITE_USERSIG_COMMAND = 0x37;
+    const ERASE_USERSIG_COMMAND = 0x37;
 
     const HEADER_STR    = "Battery Socializer Test & Program Tool";
     
@@ -115,6 +115,12 @@ class E104603Test extends \HUGnet\ui\Daemon
                                 1 => "Troubleshoot 104603 ",
                                 );
 
+    private $_eptroubleMainMenu = array(
+                                0 => "Read User Signature Bytes",
+                                1 => "Write User Signature Bytes",
+                                2 => "Erase User Signature Bytes",
+                                3 => "Load Test Firmware",
+                                );
     public $display;
     /*
     * Sets our configuration
@@ -204,12 +210,15 @@ class E104603Test extends \HUGnet\ui\Daemon
     *   2: Power Up UUT Test
     *   3: Load test firmware into UUT
     *   4: Ping UUT to test communications
-    *   5: Run UUT tests
-    *  16: Load UUT bootloader and config data
-    *  17: Load UUT application code
-    *  18: Power cycle UUT & verify communications
-    *  19: Power Down
-    *  20: Display passed and log data
+    *   5: Run calibration routines & set values
+    *   6: Run UUT tests
+    *   7: Load testboot code to erase user signature page
+    *   8: Write user signature bytes with AVRDUDE
+    *   9: Load UUT bootloader and config data
+    *  10: HUGnet Load UUT application code
+    *  11: Power cycle UUT & verify communications
+    *  12: Power Down
+    *  13: Display passed and log data
     *
     * @return void
     *   
@@ -229,8 +238,14 @@ class E104603Test extends \HUGnet\ui\Daemon
                 //$this->_loadTestFirmware();
                 $result = $this->_checkUUTBoard();
                 if ($result) {
+                    //$this->_runUUTCalibration();
                     $result = $this->_testUUT();
                     if ($result) {
+                        // load testbootloader code to erase user sig
+                        // write user sig hardware pn, serial num, & calib bytes
+                        // Load production bootloader code.
+                        // HUGnetLoad application code
+                        // Test application code operation
                         $this->display->displayPassed();
                     } else {
                         $this->display->displayFailed();
@@ -389,7 +404,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                     $result = $this->_testUUTexttherms();
                     break;
                 case 6:
-                    //$result = $this->_testUUTleds();
+                    $result = $this->_testUUTleds();
                     break;
             }
 
@@ -1289,7 +1304,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _readUUTExtTemp2()
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP2);
-        $this->out("Raw Value for EXT Temp 2 : ".$rawVal." !");
         if ($rawVal > 0x7ff) {
             $this->out("Raw Value = ".$rawVal." !");
             $rawVal = 0xffff - $rawVal;
@@ -1315,8 +1329,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _readUUTExtTemp1()
     {
         $rawVal = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP1);
-        $this->out("Raw Value for EXT Temp 1 : ".$rawVal." !");
-        if ($rawVal > 0x7fff) {
+        if ($rawVal > 0x7ff) {
             $rawVal = 0xffff - $rawVal;
         }
 
@@ -1443,11 +1456,68 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _troubleshoot104603Main()
     {
-        $this->display->clearScreen();
-        //$this->_calibrateUUTadc();
-        $this->_testUserSig();
+        do{
+            $this->display->clearScreen();
+            $selection = $this->display->displayMenu(self::HEADER_STR, 
+                            $this->_eptroubleMainMenu);
 
-        $this->out("Not Done!");
+            if (($selection == "A") || ($selection == "a")) {
+                $this->_readUserSig();
+            } else if (($selection == "B") || ($selection == "b")){
+                $this->_writeUserSig();
+            } else if (($selection == "C") || ($selection == "c")){
+                $this->_eraseUserSig();
+            } else if (($selection == "D") || ($selection == "d")){
+                $this->_testLoadFirmware();
+            } else {
+                $exitTest = true;
+                $this->out("Exit Troubleshooting Tool");
+            }
+
+        } while ($exitTest == false);
+
+        $choice = readline("\n\rHit Enter to Continue: ");
+    }
+
+    /**
+    ************************************************************
+    * Test the load firmware command
+    *
+    * This function powers up the UUT, tests the supply voltage,
+    * loads the test firmware and then pings the UUT to verify
+    * the firmware is running.
+    *
+    */
+    private function _testLoadFirmware()
+    {
+        $this->out("Testing Load Firmware Command!");
+        $result = $this->_testUUTpower();
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+
+        $FUSE1 = 0x00;
+        $FUSE2 = 0xBE;
+        $FUSE3 = 0xFF;
+        $FUSE4 = 0xFF;
+        $FUSE5 = 0xE1;
+        $FUSE6 = 0xFF;
+
+
+        $Avrdude = "avrdude -px32e5 -c avrisp2 -P usb -eu -B 10 -i 100 ";
+        $flash = "-U flash:w:104603test.ihex ";
+        $fuse1 = "-U fuse1:w:".$FUSE1.":m ";
+        $fuse2 = "-U fuse2:w:".$FUSE2.":m ";
+        $fuse4 = "-U fuse4:w:".$FUSE4.":m ";
+        $fuse5 = "-U fuse5:w:".$FUSE5.":m ";
+        //$usig  = "-U usersig:w:104603test.usersig:r ";
+
+        $Prog = $Avrdude.$flash.$fuse1.$fuse2.$fuse4.$fuse5;
+        exec($Prog, $output, $return); 
+
+        $choice = readline("\n\rHit Enter to Continue: "); 
+
+
+        $this->_powerUUT(self::OFF);
         $choice = readline("\n\rHit Enter to Continue: ");
     }
 
@@ -1459,40 +1529,84 @@ class E104603Test extends \HUGnet\ui\Daemon
     * firmware to read the user signature bytes and write them.
     *
     */
-    private function _testUserSig()
+    private function _readUserSig()
     {
-	$this->out("Sending Read User Signature Command!");
-	$this->out("Powering UUT");
-        $this->_powerUUT(self::ON);
+        $this->out("Powering up UUT");
+        $result = $this->_testUUTpower();
+        sleep(1);
+        $choice = readline("\n\rHit Enter to Continue: ");
 
-	sleep(1);
+        $this->out("Sending Read User Signature Command!");
         $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::READ_USERSIG_COMMAND;
-        $dataVal = "08F4";
+        $dataVal = "00";
         
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
         $this->out("Reply Data = ".$ReplyData);
  
-	sleep(1);
-	$cmdNm = self::WRITE_USERSIG_COMMAND;
-	$dataVal = "07F41040";
+        $choice = readline("\n\rHit Enter to Continue: ");
 
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        $this->out("Reply Data = ".$ReplyData);
-        sleep(1);
-        
+        $this->out("Powering down UUT");
         $this->_powerUUT(self::OFF);
         $choice = readline("\n\rHit Enter to Continue: ");
-    
+    }
+
+    /**
+    **************************************************************
+    * Write User Signature Bytes
+    *
+    * This function sends a command to the UUT to write the 
+    * hardware part number, serial number, adc offset and adc
+    * gain error correction bytes to the user signature memory
+    * page.
+    *
+    */
+    private function _writeUserSig()
+    {
+        $this->out("Not done!");
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+    }
+
+    /**
+    **************************************************************
+    * Erase User Signature Routine
+    *
+    * This function sends a command to the UUT to erase the user
+    * signature bytes.
+    *
+    */
+    private function _eraseUserSig()
+    {
+        $this->out("Powering up UUT");
+        $result = $this->_testUUTpower();
+        sleep(1);
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+        $this->out("Sending Erase User Signature Command!");
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::ERASE_USERSIG_COMMAND;
+        $dataVal = "00";
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->out("Reply Data = ".$ReplyData);
+ 
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+        $this->out("Powering down UUT");
+        $this->_powerUUT(self::OFF);
+        $choice = readline("\n\rHit Enter to Continue: ");
+
     }
     
     
     /**
     ************************************************************
-    * Calibrate ADC Routine
+    * Run ADC Calibrate Routine
     *
     * This function collects readings on the adc input port to 
-    * determine offset and gain errors.
+    * determine offset and gain errors. Offset and gain values
+    * will be set in the UUT to prepare for testing.
     */
     private function _calibrateUUTadc()
     {
@@ -1946,12 +2060,28 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $output = array();
         $this->display->displayHeader("Loading Test Firmware");
-        $choice = readline("\n\rConnect Programmer and Hit Enter to Continue: ");
+        $choice = readline("\n\rVerify Programmer is Conneceted and
+                            Hit Enter to Continue: ");
         
 
+        $FUSE1 = 0x00;
+        $FUSE2 = 0xBE;
+        $FUSE3 = 0xFF;
+        $FUSE4 = 0xFF;
+        $FUSE5 = 0xE1;
+        $FUSE6 = 0xFF;
 
-        $Prog = "make -C ~/code/HOS 104603test-install SN=0x0000000020";
-        exec($Prog, $output, $return);
+
+        $Avrdude = "avrdude -px32e5 -c avrisp2 -P usb -eu -B 10 -i 100 ";
+        $flash = "-U flash:w:104603test.ihex ";
+        $fuse1 = "-U fuse1:w:".$FUSE1.":m ";
+        $fuse2 = "-U fuse2:w:".$FUSE2.":m ";
+        $fuse4 = "-U fuse4:w:".$FUSE4.":m ";
+        $fuse5 = "-U fuse5:w:".$FUSE5.":m ";
+        //$usig  = "-U usersig:w:104603test.usersig:r ";
+
+        $Prog = $Avrdude.$flash.$fuse1.$fuse2.$fuse4.$fuse5;
+        exec($Prog, $output, $return); 
 
         if ($return == 0) {
             $result = true;
