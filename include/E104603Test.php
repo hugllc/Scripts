@@ -120,7 +120,9 @@ class E104603Test extends \HUGnet\ui\Daemon
                                 1 => "Write User Signature Bytes",
                                 2 => "Erase User Signature Bytes",
                                 3 => "Load Test Firmware",
+                                4 => "Calibrate UUT ADC",
                                 );
+                                
     public $display;
     /*
     * Sets our configuration
@@ -1469,7 +1471,9 @@ class E104603Test extends \HUGnet\ui\Daemon
                 $this->_eraseUserSig();
             } else if (($selection == "D") || ($selection == "d")){
                 $this->_testLoadFirmware();
-            } else {
+            } else if (($selection == "E") || ($selection == "e")){
+		$this->_calibrateUUTadc();
+	    } else {
                 $exitTest = true;
                 $this->out("Exit Troubleshooting Tool");
             }
@@ -1563,7 +1567,23 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _writeUserSig()
     {
-        $this->out("Not done!");
+        $this->out("Writing User Signature Bytes!");
+        $result = $this->_testUUTpower();
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+
+
+
+        $Avrdude = "sudo avrdude -px32e5 -c avrisp2 -P usb -eu -B 10 -i 100 ";
+        $usig  = "-U usersig:w:104603test.usersig:r ";
+
+        $Prog = $Avrdude.$usig;
+        exec($Prog, $output, $return); 
+
+        $choice = readline("\n\rHit Enter to Continue: "); 
+
+
+        $this->_powerUUT(self::OFF);
         $choice = readline("\n\rHit Enter to Continue: ");
 
     }
@@ -1642,6 +1662,12 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p1Amps = $this->_readUUTP1Current();
         $p1A = number_format($p1Amps, 2);
         $this->out("Port 1 current = ".$p1A." A");
+        
+        $choice = readline("Connect Port 1 to Ground and Hit Enter to Continue!");
+
+      
+        /* Get External Thermistor 2 voltage */
+        
         /* 7.  Test voltage & current */
         sleep(1);
 
@@ -1665,7 +1691,10 @@ class E104603Test extends \HUGnet\ui\Daemon
         $rawTotal = 0;
 
         for ($i = 1; $i < 32; $i++) {
-            $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
+	    $rawtemp = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP2);
+	    $this->out("Ext Therm 2 Raw = ".$rawtemp);
+	    $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
+            $this->out("Raw Value: ".$rawVal);
             if ($rawVal > 0x7ff) {
                 $rawVal -= 65536;
             }
@@ -1733,7 +1762,8 @@ class E104603Test extends \HUGnet\ui\Daemon
         $rawTotal = 0;
 
         for ($i = 1; $i < 32; $i++) {
-            $rawVal = $this->_readUUT_ADCinput(self::UUT_P2_VOLT);
+	    $rawVal = $this->_readUUT_ADCinput(self::UUT_P2_VOLT);
+            $this->out("Raw Value: ".$rawVal);
             if ($rawVal > 0x7ff) {
                 $rawVal -= 65536;
             }
