@@ -318,9 +318,9 @@ class E104603Test extends \HUGnet\ui\Daemon
     * Power UUT through VBUS Routine
     * 
     * This function controls the +12V supply to the UUT through  
-    * opening or closing of relays K1 & K2.
-    * +12V On  = K1 closed & K2 closed
-    * +12V Off = K1 open & K2 open
+    * opening or closing of relay K1.
+    * +12V On  = K1 closed 
+    * +12V Off = K1 open 
     *
     * @return boolean result
     */
@@ -339,24 +339,8 @@ class E104603Test extends \HUGnet\ui\Daemon
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
         
         if ($ReplyData == "30") {
-            $result1 = true;
-        } else { 
-            $result1 = false;
-        }
-        sleep(1);
-        $dataVal = "0301";
-        /* set or clear relay K2 */
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        if ($ReplyData == "31") {
-            $result2 = true;
-        } else {
-            $result2 = false;
-        }
-
-        if (($result1 == true) and ($result2 == true)) {
             $result = true;
-        } else {
+        } else { 
             $result = false;
         }
 
@@ -717,19 +701,13 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Port 1  Tester = ".$p1v." volts");
 
         /* 3.  Disconnect +12V from Vbus */
-        $this->_setRelay(1, 0);  /* open K2 to remove +12V from VBus */
-        $this->out("VBUS +12V DISCONNECTED:");
+        $this->_setRelay(1, 0);  /* open K1 to remove +12V and connect Load */
+        $this->out("VBUS 12 OHM LOAD CONNECTED:");
         sleep(1);
 
         $voltsVB = $this->_readTesterBusVolt();
         $Bv = number_format($voltsVB, 2);
         $this->out("Bus Volts Tester = ".$Bv." volts");
-
-
-        /* 4.  Connect 12 Ohm Load to Vbus */
-        $this->_setRelay(1, 0);  /* open K1 to select 12 Ohm Load */
-        $this->_setRelay(2, 1);  /* close K2 to connect load to Vbus */
-        $this->out("VBUS 12 OHM LOAD CONNECTED:");
         sleep(1);
         
         /* 5.  Turn on Port 1 */
@@ -826,9 +804,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Port 2 current = ".$p2A." A");
         
         /* 25. Connect +12V to Vbus */
-        $this->_setRelay(2, 0);  /* open K2 to remove load from Vbus */
         $this->_setRelay(1, 1);  /* close K1 to select +12V */
-        $this->_setRelay(2, 1);  /* close K2 to connect +12V to Vbus */
         $this->out("Bus Voltage ON:");
         sleep(1);
 
@@ -1507,7 +1483,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $FUSE6 = 0xFF;
 
 
-        $Avrdude = "avrdude -px32e5 -c avrisp2 -P usb -eu -B 10 -i 100 ";
+        $Avrdude = "avrdude -px32e5 -c avrisp2 -P usb -e -B 10 -i 100 ";
         $flash = "-U flash:w:104603test.ihex ";
         $fuse1 = "-U fuse1:w:".$FUSE1.":m ";
         $fuse2 = "-U fuse2:w:".$FUSE2.":m ";
@@ -1574,7 +1550,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
 
 
-        $Avrdude = "sudo avrdude -px32e5 -c avrisp2 -P usb -eu -B 10 -i 100 ";
+        $Avrdude = "sudo avrdude -px32e5 -c avrisp2 -P usb -B 10 -i 100 ";
         $usig  = "-U usersig:w:104603test.usersig:r ";
 
         $Prog = $Avrdude.$usig;
