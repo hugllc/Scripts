@@ -417,17 +417,19 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _testUUTswitched3V3()
     {
 
-        $idNum = self::UUT_BOARD_ID;
+       /* $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_3V_SW_COMMAND;
         $dataVal = "01";
         
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         $newData = $this->_convertReplyData($ReplyData);
-        $this->out("3v3 reply data :".$newData." !");
+        $this->out("3v3 reply data :".$newData." !");*/
 
         $volts = $this->_readTesterSW3();
-        $this->out("3.3V measures ".$volts." volts!");
+        $sw3V = number_format($volts, 2);
+
+        $this->out("3.3V Switched measures ".$sw3V." volts!");
 
         return true;
 
@@ -700,129 +702,144 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p1v = number_format($voltsP1, 2);
         $this->out("Port 1  Tester = ".$p1v." volts");
 
-        /* 3.  Disconnect +12V from Vbus */
-        $this->_setRelay(1, 0);  /* open K1 to remove +12V and connect Load */
-        $this->out("VBUS 12 OHM LOAD CONNECTED:");
-        sleep(1);
+        if ($voltsP1 > 11.00) { 
+            /* 3.  Disconnect +12V from Vbus */
+            $this->_setRelay(1, 0);  /* open K1 to remove +12V and connect Load */
+            $this->out("VBUS 12 OHM LOAD CONNECTED:");
+            sleep(1);
 
-        $voltsVB = $this->_readTesterBusVolt();
-        $Bv = number_format($voltsVB, 2);
-        $this->out("Bus Volts Tester = ".$Bv." volts");
-        sleep(1);
-        
-        /* 5.  Turn on Port 1 */
-        $this->_setPort(1, 1);
-        $this->out("PORT 1 ON:");
-        sleep(1);
+            $voltsVB = $this->_readTesterBusVolt();
+            $Bv = number_format($voltsVB, 2);
+            $this->out("Bus Volts Tester = ".$Bv." volts");
+            sleep(1);
+            
+            /* 5.  Turn on Port 1 */
+            $this->_setPort(1, 1);
+            $this->out("PORT 1 ON:");
+            sleep(1);
 
-        /* 7.  Eval measure Vbus voltage */
-        $voltsVB = $this->_readTesterBusVolt();
-        $Bv = number_format($voltsVB, 2);
-        $this->out("Bus Volts Tester = ".$Bv." volts");
+            /* 7.  Eval measure Vbus voltage */
+            $voltsVB = $this->_readTesterBusVolt();
+            $Bv = number_format($voltsVB, 2);
+            $this->out("Bus Volts Tester = ".$Bv." volts");
 
-        /* 8.  Get UUT Port 1 voltage */
-        $p1Volts = $this->_readUUTP1Volts();
-        $pv1 = number_format($p1Volts, 2);
-        $this->out("Port 1 UUT = ".$pv1." volts!");
+            /* 8.  Get UUT Port 1 voltage */
+            $p1Volts = $this->_readUUTP1Volts();
+            $pv1 = number_format($p1Volts, 2);
+            $this->out("Port 1 UUT = ".$pv1." volts!");
 
-        /* 9.  Get UUT Port 1 current */
-        $p1Amps = $this->_readUUTP1Current();
-        $p1A = number_format($p1Amps, 2);
-        $this->out("Port 1 current = ".$p1A." A");
+            /* 9.  Get UUT Port 1 current */
+            $p1Amps = $this->_readUUTP1Current();
+            $p1A = number_format($p1Amps, 2);
+            $this->out("Port 1 current = ".$p1A." A");
 
-        /* 10. Test current & voltage values. */
+            /* 10. Test current & voltage values. */
 
-        /* 11. Turn off Port 1 */
-        $this->_setPort(1, 0);
-        $this->out("PORT 1 OFF:");
-        sleep(1);
+            /* 11. Turn off Port 1 */
+            $this->_setPort(1, 0);
+            $this->out("PORT 1 OFF:");
+            sleep(1);
 
-        /* 13. Eval measure Vbus Voltage */
-        $voltsVB = $this->_readTesterBusVolt();
-        $Bv = number_format($voltsVB, 2);
-        $this->out("Bus Volts Tester = ".$Bv." volts");
+            /* 13. Eval measure Vbus Voltage */
+            $voltsVB = $this->_readTesterBusVolt();
+            $Bv = number_format($voltsVB, 2);
+            $this->out("Bus Volts Tester = ".$Bv." volts");
 
-        $p1Amps = $this->_readUUTP1Current();
-        $p1A = number_format($p1Amps, 2);
-        $this->out("Port 1 current = ".$p1A." A");
+            $p1Amps = $this->_readUUTP1Current();
+            $p1A = number_format($p1Amps, 2);
+            $this->out("Port 1 current = ".$p1A." A");
 
-        /* 14. Connect +12V to Port 2 */
-        $idNum = self::EVAL_BOARD_ID;
-        $this->_setRelay(5, 1);  /* close K5 to select +12V */
-        $this->_setRelay(6, 1);  /* close K6 to connect +12V to Port 2 */
-        $this->out("PORT 2 +12V CONNECTED:");
-        sleep(1);
-        
-        $voltsP2 = $this->_readTesterP2Volt();
-        $p2v = number_format($voltsP2, 2);
-        $this->out("Port 2  Tester = ".$p2v." volts");
-        
-        /* 15. Disconnect +12V from Port 1 */
-        $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
-        $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
-        $this->out("Port 1 +12V OFF:");
-        sleep(1);
-        
-        $voltsP1 = $this->_readTesterP1Volt();
-        $p1v = number_format($voltsP1, 2);
-        $this->out("Port 1  Tester = ".$p1v." volts");
-        
-       /* 16. Turn on Port 2 */
-        $this->_setPort(2, 1);
-        $this->out("PORT 2 ON:");
-        sleep(1);
-        
-        /* 17. Eval measure Vbus voltage */
-        $voltsVB = $this->_readTesterBusVolt();
-        $Bv = number_format($voltsVB, 2);
-        $this->out("Bus Volts Tester = ".$Bv." volts");
+            /* 14. Connect +12V to Port 2 */
+            $idNum = self::EVAL_BOARD_ID;
+            $this->_setRelay(5, 1);  /* close K5 to select +12V */
+            $this->_setRelay(6, 1);  /* close K6 to connect +12V to Port 2 */
+            $this->out("PORT 2 +12V CONNECTED:");
+            sleep(1);
+            
+            $voltsP2 = $this->_readTesterP2Volt();
+            $p2v = number_format($voltsP2, 2);
+            $this->out("Port 2  Tester = ".$p2v." volts");
+            
+            /* 15. Disconnect +12V from Port 1 */
+            $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
+            $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
+            $this->out("Port 1 +12V OFF:");
+            sleep(1);
+            
+            $voltsP1 = $this->_readTesterP1Volt();
+            $p1v = number_format($voltsP1, 2);
+            $this->out("Port 1  Tester = ".$p1v." volts");
+            
+            /* 16. Turn on Port 2 */
+            $this->_setPort(2, 1);
+            $this->out("PORT 2 ON:");
+            sleep(1);
+            
+            /* 17. Eval measure Vbus voltage */
+            $voltsVB = $this->_readTesterBusVolt();
+            $Bv = number_format($voltsVB, 2);
+            $this->out("Bus Volts Tester = ".$Bv." volts");
 
-        /* 18. Get UUT Port 2 voltage */
-        $p2Volts = $this->_readUUTP2Volts();
-        $pv2 = number_format($p2Volts, 2);
-        $this->out("Port 2 UUT = ".$pv2." volts!");
+            /* 18. Get UUT Port 2 voltage */
+            $p2Volts = $this->_readUUTP2Volts();
+            $pv2 = number_format($p2Volts, 2);
+            $this->out("Port 2 UUT = ".$pv2." volts!");
 
-        /* 19. Get UUT Port 2 Current */
-        $p2Amps = $this->_readUUTP2Current();
-        $p2A = number_format($p2Amps, 2);
-        $this->out("Port 2 current = ".$p2A." A");
+            /* 19. Get UUT Port 2 Current */
+            $p2Amps = $this->_readUUTP2Current();
+            $p2A = number_format($p2Amps, 2);
+            $this->out("Port 2 current = ".$p2A." A");
 
-        /* 20. Test current and voltage values */
+            /* 20. Test current and voltage values */
 
-        /* 21. Turn off Port 2 */
-        $this->_setPort(2, 0);
-        $this->out("PORT 2 OFF:");
-        sleep(1);
+            /* 21. Turn off Port 2 */
+            $this->_setPort(2, 0);
+            $this->out("PORT 2 OFF:");
+            sleep(1);
 
-        /* 23. Eval measure Vbus voltage */
-        $voltsVB = $this->_readTesterBusVolt();
-        $Bv = number_format($voltsVB, 2);
-        $this->out("Bus Volts Tester = ".$Bv." volts");
+            /* 23. Eval measure Vbus voltage */
+            $voltsVB = $this->_readTesterBusVolt();
+            $Bv = number_format($voltsVB, 2);
+            $this->out("Bus Volts Tester = ".$Bv." volts");
 
-        $p2Amps = $this->_readUUTP2Current();
-        $p2A = number_format($p2Amps, 2);
-        $this->out("Port 2 current = ".$p2A." A");
-        
-        /* 25. Connect +12V to Vbus */
-        $this->_setRelay(1, 1);  /* close K1 to select +12V */
-        $this->out("Bus Voltage ON:");
-        sleep(1);
+            $p2Amps = $this->_readUUTP2Current();
+            $p2A = number_format($p2Amps, 2);
+            $this->out("Port 2 current = ".$p2A." A");
+            
+            /* 25. Connect +12V to Vbus */
+            $this->_setRelay(1, 1);  /* close K1 to select +12V */
+            $this->out("Bus Voltage ON:");
+            sleep(1);
 
-        $voltsVB = $this->_readTesterBusVolt();
-        $Bv = number_format($voltsVB, 2);
-        $this->out("Bus Volts Tester = ".$Bv." volts");
+            $voltsVB = $this->_readTesterBusVolt();
+            $Bv = number_format($voltsVB, 2);
+            $this->out("Bus Volts Tester = ".$Bv." volts");
 
-        /* 26. Disconnect +12V from Port 2 */
-        $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
-        $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
-        $this->out("Port 2 +12V OFF:");
-        sleep(1);
-        
-        $voltsP2 = $this->_readTesterP2Volt();
-        $p2v = number_format($voltsP2, 2);
-        $this->out("Port 2  Tester = ".$p2v." volts");
+            /* 26. Disconnect +12V from Port 2 */
+            $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
+            $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
+            $this->out("Port 2 +12V OFF:");
+            sleep(1);
+            
+            $voltsP2 = $this->_readTesterP2Volt();
+            $p2v = number_format($voltsP2, 2);
+            $this->out("Port 2  Tester = ".$p2v." volts");
 
-        $result = true;
+            $result = true;
+        } else {
+            /*  Disconnect +12V from Port 1 */
+            $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
+            $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
+            $this->out("Port 1 +12V OFF:");
+            sleep(1);
+            
+            $voltsP1 = $this->_readTesterP1Volt();
+            $p1v = number_format($voltsP1, 2);
+            $this->out("Port 1  Tester = ".$p1v." volts");
+            
+            $result = false;
+        }
+            
 
         $this->out("");
         return $result;
@@ -1476,7 +1493,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
 
         $FUSE1 = 0x00;
-        $FUSE2 = 0xBE;
+        $FUSE2 = 0xFE;   /* changed to FE to boot from 0x00000 reset vector */
         $FUSE3 = 0xFF;
         $FUSE4 = 0xFF;
         $FUSE5 = 0xE1;
@@ -1489,7 +1506,6 @@ class E104603Test extends \HUGnet\ui\Daemon
         $fuse2 = "-U fuse2:w:".$FUSE2.":m ";
         $fuse4 = "-U fuse4:w:".$FUSE4.":m ";
         $fuse5 = "-U fuse5:w:".$FUSE5.":m ";
-        //$usig  = "-U usersig:w:104603test.usersig:r ";
 
         $Prog = $Avrdude.$flash.$fuse1.$fuse2.$fuse4.$fuse5;
         exec($Prog, $output, $return); 
@@ -1528,6 +1544,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $this->out("Powering down UUT");
         $this->_powerUUT(self::OFF);
+        $this->_clearTester();
         $choice = readline("\n\rHit Enter to Continue: ");
     }
 
@@ -1546,9 +1563,6 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Writing User Signature Bytes!");
         $result = $this->_testUUTpower();
         $choice = readline("\n\rHit Enter to Continue: ");
-
-
-
 
         $Avrdude = "sudo avrdude -px32e5 -c avrisp2 -P usb -B 10 -i 100 ";
         $usig  = "-U usersig:w:104603test.usersig:r ";
@@ -2071,7 +2085,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         
 
         $FUSE1 = 0x00;
-        $FUSE2 = 0xBE;
+        $FUSE2 = 0xFE;  /* changed to FE to use 0x0000000 as reset vector */
         $FUSE3 = 0xFF;
         $FUSE4 = 0xFF;
         $FUSE5 = 0xE1;
@@ -2084,7 +2098,6 @@ class E104603Test extends \HUGnet\ui\Daemon
         $fuse2 = "-U fuse2:w:".$FUSE2.":m ";
         $fuse4 = "-U fuse4:w:".$FUSE4.":m ";
         $fuse5 = "-U fuse5:w:".$FUSE5.":m ";
-        //$usig  = "-U usersig:w:104603test.usersig:r ";
 
         $Prog = $Avrdude.$flash.$fuse1.$fuse2.$fuse4.$fuse5;
         exec($Prog, $output, $return); 
