@@ -70,16 +70,19 @@ class E104603Test extends \HUGnet\ui\Daemon
     const EVAL_BOARD_ID = 0x30;
     const UUT_BOARD_ID = 0x20;
 
-    const TEST_ANALOG_COMMAND   = 0x23;
-    const SET_DIGITAL_COMMAND   = 0x24;
-    const CLR_DIGITAL_COMMAND   = 0x25;
-    const SET_LED_COMMAND       = 0x26;
-    const SET_3V_SW_COMMAND     = 0x27;
-    const SET_POWERPORT_COMMAND = 0x28;
-    const RESET_DIGITAL_COMMAND = 0x29;
-    
-    const READ_USERSIG_COMMAND  = 0x36;
-    const ERASE_USERSIG_COMMAND = 0x37;
+    const TEST_ANALOG_COMMAND    = 0x23;
+    const SET_DIGITAL_COMMAND    = 0x24;
+    const CLR_DIGITAL_COMMAND    = 0x25;
+    const SET_LED_COMMAND        = 0x26;
+    const SET_3V_SW_COMMAND      = 0x27;
+    const SET_POWERPORT_COMMAND  = 0x28;
+    const RESET_DIGITAL_COMMAND  = 0x29;
+
+    const SET_ADCOFFSET_COMMAND  = 0x2A;
+    const SET_ADCGAINCOR_COMMAND = 0x2B;
+
+    const READ_USERSIG_COMMAND   = 0x36;
+    const ERASE_USERSIG_COMMAND  = 0x37;
 
     const HEADER_STR    = "Battery Socializer Test & Program Tool";
     
@@ -1652,16 +1655,10 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p1Amps = $this->_readUUTP1Current();
         $p1A = number_format($p1Amps, 2);
         $this->out("Port 1 current = ".$p1A." A");
-        
-        $choice = readline("Connect Port 1 to Ground and Hit Enter to Continue!");
-
-      
-        /* Get External Thermistor 2 voltage */
-        
-        /* 7.  Test voltage & current */
         sleep(1);
-
-
+        
+        
+        /* Turn off Port 1 */
         $this->_setPort(1, 0);
         $this->out("PORT 1 OFF:");
         sleep(1);
@@ -1670,19 +1667,11 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p1v = number_format($voltsP1, 2);
         $this->out("Port 1 Tester = ".$p1v." volts");
 
-        $p1Volts = $this->_readUUTP1Volts();
-        $pv1 = number_format($p1Volts, 2);
-        $this->out("Port 1 UUT = ".$pv1." volts!");
-
-        $choice = readline("Connect Port 1 to Ground and Hit Enter to Continue!");
-
         $this->out("\n\rReading Port 1 Voltage");
 
         $rawTotal = 0;
 
         for ($i = 1; $i < 32; $i++) {
-	    $rawtemp = $this->_readUUT_ADCinput(self::UUT_EXT_TEMP2);
-	    $this->out("Ext Therm 2 Raw = ".$rawtemp);
 	    $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
             $this->out("Raw Value: ".$rawVal);
             if ($rawVal > 0x7ff) {
@@ -1693,6 +1682,14 @@ class E104603Test extends \HUGnet\ui\Daemon
         $rawAvg = $rawTotal/$i;
 
         $this->out("Raw Average = ".$rawAvg);
+        $intVal = number_format($rawAvg, 0, "", "");
+
+      
+
+        /*******************************************/
+        /* Now get an integer value for rawAvg     */
+        /* and convert it to a hex value we can    */
+        /* send to ADC offset Correction register. */
         
         $choice = readline("Remove Ground from Port 2 and Enter to Continue!");
 
@@ -1701,76 +1698,8 @@ class E104603Test extends \HUGnet\ui\Daemon
         sleep(1);
 
 
-        /*********************************************************/
-        /*  Now let's try Port 2 ADC                             */
-        /********************************************************/
-
-        /* 1.  connect 12 ohm load  to port 2 */
-        $this->_setRelay(6, 1);
-        sleep(1);
-
-        /* 2.  turn on Port 2 */
-        $this->_setPort(2, 1);
-        $this->out("PORT 2 ON:");
-        /* 3.  delay 1 Second */
-        sleep(1);
-
-        /* 4.  Eval Board Measure Port 2 Voltage */
-        $voltsP2 = $this->_readTesterP2Volt();
-        $p2v = number_format($voltsP2, 2);
-        $this->out("Port 2  Tester = ".$p2v." volts");
-
-        /* 5.  Get UUT Port 2 voltage */
-        $p2Volts = $this->_readUUTP2Volts();
-        $pv2 = number_format($p2Volts, 2);
-        $this->out("Port 2 UUT = ".$pv2." volts!");
-
-        /* 6.  Get UUT Port 2 Current */
-        $p2Amps = $this->_readUUTP2Current();
-        $p2A = number_format($p2Amps, 2);
-        $this->out("Port 2 current = ".$p2A." A");
-
-        sleep(1);
-
-        /* 15. Turn off Port 2 */
-        $this->_setPort(2, 0);
-        $this->out("PORT 2 OFF:");
-        sleep(1);
-
-        $voltsP2 = $this->_readTesterP2Volt();
-        $p2v = number_format($voltsP2, 2);
-        $this->out("Port 2 Tester = ".$p2v." volts");
-
-        $p2Volts = $this->_readUUTP2Volts();
-        $pv2 = number_format($p2Volts, 2);
-        $this->out("Port 2 UUT = ".$pv2." volts!");
-
-        $choice = readline("Connect Port 2 to Ground and Hit Enter to Continue!");
-
-        $this->out("\n\rReading Port 2 Voltage");
-
-        $rawTotal = 0;
-
-        for ($i = 1; $i < 32; $i++) {
-	    $rawVal = $this->_readUUT_ADCinput(self::UUT_P2_VOLT);
-            $this->out("Raw Value: ".$rawVal);
-            if ($rawVal > 0x7ff) {
-                $rawVal -= 65536;
-            }
-            $rawTotal += $rawVal;
-        }
-        $rawAvg = $rawTotal/$i;
-
-        $this->out("Raw Average = ".$rawAvg);
-
-
-        /* 16.  Disconnect load resistor */
-        $this->_setRelay(6, 0);
         
         $this->_powerUUT(self::OFF);
-       
-
-        $this->out("Remove Ground Connection from Port 2");
         $choice = readline("\n\rHit Enter to Continue: ");
 
 
@@ -2297,26 +2226,64 @@ class E104603Test extends \HUGnet\ui\Daemon
     }
 
     /**
-    * Changes an n-bit twos compliment number into a signed number PHP can use
+    ****************************************************
+    * Negative Integer to Two's Complement Routine
     *
-    * @param int   $value The incoming number
-    * @param float $bits  The number of bits the incoming number is
+    * This function takes a negative integer value and 
+    * returns a two-byte twos complement value.
     *
-    * @return int A signed integer for PHP to use
+    * @param string   $value negative integer.
+    *
+    * @return string A twos complement hex value
     */
-    protected function twosCompliment($value, $bits = 16)
+    public function negInt_to_twosComplement($value)
     {
-        /* Clear off any excess */
-        $value = (int)($value & (pow(2, $bits) - 1));
-        /* Calculate the top bit */
-        $topBit = pow(2, ($bits - 1));
-        /* Check to see if the top bit is set */
+        $maxNeg = "-32767";
+
+        if ($value > $maxNeg) {
+            $abVal = abs($value);
+
+            /* add one */
+            $tempVal = $abVal + 1;
+            /* convert to twos complement hex */
+            $twosVal = dechex(~$tempVal);
+
+            /* now get the correct number of hex characters */
+            $length = strlen($twosVal);
+            $retVal = substr($twosVal, $length-4, 4);
+        } else {
+            $retVal = "0000";
+
+
+        return $retVal;
+    }
+
+    /**
+    ***************************************************
+    * Twos Complement to Negative Integer
+    *
+    * This function takes a 2 byte twos complement
+    * number and returns the negative integer values.
+    *
+    * @param $hexVal  input 2 byte hex string
+    *
+    * @return $retVal a signed integer number.
+    */
+    public function twosComplement_to_negInt($hexVal)
+    {
+        $bits = 16;
+
+        $value = (hexdec($hexVal) + 2);
+        
+        $topBit = pow(2, ($bits-1));
+        
         if (($value & $topBit) == $topBit) {
-            /* This is a negative number */
             $value = -(pow(2, $bits) - $value);
         }
+
         return $value;
     }
+
         
 
 
