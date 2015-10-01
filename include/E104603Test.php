@@ -1675,8 +1675,11 @@ class E104603Test extends \HUGnet\ui\Daemon
 	    $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
             $this->out("Raw Value: ".$rawVal);
             if ($rawVal > 0x7ff) {
-                $rawVal -= 65536;
+                $len = strlen($rawVal);
+                $hexVal = substr($rawVal, $len-4, 4);
+                $rawVal = $this->_twosComplement_to_negInt($hexVal);
             }
+            $this->out("Raw Value: ".$rawVal);
             $rawTotal += $rawVal;
         }
         $rawAvg = $rawTotal/$i;
@@ -1695,6 +1698,27 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         /* remove 12 Ohm load */
         $this->_setRelay(4, 0);
+        sleep(1);
+
+        $this->_setRelay(2,1);  /* Select 10V reference */
+        $this->_setRelay(3,1);  /* Select Voltage supply */
+        $this->_setRelay(4,1);  /* Connect 10V reference */
+        sleep(1);
+
+        /* measure port 1 voltage with tester */
+        $voltsP1 = $this->_readTesterP1Volt();
+        $p1v = number_format($voltsP1, 4);
+        $this->out("Port 1 Tester = ".$p1v." volts");
+
+        /* measure port 1 voltage with UUT */
+        $voltsUp1 = $this->_readUUTP1Volts();
+        $up1V = number_format($voltsUp1, 4);
+        $this->out("Port 1 UUT = ".$up1V." volts");
+
+        sleep(1);
+        $this->_setRelay(4,0); /* Disconnect Port 1 */
+        $this->_setRelay(3,0); /* Select load */
+        $this->_setRelay(2,0); /* Select 12V   */
         sleep(1);
 
 
@@ -2236,24 +2260,31 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return string A twos complement hex value
     */
-    public function negInt_to_twosComplement($value)
+    public function _negInt_to_twosComplement($value)
     {
         $maxNeg = "-32767";
 
         if ($value > $maxNeg) {
-            $abVal = abs($value);
+            if ($value <> 0 ) {
+                $abVal = abs($value);
+            } else {
+                $abVal = 0;
+            }
 
-            /* add one */
-            $tempVal = $abVal + 1;
-            /* convert to twos complement hex */
-            $twosVal = dechex(~$tempVal);
+            /* convert to inverted hex value */
+            $twosVal = dechex(~$abVal);
+            $len = strlen($twosVal);
+            $hexVal = substr($twosVal, $len-4, 4);
+            $tempVal = hexdec($hexVal);
+            $tempVal += 1;
+            $retVal = dechex($tempVal);
+            
+           
 
             /* now get the correct number of hex characters */
-            $length = strlen($twosVal);
-            $retVal = substr($twosVal, $length-4, 4);
         } else {
             $retVal = "0000";
-
+        }
 
         return $retVal;
     }
@@ -2269,7 +2300,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return $retVal a signed integer number.
     */
-    public function twosComplement_to_negInt($hexVal)
+    public function _twosComplement_to_negInt($hexVal)
     {
         $bits = 16;
 
