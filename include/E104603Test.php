@@ -1669,32 +1669,17 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $this->out("\n\rReading Port 1 Voltage");
 
-        $rawTotal = 0;
-
-        for ($i = 1; $i < 32; $i++) {
-	    $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
-            $this->out("Raw Value: ".$rawVal);
-            if ($rawVal > 0x7ff) {
-                $len = strlen($rawVal);
-                $hexVal = substr($rawVal, $len-4, 4);
-                $rawVal = $this->_twosComplement_to_negInt($hexVal);
-            }
-            $this->out("Raw Value: ".$rawVal);
-            $rawTotal += $rawVal;
-        }
-        $rawAvg = $rawTotal/$i;
-
-        $this->out("Raw Average = ".$rawAvg);
-        $intVal = number_format($rawAvg, 0, "", "");
-
-      
-
         /*******************************************/
         /* Now get an integer value for rawAvg     */
         /* and convert it to a hex value we can    */
         /* send to ADC offset Correction register. */
-        
-        $choice = readline("Remove Ground from Port 2 and Enter to Continue!");
+
+	$offsetHexVal = $this->_runAdcOffsetCalibration();
+
+	$offsetIntVal = $this->_twosComplement_to_negInt($offsetHexVal);
+	$this->out("Offset Integer Value = ".$offsetIntVal);
+	
+        $choice = readline("Hit Enter to Continue!");
 
         /* remove 12 Ohm load */
         $this->_setRelay(4, 0);
@@ -1714,8 +1699,29 @@ class E104603Test extends \HUGnet\ui\Daemon
         $voltsUp1 = $this->_readUUTP1Volts();
         $up1V = number_format($voltsUp1, 4);
         $this->out("Port 1 UUT = ".$up1V." volts");
-
+        
+	
+        $gainErrorValue = $this->_runAdcGainCorr($offsetIntVal);
+	
         sleep(1);
+        
+        $hexVal = "07ED";
+ 	$this->out("*** Setting ADC Gain Correction ****");
+	$retVal = $this->_setAdcGainCorr($gainErrorValue);
+	
+	$this->out("Return Value :".$retVal);
+        
+        $choice = readline("Hit Enter to Continue!");
+        
+        for ($times = 0; $times < 10; $times++) {
+	  /* measure port 1 voltage with UUT */
+	  $voltsUp1 = $this->_readUUTP1Volts();
+	  $up1V = number_format($voltsUp1, 4);
+	  $this->out("Port 1 UUT = ".$up1V." volts");
+	};
+        
+        
+	$choice = readline("\n\rCheck Ref V & Hit Enter to Continue: ");
         $this->_setRelay(4,0); /* Disconnect Port 1 */
         $this->_setRelay(3,0); /* Select load */
         $this->_setRelay(2,0); /* Select 12V   */
@@ -1844,6 +1850,168 @@ class E104603Test extends \HUGnet\ui\Daemon
     /*                                                                           */
     /*****************************************************************************/
 
+ 
+    /**
+    ***********************************************************
+    * Run ADC offset Calibration Routine
+    *
+    * This function performs the adc offset calibration by 
+    * measuring port 1 voltage which is set at zero volts.  It
+    * then calculates the offset error, converts the value to a 
+    * two byte hex value which is written to the adc offset 
+    * correction register.
+    *
+    *
+    */
+    private function _runAdcOffsetCalibration()
+    {
+        $rawTotal = 0;
+
+        for ($i = 1; $i < 32; $i++) {
+	    $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
+            if ($rawVal > 0x7ff) {
+		$newVal= dechex($rawVal);
+                $len = strlen($newVal);
+                $hexVal = substr($newVal, $len-4, 4);
+                $rawVal = $this->_twosComplement_to_negInt($hexVal);
+            }
+            $rawTotal += $rawVal;
+        }
+        
+        
+        $rawAvg = $rawTotal/($i-1);
+
+        $this->out("Raw Average = ".$rawAvg);
+        $offsetIntVal = number_format($rawAvg, 0, "", "");
+	$hexVal = dechex($offsetIntVal);
+	$len = strlen($hexVal);
+	$hexVal = substr($hexVal, len-4, 4);
+	$this->out("Here is our Hex Value for the offset ".$hexVal);
+      
+	$this->out("*** Setting ADC Offset ****");
+	$retVal = $this->_setAdcOffset($hexVal);
+	
+	$this->out("Return Value :".$retVal);
+    
+    
+	return $hexVal;
+    
+    }
+    
+    /**
+    ************************************************************
+    * Run ADC Gain Error Correction Routine
+    * 
+    * This function performs the gain error correction by 
+    * measuring port 1 voltage which is set at the reference
+    * voltage of 10.0V.  It then uses the following formula
+    * to calculate the gain error correction value:
+    *
+    *                         expected value
+    *  GAIN CORR = 2048 X -----------------------
+    *                      (MeasuredValue - OffsetCor)
+    *
+    */
+    private function _runAdcGainCorr($offsetIntValue)
+    {
+	$rawTotal = 0;
+	
+        for ($i = 1; $i < 32; $i++) {
+	    $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
+            $rawTotal += $rawVal;
+        }
+        $rawAvg = $rawTotal/($i-1);
+        
+        $this->out("\n\r");
+        $this->out("*********************************************************");
+        $this->out("*      Calculating the Gain Error Correction Value      *");
+        $this->out("*********************************************************");
+        
+	$this->out("Raw Vref average = ".$rawAvg);
+        $gainIntVal = number_format($rawAvg, 0, "", "");
+        $this->out("Integer Value = ".$gainIntVal);
+        
+        $tempVal = $gainIntVal - $offsetIntValue;
+        $this->out("Gain Int - Offset Int = ".$tempVal);
+        
+        $gainRatio = 975/ $tempVal;
+        $this->out("Gain Ratio = ".$gainRatio);
+        
+	$gainVal = 2048 * $gainRatio;
+	
+	$this->out("Gain Val = :".$gainVal);
+	
+	$gainIntValue = number_format($gainVal, 0, "", "");
+	
+	$hexVal = dechex($gainIntValue);
+	
+	$len = strlen($hexVal);
+	if ($len < 4) {
+	    while ($len < 4) {
+		$hexVal = "0".$hexVal;
+		$len = strlen($hexVal);
+	    }
+	} else if ($len > 4) {
+	  $hexVal = substr($hexVal, $len-4, 4);
+	}
+	$this->out("Hex Vref Val:".$hexVal);
+    
+    
+	return $hexVal;
+    
+    }
+    
+    /**
+    ************************************************************
+    * Set ADC Offset Routine
+    *
+    * This function sends a command and data to the UUT to 
+    * set the ADC offset correction register and enable
+    * ADC error correction.
+    *
+    * @param $dataVal a two byte hex string
+    *
+    * @return $offVal  a two byte string read from offsetCorr
+    */
+    private function _setAdcOffset($dataVal)
+    {
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_ADCOFFSET_COMMAND; 
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        $this->out("Offset Reply ".$ReplyData);
+        
+        return $ReplyData;
+    
+    }
+    
+    /**
+    ************************************************************
+    * Set ADC Gain Error Correction Routine
+    *
+    * This function sends a command and the data to the UUT to
+    * set the ADC gain error correction register and enable 
+    * ADC error correction
+    *
+    * @param $dataVal a two byte hex string
+    *
+    * @return $retVal a two byte string read from gainCorr
+    */
+    private function _setAdcGainCorr($dataVal)
+    {
+         $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_ADCGAINCOR_COMMAND; 
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        $this->out("Gain Corr Reply ".$ReplyData);
+        
+        return $ReplyData;
+    }
+   
+    
+    
      /**
     ************************************************************
     * Set Relay Routine
@@ -2304,7 +2472,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $bits = 16;
 
-        $value = (hexdec($hexVal) + 2);
+        $value = (hexdec($hexVal));
         
         $topBit = pow(2, ($bits-1));
         
