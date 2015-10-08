@@ -81,6 +81,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     const SET_ADCOFFSET_COMMAND  = 0x2A;
     const SET_ADCGAINCOR_COMMAND = 0x2B;
 
+    const READ_ANALOG_COMMAND    = 0x2C;
     const READ_USERSIG_COMMAND   = 0x36;
     const ERASE_USERSIG_COMMAND  = 0x37;
 
@@ -540,6 +541,10 @@ class E104603Test extends \HUGnet\ui\Daemon
         $pv1 = number_format($p1Volts, 2);
         $this->out("Port 1 UUT = ".$pv1." volts!");
 
+        $p1Vavg = $this->_readUUTP1Avg();
+        $pv1A = number_format($p1Vavg,2);
+        $this->out("Por1 1 UUT Averaged = ".$pv1A." volts!");
+
         /* 6.  Get UUT Port 1 Current */
         $p1Amps = $this->_readUUTP1Current();
         $p1A = number_format($p1Amps, 2);
@@ -581,6 +586,10 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p1Volts = $this->_readUUTP1Volts();
         $pv1 = number_format($p1Volts, 2);
         $this->out("Port 1 UUT = ".$pv1." volts!");
+
+        $p1Vavg = $this->_readUUTP1Avg();
+        $pv1A = number_format($p1Vavg,2);
+        $this->out("Por1 1 UUT Averaged = ".$pv1A." volts!");
 
         /* 16.  Disconnect load resistor */
         $this->_setRelay(4, 0); 
@@ -1384,6 +1393,22 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     }
 
+    private function _readUUTP1Avg()
+    {
+        
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::READ_ANALOG_COMMAND;
+        $dataVal = "01";
+        $replyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $rawVal = $this->_convertReplyData($replyData);
+
+        $steps = 1.0/ pow(2,11);
+        $volts = $steps * $rawVal;
+        $volts = $volts * 21;
+        
+        return $volts;
+    }
+
 
     /**
     ************************************************************
@@ -1667,6 +1692,11 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p1v = number_format($voltsP1, 2);
         $this->out("Port 1 Tester = ".$p1v." volts");
 
+        $p1Vavg = $this->_readUUTP1Avg();
+        $pv1A = number_format($p1Vavg,2);
+        $this->out("Por1 1 UUT Averaged = ".$pv1A." volts!");
+
+
         $this->out("\n\rReading Port 1 Voltage");
 
         /*******************************************/
@@ -1674,10 +1704,10 @@ class E104603Test extends \HUGnet\ui\Daemon
         /* and convert it to a hex value we can    */
         /* send to ADC offset Correction register. */
 
-	$offsetHexVal = $this->_runAdcOffsetCalibration();
+        $offsetHexVal = $this->_runAdcOffsetCalibration();
 
-	$offsetIntVal = $this->_twosComplement_to_negInt($offsetHexVal);
-	$this->out("Offset Integer Value = ".$offsetIntVal);
+        $offsetIntVal = $this->_twosComplement_to_negInt($offsetHexVal);
+        $this->out("Offset Integer Value = ".$offsetIntVal);
 	
         $choice = readline("Hit Enter to Continue!");
 
@@ -1701,27 +1731,28 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Port 1 UUT = ".$up1V." volts");
         
 	
+        $choice = readline("Measure 10V and Hit Enter to Continue!");
         $gainErrorValue = $this->_runAdcGainCorr($offsetIntVal);
 	
         sleep(1);
         
         $hexVal = "07ED";
- 	$this->out("*** Setting ADC Gain Correction ****");
-	$retVal = $this->_setAdcGainCorr($gainErrorValue);
-	
-	$this->out("Return Value :".$retVal);
+        $this->out("*** Setting ADC Gain Correction ****");
+        $retVal = $this->_setAdcGainCorr($gainErrorValue);
+        
+        $this->out("Return Value :".$retVal);
         
         $choice = readline("Hit Enter to Continue!");
         
         for ($times = 0; $times < 10; $times++) {
-	  /* measure port 1 voltage with UUT */
-	  $voltsUp1 = $this->_readUUTP1Volts();
-	  $up1V = number_format($voltsUp1, 4);
-	  $this->out("Port 1 UUT = ".$up1V." volts");
-	};
+            /* measure port 1 voltage with UUT */
+            $voltsUp1 = $this->_readUUTP1Volts();
+            $up1V = number_format($voltsUp1, 4);
+            $this->out("Port 1 UUT = ".$up1V." volts");
+        };
         
         
-	$choice = readline("\n\rCheck Ref V & Hit Enter to Continue: ");
+        $choice = readline("\n\rCheck Ref V & Hit Enter to Continue: ");
         $this->_setRelay(4,0); /* Disconnect Port 1 */
         $this->_setRelay(3,0); /* Select load */
         $this->_setRelay(2,0); /* Select 12V   */
@@ -1865,12 +1896,12 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _runAdcOffsetCalibration()
     {
-        $rawTotal = 0;
+       $rawTotal = 0;
 
-        for ($i = 1; $i < 32; $i++) {
-	    $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
+        for ($i = 1; $i < 32; $i++) { 
+            $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
             if ($rawVal > 0x7ff) {
-		$newVal= dechex($rawVal);
+                $newVal= dechex($rawVal);
                 $len = strlen($newVal);
                 $hexVal = substr($newVal, $len-4, 4);
                 $rawVal = $this->_twosComplement_to_negInt($hexVal);
@@ -1881,20 +1912,28 @@ class E104603Test extends \HUGnet\ui\Daemon
         
         $rawAvg = $rawTotal/($i-1);
 
+        /* $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::READ_ANALOG_COMMAND;
+        $dataVal = "01";
+        $replyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $rawAvg = $this->_convertReplyData($replyData); */
+
+
+
         $this->out("Raw Average = ".$rawAvg);
         $offsetIntVal = number_format($rawAvg, 0, "", "");
-	$hexVal = dechex($offsetIntVal);
-	$len = strlen($hexVal);
-	$hexVal = substr($hexVal, len-4, 4);
-	$this->out("Here is our Hex Value for the offset ".$hexVal);
+        $hexVal = dechex($offsetIntVal);
+        $len = strlen($hexVal);
+        $hexVal = substr($hexVal, len-4, 4);
+        $this->out("Here is our Hex Value for the offset ".$hexVal);
       
-	$this->out("*** Setting ADC Offset ****");
-	$retVal = $this->_setAdcOffset($hexVal);
+        $this->out("*** Setting ADC Offset ****");
+        $retVal = $this->_setAdcOffset($hexVal);
 	
-	$this->out("Return Value :".$retVal);
+        $this->out("Return Value :".$retVal);
     
     
-	return $hexVal;
+        return $hexVal;
     
     }
     
@@ -1914,20 +1953,27 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _runAdcGainCorr($offsetIntValue)
     {
-	$rawTotal = 0;
+        /* $rawTotal = 0;
 	
-        for ($i = 1; $i < 32; $i++) {
-	    $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
+        for ($i = 1; $i < 32; $i++) { 
+            $rawVal = $this->_readUUT_ADCinput(self::UUT_P1_VOLT);
             $rawTotal += $rawVal;
         }
-        $rawAvg = $rawTotal/($i-1);
+        $rawAvg = $rawTotal/($i-1); */
+
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::READ_ANALOG_COMMAND;
+        $dataVal = "01";
+        $replyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $rawAvg = $this->_convertReplyData($replyData);
+
         
         $this->out("\n\r");
         $this->out("*********************************************************");
         $this->out("*      Calculating the Gain Error Correction Value      *");
         $this->out("*********************************************************");
         
-	$this->out("Raw Vref average = ".$rawAvg);
+        $this->out("Raw Vref average = ".$rawAvg);
         $gainIntVal = number_format($rawAvg, 0, "", "");
         $this->out("Integer Value = ".$gainIntVal);
         
@@ -1937,27 +1983,27 @@ class E104603Test extends \HUGnet\ui\Daemon
         $gainRatio = 975/ $tempVal;
         $this->out("Gain Ratio = ".$gainRatio);
         
-	$gainVal = 2048 * $gainRatio;
+        $gainVal = 2048 * $gainRatio;
 	
-	$this->out("Gain Val = :".$gainVal);
+        $this->out("Gain Val = :".$gainVal);
 	
-	$gainIntValue = number_format($gainVal, 0, "", "");
+        $gainIntValue = number_format($gainVal, 0, "", "");
 	
-	$hexVal = dechex($gainIntValue);
+        $hexVal = dechex($gainIntValue);
 	
-	$len = strlen($hexVal);
-	if ($len < 4) {
-	    while ($len < 4) {
-		$hexVal = "0".$hexVal;
-		$len = strlen($hexVal);
-	    }
-	} else if ($len > 4) {
+        $len = strlen($hexVal);
+        if ($len < 4) {
+            while ($len < 4) {
+            $hexVal = "0".$hexVal;
+            $len = strlen($hexVal);
+            }
+        } else if ($len > 4) {
 	  $hexVal = substr($hexVal, $len-4, 4);
 	}
-	$this->out("Hex Vref Val:".$hexVal);
+        $this->out("Hex Vref Val:".$hexVal);
     
     
-	return $hexVal;
+        return $hexVal;
     
     }
     
