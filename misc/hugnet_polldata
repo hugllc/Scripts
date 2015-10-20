@@ -87,10 +87,13 @@ $pkt = $dev->action()->send(
 
 
 if (is_object($pkt)) {
+    $channels = $dev->dataChannels();
     $byte = 0;
     $value = 0;
+    $index = 0;
     $reply = str_split($pkt->reply(), 2);
     while ($byte < count($reply)) {
+        $chan = $channels->dataChannel($index);
         $value = hexdec($reply[$byte++]);
         $value += hexdec($reply[$byte++])<<8;
         $value += hexdec($reply[$byte++])<<16;
@@ -104,7 +107,8 @@ if (is_object($pkt)) {
             /* This is a negative number */
             $value = -(pow(2, 32) - $value);
         }
-        $cli->out($value/1000);
+        $cli->out($chan->get("label").":  ".$value);
+        $index++;
     }
 
 } else {
