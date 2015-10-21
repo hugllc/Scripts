@@ -83,6 +83,8 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     const READ_ANALOG_COMMAND    = 0x2C;
     const SET_DAC_COMMAND        = 0x2D;
+    const SET_DACOFFSET_COMMAND  = 0x2E;
+    const SET_DACGAIN_COMMAND    = 0x2F;
 
     const READ_USERSIG_COMMAND   = 0x36;
     const ERASE_USERSIG_COMMAND  = 0x37;
@@ -138,6 +140,8 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     private $_OffSetCal;
     private $_GainCal;
+    private $_DacOffSet;
+    private $_DacGain;
     private $_EndptSN;
     /*
     * Sets our configuration
@@ -255,10 +259,11 @@ class E104603Test extends \HUGnet\ui\Daemon
                 //$this->_loadTestFirmware();
                 $result = $this->_checkUUTBoard();
                 if ($result) {
-                    $this->_runUUTCalibration();
-                    $this->_EndptSN = $this->_getSerialNumber();
-                    $result = $this->_testUUT();
-                    if ($result) {
+                    $this->_runUUTadcCalibration();
+                    $this->_runUUTdacCalibration();
+                    //$this->_EndptSN = $this->_getSerialNumber();
+                    //$result = $this->_testUUT();
+                    /* if ($result) {
                         // load testbootloader code to erase user sig
                         $this->_writeUserSigFile();
                         // Load production bootloader code.
@@ -267,7 +272,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                         $this->display->displayPassed();
                     } else {
                         $this->display->displayFailed();
-                    }
+                    } */
                     $result = $this->_powerUUT(self::OFF);   
                     $this->_clearTester();
                 } else {
@@ -366,7 +371,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     /**
     ************************************************************
-    * Run UUT Calibration Routine
+    * Run UUT ADC Calibration Routine
     *
     * This function runs the calibration routines that determine
     * the adc offset correction value and gain error correction 
@@ -377,7 +382,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     * @return $result  boolean true for success and false for  
     *                           failure.
     */
-    private function _runUUTCalibration()
+    private function _runUUTadcCalibration()
     {
         $result = true;
         $this->out("****************************************");
@@ -461,13 +466,68 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->_setRelay(2,0); /* Select 12V   */
         sleep(1);
 
-        $this->out("******************************");
-        $this->out("*    CALIBRATION COMPLETE!   *");
-        $this->out("******************************\n\r");
+        $this->out("********************************");
+        $this->out("*  ADC CALIBRATION COMPLETE!   *");
+        $this->out("********************************\n\r");
 
 
         return $result;
     }
+
+
+    /**
+    ************************************************************
+    * Run UUT DAC Calibration Routine
+    *
+    * This function runs the calibration routines that determine
+    * the DAC offset and gain error correction values. 
+    * Those values are saved to write into the user signature 
+    * memory along with the serial number, hardware part number
+    * and adc offset and gain correction values.
+    */
+    private function _runUUTdacCalibration()
+    {
+        $this->out("************************************");
+        $this->out("* Entering DAC Calibration Routine *");
+        $this->out("************************************");
+
+        $this->out("Send Read DAC output Command");
+
+        $dacVolts = $this->_readUUTdacVolts();
+        $this->out("DAC volts = ".$dacVolts);
+
+        $this->out("Setting DAC output to 0.4125 Volts");
+
+        $startVal = 512;
+
+        $result = $this->_runDacOffsetCalibration($startVal);
+        
+        if ($result) {
+            $this->out("Setting DAC offset to :".$this->_DacOffset);
+            $this->_setDacOffset($this->_DacOffset);
+            sleep(1);
+
+            $dacVal = "0200";
+            $this->_setDAC($dacVal);
+            sleep(1);
+
+            $dacVolts = $this->_readUUTdacVolts();
+            $this->out("Adjusted DAC volts : ".$dacVolts);
+
+        } else {
+            $this->out("Offset Calibration Failed!");
+        }
+
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+
+        $this->out("********************************");
+        $this->out("*  DAC CALIBRATION COMPLETE!   *");
+        $this->out("********************************\n\r");
+        $result = true;
+
+        return $result;
+   }
 
 
     /**
@@ -1694,7 +1754,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $rawVal = $this->_readUUT_ADCval("b");
 
-        $steps = 3.3/ pow(2,12);
+        $steps = 1.65/ pow(2,11);
         $volts = $steps * $rawVal;
         
         return $volts;
@@ -1998,8 +2058,8 @@ class E104603Test extends \HUGnet\ui\Daemon
         $dacVolts = $this->_readUUTdacVolts();
         $this->out("DAC volts = ".$dacVolts);
 
-        $this->out("Setting DAC output to 1.65 Volts");
-        $dataVal = "0880";
+        $this->out("Setting DAC output to 0.4125 Volts");
+        $dataVal = "0200";
         $replyData = $this->_setDAC($dataVal);
         $this->out("Reply Data = ".$replyData);
         sleep(1);
@@ -2406,11 +2466,144 @@ class E104603Test extends \HUGnet\ui\Daemon
         
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
-        $newData = $this->_convertReplyData($ReplyData);
+        if(!is_null($ReplyData)) {
+
+            $newData = $this->_convertReplyData($ReplyData);
+        } else {
+            $newData = $ReplyData;
+        }
 
         return $newData;
     }
 
+    /**
+    *****************************************************************
+    * Run DAC offset Calibration Routine
+    *
+    * This function runs the DAC offset calibration.  It does so by
+    * setting the DAC output to 0x400 or 1/4 of full scale and then
+    * measuring the resultant output.  If it is not at 0.825 volts,
+    * the DAC setting is increased or decreased until the output
+    * measures correctly.  Then the amount of change necessary to 
+    * produce the proper output becomes the offset correction value.
+    *
+    * @param $dacStart integer value for DAC setting
+    *
+    * @return $result  boolean true for success, false for failure
+    */
+    private function _runDacOffsetCalibration($dacVal)
+    {
+
+        $dacStart = $dacVal;
+        $dataVal = dechex($dacVal);
+        $dataVal = "0".$dataVal;
+        $replyData= $this->_setDAC($dataVal);
+
+        $dacVolts = $this->_readUUTdacVolts();
+        $this->out("DAC volts = ".$dacVolts);
+
+        
+        if ($dacVolts < 0.4125) {
+            $error = false;
+            do {
+                $dacVal++;
+                $dataVal = dechex($dacVal);
+                $dataVal = "0".$dataVal;
+                $replyData = $this->_setDAC($dataVal);
+
+                if(is_null($replyData)) {
+                    $error = true;
+                } else {
+                    $dacVolts = $this->_readUUTdacVolts();
+                }
+
+            } while (($dacVolts < 0.4125) and (!$error));
+
+            if (!$error) {
+                $offset = $dacVal - $dacStart;
+                $hexOffset = dechex($offset);
+
+                /* make sure we have one hex byte */
+                $len = strlen($hexOffset);
+                if ($len < 2) {
+                    $hexOffset = "0".$hexOffset;
+                } else if ($len > 2) {
+                    $hexOffset = substr($hexOffset, $len-2, 2);
+                }
+                
+                $this->_DacOffset = $hexOffset;
+
+                $this->out("Offset Value = ".$hexOffset);
+                $result = true;
+            } else {
+                $result = false;
+            }
+
+        } else {
+            $error = false;
+            do {
+                $dacVal--;
+                $dataVal = dechex($dacVal);
+                $dataVal = "0".$dataVal;
+                $replyData = $this->_setDAC($dataVal);
+
+                if(is_null($replyData)) {
+                    $error = true;
+                } else {
+                    $dacVolts = $this->_readUUTdacVolts();
+                }
+
+            } while (($dacVolts > 0.4125) and (!$error));
+
+            if (!$error) {
+                $offset = $dacVal - $dacStart;
+                $this->out("First Subtract : ".$offset);
+                $hexOffset = $this->_negInt_to_twosComplement($offset);
+
+                /* make sure we have one hex byte */
+                $len = strlen($hexOffset);
+                if ($len < 2) {
+                    $hexOffset = "0".$hexOffset;
+                } else if ($len > 2) {
+                    $hexOffset = substr($hexOffset, $len-2, 2);
+                }
+
+                $this->_DacOffset = $hexOffset;
+
+                $this->out("Offset Value : ".$hexOffset);
+                $result = true;
+            } else {
+                $result = false;
+            }
+        }
+
+        return $result;
+
+    }
+
+    /**
+    ************************************************************
+    * Set DAC Offset Routine
+    *
+    * This function sends a command and data to the UUT to 
+    * set the DAC offset correction register.
+    *
+    * @param $dataVal a one byte hex string
+    *
+    * @return $ReplyData  a one byte string read from offset register
+    */
+    private function _setDacOffset($dataVal)
+    {
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_DACOFFSET_COMMAND; 
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        $this->out("Offset Value   = ".$ReplyData);
+        
+        return $ReplyData;
+    
+    }
 
 
     /**
