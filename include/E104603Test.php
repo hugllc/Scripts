@@ -113,6 +113,9 @@ class E104603Test extends \HUGnet\ui\Daemon
     const ON = 1;
     const OFF = 0;
 
+    const DAC_OFFCAL_LEVEL = 0.825;
+    const DAC_OFFCAL_START = 1024;
+
     const HWPN = "1046030141";
     
     
@@ -496,11 +499,10 @@ class E104603Test extends \HUGnet\ui\Daemon
         $dacVolts = $this->_readUUTdacVolts();
         $this->out("DAC volts = ".$dacVolts);
 
-        $this->out("Setting DAC output to 0.4125 Volts");
+        $this->out("Setting DAC output to ".self::DAC_OFFCAL_LEVEL." volts");
 
-        $startVal = 512;
-
-        $result = $this->_runDacOffsetCalibration($startVal);
+ 
+        $result = $this->_runDacOffsetCalibration();
         
         if ($result) {
             $this->out("Setting DAC offset to :".$this->_DacOffset);
@@ -509,7 +511,6 @@ class E104603Test extends \HUGnet\ui\Daemon
 
             $dacVal = "0200";
             $this->_setDAC($dacVal);
-            sleep(1);
 
             $dacVolts = $this->_readUUTdacVolts();
             $this->out("Adjusted DAC volts : ".$dacVolts);
@@ -2058,14 +2059,34 @@ class E104603Test extends \HUGnet\ui\Daemon
         $dacVolts = $this->_readUUTdacVolts();
         $this->out("DAC volts = ".$dacVolts);
 
-        $this->out("Setting DAC output to 0.4125 Volts");
-        $dataVal = "0200";
+        $this->out("Setting DAC output to 0.825 Volts");
+        $dataVal = "0400";
         $replyData = $this->_setDAC($dataVal);
         $this->out("Reply Data = ".$replyData);
         sleep(1);
 
         $dacVolts = $this->_readUUTdacVolts();
         $this->out("New DAC volts = ".$dacVolts);
+        
+        $offset = 165;
+
+        for ($i = 0; $i<10; $i++) {
+            $offset -= 1;
+            $this->out("Offset = ".$offset);
+            $hexOff = dechex($offset);
+            $len = strlen($hexOff);
+            if ($len < 2) {
+                $hexOff = "0".$hexOff;
+            } else if ($len > 2) {
+                $hexOff = substr($hexOff, $len-2, 2);
+            }
+        
+            $this->out("Setting Offset : ".$hexOff);
+            $result = $this->_setDACOffset($hexOff);
+
+            $dacVolts = $this->_readUUTdacVolts();
+            $this->out("Adjusted DAC volts = ".$dacVolts);
+        }
         
 
         $choice = readline("\n\rHit Enter to Continue: ");
@@ -2491,10 +2512,12 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return $result  boolean true for success, false for failure
     */
-    private function _runDacOffsetCalibration($dacVal)
+    private function _runDacOffsetCalibration( )
     {
 
-        $dacStart = $dacVal;
+        $dacOffset = 0;
+
+        $dacVal = self::DAC_OFFCAL_START;
         $dataVal = dechex($dacVal);
         $dataVal = "0".$dataVal;
         $replyData= $this->_setDAC($dataVal);
@@ -2503,7 +2526,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("DAC volts = ".$dacVolts);
 
         
-        if ($dacVolts < 0.4125) {
+        if ($dacVolts < self::DAC_OFFCAL_LEVEL) {
             $error = false;
             do {
                 $dacVal++;
@@ -2517,10 +2540,10 @@ class E104603Test extends \HUGnet\ui\Daemon
                     $dacVolts = $this->_readUUTdacVolts();
                 }
 
-            } while (($dacVolts < 0.4125) and (!$error));
+            } while (($dacVolts < self::DAC_OFFCAL_LEVEL) and (!$error));
 
             if (!$error) {
-                $offset = $dacVal - $dacStart;
+                $offset = $dacVal - self::DAC_OFFCAL_START;
                 $hexOffset = dechex($offset);
 
                 /* make sure we have one hex byte */
@@ -2553,10 +2576,10 @@ class E104603Test extends \HUGnet\ui\Daemon
                     $dacVolts = $this->_readUUTdacVolts();
                 }
 
-            } while (($dacVolts > 0.4125) and (!$error));
+            } while (($dacVolts > self::DAC_OFFCAL_LEVEL) and (!$error));
 
             if (!$error) {
-                $offset = $dacVal - $dacStart;
+                $offset = $dacVal - self::DAC_OFFCAL_START;
                 $this->out("First Subtract : ".$offset);
                 $hexOffset = $this->_negInt_to_twosComplement($offset);
 
