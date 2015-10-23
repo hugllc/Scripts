@@ -115,7 +115,9 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     const DAC_OFFCAL_LEVEL = 0.825;
     const DAC_OFFCAL_START = 1024;
-
+    const DAC_GAINCAL_LEVEL = 1.60;
+    const DAC_GAINCAL_START = 1986;
+    
     const HWPN = "1046030141";
     
     
@@ -141,11 +143,11 @@ class E104603Test extends \HUGnet\ui\Daemon
                                 
     public $display;
 
-    private $_OffSetCal;
-    private $_GainCal;
-    private $_DacOffSet;
-    private $_DacGain;
-    private $_EndptSN;
+    private $_ADC_OFFSET;
+    private $_ADC_GAIN;
+    private $_DAC_OFFSET;
+    private $_DAC_GAIN;
+    private $_ENDPT_SN;
     /*
     * Sets our configuration
     *
@@ -264,9 +266,9 @@ class E104603Test extends \HUGnet\ui\Daemon
                 if ($result) {
                     $this->_runUUTadcCalibration();
                     $this->_runUUTdacCalibration();
-                    //$this->_EndptSN = $this->_getSerialNumber();
-                    //$result = $this->_testUUT();
-                    /* if ($result) {
+                    $this->_ENDPT_SN = $this->_getSerialNumber();
+                    $result = $this->_testUUT();
+                    if ($result) {
                         // load testbootloader code to erase user sig
                         $this->_writeUserSigFile();
                         // Load production bootloader code.
@@ -275,7 +277,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                         $this->display->displayPassed();
                     } else {
                         $this->display->displayFailed();
-                    } */
+                    }
                     $result = $this->_powerUUT(self::OFF);   
                     $this->_clearTester();
                 } else {
@@ -425,7 +427,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Port 1 UUT     = ".$pv1." volts!");
        
         $offsetHexVal = $this->_runAdcOffsetCalibration();
-        $this->_OffSetCal = $offsetHexVal;
+        $this->_ADC_OFFSET = $offsetHexVal;
 
         //$offsetIntVal = $this->_twosComplement_to_negInt($offsetHexVal);
     
@@ -457,7 +459,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("");
         $this->out("** Setting ADC Gain Correction **");
         $retVal = $this->_setAdcGainCorr($gainErrorValue);
-        $this->_GainCal = $retVal;
+        $this->_ADC_GAIN = $retVal;
         
         /* measure port 1 voltage with UUT */
         $voltsUp1 = $this->_readUUTPort1Volts();
@@ -494,33 +496,52 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("* Entering DAC Calibration Routine *");
         $this->out("************************************");
 
-        $this->out("Send Read DAC output Command");
-
-        $dacVolts = $this->_readUUTdacVolts();
-        $this->out("DAC volts = ".$dacVolts);
-
+        $this->out("");
+        $this->out("Starting DAC offset calibration");
         $this->out("Setting DAC output to ".self::DAC_OFFCAL_LEVEL." volts");
 
  
         $result = $this->_runDacOffsetCalibration();
         
         if ($result) {
-            $this->out("Setting DAC offset to :".$this->_DacOffset);
-            $this->_setDacOffset($this->_DacOffset);
+            $this->out("Setting DAC offset to :".$this->_DAC_OFFSET);
+            $this->_setDacOffset($this->_DAC_OFFSET);
             sleep(1);
 
-            $dacVal = "0200";
+            $dacVal = "0400";
             $this->_setDAC($dacVal);
 
             $dacVolts = $this->_readUUTdacVolts();
             $this->out("Adjusted DAC volts : ".$dacVolts);
+            $this->out("");
 
         } else {
             $this->out("Offset Calibration Failed!");
         }
+        
+        if ($result) {
+            $this->out("******************************");
+            $this->out("Starting DAC gain calibration");
+            $this->out("Setting DAC output to ".self::DAC_GAINCAL_LEVEL." volts");
+            
+            $result = $this->_runDacGainCalibration();
+            
+            if ($result) {
+                $this->out("Setting DAC Gain to :".$this->_DAC_GAIN);
+                $this->_setDacGain($this->_DAC_GAIN);
+                sleep(1);
 
-        $choice = readline("\n\rHit Enter to Continue: ");
+                $dacVal = "07C2";
+                $this->_setDAC($dacVal);
 
+                $dacVolts = $this->_readUUTdacVolts();
+                $this->out("Adjusted DAC volts : ".$dacVolts);
+                $this->out("");
+
+            } else {
+                $this->out("Offset Calibration Failed!");
+            }
+        }
 
         $this->out("********************************");
         $this->out("*  DAC CALIBRATION COMPLETE!   *");
@@ -689,7 +710,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $busTemp = number_format($busTemp, 2);
         $this->out("Bus Temp    : ".$busTemp." C");
 
-        if (($busTemp > 16.00) and ($busTemp < 26.00)) {
+        if (($busTemp > 11.00) and ($busTemp < 26.00)) {
             $resultT1 = true;
         } else {
             $resultT1 = false;
@@ -700,7 +721,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p1Temp = number_format($p1Temp, 2);
         $this->out("Port 1 Temp : ".$p1Temp." C");
 
-        if (($p1Temp > 16.00) and ($p1Temp < 24.00)) {
+        if (($p1Temp > 11.00) and ($p1Temp < 24.00)) {
             $resultT2 = true;
         } else {
             $resultT2 = false;
@@ -712,7 +733,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p2Temp = number_format($p2Temp, 2);
         $this->out("Port 2 Temp : ".$p2Temp." C");
 
-        if (($p2Temp > 16.00) and ($p2Temp < 24.00)) {
+        if (($p2Temp > 11.00) and ($p2Temp < 24.00)) {
             $resultT3 = true;
         } else {
             $resultT3 = false;
@@ -1987,16 +2008,19 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("* Creating UserSig Data File *");
         $this->out("******************************");
 
-        $SNdata = $this->_EndptSN;
+        $SNdata = $this->_ENDPT_SN;
         $HWPNdata = self::HWPN;
-        $CALdata = $this->_OffSetCal;
-        $CALdata .= $this->_GainCal;
+        $CALdata = $this->_ADC_OFFSET;
+        $CALdata .= $this->_ADC_GAIN;
+        $DACcal = $this->_DAC_OFFSET;
+        $DACcal .= $this->_DAC_GAIN;
 
         $this->out("SNdata   = ".$SNdata);
         $this->out("HWPNdata = ".$HWPNdata);
         $this->out("CALdata  = ".$CALdata);
+        $this->out("DACcal   = ".$DACcal);
         
-        $Sdata = $SNdata.$HWPNdata.$CALdata;
+        $Sdata = $SNdata.$HWPNdata.$CALdata.$DACcal;
 
         $SIGdata = pack("H*",$Sdata);
         $fp = fopen("newtestSig.usersig","wb");
@@ -2068,10 +2092,13 @@ class E104603Test extends \HUGnet\ui\Daemon
         $dacVolts = $this->_readUUTdacVolts();
         $this->out("New DAC volts = ".$dacVolts);
         
-        $offset = 165;
+        
+            
+        $offset = 114;
 
+        
         for ($i = 0; $i<10; $i++) {
-            $offset -= 1;
+            $offset += 1;
             $this->out("Offset = ".$offset);
             $hexOff = dechex($offset);
             $len = strlen($hexOff);
@@ -2508,6 +2535,18 @@ class E104603Test extends \HUGnet\ui\Daemon
     * measures correctly.  Then the amount of change necessary to 
     * produce the proper output becomes the offset correction value.
     *
+    * **** IMPORTANT NOTE ****************************************
+    * There is an error in the documentation for the formula for the
+    * offset error calculation.
+    * It should be as follows:
+    *
+    * Vocal = VREF x (2 x OCAL[7] - 1) + (OCAL[6]/64 + OCAL[5]/128 +
+    *         OCAL[4]/256 + OCAL[3]/512 + OCAL[2]/1024 + OCAL[1]/2048
+    *         + OCAL[0]/4096).
+    *
+    * This forumula clearly makes bit 7 a sign bit for the offset value
+    * with a one being positive and a zero being negative.
+    *****************************************************************
     * @param $dacStart integer value for DAC setting
     *
     * @return $result  boolean true for success, false for failure
@@ -2524,10 +2563,19 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $dacVolts = $this->_readUUTdacVolts();
         $this->out("DAC volts = ".$dacVolts);
+        
 
         
         if ($dacVolts < self::DAC_OFFCAL_LEVEL) {
             $error = false;
+            /* lets add some code to reduce the number of steps needed */
+            $diffVolts = self::DAC_OFFCAL_LEVEL - $dacVolts;
+            $steps = 3.3/pow(2,12);
+            $numSteps = $diffVolts/$steps;
+            $numSteps = round($numSteps/2);
+            
+            $dacVal += $numSteps;
+            
             do {
                 $dacVal++;
                 $dataVal = dechex($dacVal);
@@ -2538,12 +2586,24 @@ class E104603Test extends \HUGnet\ui\Daemon
                     $error = true;
                 } else {
                     $dacVolts = $this->_readUUTdacVolts();
+                    //$this->out("DAC volts = ".$dacVolts);
                 }
 
             } while (($dacVolts < self::DAC_OFFCAL_LEVEL) and (!$error));
 
             if (!$error) {
-                $offset = $dacVal - self::DAC_OFFCAL_START;
+                /*******************************************************************
+                * Explaination of offset calculation:   
+                * ($dacVal - self::DAC_OFFCAL_START) represents the number of steps 
+                * above the start value necessary to get the DAC output to the 
+                * desired voltage level.  However, it appears that the MSB of the 
+                * the offset byte is a sign bit with a 1 being positive and a zero
+                * being negative.  So, in order to get the offset steps added to 
+                * the DAC output, it is necessary to set the MSB or add 128 to the 
+                * the offset value.
+                */
+                $offset = $dacVal - self::DAC_OFFCAL_START + 128;
+                
                 $hexOffset = dechex($offset);
 
                 /* make sure we have one hex byte */
@@ -2554,7 +2614,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                     $hexOffset = substr($hexOffset, $len-2, 2);
                 }
                 
-                $this->_DacOffset = $hexOffset;
+                $this->_DAC_OFFSET = $hexOffset;
 
                 $this->out("Offset Value = ".$hexOffset);
                 $result = true;
@@ -2579,10 +2639,9 @@ class E104603Test extends \HUGnet\ui\Daemon
             } while (($dacVolts > self::DAC_OFFCAL_LEVEL) and (!$error));
 
             if (!$error) {
-                $offset = $dacVal - self::DAC_OFFCAL_START;
-                $this->out("First Subtract : ".$offset);
-                $hexOffset = $this->_negInt_to_twosComplement($offset);
-
+                $offset = self::DAC_OFFCAL_START - $dacVal;
+                
+                $hexOffset = dechex($offset);
                 /* make sure we have one hex byte */
                 $len = strlen($hexOffset);
                 if ($len < 2) {
@@ -2591,7 +2650,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                     $hexOffset = substr($hexOffset, $len-2, 2);
                 }
 
-                $this->_DacOffset = $hexOffset;
+                $this->_DAC_OFFSET = $hexOffset;
 
                 $this->out("Offset Value : ".$hexOffset);
                 $result = true;
@@ -2602,6 +2661,134 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         return $result;
 
+    }
+    
+    /**
+    *******************************************************************
+    * Run DAC Gain Calibration Routine
+    *
+    * This function runs the gain error calibration routine.  It does 
+    * so by setting the DAC output to 1/2 of the reference voltage
+    * which would be 0x800.  It then measures the DAC output and 
+    * adjusts the setting until the desired output voltage is reached.
+    * This then becomes the gain error correction value.
+    *
+    */
+    private function _runDacGainCalibration()
+    {
+        $result = true;
+        
+        $dacVal = self::DAC_GAINCAL_START;
+        $dataVal = dechex($dacVal);
+        $dataVal = "0".$dataVal;
+        $replyData= $this->_setDAC($dataVal);
+
+        $dacVolts = $this->_readUUTdacVolts();
+        $this->out("DAC volts = ".$dacVolts);
+        
+        if ($dacVolts < self::DAC_GAINCAL_LEVEL) {
+            $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
+            $steps = 3.3/ pow(2,12);
+            $numSteps = round($diffVolts/$steps);
+            
+            $hexGainCor = dechex($numSteps);
+            
+            $len = strlen($hexGainCor);
+            if ($len < 2) {
+                $hexGainCor = "0".$hexGainCor;
+            } else if ($len > 2) {
+                $hexGainCor = substr($hexGainCor, $len-2, 2);
+            }
+            $replyData= $this->_setDacGain($hexGainCor);
+
+            $dacVolts = $this->_readUUTdacVolts();
+            $this->_DAC_GAIN = $hexGainCor;
+            
+            do {
+                    $error = false;
+                    $numSteps++;
+                    $hexGainCor = dechex($numSteps);
+                    $len = strlen($hexGainCor);
+                    if ($len < 2) {
+                        $hexGainCor = "0".$hexGainCor;
+                    } else if ($len > 2) {
+                        $hexGainCor = substr($hexGainCor, $len-2, 2);
+                    }
+                    $replyData = $this->_setDacGain($hexGainCor);
+
+                    if(is_null($replyData)) {
+                        $error = true;
+                    } else {
+                        $dacVolts = $this->_readUUTdacVolts();
+                        //$this->out("DAC volts = ".$dacVolts);
+                    }
+
+                } while (($dacVolts < self::DAC_GAINCAL_LEVEL) and (!$error));
+           
+            
+                if (!$error) {
+                    $this->_DAC_GAIN = $hexGainCor;
+
+                    $this->out("Gain Error Value = ".$hexGainCor);
+                    $result = true;
+                } else {
+                    $result = false;
+                } 
+       } else {
+            
+            $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
+            $steps = 3.3/ pow(2,12);
+            $numSteps = round($diffVolts/$steps);
+            
+            $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
+            
+            $len = strlen($hexGainCor);
+            if ($len < 2) {
+                $hexGainCor = "0".$hexGainCor;
+            } else if ($len > 2) {
+                $hexGainCor = substr($hexGainCor, $len-2, 2);
+            }
+            $replyData= $this->_setDacGain($hexGainCor);
+
+            $dacVolts = $this->_readUUTdacVolts();
+            $this->_DAC_GAIN = $hexGainCor;
+            
+            do {
+                    $error = false;
+                    $numSteps--;
+                    $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
+                    
+                    $len = strlen($hexGainCor);
+                    if ($len < 2) {
+                        $hexGainCor = "0".$hexGainCor;
+                    } else if ($len > 2) {
+                        $hexGainCor = substr($hexGainCor, $len-2, 2);
+                    }
+                    
+                    $replyData = $this->_setDacGain($hexGainCor);
+
+                    if(is_null($replyData)) {
+                        $error = true;
+                    } else {
+                        $dacVolts = $this->_readUUTdacVolts();
+                        //$this->out("DAC volts = ".$dacVolts);
+                    }
+
+                } while (($dacVolts > self::DAC_GAINCAL_LEVEL) and (!$error));
+           
+            
+                if (!$error) {
+                    $this->_DAC_GAIN = $hexGainCor;
+
+                    $this->out("Gain Error Value = ".$hexGainCor);
+                    $result = true;
+                } else {
+                    $result = false;
+                } 
+       }
+       
+    
+        return $result;
     }
 
     /**
@@ -2622,11 +2809,37 @@ class E104603Test extends \HUGnet\ui\Daemon
         
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
         
-        $this->out("Offset Value   = ".$ReplyData);
+        //$this->out("DAC Offset Set Reply Value   = ".$ReplyData);
         
         return $ReplyData;
     
     }
+    
+    
+    /**
+    ************************************************************
+    * Set DAC Gain Routine
+    *
+    * This function sends a command and data to the UUT to 
+    * set the DAC Gain error correction register.
+    *
+    * @param $dataVal a one byte hex string
+    *
+    * @return $ReplyData  a one byte string read from gain register
+    */
+    private function _setDacGain($dataVal)
+    {
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_DACGAIN_COMMAND; 
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        //$this->out("DAC Gain Set Reply Value   = ".$ReplyData);
+        
+        return $ReplyData;
+    
+    }
+
 
 
     /**
