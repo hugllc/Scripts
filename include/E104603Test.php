@@ -89,6 +89,11 @@ class E104603Test extends \HUGnet\ui\Daemon
     const READ_USERSIG_COMMAND   = 0x36;
     const ERASE_USERSIG_COMMAND  = 0x37;
 
+    const READ_CONFIG_COMMAND    = 0x5C;
+
+    const SETCONTROLCHAN_COMMAND = 0x64;
+    const READCONTROLCHAN_COMMAND = 0x65;
+
     const HEADER_STR    = "Battery Socializer Test & Program Tool";
     
     const TSTR_VCC_PORT  = 0;
@@ -261,16 +266,19 @@ class E104603Test extends \HUGnet\ui\Daemon
             if ($result) {
                 $this->out("UUT Power UP - Passed\n\r");
                 sleep(1);
-                //$this->_loadTestFirmware();
+                $this->_loadTestFirmware();
                 $result = $this->_checkUUTBoard();
                 if ($result) {
-                    $this->_runUUTadcCalibration();
-                    $this->_runUUTdacCalibration();
+                    //$this->_runUUTadcCalibration();
+                    //$this->_runUUTdacCalibration();
                     $this->_ENDPT_SN = $this->_getSerialNumber();
                     $result = $this->_testUUT();
                     if ($result) {
-                        // load testbootloader code to erase user sig
                         $this->_writeUserSigFile();
+                        $this->_eraseUserSig();
+                        $this->_writeUserSig();
+                        $this->_loadBootloaderFirmware();
+                        $this->_loadApplicationFirmware();
                         // Load production bootloader code.
                         // HUGnetLoad application code
                         // Test application code operation
@@ -1021,7 +1029,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                 $this->out("Port 1 current   = ".$p1A." amps");
 
                 /* 10. Test current & voltage values. */
-                if (($vB > 11.5) and ($vB < 13.00)) {
+                if (($vB > 11.4) and ($vB < 13.00)) {
 
                     /* 11. Turn off Port 1 */
                     $this->_setPort(1, 0);
@@ -1328,10 +1336,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $choice = readline("\n\rAre all 4 Red LEDs on? (Y/N) ");*/
 
         /* turn off all LEDs */
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_LED_COMMAND;
-        $dataVal = "00";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        //exec($Prog, $output, $return); 
         
         $choice = readline("\n\rAre all 6 Status LEDs off? (Y/N) ");
         
@@ -1340,6 +1345,86 @@ class E104603Test extends \HUGnet\ui\Daemon
         $result = true;
 
         return $result;
+
+    }
+
+
+    /**
+    ***********************************************************
+    * Test Application code Routine
+    *
+    * This routine runs a couple of quick tests to verify that
+    * the application code is indeed up and running.
+    *
+    */
+    private function _runApplicationTest()
+    {
+        $result = true;
+
+        /* lets start with a read config */
+        $this->_ENDPT_SN = "8012";
+        $decVal = hexdec($this->_ENDPT_SN);
+        $idNum = $decVal;
+        $cmdNum = self::READ_CONFIG_COMMAND;
+        $dataVal = "00";
+
+
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->out("Read Config Reply = ".$ReplyData);
+
+        $cmdNum = self::READCONTROLCHAN_COMMAND;
+        
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->out("Read Control Channel Reply = ".$ReplyData);
+
+       /* 1.  connect 12 ohm load  to port 1 */
+        $this->_setRelay(4, 1);
+        sleep(1);
+
+        $voltsP1 = $this->_readTesterP1Volt();
+        $p1v = number_format($voltsP1, 2);
+        $this->out("Port 1 No Action  = ".$p1v." volts");
+   
+        $this->out("Turning on Port 1");
+        $cmdNum = self::SETCONTROLCHAN_COMMAND;
+        $dataVal = "00A00F0000";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->out("Set Control Channel Reply = ".$ReplyData);
+        sleep(1);
+        
+        /* 4.  Eval Board Measure Port 1 Voltage */
+        $voltsP1 = $this->_readTesterP1Volt();
+        $p1v = number_format($voltsP1, 2);
+        $this->out("Port 1 ON  = ".$p1v." volts");
+
+        $this->out("Turning off Port 1");
+
+        $cmdNum = self::SETCONTROLCHAN_COMMAND;
+        $dataVal = "0000000000";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->out("Set Control Channel Reply = ".$ReplyData);
+        sleep(2);
+
+        $voltsP1 = $this->_readTesterP1Volt();
+        $p1v = number_format($voltsP1, 2);
+        $this->out("Port 1 OFF  = ".$p1v." volts");
+
+        $cmdNum = self::READCONTROLCHAN_COMMAND;
+        $dataVal = "00";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->out("Read Control Channel Reply = ".$ReplyData);
+
+        $choice = readline("Hit Enter to Continue!");
+
+        $voltsP1 = $this->_readTesterP1Volt();
+        $p1v = number_format($voltsP1, 2);
+        $this->out("Port 1 OFF  = ".$p1v." volts");
+        sleep(1);
+       
+        $this->_setRelay(4, 0);
+
+        return $result;
+
 
     }
 
@@ -1861,47 +1946,6 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     /**
     ************************************************************
-    * Test the load firmware command
-    *
-    * This function powers up the UUT, tests the supply voltage,
-    * loads the test firmware and then pings the UUT to verify
-    * the firmware is running.
-    *
-    */
-    private function _testLoadFirmware()
-    {
-        $this->out("Testing Load Firmware Command!");
-        $result = $this->_testUUTpower();
-        $choice = readline("\n\rHit Enter to Continue: ");
-
-
-        $FUSE1 = 0x00;
-        $FUSE2 = 0xFE;   /* changed to FE to boot from 0x00000 reset vector */
-        $FUSE3 = 0xFF;
-        $FUSE4 = 0xFF;
-        $FUSE5 = 0xE1;
-        $FUSE6 = 0xFF;
-
-
-        $Avrdude = "avrdude -px32e5 -c avrisp2 -P usb -e -B 10 -i 100 ";
-        $flash = "-U flash:w:104603test.ihex ";
-        $fuse1 = "-U fuse1:w:".$FUSE1.":m ";
-        $fuse2 = "-U fuse2:w:".$FUSE2.":m ";
-        $fuse4 = "-U fuse4:w:".$FUSE4.":m ";
-        $fuse5 = "-U fuse5:w:".$FUSE5.":m ";
-
-        $Prog = $Avrdude.$flash.$fuse1.$fuse2.$fuse4.$fuse5;
-        exec($Prog, $output, $return); 
-
-        $choice = readline("\n\rHit Enter to Continue: "); 
-
-
-        $this->_powerUUT(self::OFF);
-        $choice = readline("\n\rHit Enter to Continue: ");
-    }
-
-    /**
-    ************************************************************
     * Test User Signature routines
     *
     * This function will send packet commands to the UUT test
@@ -1944,21 +1988,14 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _writeUserSig()
     {
         $this->out("Writing User Signature Bytes!");
-        $result = $this->_testUUTpower();
-        $choice = readline("\n\rHit Enter to Continue: ");
 
-        $Avrdude = "sudo avrdude -px32e5 -c avrisp2 -P usb -B 10 -i 100 ";
+        $Avrdude = "avrdude -px32e5 -c avrisp2 -P usb -B 10 -i 100 ";
         $usig  = "-U usersig:w:104603test.usersig:r ";
 
         $Prog = $Avrdude.$usig;
         exec($Prog, $output, $return); 
 
         $choice = readline("\n\rHit Enter to Continue: "); 
-
-
-        $this->_powerUUT(self::OFF);
-        $choice = readline("\n\rHit Enter to Continue: ");
-
     }
 
     /**
@@ -1971,10 +2008,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _eraseUserSig()
     {
-        $this->out("Powering up UUT");
-        $result = $this->_testUUTpower();
-        sleep(1);
-        $choice = readline("\n\rHit Enter to Continue: ");
 
         $this->out("Sending Erase User Signature Command!");
         $idNum = self::UUT_BOARD_ID;
@@ -1986,7 +2019,32 @@ class E104603Test extends \HUGnet\ui\Daemon
  
         $choice = readline("\n\rHit Enter to Continue: ");
 
-        $this->out("Powering down UUT");
+
+    }
+
+    /**
+    ****************************************************
+    * Test Load Firmware
+    *
+    * This function powers up the UUT and waits for 
+    * the user to remotely load firmware into the 
+    * device.
+    */
+    private function _testLoadFirmware()
+    {
+        $this->out("Powering Up UUT!\n\r");
+        $this->_powerUUT(self::ON);
+        sleep(3);
+        $this->out("More Sleep!");
+        sleep(2);
+        $this->out("Done sleeping!");
+
+        $this->out("Go ahead and load code");
+
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+
+        
         $this->_powerUUT(self::OFF);
         $choice = readline("\n\rHit Enter to Continue: ");
 
@@ -2023,7 +2081,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $Sdata = $SNdata.$HWPNdata.$CALdata.$DACcal;
 
         $SIGdata = pack("H*",$Sdata);
-        $fp = fopen("newtestSig.usersig","wb");
+        $fp = fopen("104603test.usersig","wb");
         fwrite($fp, $SIGdata);
         fclose($fp);
 
@@ -2046,13 +2104,21 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _programUUT()
     {
-        $this->display->displayHeader("Programming UUT Routine");
+        $output = array();
+
+        $this->display->displayHeader("Testing Programmed UUT");
         $this->out("\n\r");
         $this->_powerUUT(self::ON);
-        sleep(1);
+        sleep(3);
+        $this->out("More Sleep!");
+        sleep(2);
+        $this->out("Done sleeping!");
 
-        $this->out("Ready for AVR programming");
+        $replyData = $this->_pingEndpoint(0x8012);
 
+        $this->out("Ping Reply = ".$replyData);
+        
+        $this->_runApplicationTest();
         $choice = readline("\n\rHit Enter to Continue: ");
 
 
@@ -2564,7 +2630,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $dacVolts = $this->_readUUTdacVolts();
         $this->out("DAC volts = ".$dacVolts);
         
-
+        $this->out("Obtaining DAC offset ");
         
         if ($dacVolts < self::DAC_OFFCAL_LEVEL) {
             $error = false;
@@ -2588,6 +2654,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                     $dacVolts = $this->_readUUTdacVolts();
                     //$this->out("DAC volts = ".$dacVolts);
                 }
+                print "*";
 
             } while (($dacVolts < self::DAC_OFFCAL_LEVEL) and (!$error));
 
@@ -2615,7 +2682,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                 }
                 
                 $this->_DAC_OFFSET = $hexOffset;
-
+                $this->out("");
                 $this->out("Offset Value = ".$hexOffset);
                 $result = true;
             } else {
@@ -2635,7 +2702,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                 } else {
                     $dacVolts = $this->_readUUTdacVolts();
                 }
-
+                print "*";
             } while (($dacVolts > self::DAC_OFFCAL_LEVEL) and (!$error));
 
             if (!$error) {
@@ -2651,7 +2718,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                 }
 
                 $this->_DAC_OFFSET = $hexOffset;
-
+                $this->out("");
                 $this->out("Offset Value : ".$hexOffset);
                 $result = true;
             } else {
@@ -2686,6 +2753,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $dacVolts = $this->_readUUTdacVolts();
         $this->out("DAC volts = ".$dacVolts);
         
+        $this->out("Obtaining DAC gain value ");
         if ($dacVolts < self::DAC_GAINCAL_LEVEL) {
             $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
             $steps = 3.3/ pow(2,12);
@@ -2722,13 +2790,13 @@ class E104603Test extends \HUGnet\ui\Daemon
                         $dacVolts = $this->_readUUTdacVolts();
                         //$this->out("DAC volts = ".$dacVolts);
                     }
-
+                    print "*";
                 } while (($dacVolts < self::DAC_GAINCAL_LEVEL) and (!$error));
            
             
                 if (!$error) {
                     $this->_DAC_GAIN = $hexGainCor;
-
+                    $this->out("");
                     $this->out("Gain Error Value = ".$hexGainCor);
                     $result = true;
                 } else {
@@ -2773,13 +2841,13 @@ class E104603Test extends \HUGnet\ui\Daemon
                         $dacVolts = $this->_readUUTdacVolts();
                         //$this->out("DAC volts = ".$dacVolts);
                     }
-
+                    print "*";
                 } while (($dacVolts > self::DAC_GAINCAL_LEVEL) and (!$error));
            
             
                 if (!$error) {
                     $this->_DAC_GAIN = $hexGainCor;
-
+                    $this->out("");
                     $this->out("Gain Error Value = ".$hexGainCor);
                     $result = true;
                 } else {
@@ -2925,8 +2993,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $output = array();
         $this->display->displayHeader("Loading Test Firmware");
-        $choice = readline("\n\rVerify Programmer is Conneceted and
-                            Hit Enter to Continue: ");
         
 
         $FUSE1 = 0x00;
@@ -2937,7 +3003,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $FUSE6 = 0xFF;
 
 
-        $Avrdude = "avrdude -px32e5 -c avrisp2 -P usb -eu -B 10 -i 100 ";
+        $Avrdude = "avrdude -px32e5 -c avrisp2 -P usb -e -B 10 -i 100 ";
         $flash = "-U flash:w:104603test.ihex ";
         $fuse1 = "-U fuse1:w:".$FUSE1.":m ";
         $fuse2 = "-U fuse2:w:".$FUSE2.":m ";
@@ -2956,6 +3022,84 @@ class E104603Test extends \HUGnet\ui\Daemon
         return $result;
 
     }
+
+    /**
+    ************************************************************
+    * Load bootloader routine
+    *
+    * This function loads the 10460301 endpoint with the  
+    * bootloader firmware.  The firmware is load through the 
+    * AVR2 serial programmer.
+    *
+    * @return int $result  
+    */
+    private function _loadBootloaderFirmware()
+    {
+        $output = array();
+        $this->display->displayHeader("Loading Bootloader Firmware");
+        $choice = readline(
+                "\n\rVerify Programmer is Connected and Hit Enter to Continue: ");
+        
+
+        $FUSE1 = 0x00;
+        $FUSE2 = 0xBE;  
+        $FUSE3 = 0xFF;
+        $FUSE4 = 0xFF;
+        $FUSE5 = 0xE1;
+        $FUSE6 = 0xFF;
+
+
+        $Avrdude = "avrdude -px32e5 -c avrisp2 -P usb -e -B 10 -i 100 ";
+        $flash = "-U flash:w:104603boot.ihex ";
+        $fuse1 = "-U fuse1:w:".$FUSE1.":m ";
+        $fuse2 = "-U fuse2:w:".$FUSE2.":m ";
+        $fuse4 = "-U fuse4:w:".$FUSE4.":m ";
+        $fuse5 = "-U fuse5:w:".$FUSE5.":m ";
+
+        $Prog = $Avrdude.$flash.$fuse1.$fuse2.$fuse4.$fuse5;
+        exec($Prog, $output, $return); 
+
+        if ($return == 0) {
+            $result = true;
+        } else {
+            $result = false;
+        }
+
+        return $result;
+
+    }
+
+    /**
+    ************************************************************
+    * Load Application Firmware Routine
+    *
+    * This function loads the battery socializer application 
+    * firmware into the UUT.
+    *
+    */
+    private function _loadApplicationFirmware()
+    {
+        $this->out("Loading Application Firmware");
+
+        $hugnetLoad = "../bin/./hugnet_load";
+        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.3.0.gz";
+
+        $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
+
+        system($Prog, $return);
+
+        if ($return == 0) {
+            $result = true;
+        } else {
+            $result = false;
+        } 
+
+        $this->out("Result = ".$result);
+
+        return $result;
+    
+    }
+
 
     /**
     ************************************************************
