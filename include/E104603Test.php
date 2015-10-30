@@ -266,7 +266,7 @@ class E104603Test extends \HUGnet\ui\Daemon
             if ($result) {
                 $this->out("UUT Power UP - Passed\n\r");
                 sleep(1);
-                $this->_loadTestFirmware();
+                //$this->_loadTestFirmware();
                 $result = $this->_checkUUTBoard();
                 if ($result) {
                     //$this->_runUUTadcCalibration();
@@ -279,8 +279,6 @@ class E104603Test extends \HUGnet\ui\Daemon
                         $this->_writeUserSig();
                         $this->_loadBootloaderFirmware();
                         $this->_loadApplicationFirmware();
-                        // Load production bootloader code.
-                        // HUGnetLoad application code
                         // Test application code operation
                         $this->display->displayPassed();
                     } else {
@@ -755,6 +753,7 @@ class E104603Test extends \HUGnet\ui\Daemon
             $this->out("UUT Thermistors - FAILED!");
         }
 
+        $result = true;
         $this->out("");
 
         return $result;
@@ -805,7 +804,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Port 1 Current = ".$p1A." amps");
 
         /* 7.  Test voltage & current */
-        if (($pv1 > 11.50) and ($pv1 < 13.00)) {
+        if (($pv1 > 11.00) and ($pv1 < 13.00)) {
             /* 8.  Set the fault signal */
             /* 9.  delay 100mS */
             // usleep(100000);
@@ -2040,13 +2039,19 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Done sleeping!");
 
         $this->out("Go ahead and load code");
-
-        $choice = readline("\n\rHit Enter to Continue: ");
-
-
         
-        $this->_powerUUT(self::OFF);
+        //$this->_ENDPT_SN = 0x8012;
+        //$this->_writePowerTable();
+        
+        /* next set the channel on */
+        $this->_runApplicationTest();
+
         $choice = readline("\n\rHit Enter to Continue: ");
+
+
+        $this->_powerUUT(self::OFF);
+        $this->_clearTester();
+       $choice = readline("\n\rHit Enter to Continue: ");
 
     }
 
@@ -3068,6 +3073,30 @@ class E104603Test extends \HUGnet\ui\Daemon
         return $result;
 
     }
+    
+    /**
+    ************************************************************
+    * Read Endpoint Configuration Routine
+    *
+    * This function call the hugnet_readconfig script to 
+    * read the endpoing configuration into the database which
+    * allows the application firmware to be loaded.
+    *
+    */
+    private function _runReadConfig()
+    {
+        $this->out("Reading Battery Socializer Configuration");
+        
+        $hugnetReadConfig = " ../misc/./hugnet_readconfig -i ";
+        
+        $Prog = $hugnetReadConfig.$this->_ENDPT_SN;
+        
+    
+        system($Prog, $result);
+        
+        return $result;
+    
+    }
 
     /**
     ************************************************************
@@ -3404,8 +3433,47 @@ class E104603Test extends \HUGnet\ui\Daemon
     /*                                                                           */
     /*****************************************************************************/
 
-
-
+    
+    
+    /**
+    *********************************************************************
+    * Write Power Table routine
+    * 
+    * This function writes to the config table to set up port 1 as 
+    * a load port.
+    */
+    private function _writePowerTable()
+    {
+    
+        $serialNum = $this->_ENDPT_SN;
+        
+        /* step one is to erase config table */
+        $cmdNum = 0x1A;
+        $sendData = "0000FFFFFFFF";
+        
+        $result = $this->_sendpacket($serialNum, $cmdNum, $sendData);
+        
+        $this->out("Reply Data : ".$result);
+        
+        
+        /* step two is to write the table */
+        $cmdNum = 0x45; 
+        
+        $chan = "00";
+        $driverNum = "A000";
+        $priority = "00";
+        $name = "102700004C6F616420310000000000000000000000000000";
+        $fill1 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+        $fill2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+        
+        $sendData = $chan.$driverNum.$priority.$name.$fill1.$fill2;
+        
+        $result = $this->_sendpacket($serialNum, $cmdNum, $sendData);
+        $this->out("Reply Data : ".$result);
+    
+    }
+    
+    
     /**
     ***********************************************************
     * Send a Ping routine
