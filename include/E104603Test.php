@@ -247,9 +247,9 @@ class E104603Test extends \HUGnet\ui\Daemon
     *   4: Ping UUT to test communications
     *   5: Run calibration routines & set values
     *   6: Run UUT tests
-    *   7: Load testboot code to erase user signature page
-    *   8: Write user signature bytes with AVRDUDE
-    *   9: Load UUT bootloader and config data
+    *   7: Write user Signature bytes 
+    *   8: Load UUT bootloader code
+    *   9: Read UUT configuration into database
     *  10: HUGnet Load UUT application code
     *  11: Power cycle UUT & verify communications
     *  12: Power Down
@@ -316,7 +316,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     * step which is loading the test firmware.
     *
     *
-    * @return $result
+    * @return integer $testResult  1=pass, 0=fail, -1=hard fail
     */
     private function _testUUTpower()
     {
@@ -325,7 +325,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $result = $this->_powerUUT(self::ON);
         sleep(1);
-        if ($result == 1) {
+        if ($result) {
             $volts = $this->_readTesterBusVolt();
             $busv = number_format($volts, 2);
             $this->out("Bus Voltage = ".$busv." volts");
@@ -334,18 +334,18 @@ class E104603Test extends \HUGnet\ui\Daemon
                 $vccv = number_format($volts, 2);
                 $this->out("Vcc = ".$vccv." volts");
                 if (($volts > 3.1) and ($volts < 3.4)) {
-                    $result = true;
+                    $testResult = self::PASS;
                 } else {
-                    $result = false;
+                    $testResult = self::HFAIL;
                     $this->_powerUUT(self::OFF);
                 }
             } else {
-                $result = false;
+                $testResult = self::HFAIL;
                 $this->_powerUUT(self::OFF);
             }
         }
         
-        return $result;
+        return $testResult;
     }
 
     /**
@@ -376,7 +376,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         if ($ReplyData == "30") {
             $result = 1; /* Pass */
         } else { 
-            $result = -1;  /* Hard Failure */
+            $result = 0;  /* Failure */
         }
 
 
@@ -3481,43 +3481,6 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     
     
-    /**
-    *********************************************************************
-    * Write Power Table routine
-    * 
-    * This function writes to the config table to set up port 1 as 
-    * a load port.
-    */
-    private function _writePowerTable()
-    {
-    
-        $serialNum = $this->_ENDPT_SN;
-        
-        /* step one is to erase config table */
-        $cmdNum = 0x1A;
-        $sendData = "0000FFFFFFFF";
-        
-        $result = $this->_sendpacket($serialNum, $cmdNum, $sendData);
-        
-        $this->out("Reply Data : ".$result);
-        
-        
-        /* step two is to write the table */
-        $cmdNum = 0x45; 
-        
-        $chan = "00";
-        $driverNum = "A000";
-        $priority = "00";
-        $name = "102700004C6F616420310000000000000000000000000000";
-        $fill1 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-        $fill2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-        
-        $sendData = $chan.$driverNum.$priority.$name.$fill1.$fill2;
-        
-        $result = $this->_sendpacket($serialNum, $cmdNum, $sendData);
-        $this->out("Reply Data : ".$result);
-    
-    }
     
     
     /**
