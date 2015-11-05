@@ -111,6 +111,7 @@ foreach ($channels as $key => $chan) {
     for ($i = -2; $i >= -8; $i-=2) {
         $data .= substr($value, $i, 2);
     }
+    $tol = $settings[$key] * 0.1;
     $pkt = $dev->action()->send(
         array(
             "Command" => '0x64',
@@ -122,11 +123,12 @@ foreach ($channels as $key => $chan) {
         if (is_null($reply)) {
             print "No reply on channel $chan\r\n";
         } else if (!empty($reply)) {
-            if ($reply == $data) {
-                $cli->out("Channel $chan set to $settings[$key]!");
-            } else {
-                $cli->out("Failure to set channel $chan!!!!");
+            $rval = "";
+            for ($i = -2; $i >= -8; $i-=2) {
+                $rval .= substr($reply, $i, 2);
             }
+            $rdata = hexdec($rval);
+            $cli->out("Channel $chan set to $rdata!");
         } else {
             print "Empty reply on channel $chan\r\n";
         }
