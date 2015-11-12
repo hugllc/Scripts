@@ -161,7 +161,8 @@ class E104603Test extends \HUGnet\ui\Daemon
     private $_DAC_OFFSET;
     private $_DAC_GAIN;
     private $_ENDPT_SN;
-    /*
+
+    /**
     * Sets our configuration
     *
     * @param mixed &$config The configuration to use
@@ -194,11 +195,11 @@ class E104603Test extends \HUGnet\ui\Daemon
     }
 
     /**
-    *******************************************************************
+    *****************************************************************************
     *
     *                          M A I N 
     *
-    *******************************************************************
+    *****************************************************************************
     *
     * It would be nice to have a test fixture ID test to verify
     * that the fixture matches the menu selection.
@@ -255,9 +256,9 @@ class E104603Test extends \HUGnet\ui\Daemon
     *   8: Load UUT bootloader code
     *   9: Read UUT configuration into database
     *  10: HUGnet Load UUT application code
-    *  11: Power cycle UUT & verify communications
+    *  11: Verify communications & Test Application code
     *  12: Power Down
-    *  13: Display passed and log data
+    *  13: Display passed and log test data
     *
     * @return void
     *   
@@ -453,7 +454,9 @@ class E104603Test extends \HUGnet\ui\Daemon
                 sleep(1);
                 $this->out("Setting Port 1 to 10V Reference");
                 $this->_setRelay(2,1);  /* Select 10V reference */
+                usleep(1000);
                 $this->_setRelay(3,1);  /* Select Voltage supply */
+                usleep(1000);
                 $this->_setRelay(4,1);  /* Connect 10V reference */
                 sleep(1);
 
@@ -461,12 +464,11 @@ class E104603Test extends \HUGnet\ui\Daemon
                 $voltsP1 = $this->_readTesterP1Volt();
                 $p1v = number_format($voltsP1, 4);
                 $this->out("Port 1 Tester  = ".$p1v." volts");
-
+                
                 /* measure port 1 voltage with UUT */
                 $voltsUp1 = $this->_readUUTPort1Volts();
                 $up1V = number_format($voltsUp1, 4);
                 $this->out("Port 1 UUT     = ".$up1V." volts");
-                
             
                 $gainErrorValue = $this->_runAdcGainCorr($offsetIntVal);
             
@@ -837,6 +839,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p1A = number_format($p1Amps, 2);
         $this->out("Port 1 Current = ".$p1A." amps");
 
+
         /* 7.  Test voltage & current */
         if (($pv1 > 11.00) and ($pv1 < 13.00)) {
             /* 8.  Set the fault signal */
@@ -989,7 +992,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->_setRelay(6, 0);
 	
         $this->out("");
-        return $tesResult;
+        return $testResult;
 
     }
 
@@ -2561,7 +2564,15 @@ class E104603Test extends \HUGnet\ui\Daemon
         $offsetIntVal = number_format($rawVal, 0, "", "");
         $hexVal = dechex($offsetIntVal);
         $len = strlen($hexVal);
-        $hexVal = substr($hexVal, len-4, 4);
+    
+        if ($len < 4) {
+            do {
+                $hexVal = "0".$hexVal;
+                $len = strlen($hexVal);
+            } while ($len < 4);
+        } else {
+            $hexVal = substr($hexVal, len-4, 4);
+        }
         $this->out("Hex Value for the offset ".$hexVal);
       
         $this->out("*** Setting ADC Offset ****");
@@ -2646,7 +2657,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_ADCOFFSET_COMMAND; 
-        
+
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
         
         $this->out("Offset Value   = ".$ReplyData);
@@ -3278,12 +3289,13 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $Avrdude = "sudo avrdude -px32e5 -c avrisp2 -P usb -e -B 10 -i 100 ";
         $flash = "-U flash:w:104603boot.ihex ";
+        $eeprm = "-U eeprom:w:104603boot.eep ";
         $fuse1 = "-U fuse1:w:".$FUSE1.":m ";
         $fuse2 = "-U fuse2:w:".$FUSE2.":m ";
         $fuse4 = "-U fuse4:w:".$FUSE4.":m ";
         $fuse5 = "-U fuse5:w:".$FUSE5.":m ";
 
-        $Prog = $Avrdude.$flash.$fuse1.$fuse2.$fuse4.$fuse5;
+        $Prog = $Avrdude.$flash.$eeprm.$fuse1.$fuse2.$fuse4.$fuse5;
         exec($Prog, $output, $return); 
 
         if ($return == 0) {
@@ -3486,7 +3498,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         
-        
+        /* convert data to big endian */
         $len = strlen($ReplyData);
         $loops = $len/2;
         
