@@ -161,6 +161,25 @@ class E104603Test extends \HUGnet\ui\Daemon
     private $_DAC_OFFSET;
     private $_DAC_GAIN;
     private $_ENDPT_SN;
+    
+    private $_TEST_DATA = array(
+                            "BusVolts"  => 0.0,
+                            "Vcc"       => 0.0,
+                            "ADCoffset" => "",
+                            "ADCgain"   => "",
+                            "DACoffset" => "",
+                            "DACgain"   => "",
+                            "BusTemp"   => 0.0,
+                            "P1Temp"    => 0.0,
+                            "P2Temp"    => 0.0,
+                            "P1Volts"   => 0.0,
+                            "P1Current" => 0.0,
+                            "P1Fault"   => 0.0,
+                            "P2Volts"   => 0.0,
+                            "P2Current" => 0.0,
+                            "P2Fault"   => 0.0,
+                            );
+    private $_TEST_RESULTS = array();
 
     /**
     * Sets our configuration
@@ -278,14 +297,14 @@ class E104603Test extends \HUGnet\ui\Daemon
                 $result = $this->_checkUUTBoard();
                 $this->_readMicroSN();
                 if ($result == self::PASS) {
-                    $result = $this->_runUUTadcCalibration();
+                    /* $result = $this->_runUUTadcCalibration();
                     if ($result == self::PASS) {
                         $this->_runUUTdacCalibration();
-                    }
+                    }*/
                     $this->_ENDPT_SN = $this->_getSerialNumber();
                     $result = $this->_testUUT();
                     if ($result == self::PASS) {
-                        $result = $this->_loadUUTprograms();
+                        //$result = $this->_loadUUTprograms();
                         
                         if ($result == self::PASS) {
                             $this->display->displayPassed();
@@ -337,10 +356,12 @@ class E104603Test extends \HUGnet\ui\Daemon
         if ($result) {
             $volts = $this->_readTesterBusVolt();
             $busv = number_format($volts, 2);
+            $this->_TEST_DATA["BusVolts"] = $busv;
             $this->out("Bus Voltage = ".$busv." volts");
             if (($volts > 11.5) and ($volts < 13.00)) {
                 $volts = $this->_readTesterVCC();
                 $vccv = number_format($volts, 2);
+                $this->_TEST_DATA["Vcc"] = $vccv;
                 $this->out("Vcc = ".$vccv." volts");
                 if (($volts > 3.1) and ($volts < 3.4)) {
                     $testResult = self::PASS;
@@ -842,49 +863,62 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         /* 7.  Test voltage & current */
         if (($pv1 > 11.00) and ($pv1 < 13.00)) {
+
+            $this->out("PORT 1 FAULT ON:");
+            
             /* 8.  Set the fault signal */
-            /* 9.  delay 100mS */
-            // usleep(100000);
-
-            /* 10. Eval Board Measure Port 1 voltage */
-            //$voltsP2 = $this->_readTesterP1Volt();
-
-            /* 11. Get UUT Port 1 voltage */
-            //$p1Volts = $this->_readUUTP1Volts();
-
-            /* 12. Get UUT Port 1 Current */
-            //$p1Amps = $this->_readUUTP1Current();
-
-            /* 13. Remove the fault signal */
-            /* 14. delay 100mS */
-            //usleep(100000);
-
-            /* 15. Turn off Port 1 */
-            /* $idNum = self::UUT_BOARD_ID;
-            $cmdNum = self::SET_POWERPORT_COMMAND; 
-            $dataVal = "0100"; 
-            $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); */
-
-            $this->_setPort(1, 0);
-            $this->out("PORT 1 OFF:");
+            $this->_faultTest(1, 1);
             sleep(1);
-
+            
+            /* 9. Eval Board Measure Port 1 voltage */
             $voltsP1 = $this->_readTesterP1Volt();
             $p1v = number_format($voltsP1, 2);
-            $this->out("Port 1 Tester  = ".$p1v." volts");
+            $this->out("Port 1 Fault   = ".$p1v." volts");
 
-            $p1Volts = $this->_readUUTPort1Volts();
-            $pv1 = number_format($p1Volts, 2);
-            $this->out("Port 1 UUT     = ".$pv1." volts");
+            if ($p1v < 0.1) {
+                $this->out("PORT 1 FAULT OFF:");
             
-            if ($pv1 <= 0.1) {
-                $testResult = self::PASS;
-                $this->out("Port 1 Load Test - PASSED!");
-            } else {
-                $testResult = self::HFAIL;
-                $this->out("Port 1 Load Test - FAILED!");
-            }
+                /* 11. Remove the fault signal */
+                $this->_faultTest(1, 0);
+                sleep(1);
 
+                $voltsP1 = $this->_readTesterP1Volt();
+                $p1v = number_format($voltsP1, 2);
+                $this->out("Port 1 Fault   = ".$p1v." volts");
+                
+                if (($p1v > 11.00) and ($p1v < 13.00)) {
+                    /* 12. Turn off Port 1 */
+                    $this->_setPort(1, 0);
+                    $this->out("PORT 1 OFF:");
+                    sleep(1);
+
+                    $voltsP1 = $this->_readTesterP1Volt();
+                    $p1v = number_format($voltsP1, 2);
+                    $this->out("Port 1 Tester  = ".$p1v." volts");
+
+                    $p1Volts = $this->_readUUTPort1Volts();
+                    $pv1 = number_format($p1Volts, 2);
+                    $this->out("Port 1 UUT     = ".$pv1." volts");
+                    
+                    if ($pv1 <= 0.1) {
+                        $testResult = self::PASS;
+                        $this->out("Port 1 Load Test - PASSED!");
+                    } else {
+                        $testResult = self::HFAIL;
+                        $this->out("Port 1 Load Test - FAILED!");
+                    }
+                } else {
+                    $this->_setPort(1, 0);
+                    $this->out("PORT 1 OFF:");
+                    $testResult = self::HFAIL;
+               }
+            } else {
+                $this->_faultTest(1, 0);
+                $this->_setPort(1, 0);
+                $this->out("PORT 1 OFF:");
+                $testResult = self::HFAIL;
+            }
+                    
         } else {
             $this->_setPort(1, 0);
             $this->out("PORT 1 OFF:");
@@ -946,40 +980,59 @@ class E104603Test extends \HUGnet\ui\Daemon
         /* 7.  Test voltage & current */
         if (($pv2 > 11.50) and ($pv2 < 13.00)) {
 
+            $this->out("PORT 2 FAULT ON:");
+            
             /* 8.  Set the fault signal */
-            /* 9.  delay 100mS */
-
-            /* 10. Eval Board Measure Port 2 voltage */
-            //$voltsP2 = $this->_readTesterP2Volt();
-
-            /* 11. Get UUT Port 2 voltage */
-            //$p2Volts = $this->_readUUTP2Volts();
-
-            /* 12. Get UUT Port 2 Current */
-            //$p2Amps = $this->_readUUTP2Current();
-
-            /* 13. Remove the fault signal */
-            /* 14. delay 100mS */
-
-            /* 15. Turn off Port 2 */
-            $this->_setPort(2, 0);
-            $this->out("PORT 2 OFF:");
-            sleep(2);
-
+            $this->_faultTest(2, 1);
+            sleep(1);
+            
+            /* 9. Eval Board Measure Port 2 voltage */
             $voltsP2 = $this->_readTesterP2Volt();
             $p2v = number_format($voltsP2, 2);
-            $this->out("Port 2 Tester  = ".$p2v." volts");
+            $this->out("Port 2 Fault   = ".$p2v." volts");
 
-            $p2Volts = $this->_readUUTPort2Volts();
-            $pv2 = number_format($p2Volts, 2);
-            $this->out("Port 2 UUT     = ".$pv2." volts");
+            if ($p2v < 0.1) {
+                $this->out("PORT 2 FAULT OFF:");
+            
+                /* 11. Remove the fault signal */
+                $this->_faultTest(2, 0);
+                sleep(1);
 
-            if ($pv2 <= 0.1) {
-                $testResult = self::PASS;
-                $this->out("Port 2 Load Test - PASSED!");
+                $voltsP2 = $this->_readTesterP2Volt();
+                $p2v = number_format($voltsP2, 2);
+                $this->out("Port 2 Fault   = ".$p2v." volts");
+                
+                if (($p2v > 11.00) and ($p2v < 13.00)) {
+                    /* 12. Turn off Port 2 */
+                    $this->_setPort(2, 0);
+                    $this->out("PORT 2 OFF:");
+                    sleep(2);
+
+                    $voltsP2 = $this->_readTesterP2Volt();
+                    $p2v = number_format($voltsP2, 2);
+                    $this->out("Port 2 Tester  = ".$p2v." volts");
+
+                    $p2Volts = $this->_readUUTPort2Volts();
+                    $pv2 = number_format($p2Volts, 2);
+                    $this->out("Port 2 UUT     = ".$pv2." volts");
+
+                    if ($pv2 <= 0.1) {
+                        $testResult = self::PASS;
+                        $this->out("Port 2 Load Test - PASSED!");
+                    } else {
+                        $testResult = self::HFAIL;
+                        $this->out("Port 2 Load Test - FAILED!");
+                    }
+                } else {
+                    $this->_setPort(2, 0);
+                    $this->out("PORT 2 OFF:");
+                    $testResult = self::HFAIL;
+                }
             } else {
+                $this->_faultTest(2, 0);
+                $this->_setPort(2, 0);
+                $this->out("PORT 2 OFF:");
                 $testResult = self::HFAIL;
-                $this->out("Port 2 Load Test - FAILED!");
             }
         } else {
             $this->_setPort(2, 0);
@@ -1942,7 +1995,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_EXT_TEMP2);
         if ($rawVal > 0x7ff) {
-            $this->out("Raw Value = ".$rawVal." !");
             $rawVal = 0xffff - $rawVal;
         }
 
@@ -2749,7 +2801,57 @@ class E104603Test extends \HUGnet\ui\Daemon
             $result = true;
         }
         
+        
 	return $result;
+    }
+    
+    /**
+    ************************************************************
+    * Fault Test Routine
+    *
+    * This function sets or clears the fault current condition
+    * on the Power Ports to test the circuits response.
+    *
+    * @param $portNum  Power port 1 or 2
+    * @param $state    0= clear, 1=set 
+    *
+    * @return integer $testResult
+    */
+    private function _faultTest($portNum, $state)
+    {
+        $idNum = self::EVAL_BOARD_ID;
+        
+        if ($state == 1) {
+            $cmdNum = self::SET_DIGITAL_COMMAND;
+        } else {
+            $cmdNum = self::CLR_DIGITAL_COMMAND;
+        }
+    
+    
+        if ($portNum == 1) {
+            $dataVal = "0200";  /* PC0 */
+        } else {
+            $dataVal = "0201";  /* PC1 */
+        }
+        
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        if ($portNum == 1) {
+            if ($ReplyData == "20") {
+                $testResult = self::PASS;
+            } else {
+                $testResult = self::FAIL;
+            }
+        } else {
+            if ($ReplyData == "21") {
+                $testResult = self::PASS;
+            } else {
+                $testResult = self::FAIL;
+            }
+        }
+        
+        return $testResult;
     }
 
     /**
@@ -3497,6 +3599,8 @@ class E104603Test extends \HUGnet\ui\Daemon
         $dataVal = "00";
     
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $this->out("Serial number in reply data: ".$ReplyData);
         
         /* convert data to big endian */
         $len = strlen($ReplyData);
