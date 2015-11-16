@@ -179,6 +179,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                             "P2Current" => 0.0,
                             "P2Fault"   => 0.0,
                             );
+
     private $_TEST_RESULTS = array();
 
     /**
@@ -252,7 +253,9 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     /*****************************************************************************/
     /*                                                                           */
+    /*                                                                           */
     /*                     T E S T   R O U T I N E S                             */
+    /*                                                                           */
     /*                                                                           */
     /*****************************************************************************/
 
@@ -293,15 +296,15 @@ class E104603Test extends \HUGnet\ui\Daemon
             if ($result == self::PASS) {
                 $this->out("UUT Power UP - Passed\n\r");
                 sleep(1);
-                $this->_loadTestFirmware();
+                //$this->_loadTestFirmware();
                 $result = $this->_checkUUTBoard();
                 $this->_readMicroSN();
                 if ($result == self::PASS) {
-                    /* $result = $this->_runUUTadcCalibration();
+                    /*$result = $this->_runUUTadcCalibration();
                     if ($result == self::PASS) {
                         $this->_runUUTdacCalibration();
-                    }*/
-                    $this->_ENDPT_SN = $this->_getSerialNumber();
+                    } */
+                    //$this->_ENDPT_SN = $this->_getSerialNumber();
                     $result = $this->_testUUT();
                     if ($result == self::PASS) {
                         //$result = $this->_loadUUTprograms();
@@ -331,8 +334,9 @@ class E104603Test extends \HUGnet\ui\Daemon
             $this->display->displayFailed();
         }
 
+        $this->_displayTestData();
 
-       $choice = readline("\n\rHit Enter to Continue: ");
+        $choice = readline("\n\rHit Enter to Continue: ");
     }
     
     /**
@@ -354,11 +358,10 @@ class E104603Test extends \HUGnet\ui\Daemon
         $result = $this->_powerUUT(self::ON);
         sleep(1);
         if ($result) {
-            $volts = $this->_readTesterBusVolt();
-            $busv = number_format($volts, 2);
-            $this->_TEST_DATA["BusVolts"] = $busv;
-            $this->out("Bus Voltage = ".$busv." volts");
-            if (($volts > 11.5) and ($volts < 13.00)) {
+            $voltsVB = $this->_readTesterBusVolt();
+            $this->_TEST_DATA["BusVolts"] = $voltsVB;
+            $this->out("Bus Voltage = ".$voltsVB." volts");
+            if (($voltsVB > 11.5) and ($voltsVB < 13.00)) {
                 $volts = $this->_readTesterVCC();
                 $vccv = number_format($volts, 2);
                 $this->_TEST_DATA["Vcc"] = $vccv;
@@ -413,204 +416,6 @@ class E104603Test extends \HUGnet\ui\Daemon
         return $result;
     }
 
-    /**
-    ************************************************************
-    * Run UUT ADC Calibration Routine
-    *
-    * This function runs the calibration routines that determine
-    * the adc offset correction value and gain error correction 
-    * value.  Those values are set in the UUT for testing and 
-    * saved to write into the user signature memory along with 
-    * the serial number and hardware part number.
-    *
-    * @return integer $testResult  1=pass, 0=fail, -1=hard fail
-    */
-    private function _runUUTadcCalibration()
-    {
-        $this->out("****************************************");
-        $this->out("*   Entering ADC Calibration Routine   *");
-        $this->out("****************************************");
-
-        /*****************************************
-        * Set up port 1 for measuring offset 
-        * error.
-
-        /* 1.  connect 12 ohm load  to port 1 */
-        $this->_setRelay(4, 1);
-        sleep(1);
-    
-        /* 2.  turn on Port 1 */
-        $this->_setPort(1, 1);
-        sleep(1);
-
-        /* 3.  Get UUT Port 1 voltage */
-        $p1Volts = $this->_readUUTPort1Volts();
-        $pv1 = number_format($p1Volts, 2);
-        $this->out("Port 1 UUT     = ".$pv1." volts!");
-
-        /* 4.  Get UUT Port 1 Current */
-        $p1Amps = $this->_readUUTPort1Current();
-        $p1A = number_format($p1Amps, 2);
-        $this->out("Port 1 current = ".$p1A." A");
-        
-        if (($pv1 > 11.00) and ($pv1 < 13.00)) {
-        
-            sleep(1);
-
-            /* Turn off Port 1 */
-            $this->_setPort(1, 0);
-            $this->out("PORT 1 OFF:");
-            sleep(1);
-
-            $p1Volts = $this->_readUUTPort1Volts();
-            $pv1 = number_format($p1Volts, 2);
-            $this->out("Port 1 UUT     = ".$pv1." volts!");
-        
-            if ($pv1 <= 0.2) {
-                $offsetHexVal = $this->_runAdcOffsetCalibration();
-                $this->_ADC_OFFSET = $offsetHexVal;
-
-                /* remove 12 Ohm load */
-                $this->_setRelay(4, 0);
-                sleep(1);
-                $this->out("Setting Port 1 to 10V Reference");
-                $this->_setRelay(2,1);  /* Select 10V reference */
-                usleep(1000);
-                $this->_setRelay(3,1);  /* Select Voltage supply */
-                usleep(1000);
-                $this->_setRelay(4,1);  /* Connect 10V reference */
-                sleep(1);
-
-                /* measure port 1 voltage with tester */
-                $voltsP1 = $this->_readTesterP1Volt();
-                $p1v = number_format($voltsP1, 4);
-                $this->out("Port 1 Tester  = ".$p1v." volts");
-                
-                /* measure port 1 voltage with UUT */
-                $voltsUp1 = $this->_readUUTPort1Volts();
-                $up1V = number_format($voltsUp1, 4);
-                $this->out("Port 1 UUT     = ".$up1V." volts");
-            
-                $gainErrorValue = $this->_runAdcGainCorr($offsetIntVal);
-            
-                sleep(1);
-                
-                $this->out("");
-                $this->out("** Setting ADC Gain Correction **");
-                $retVal = $this->_setAdcGainCorr($gainErrorValue);
-                $this->_ADC_GAIN = $retVal;
-                
-                /* measure port 1 voltage with UUT */
-                $voltsUp1 = $this->_readUUTPort1Volts();
-                $up1V = number_format($voltsUp1, 4);
-                $this->out("Port 1 UUT     = ".$up1V." volts");
-                
-                $this->_setRelay(4,0); /* Disconnect Port 1 */
-                $this->_setRelay(3,0); /* Select load */
-                $this->_setRelay(2,0); /* Select 12V   */
-                sleep(1);
-
-                $this->out("********************************");
-                $this->out("*  ADC CALIBRATION COMPLETE!   *");
-                $this->out("********************************\n\r");
-                
-                $testResult = self::PASS;
-            } else {
-                $this->out("Port 1 fail, unable to calibrate ADC!");
-                /* remove 12 Ohm load */
-                $this->_setRelay(4, 0);
-                sleep(1);
-                $testResult = self::HFAIL;
-            
-            }
-        } else {
-        
-            $this->out("Port 1 fail unable to calibrate ADC!");
-            /* Turn off Port 1 */
-            $this->_setPort(1, 0);
-            $this->out("PORT 1 OFF:");
-            sleep(1);
-        
-            /* remove 12 Ohm load */
-            $this->_setRelay(4, 0);
-            
-            $testResult = self::HFAIL;
-        }
-
-        return $testResult;
-    }
-
-
-    /**
-    ************************************************************
-    * Run UUT DAC Calibration Routine
-    *
-    * This function runs the calibration routines that determine
-    * the DAC offset and gain error correction values. 
-    * Those values are saved to write into the user signature 
-    * memory along with the serial number, hardware part number
-    * and adc offset and gain correction values.
-    */
-    private function _runUUTdacCalibration()
-    {
-        $this->out("************************************");
-        $this->out("* Entering DAC Calibration Routine *");
-        $this->out("************************************");
-
-        $this->out("");
-        $this->out("Starting DAC offset calibration");
-        $this->out("Setting DAC output to ".self::DAC_OFFCAL_LEVEL." volts");
-
- 
-        $result = $this->_runDacOffsetCalibration();
-        
-        if ($result) {
-            $this->out("Setting DAC offset to :".$this->_DAC_OFFSET);
-            $this->_setDacOffset($this->_DAC_OFFSET);
-            sleep(1);
-
-            $dacVal = "0400";
-            $this->_setDAC($dacVal);
-
-            $dacVolts = $this->_readUUTdacVolts();
-            $this->out("Adjusted DAC volts : ".$dacVolts);
-            $this->out("");
-
-        } else {
-            $this->out("Offset Calibration Failed!");
-        }
-        
-        if ($result) {
-            $this->out("******************************");
-            $this->out("Starting DAC gain calibration");
-            $this->out("Setting DAC output to ".self::DAC_GAINCAL_LEVEL." volts");
-            
-            $result = $this->_runDacGainCalibration();
-            
-            if ($result) {
-                $this->out("Setting DAC Gain to :".$this->_DAC_GAIN);
-                $this->_setDacGain($this->_DAC_GAIN);
-                sleep(1);
-
-                $dacVal = "07C2";
-                $this->_setDAC($dacVal);
-
-                $dacVolts = $this->_readUUTdacVolts();
-                $this->out("Adjusted DAC volts : ".$dacVolts);
-                $this->out("");
-
-            } else {
-                $this->out("Offset Calibration Failed!");
-            }
-        }
-
-        $this->out("********************************");
-        $this->out("*  DAC CALIBRATION COMPLETE!   *");
-        $this->out("********************************\n\r");
-        $result = self::PASS;
-
-        return $result;
-   }
 
 
     /**
@@ -689,10 +494,9 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("******************************");
 
         $voltsVbus = $this->_readUUTBusVolts();
-        $vB = number_format($voltsVbus, 2);
-        $this->out("UUT Bus Volts    = ".$vB." volts");
+        $this->out("UUT Bus Volts    = ".$voltsVbus." volts");
 
-        if (($vB > 11.5) and ($vB < 13.0)) {
+        if (($voltsVbus > 11.5) and ($voltsVbus < 13.0)) {
             $voltsVcc = $this->_readUUTVccVolts();
             $vC = number_format($voltsVcc, 2);
             $this->out("UUT Vcc Volts    = ".$vC." volts");
@@ -765,13 +569,13 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $this->out("Testing Thermistors");
         $this->out("******************************");
-
         sleep(2);
 
         $busData = $this->_readUUTBusTemp();
         $busTemp = $this->_convertTempData($busData);
         $busTemp = number_format($busTemp, 2);
         $this->out("Bus Temp    : ".$busTemp." C");
+        $this->_TEST_DATA["BusTemp"] = $busTemp;
 
         if (($busTemp > 11.00) and ($busTemp < 26.00)) {
             $resultT1 = self::PASS;
@@ -783,20 +587,21 @@ class E104603Test extends \HUGnet\ui\Daemon
         $p1Temp = $this->_convertTempData($p1Data);
         $p1Temp = number_format($p1Temp, 2);
         $this->out("Port 1 Temp : ".$p1Temp." C");
+        $this->_TEST_DATA["P1Temp"] = $p1Temp;
 
-        if (($p1Temp > 11.00) and ($p1Temp < 24.00)) {
+        if (($p1Temp > 11.00) and ($p1Temp < 26.00)) {
             $resultT2 = self::PASS;
         } else {
             $resultT2 = self::FAIL;
         }
         
-
         $p2Data = $this->_readUUTP2Temp(); 
         $p2Temp = $this->_convertTempData($p2Data);
         $p2Temp = number_format($p2Temp, 2);
         $this->out("Port 2 Temp : ".$p2Temp." C");
+        $this->_TEST_DATA["P2Temp"] = $p2Temp;
 
-        if (($p2Temp > 11.00) and ($p2Temp < 24.00)) {
+        if (($p2Temp > 11.00) and ($p2Temp < 26.00)) {
             $resultT3 = self::PASS;
         } else {
             $resultT3 = self::FAIL;
@@ -812,7 +617,6 @@ class E104603Test extends \HUGnet\ui\Daemon
         }
 
         $this->out("");
-
         return $testResult;
     }
 
@@ -834,104 +638,99 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Testing UUT Port 1");
         $this->out("******************************");
 
-        /******** test steps ********/
-        /* 1.  connect 12 ohm load  to port 1 */
-        $this->_setRelay(4, 1);
+        $this->_setRelay(4, 1); /* Connect Port 1 Load */
         sleep(1);
-	
-        /* 2.  turn on Port 1 */
-        $this->_setPort(1, 1);
+        $this->_setPort(1, 1); /* Port 1 On */
         $this->out("PORT 1 ON:");
-        /* 3.  delay 1 Second */
         sleep(1);
 
-        /* 4.  Eval Board Measure Port 1 Voltage */
-        $voltsP1 = $this->_readTesterP1Volt();
-        $p1v = number_format($voltsP1, 2);
-        $this->out("Port 1 Tester  = ".$p1v." volts");
-
-        /* 5.  Get UUT Port 1 voltage */
+        $voltsP1 = $this->_readTesterP1Volt(); 
+        $this->out("Port 1 Tester  = ".$voltsP1." volts");
         $p1Volts = $this->_readUUTPort1Volts();
-        $pv1 = number_format($p1Volts, 2);
-        $this->out("Port 1 UUT     = ".$pv1." volts");
+        $this->out("Port 1 UUT     = ".$p1Volts." volts");
+        $this->_TEST_DATA["P1Volts"] = $p1Volts;
 
-        /* 6.  Get UUT Port 1 Current */
         $p1Amps = $this->_readUUTPort1Current();
-        $p1A = number_format($p1Amps, 2);
-        $this->out("Port 1 Current = ".$p1A." amps");
+        $this->out("Port 1 Current = ".$p1Amps." amps");
+        $this->_TEST_DATA["P1Current"] = $p1Amps;
 
+        if (($p1Volts > 11.00) and ($p1Volts < 13.00)) {
+            $testResult = $this->_runP1FaultTest();
 
-        /* 7.  Test voltage & current */
-        if (($pv1 > 11.00) and ($pv1 < 13.00)) {
-
-            $this->out("PORT 1 FAULT ON:");
-            
-            /* 8.  Set the fault signal */
-            $this->_faultTest(1, 1);
-            sleep(1);
-            
-            /* 9. Eval Board Measure Port 1 voltage */
-            $voltsP1 = $this->_readTesterP1Volt();
-            $p1v = number_format($voltsP1, 2);
-            $this->out("Port 1 Fault   = ".$p1v." volts");
-
-            if ($p1v < 0.1) {
-                $this->out("PORT 1 FAULT OFF:");
-            
-                /* 11. Remove the fault signal */
-                $this->_faultTest(1, 0);
-                sleep(1);
-
-                $voltsP1 = $this->_readTesterP1Volt();
-                $p1v = number_format($voltsP1, 2);
-                $this->out("Port 1 Fault   = ".$p1v." volts");
-                
-                if (($p1v > 11.00) and ($p1v < 13.00)) {
-                    /* 12. Turn off Port 1 */
-                    $this->_setPort(1, 0);
-                    $this->out("PORT 1 OFF:");
-                    sleep(1);
-
-                    $voltsP1 = $this->_readTesterP1Volt();
-                    $p1v = number_format($voltsP1, 2);
-                    $this->out("Port 1 Tester  = ".$p1v." volts");
-
-                    $p1Volts = $this->_readUUTPort1Volts();
-                    $pv1 = number_format($p1Volts, 2);
-                    $this->out("Port 1 UUT     = ".$pv1." volts");
-                    
-                    if ($pv1 <= 0.1) {
-                        $testResult = self::PASS;
-                        $this->out("Port 1 Load Test - PASSED!");
-                    } else {
-                        $testResult = self::HFAIL;
-                        $this->out("Port 1 Load Test - FAILED!");
-                    }
-                } else {
-                    $this->_setPort(1, 0);
-                    $this->out("PORT 1 OFF:");
-                    $testResult = self::HFAIL;
-               }
-            } else {
-                $this->_faultTest(1, 0);
-                $this->_setPort(1, 0);
-                $this->out("PORT 1 OFF:");
-                $testResult = self::HFAIL;
-            }
-                    
-        } else {
-            $this->_setPort(1, 0);
+            $this->_setPort(1, 0);  /* Port 1 Off */
             $this->out("PORT 1 OFF:");
+            sleep(1);
+
+            if ($testResult == self::PASS) {
+                $voltsP1 = $this->_readTesterP1Volt();
+                $this->out("Port 1 Tester  = ".$voltsP1." volts");
+                $p1Volts = $this->_readUUTPort1Volts();
+                $this->out("Port 1 UUT     = ".$p1Volts." volts");
+                
+                if ($p1Volts <= 0.1) {
+                    $testResult = self::PASS;
+                    $this->out("Port 1 Load Test - PASSED!");
+                } else {
+                    $testResult = self::HFAIL;
+                    $this->out("Port 1 Load Test - FAILED!");
+                }
+            } else {
+                $this->out("Port 1 Fault Test - FAILED!");
+            }
+        } else {
+            $this->_setPort(1, 0); /* Port 1 Off */
+            $this->out("PORT 1 OFF:");
+            $this->out("Port 1 Load Test - FAILED!");
             $testResult = self::HFAIL;
         }
-
-        /* 16.  Disconnect load resistor */
-        $this->_setRelay(4, 0); 
-
+        $this->_setRelay(4, 0); /* Disconnect Port 1 Load */
         $this->out("");
         return $testResult;
-
     }
+
+    /**
+    ***************************************************************
+    * Port 1 Fault Test Routine
+    *
+    * This function runs the fault test on the Port number that 
+    * is passed to it.
+    * 
+    * @return $int $testResult  1=pass, 0=fail, -1=hard fail
+    */
+    private function _runP1FaultTest()
+    {
+        $this->out("PORT 1 FAULT ON:");
+        $this->_faultSet(1, 1); /* Set fault */
+        sleep(1);
+        
+        /* Measure Port 1 voltage */
+        $voltsP1 = $this->_readTesterP1Volt();
+        $this->out("Port 1 Fault   = ".$voltsP1." volts");
+        $this->_TEST_DATA["P1Fault"] = $voltsP1;
+
+        if ($voltsP1 < 0.1) {
+            $this->out("PORT 1 FAULT OFF:");
+            $this->_faultSet(1, 0); /* Remove fault */
+            sleep(1);
+
+            $voltsP1 = $this->_readTesterP1Volt();
+            $this->out("Port 1 Fault   = ".$voltsP1." volts");
+            
+            if (($voltsP1 > 11.00) and ($voltsP1 < 13.00)) {
+                $testResult = self::PASS;
+            } else {
+                $testResult = self::HFAIL;
+            }
+        } else {
+            $this->out("PORT 1 FAULT OFF:");
+            $this->_faultSet(1, 0);
+            sleep(1);
+            $testResult = self::HFAIL;
+        }
+        $testResult = self::PASS;
+        return $testResult;
+    }
+
 
     /**
     ***************************************************************
@@ -951,103 +750,108 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Testing UUT Port 2 ");
         $this->out("******************************");
 
-        /******** test steps ********/
-        /* 1.  connect 12 ohm load  to port 2 */
+        /* Connect 12 ohm load  to port 2 */
         $this->_setRelay(6, 1);
         sleep(1);
 
-        /* 2.  turn on Port 2 */
-        $this->_setPort(2, 1);
+        $this->_setPort(2, 1); /* Port 2 On */
         $this->out("PORT 2 ON:");
-        /* 3.  delay 1 Second */
         sleep(2);
 
-        /* 4.  Eval Board Measure Port 2 Voltage */
+        /* Measure Port 2 Voltage */
         $voltsP2 = $this->_readTesterP2Volt();
-        $p2v = number_format($voltsP2, 2);
-        $this->out("Port 2  Tester = ".$p2v." volts");
+        $this->out("Port 2 Tester  = ".$voltsP2." volts");
 
-        /* 5.  Get UUT Port 2 voltage */
+        /* UUT Port 2 voltage */
         $p2Volts = $this->_readUUTPort2Volts();
-        $pv2 = number_format($p2Volts, 2);
-        $this->out("Port 2 UUT     = ".$pv2." volts");
+        $this->out("Port 2 UUT     = ".$p2Volts." volts");
+        $this->_TEST_DATA["P2Volts"] = $p2Volts;
 
-        /* 6.  Get UUT Port 2 Current */
+        /* UUT Port 2 Current */
         $p2Amps = $this->_readUUTPort2Current();
-        $p2A = number_format($p2Amps, 2);
-        $this->out("Port 2 Current = ".$p2A." amps");
+        $this->out("Port 2 Current = ".$p2Amps." amps");
+        $this->_TEST_DATA["P2Current"] = $p2Amps;
 
-        /* 7.  Test voltage & current */
-        if (($pv2 > 11.50) and ($pv2 < 13.00)) {
+        if (($p2Volts > 11.50) and ($p2Volts < 13.00)) {
+            $testResult = $this->_runP2Faulttest();
 
-            $this->out("PORT 2 FAULT ON:");
-            
-            /* 8.  Set the fault signal */
-            $this->_faultTest(2, 1);
+            $this->_setPort(2, 0); /* Port 2 off */
+            $this->out("PORT 2 OFF:");
             sleep(1);
-            
-            /* 9. Eval Board Measure Port 2 voltage */
-            $voltsP2 = $this->_readTesterP2Volt();
-            $p2v = number_format($voltsP2, 2);
-            $this->out("Port 2 Fault   = ".$p2v." volts");
 
-            if ($p2v < 0.1) {
-                $this->out("PORT 2 FAULT OFF:");
+            if ($testResult == self::PASS) {
             
-                /* 11. Remove the fault signal */
-                $this->_faultTest(2, 0);
-                sleep(1);
-
                 $voltsP2 = $this->_readTesterP2Volt();
-                $p2v = number_format($voltsP2, 2);
-                $this->out("Port 2 Fault   = ".$p2v." volts");
-                
-                if (($p2v > 11.00) and ($p2v < 13.00)) {
-                    /* 12. Turn off Port 2 */
-                    $this->_setPort(2, 0);
-                    $this->out("PORT 2 OFF:");
-                    sleep(2);
+                $this->out("Port 2 Tester  = ".$voltsP2." volts");
+                $p2Volts = $this->_readUUTPort2Volts();
+                $this->out("Port 2 UUT     = ".$p2Volts." volts");
 
-                    $voltsP2 = $this->_readTesterP2Volt();
-                    $p2v = number_format($voltsP2, 2);
-                    $this->out("Port 2 Tester  = ".$p2v." volts");
-
-                    $p2Volts = $this->_readUUTPort2Volts();
-                    $pv2 = number_format($p2Volts, 2);
-                    $this->out("Port 2 UUT     = ".$pv2." volts");
-
-                    if ($pv2 <= 0.1) {
-                        $testResult = self::PASS;
-                        $this->out("Port 2 Load Test - PASSED!");
-                    } else {
-                        $testResult = self::HFAIL;
-                        $this->out("Port 2 Load Test - FAILED!");
-                    }
+                if ($p2Volts <= 0.1) {
+                    $testResult = self::PASS;
+                    $this->out("Port 2 Load Test - PASSED!");
                 } else {
-                    $this->_setPort(2, 0);
-                    $this->out("PORT 2 OFF:");
                     $testResult = self::HFAIL;
+                    $this->out("Port 2 Load Test - FAILED!");
                 }
             } else {
-                $this->_faultTest(2, 0);
-                $this->_setPort(2, 0);
-                $this->out("PORT 2 OFF:");
-                $testResult = self::HFAIL;
+                $this->out("Port 2 Fault Test - FAILED!");
             }
         } else {
             $this->_setPort(2, 0);
             $this->out("PORT 2 OFF:");
+            $this->out("Port 2 Fault Test - FAILED!");
             $testResult = self::HFAIL;
         }
-
-        
-        /* 16.  Disconnect load resistor */
+        /* Disconnect load resistor */
         $this->_setRelay(6, 0);
 	
         $this->out("");
         return $testResult;
-
     }
+
+    /**
+    ***************************************************************
+    * Port 2 Fault Test Routine
+    *
+    * This function runs the fault test on Port 2
+    * 
+    * @return $int $testResult  1=pass, 0=fail, -1=hard fail
+    */
+    private function _runP2FaultTest()
+    {
+        $this->out("PORT 2 FAULT ON:");
+        $this->_faultSet(2, 1); /* Set fault */
+        sleep(1);
+        
+        /* Measure Port 1 voltage */
+        $voltsP2 = $this->_readTesterP2Volt();
+        $this->out("Port 2 Fault   = ".$voltsP2." volts");
+        $this->_TEST_DATA["P2Fault"] = $voltsP2;
+
+        if ($voltsP2 < 0.1) {
+            $this->out("PORT 2 FAULT OFF:");
+            $this->_faultSet(2, 0); /* Remove fault */
+            sleep(1);
+
+            $voltsP2 = $this->_readTesterP2Volt();
+            $this->out("Port 2 Fault   = ".$voltsP2." volts");
+            
+            if (($voltsP2 > 11.00) and ($voltsP2 < 13.00)) {
+                $testResult = self::PASS;
+            } else {
+                $testResult = self::HFAIL;
+            }
+        } else {
+            $this->out("PORT 2 FAULT OFF:");
+            $this->_faultSet(2, 0);
+            sleep(1);
+            $testResult = self::HFAIL;
+        }
+
+        return $testResult;
+    }
+
+
 
 
     /**
@@ -1068,212 +872,92 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("******************************");
         sleep(1);
 
-        /* 1.  Connect +12V to Port 1  */
+        $testResult = $this->_Port1ToVbusTest();
+
+        if ($testResult == self::PASS) {
+            $testResult = $this->_Port2ToVbusTest();
+        }
+
+        if ($testResult == self::PASS) {
+            $this->out("VBus Load Test - PASSED!");
+        } else {
+            $this->out("VBus Load Test - FAILED!");
+        }
+            
+
+        $this->out("");
+        return $testResult;
+    }
+
+    /**
+    *******************************************************************
+    * Port 1 to VBus Test Routine
+    *
+    * This function tests the ability of Port 1 to supply current and
+    * voltage to VBus.  It assumes that Vbus is currently connected 
+    * to +12V through relay K1.
+    *
+    * @return int $testResult 1=pass, 0=fail, -1=hard fail
+    */
+    private function _Port1ToVbusTest()
+    {
+
         $this->_setRelay(3, 1);  /* close K3 to select +12V */
         $this->_setRelay(4, 1);  /* close K4 to connect +12V to Port 1 */
         $this->out("PORT 1 +12V CONNECTED:");
         sleep(1);
         
         $voltsP1 = $this->_readTesterP1Volt();
-        $p1v = number_format($voltsP1, 2);
-        $this->out("Port 1  Tester  = ".$p1v." volts");
+        $this->out("Port 1  Tester  = ".$voltsP1." volts");
 
         if (($voltsP1 > 11.50) and ($voltsP1 < 13.00)) { 
-            /* 3.  Disconnect +12V from Vbus */
             $this->_setRelay(1, 0);  /* open K1 to remove +12V and connect Load */
             $this->out("VBUS 12 OHM LOAD CONNECTED:");
             sleep(1);
 
             $voltsVB = $this->_readTesterBusVolt();
-            $Bv = number_format($voltsVB, 2);
-            $this->out("Bus Volts Tester = ".$Bv." volts");
-
+            $this->out("Bus Volts Tester = ".$voltsVB." volts");
             $VBvolts = $this->_readUUTBusVolts();
-            $vB = number_format($VBvolts, 2);
-            $this->out("Bus Volts UUT    = ".$vB." volts");
+            $this->out("Bus Volts UUT    = ".$VBvolts." volts");
 
-            if ($vB < 0.2) {
-                /* 5.  Turn on Port 1 */
-                $this->_setPort(1, 1);
+            if ($VBvolts < 0.2) {
+                $this->_setPort(1, 1);  /* Port 1 On */
                 $this->out("PORT 1 ON:");
                 sleep(1);
 
-                /* 7.  Eval measure Vbus voltage */
+                /* Measure Vbus voltage */
                 $voltsVB = $this->_readTesterBusVolt();
-                $Bv = number_format($voltsVB, 2);
-                $this->out("Bus Volts Tester = ".$Bv." volts");
-
+                $this->out("Bus Volts Tester = ".$voltsVB." volts");
                 $VBvolts = $this->_readUUTBusVolts();
-                $vB = number_format($VBvolts, 2);
-                $this->out("Bus Volts UUT    = ".$vB." volts");
-
-                /* 8.  Get UUT Port 1 voltage */
+                $this->out("Bus Volts UUT    = ".$VBvolts." volts");
                 $p1Volts = $this->_readUUTPort1Volts();
-                $pv1 = number_format($p1Volts, 2);
-                $this->out("Port 1 UUT       = ".$pv1." volts");
+                $this->out("Port 1 UUT       = ".$p1Volts." volts");
 
-                /* 9.  Get UUT Port 1 current */
+                /* UUT Port 1 current */
                 $p1Amps = $this->_readUUTPort1Current();
-                $p1A = number_format($p1Amps, 2);
-                $this->out("Port 1 current   = ".$p1A." amps");
+                $this->out("Port 1 current   = ".$p1Amps." amps");
 
-                /* 10. Test current & voltage values. */
-                if (($vB > 11.4) and ($vB < 13.00)) {
+                if (($VBvolts > 11.4) and ($VBvolts < 13.00)) {
 
-                    /* 11. Turn off Port 1 */
-                    $this->_setPort(1, 0);
+                    $this->_setPort(1, 0); /* Port 1 Off */
                     $this->out("PORT 1 OFF:");
                     sleep(1);
 
-                    /* 13. Eval measure Vbus Voltage */
+                    /* Measure Vbus Voltage */
                     $voltsVB = $this->_readTesterBusVolt();
-                    $Bv = number_format($voltsVB, 2);
-                    $this->out("Bus Volts Tester = ".$Bv." volts");
+                    $this->out("Bus Volts Tester = ".$voltsVB." volts");
 
                     $p1Amps = $this->_readUUTPort1Current();
-                    $p1A = number_format($p1Amps, 2);
-                    $this->out("Port 1 current   = ".$p1A." amps");
+                    $this->out("Port 1 current   = ".$p1Amps." amps");
 
-                    /* 14. Connect +12V to Port 2 */
-                    $this->_setRelay(5, 1);  /* close K5 to select +12V */
-                    $this->_setRelay(6, 1);  /* close K6 to connect +12V to Port 2 */
-                    $this->out("PORT 2 +12V CONNECTED:");
-                    sleep(1);
-                    
-                    $voltsP2 = $this->_readTesterP2Volt();
-                    $p2v = number_format($voltsP2, 2);
-                    $this->out("Port 2  Tester   = ".$p2v." volts");
-
-                    /* 8.  Get UUT Port 1 voltage */
-                    $p2Volts = $this->_readUUTPort2Volts();
-                    $pv2 = number_format($p2Volts, 2);
-                    $this->out("Port 2 UUT       = ".$pv2." volts");
-                    
-                    if (($pv2 > 11.50) and ($pv2 < 13.00)) {
-                        /* 15. Disconnect +12V from Port 1 */
-                        $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
-                        $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
-                        $this->out("Port 1 +12V OFF:");
-                        sleep(1);
-                        
-                        $voltsP1 = $this->_readTesterP1Volt();
-                        $p1v = number_format($voltsP1, 2);
-                        $this->out("Port 1  Tester   = ".$p1v." volts");
-                        
-                        /* 16. Turn on Port 2 */
-                        $this->_setPort(2, 1);
-                        $this->out("PORT 2 ON:");
-                        sleep(1);
-                        
-                        /* 17. Eval measure Vbus voltage */
-                        $voltsVB = $this->_readTesterBusVolt();
-                        $Bv = number_format($voltsVB, 2);
-                        $this->out("Bus Volts Tester = ".$Bv." volts");
-
-                        $VBvolts = $this->_readUUTBusVolts();
-                        $vB = number_format($VBvolts, 2);
-                        $this->out("Bus Volts UUT    = ".$vB." volts");
-
-                        /* 18. Get UUT Port 2 voltage */
-                        $p2Volts = $this->_readUUTPort2Volts();
-                        $pv2 = number_format($p2Volts, 2);
-                        $this->out("Port 2 UUT       = ".$pv2." volts");
-
-                        /* 19. Get UUT Port 2 Current */
-                        $p2Amps = $this->_readUUTPort2Current();
-                        $p2A = number_format($p2Amps, 2);
-                        $this->out("Port 2 current   = ".$p2A." amps");
-
-                        /* 20. Test current and voltage values */
-                        if (($vB > 11.50) and ($vB < 13.00)) {
-                            /* 21. Turn off Port 2 */
-                            $this->_setPort(2, 0);
-                            $this->out("PORT 2 OFF:");
-                            sleep(1);
-
-                            /* 23. Eval measure Vbus voltage */
-                            $voltsVB = $this->_readTesterBusVolt();
-                            $Bv = number_format($voltsVB, 2);
-                            $this->out("Bus Volts Tester = ".$Bv." volts");
-
-                            $VBvolts = $this->_readUUTBusVolts();
-                            $vB = number_format($VBvolts, 2);
-                            $this->out("Bus Volts UUT    = ".$vB." volts");
-
-                            $p2Amps = $this->_readUUTPort2Current();
-                            $p2A = number_format($p2Amps, 2);
-                            $this->out("Port 2 current   = ".$p2A." amps");
-                            
-                            /* 25. Connect +12V to Vbus */
-                            $this->_setRelay(1, 1);  /* close K1 to select +12V */
-                            $this->out("Bus Voltage ON:");
-                            sleep(1);
-
-                            $voltsVB = $this->_readTesterBusVolt();
-                            $Bv = number_format($voltsVB, 2);
-                            $this->out("Bus Volts Tester = ".$Bv." volts");
-
-                            $VBvolts = $this->_readUUTBusVolts();
-                            $vB = number_format($VBvolts, 2);
-                            $this->out("Bus Volts UUT    = ".$vB." volts");
-
-                            /* 26. Disconnect +12V from Port 2 */
-                            $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
-                            $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
-                            $this->out("Port 2 +12V OFF:");
-                            sleep(1);
-                            
-                            $voltsP2 = $this->_readTesterP2Volt();
-                            $p2v = number_format($voltsP2, 2);
-                            $this->out("Port 2  Tester   = ".$p2v." volts");
-
-                            $testResult = self::PASS;
-
-                        } else {
-                            /* turn off Port 2 */
-                            $this->_setPort(2, 0);
-                            $this->out("PORT 2 OFF:");
-                            sleep(1);
-
-                            /* Disconnect +12V from Port 2 */
-                            $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
-                            $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
-                            $this->out("Port 2 +12V OFF:");
-
-                            /* 25. Connect +12V to Vbus */
-                            $this->_setRelay(1, 1);  /* close K1 to select +12V */
-                            $this->out("Bus Voltage ON:");
-                            sleep(1);
-
-                            $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
-                            $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
-                            $this->out("Port 1 +12V OFF:");
-
-                            $testResult = self::HFAIL;
-
-                        }
-                    } else {
-
-                        /* Disconnect +12V from Port 2 */
-                        $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
-                        $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
-                        $this->out("Port 2 +12V OFF:");
-
-                        /* 25. Connect +12V to Vbus */
-                        $this->_setRelay(1, 1);  /* close K1 to select +12V */
-                        $this->out("Bus Voltage ON:");
-                        sleep(1);
-
-                        $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
-                        $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
-                        $this->out("Port 1 +12V OFF:");
-
+                    if ($voltsVB < 0.2) {
+                        $testResult = self::PASS;
+                    } else { 
                         $testResult = self::HFAIL;
                     }
-                } else {
 
-                    /*  Turn off Port 1 */
-                    $this->_setPort(1, 0);
+                } else {
+                    $this->_setPort(1,0); /* turn off Port 1 */
                     $this->out("PORT 1 OFF:");
                     sleep(1);
 
@@ -1286,7 +970,6 @@ class E104603Test extends \HUGnet\ui\Daemon
                     $this->out("Port 1 +12V OFF:");
 
                     $testResult = self::HFAIL;
-
                 }
             } else {
 
@@ -1300,7 +983,6 @@ class E104603Test extends \HUGnet\ui\Daemon
 
                 $testResult = self::HFAIL;
             }
-
         } else {
             /*  Disconnect +12V from Port 1 */
             $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
@@ -1309,24 +991,148 @@ class E104603Test extends \HUGnet\ui\Daemon
             sleep(1);
             
             $voltsP1 = $this->_readTesterP1Volt();
-            $p1v = number_format($voltsP1, 2);
-            $this->out("Port 1  Tester = ".$p1v." volts");
+            $this->out("Port 1  Tester = ".$voltsP1." volts");
             
             $testResult = self::HFAIL;
         }
 
-        if ($testResult == self::PASS) {
-            $this->out("VBus Load Test - PASSED!");
-        } else {
-            $this->out("VBus Load Test - FAILED!");
-        }
-            
-
-        $this->out("");
         return $testResult;
-   }
-
+    }
    
+    /**
+    *******************************************************************
+    * Port 2 to VBus Test Routine
+    *
+    * This function tests the ability of Port 2 to supply current and
+    * voltage to VBus.  It assumes that Vbus is currently connected 
+    * to the load resistor through relay K1 and Port 1 is connected to
+    * +12V through relay K4.
+    *
+    * @return int $testResult 1=pass, 0=fail, -1=hard fail
+    */
+    private function _Port2ToVbusTest()
+    {
+        $this->_setRelay(5, 1);  /* close K5 to select +12V */
+        $this->_setRelay(6, 1);  /* close K6 to connect +12V to Port 2 */
+        $this->out("PORT 2 +12V CONNECTED:");
+        sleep(1);
+        
+        $voltsP2 = $this->_readTesterP2Volt();
+        $this->out("Port 2  Tester   = ".$voltsP2." volts");
+
+        /* UUT Port 2 voltage */
+        $p2Volts = $this->_readUUTPort2Volts();
+        $this->out("Port 2 UUT       = ".$p2Volts." volts");
+        
+        if (($p2Volts > 11.50) and ($p2Volts < 13.00)) {
+            $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
+            $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
+            $this->out("Port 1 +12V OFF:");
+            sleep(1);
+            
+            $voltsP1 = $this->_readTesterP1Volt();
+            $this->out("Port 1  Tester   = ".$voltsP1." volts");
+            
+            $this->_setPort(2, 1);  /* Port 2 On */
+            $this->out("PORT 2 ON:");
+            sleep(1);
+            
+            /* Measure Vbus voltage */
+            $voltsVB = $this->_readTesterBusVolt();
+            $this->out("Bus Volts Tester = ".$voltsVB." volts");
+            $VBvolts = $this->_readUUTBusVolts();
+            $this->out("Bus Volts UUT    = ".$VBvolts." volts");
+            $p2Volts = $this->_readUUTPort2Volts();
+            $this->out("Port 2 UUT       = ".$p2Volts." volts");
+
+            /* UUT Port 2 Current */
+            $p2Amps = $this->_readUUTPort2Current();
+            $this->out("Port 2 current   = ".$p2Amps." amps");
+
+            if (($VBvolts > 11.50) and ($VBvolts < 13.00)) {
+                $this->_setPort(2, 0);  /* Port 2 Off */
+                $this->out("PORT 2 OFF:");
+                sleep(1);
+
+                /* Measure Vbus voltage */
+                $voltsVB = $this->_readTesterBusVolt();
+                $this->out("Bus Volts Tester = ".$voltsVB." volts");
+                $VBvolts = $this->_readUUTBusVolts();
+                $this->out("Bus Volts UUT    = ".$VBvolts." volts");
+
+                $p2Amps = $this->_readUUTPort2Current();
+                $this->out("Port 2 current   = ".$p2Amps." amps");
+                
+                if ($VBolts < 0.2) {
+                    $testResult = self::PASS;
+                } else {
+                    $testResult = self::HFAIL;
+                }
+                
+                $this->_setRelay(1, 1);  /* close K1 to select +12V */
+                $this->out("Bus Voltage ON:");
+                sleep(1);
+
+                $voltsVB = $this->_readTesterBusVolt();
+                $this->out("Bus Volts Tester = ".$voltsVB." volts");
+
+                $VBvolts = $this->_readUUTBusVolts();
+                $this->out("Bus Volts UUT    = ".$VBvolts." volts");
+
+                $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
+                $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
+                $this->out("Port 2 +12V OFF:");
+                sleep(1);
+                
+                $voltsP2 = $this->_readTesterP2Volt();
+                $this->out("Port 2  Tester   = ".$voltsP2." volts");
+
+            } else {
+                /* turn off Port 2 */
+                $this->_setPort(2, 0);
+                $this->out("PORT 2 OFF:");
+                sleep(1);
+
+                /* Disconnect +12V from Port 2 */
+                $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
+                $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
+                $this->out("Port 2 +12V OFF:");
+
+                /* 25. Connect +12V to Vbus */
+                $this->_setRelay(1, 1);  /* close K1 to select +12V */
+                $this->out("Bus Voltage ON:");
+                sleep(1);
+
+                $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
+                $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
+                $this->out("Port 1 +12V OFF:");
+
+                $testResult = self::HFAIL;
+
+            }
+        } else {
+
+            /* Disconnect +12V from Port 2 */
+            $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
+            $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
+            $this->out("Port 2 +12V OFF:");
+
+            /* 25. Connect +12V to Vbus */
+            $this->_setRelay(1, 1);  /* close K1 to select +12V */
+            $this->out("Bus Voltage ON:");
+            sleep(1);
+
+            $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
+            $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
+            $this->out("Port 1 +12V OFF:");
+
+            $testResult = self::HFAIL;
+        }
+
+        return $testResult;
+    }
+
+
     /**
     *******************************************************************
     * External Thermistor Test Routine
@@ -1419,48 +1225,35 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out(" Testing LEDs");
         $this->out("**************");
 
-        /* turn on all LEDs */
         $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_LED_COMMAND;
-        $dataVal = "03";
+
+         /* turn on all Green LEDs */
+        $dataVal = "01";
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
-        $choice = readline("\n\rAre all 6 Status LEDs on? (Y/N) ");
-
+        $choice = readline("\n\rAre all 3 Green Status LEDs on? (Y/N) ");
         if (($choice == "Y") || ($choice == "y")) {
             $result1 = self::PASS; 
         } else {
             $result1 = self::FAIL;
         }
 
-         /* turn on all Green LEDs */
-        /* $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_LED_COMMAND;
-        $dataVal = "01";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        $choice = readline("\n\rAre all 4 Green LEDs on? (Y/N) ");*/
-       
          /* turn on all Red LEDs */
-        /* $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_LED_COMMAND;
         $dataVal = "02";
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); 
 
-        $choice = readline("\n\rAre all 4 Red LEDs on? (Y/N) ");*/
-
-        /* turn off all LEDs */
-        $dataVal = "00";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-       
-        $choice = readline("\n\rAre all 6 Status LEDs off? (Y/N) ");
-
+        $choice = readline("\n\rAre all 3 Red Status LEDs on? (Y/N) ");
         if (($choice == "Y") || ($choice == "y")) {
             $result2 = true; 
         } else {
             $result2 = false;
         }
-        
+
+        /* turn off all LEDs */
+        $dataVal = "00";
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+       
         if (($result1) and ($result2)) {
             $this->out("LED Test - PASSED!");
             $testResult = self::PASS;
@@ -1470,10 +1263,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         }
         
         $this->out("");
-
-
         return $testResult;
-
     }
     
     /**
@@ -1527,7 +1317,6 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         } while (($testResult == self::PASS) and ($loadNum < 8));
 
-        
         return $testResult;
     }
     
@@ -1733,8 +1522,9 @@ class E104603Test extends \HUGnet\ui\Daemon
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
         $volts = $volts * 21;
-	
-        return $volts;
+        $voltsVB = number_format($volts, 2);
+
+        return $voltsVB;
     }
     
     /**
@@ -1758,8 +1548,9 @@ class E104603Test extends \HUGnet\ui\Daemon
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
         $volts = $volts * 21;
+        $voltsP2 = number_format($volts, 2);
 	
-        return $volts;
+        return $voltsP2;
     }
   
     /**
@@ -1783,8 +1574,9 @@ class E104603Test extends \HUGnet\ui\Daemon
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
         $volts = $volts * 21;
+        $voltsP1 = number_format($volts, 2);
 	
-        return $volts;
+        return $voltsP1;
     }
     
     /**
@@ -1868,7 +1660,8 @@ class E104603Test extends \HUGnet\ui\Daemon
         $volts = $steps * $rawVal;
         $volts = $volts * 21;
         
-        return $volts;
+        $p2Volts = number_format($volts, 2);
+        return $p2Volts;
     }
 
 
@@ -1927,8 +1720,9 @@ class E104603Test extends \HUGnet\ui\Daemon
         $volts *= 2;
         $newVal = $volts - 1.65;
         $current = $newVal / 0.0532258;
-        return $current;
+        $p1Amps = number_format($current, 2);
 
+        return $p1Amps;
     }
 
 
@@ -1950,8 +1744,9 @@ class E104603Test extends \HUGnet\ui\Daemon
         $volts *= 2;
         $newVal = $volts - 1.65;
         $current = $newVal / 0.0532258;
-        return $current;
+        $p2Amps = number_format($current, 2);
 
+        return $p2Amps;
     }
 
  
@@ -1977,8 +1772,9 @@ class E104603Test extends \HUGnet\ui\Daemon
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
         $volts = $volts * 21;
+        $voltsVB = number_format($volts, 2);
         
-        return $volts;
+        return $voltsVB;
 
     }
 
@@ -2077,7 +1873,8 @@ class E104603Test extends \HUGnet\ui\Daemon
         $volts = $steps * $rawVal;
         $volts = $volts * 21;
         
-        return $volts;
+        $p1Volts = number_format($volts, 2);
+        return $p1Volts;
     }
 
 
@@ -2588,160 +2385,23 @@ class E104603Test extends \HUGnet\ui\Daemon
     /*                                                                           */
     /*****************************************************************************/
 
- 
     /**
     ***********************************************************
-    * Run ADC offset Calibration Routine
+    * Display Test Data Routine
     *
-    * This function performs the adc offset calibration by 
-    * measuring port 1 voltage which is set at zero volts.  It
-    * then calculates the offset error, converts the value to a 
-    * two byte hex value which is written to the adc offset 
-    * correction register.
-    *
+    * This function displays the test data collected in the 
+    * test data array.  The array will be json encoded for 
+    * adding to DeviceTests database.
     *
     */
-    private function _runAdcOffsetCalibration()
+    private function _displayTestData()
     {
- 
-        $rawVal = $this->_readUUT_ADCval(self::UUT_P1_VOLT);
-        if ($rawVal > 0x7ff) {
-            $newVal= dechex($rawVal);
-            $len = strlen($newVal);
-            $hexVal = substr($newVal, $len-4, 4);
-            $rawVal = $this->_twosComplement_to_negInt($hexVal);
-        }
-    
+        $testData = json_encode($this->_TEST_DATA);
 
-        $offsetIntVal = number_format($rawVal, 0, "", "");
-        $hexVal = dechex($offsetIntVal);
-        $len = strlen($hexVal);
-    
-        if ($len < 4) {
-            do {
-                $hexVal = "0".$hexVal;
-                $len = strlen($hexVal);
-            } while ($len < 4);
-        } else {
-            $hexVal = substr($hexVal, len-4, 4);
-        }
-        $this->out("Hex Value for the offset ".$hexVal);
-      
-        $this->out("*** Setting ADC Offset ****");
-        $retVal = $this->_setAdcOffset($hexVal);
-
-        $this->out("");
-	
-    
-    
-        return $retVal;
-    
+        $this->out("TEST DATA: ".$testData);
     }
-    
-    /**
-    ************************************************************
-    * Run ADC Gain Error Correction Routine
-    * 
-    * This function performs the gain error correction by 
-    * measuring port 1 voltage which is set at the reference
-    * voltage of 10.0V.  It then uses the following formula
-    * to calculate the gain error correction value:
-    *
-    *                         expected value
-    *  GAIN CORR = 2048 X -----------------------
-    *                      (MeasuredValue - OffsetCor)
-    *
-    */
-    private function _runAdcGainCorr($offsetIntValue)
-    {
 
-        $rawAvg = $this->_readUUT_ADCval(self::UUT_P1_VOLT);;
 
-        
-        $this->out("\n\r");
-        $this->out("**************************************");
-        $this->out("*  Calculating Gain Error Value      *");
-        $this->out("**************************************");
-        
-        $gainIntVal = number_format($rawAvg, 0, "", "");
-        $this->out("Integer Value = ".$gainIntVal);
-        
-        $tempVal = $gainIntVal - $offsetIntValue;
-        //$this->out("Gain Int - Offset Int = ".$tempVal);
-        
-        $gainRatio = 975/ $tempVal;
-        //$this->out("Gain Ratio = ".$gainRatio);
-        
-        $gainVal = 2048 * $gainRatio;
-	
-        $this->out("Gain Value    = ".$gainVal);
-	
-        $gainIntValue = number_format($gainVal, 0, "", "");
-	
-        $hexVal = dechex($gainIntValue);
-	
-        $len = strlen($hexVal);
-        if ($len < 4) {
-            while ($len < 4) {
-                $hexVal = "0".$hexVal;
-                $len = strlen($hexVal);
-            }
-        } else if ($len > 4) {
-            $hexVal = substr($hexVal, $len-4, 4);
-        }
-
-        return $hexVal;
-    }
-    
-    /**
-    ************************************************************
-    * Set ADC Offset Routine
-    *
-    * This function sends a command and data to the UUT to 
-    * set the ADC offset correction register and enable
-    * ADC error correction.
-    *
-    * @param $dataVal a two byte hex string
-    *
-    * @return $offVal  a two byte string read from offsetCorr
-    */
-    private function _setAdcOffset($dataVal)
-    {
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_ADCOFFSET_COMMAND; 
-
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        
-        $this->out("Offset Value   = ".$ReplyData);
-        
-        return $ReplyData;
-    
-    }
-    
-    /**
-    ************************************************************
-    * Set ADC Gain Error Correction Routine
-    *
-    * This function sends a command and the data to the UUT to
-    * set the ADC gain error correction register and enable 
-    * ADC error correction
-    *
-    * @param $dataVal a two byte hex string
-    *
-    * @return $retVal a two byte string read from gainCorr
-    */
-    private function _setAdcGainCorr($dataVal)
-    {
-         $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_ADCGAINCOR_COMMAND; 
-        
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        
-        $this->out("Gain Set Value = ".$ReplyData);
-        
-        return $ReplyData;
-    }
-   
     
     
      /**
@@ -2807,7 +2467,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     
     /**
     ************************************************************
-    * Fault Test Routine
+    * Fault Set Routine
     *
     * This function sets or clears the fault current condition
     * on the Power Ports to test the circuits response.
@@ -2817,7 +2477,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return integer $testResult
     */
-    private function _faultTest($portNum, $state)
+    private function _faultSet($portNum, $state)
     {
         $idNum = self::EVAL_BOARD_ID;
         
@@ -2898,352 +2558,6 @@ class E104603Test extends \HUGnet\ui\Daemon
         }
 
         return $result;
-    }
-
-
-    /**
-    *****************************************************************
-    * Set DAC Routine
-    *
-    * This function sets the output of the DAC to the value 
-    * passed in to it.
-    */
-    private function _setDAC($dacVal)
-    {
-
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_DAC_COMMAND; 
-        $dataVal = $dacVal;
-
-        
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        if(!is_null($ReplyData)) {
-
-            $newData = $this->_convertReplyData($ReplyData);
-        } else {
-            $newData = $ReplyData;
-        }
-
-        return $newData;
-    }
-
-    /**
-    *****************************************************************
-    * Run DAC offset Calibration Routine
-    *
-    * This function runs the DAC offset calibration.  It does so by
-    * setting the DAC output to 0x400 or 1/4 of full scale and then
-    * measuring the resultant output.  If it is not at 0.825 volts,
-    * the DAC setting is increased or decreased until the output
-    * measures correctly.  Then the amount of change necessary to 
-    * produce the proper output becomes the offset correction value.
-    *
-    * **** IMPORTANT NOTE ****************************************
-    * There is an error in the documentation for the formula for the
-    * offset error calculation.
-    * It should be as follows:
-    *
-    * Vocal = VREF x (2 x OCAL[7] - 1) + (OCAL[6]/64 + OCAL[5]/128 +
-    *         OCAL[4]/256 + OCAL[3]/512 + OCAL[2]/1024 + OCAL[1]/2048
-    *         + OCAL[0]/4096).
-    *
-    * This forumula clearly makes bit 7 a sign bit for the offset value
-    * with a one being positive and a zero being negative.
-    *****************************************************************
-    * @param $dacStart integer value for DAC setting
-    *
-    * @return integer $result  1=pass, 0=fail, -1=hard fail
-    */
-    private function _runDacOffsetCalibration( )
-    {
-
-        $dacOffset = 0;
-
-        $dacVal = self::DAC_OFFCAL_START;
-        $dataVal = dechex($dacVal);
-        $dataVal = "0".$dataVal;
-        $replyData= $this->_setDAC($dataVal);
-
-        $dacVolts = $this->_readUUTdacVolts();
-        $this->out("DAC volts = ".$dacVolts);
-        
-        $this->out("Obtaining DAC offset ");
-        
-        if ($dacVolts < self::DAC_OFFCAL_LEVEL) {
-            $error = false;
-            /* lets add some code to reduce the number of steps needed */
-            $diffVolts = self::DAC_OFFCAL_LEVEL - $dacVolts;
-            $steps = 3.3/pow(2,12);
-            $numSteps = $diffVolts/$steps;
-            $numSteps = round($numSteps/2);
-            
-            $dacVal += $numSteps;
-            
-            do {
-                $dacVal++;
-                $dataVal = dechex($dacVal);
-                $dataVal = "0".$dataVal;
-                $replyData = $this->_setDAC($dataVal);
-
-                if(is_null($replyData)) {
-                    $error = true;
-                } else {
-                    $dacVolts = $this->_readUUTdacVolts();
-                    //$this->out("DAC volts = ".$dacVolts);
-                }
-                print "*";
-
-            } while (($dacVolts < self::DAC_OFFCAL_LEVEL) and (!$error));
-
-            if (!$error) {
-                /*******************************************************************
-                * Explaination of offset calculation:   
-                * ($dacVal - self::DAC_OFFCAL_START) represents the number of steps 
-                * above the start value necessary to get the DAC output to the 
-                * desired voltage level.  However, it appears that the MSB of the 
-                * the offset byte is a sign bit with a 1 being positive and a zero
-                * being negative.  So, in order to get the offset steps added to 
-                * the DAC output, it is necessary to set the MSB or add 128 to the 
-                * the offset value.
-                */
-                $offset = $dacVal - self::DAC_OFFCAL_START + 128;
-                
-                $hexOffset = dechex($offset);
-
-                /* make sure we have one hex byte */
-                $len = strlen($hexOffset);
-                if ($len < 2) {
-                    $hexOffset = "0".$hexOffset;
-                } else if ($len > 2) {
-                    $hexOffset = substr($hexOffset, $len-2, 2);
-                }
-                
-                $this->_DAC_OFFSET = $hexOffset;
-                $this->out("");
-                $this->out("Offset Value = ".$hexOffset);
-                $result = self::PASS;
-            } else {
-                $result = self::FAIL;
-            }
-
-        } else {
-            $error = false;
-            do {
-                $dacVal--;
-                $dataVal = dechex($dacVal);
-                $dataVal = "0".$dataVal;
-                $replyData = $this->_setDAC($dataVal);
-
-                if(is_null($replyData)) {
-                    $error = true;
-                } else {
-                    $dacVolts = $this->_readUUTdacVolts();
-                }
-                print "*";
-            } while (($dacVolts > self::DAC_OFFCAL_LEVEL) and (!$error));
-
-            if (!$error) {
-                $offset = self::DAC_OFFCAL_START - $dacVal;
-                
-                $hexOffset = dechex($offset);
-                /* make sure we have one hex byte */
-                $len = strlen($hexOffset);
-                if ($len < 2) {
-                    $hexOffset = "0".$hexOffset;
-                } else if ($len > 2) {
-                    $hexOffset = substr($hexOffset, $len-2, 2);
-                }
-
-                $this->_DAC_OFFSET = $hexOffset;
-                $this->out("");
-                $this->out("Offset Value : ".$hexOffset);
-                $result = self::PASS;
-            } else {
-                $result = self::FAIL;
-            }
-        }
-
-        return $result;
-
-    }
-    
-    /**
-    *******************************************************************
-    * Run DAC Gain Calibration Routine
-    *
-    * This function runs the gain error calibration routine.  It does 
-    * so by setting the DAC output to 1/2 of the reference voltage
-    * which would be 0x800.  It then measures the DAC output and 
-    * adjusts the setting until the desired output voltage is reached.
-    * This then becomes the gain error correction value.
-    *
-    */
-    private function _runDacGainCalibration()
-    {
-        $result = self::PASS;
-        
-        $dacVal = self::DAC_GAINCAL_START;
-        $dataVal = dechex($dacVal);
-        $dataVal = "0".$dataVal;
-        $replyData= $this->_setDAC($dataVal);
-
-        $dacVolts = $this->_readUUTdacVolts();
-        $this->out("DAC volts = ".$dacVolts);
-        
-        $this->out("Obtaining DAC gain value ");
-        if ($dacVolts < self::DAC_GAINCAL_LEVEL) {
-            $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
-            $steps = 3.3/ pow(2,12);
-            $numSteps = round($diffVolts/$steps);
-            
-            $hexGainCor = dechex($numSteps);
-            
-            $len = strlen($hexGainCor);
-            if ($len < 2) {
-                $hexGainCor = "0".$hexGainCor;
-            } else if ($len > 2) {
-                $hexGainCor = substr($hexGainCor, $len-2, 2);
-            }
-            $replyData= $this->_setDacGain($hexGainCor);
-
-            $dacVolts = $this->_readUUTdacVolts();
-            $this->_DAC_GAIN = $hexGainCor;
-            
-            do {
-                    $error = false;
-                    $numSteps++;
-                    $hexGainCor = dechex($numSteps);
-                    $len = strlen($hexGainCor);
-                    if ($len < 2) {
-                        $hexGainCor = "0".$hexGainCor;
-                    } else if ($len > 2) {
-                        $hexGainCor = substr($hexGainCor, $len-2, 2);
-                    }
-                    $replyData = $this->_setDacGain($hexGainCor);
-
-                    if(is_null($replyData)) {
-                        $error = true;
-                    } else {
-                        $dacVolts = $this->_readUUTdacVolts();
-                        //$this->out("DAC volts = ".$dacVolts);
-                    }
-                    print "*";
-                } while (($dacVolts < self::DAC_GAINCAL_LEVEL) and (!$error));
-           
-            
-                if (!$error) {
-                    $this->_DAC_GAIN = $hexGainCor;
-                    $this->out("");
-                    $this->out("Gain Error Value = ".$hexGainCor);
-                    $result = self::PASS;
-                } else {
-                    $result = self::FAIL;
-                } 
-       } else {
-            
-            $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
-            $steps = 3.3/ pow(2,12);
-            $numSteps = round($diffVolts/$steps);
-            
-            $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
-            
-            $len = strlen($hexGainCor);
-            if ($len < 2) {
-                $hexGainCor = "0".$hexGainCor;
-            } else if ($len > 2) {
-                $hexGainCor = substr($hexGainCor, $len-2, 2);
-            }
-            $replyData= $this->_setDacGain($hexGainCor);
-
-            $dacVolts = $this->_readUUTdacVolts();
-            $this->_DAC_GAIN = $hexGainCor;
-            
-            do {
-                    $error = false;
-                    $numSteps--;
-                    $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
-                    
-                    $len = strlen($hexGainCor);
-                    if ($len < 2) {
-                        $hexGainCor = "0".$hexGainCor;
-                    } else if ($len > 2) {
-                        $hexGainCor = substr($hexGainCor, $len-2, 2);
-                    }
-                    
-                    $replyData = $this->_setDacGain($hexGainCor);
-
-                    if(is_null($replyData)) {
-                        $error = true;
-                    } else {
-                        $dacVolts = $this->_readUUTdacVolts();
-                        //$this->out("DAC volts = ".$dacVolts);
-                    }
-                    print "*";
-                } while (($dacVolts > self::DAC_GAINCAL_LEVEL) and (!$error));
-           
-            
-                if (!$error) {
-                    $this->_DAC_GAIN = $hexGainCor;
-                    $this->out("");
-                    $this->out("Gain Error Value = ".$hexGainCor);
-                    $result = self::PASS;
-                } else {
-                    $result = self::FAIL;
-                } 
-       }
-       
-    
-        return $result;
-    }
-
-    /**
-    ************************************************************
-    * Set DAC Offset Routine
-    *
-    * This function sends a command and data to the UUT to 
-    * set the DAC offset correction register.
-    *
-    * @param $dataVal a one byte hex string
-    *
-    * @return $ReplyData  a one byte string read from offset register
-    */
-    private function _setDacOffset($dataVal)
-    {
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_DACOFFSET_COMMAND; 
-        
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        
-        //$this->out("DAC Offset Set Reply Value   = ".$ReplyData);
-        
-        return $ReplyData;
-    
-    }
-    
-    
-    /**
-    ************************************************************
-    * Set DAC Gain Routine
-    *
-    * This function sends a command and data to the UUT to 
-    * set the DAC Gain error correction register.
-    *
-    * @param $dataVal a one byte hex string
-    *
-    * @return $ReplyData  a one byte string read from gain register
-    */
-    private function _setDacGain($dataVal)
-    {
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::SET_DACGAIN_COMMAND; 
-        
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        
-        //$this->out("DAC Gain Set Reply Value   = ".$ReplyData);
-        
-        return $ReplyData;
-    
     }
 
 
@@ -3615,7 +2929,721 @@ class E104603Test extends \HUGnet\ui\Daemon
         
         return $newData;
     }
+
+
+    /*****************************************************************************/
+    /*                                                                           */
+    /*                                                                           */
+    /*               C A L I B R A T I O N     R O U T I N E S                   */
+    /*                                                                           */
+    /*                                                                           */
+    /*****************************************************************************/
+
+    /***********************************************************/
+    /*               ADC  CALIBRATION  ROUTINES                */
+    /***********************************************************/
+
+
+    /**
+    ************************************************************
+    * Run UUT ADC Calibration Routine
+    *
+    * This function runs the calibration routines that determine
+    * the adc offset correction value and gain error correction 
+    * value.  Those values are set in the UUT for testing and 
+    * saved to write into the user signature memory along with 
+    * the serial number and hardware part number.
+    *
+    * @return integer $testResult  1=pass, 0=fail, -1=hard fail
+    */
+    private function _runUUTadcCalibration()
+    {
+        $this->out("****************************************");
+        $this->out("*   Entering ADC Calibration Routine   *");
+        $this->out("****************************************");
+
+        /*****************************************
+        * Set up port 1 for measuring offset 
+        * error.
+
+        /* 1.  connect 12 ohm load  to port 1 */
+        $this->_setRelay(4, 1);
+        sleep(1);
     
+        /* 2.  turn on Port 1 */
+        $this->_setPort(1, 1);
+        sleep(1);
+
+        /* 3.  Get UUT Port 1 voltage */
+        $p1Volts = $this->_readUUTPort1Volts();
+        $this->out("Port 1 UUT     = ".$p1Volts." volts!");
+
+        /* 4.  Get UUT Port 1 Current */
+        $p1Amps = $this->_readUUTPort1Current();
+        $this->out("Port 1 current = ".$p1Amps." A");
+        
+        if (($p1Volts > 11.00) and ($p1Volts < 13.00)) {
+        
+            sleep(1);
+
+            /* Turn off Port 1 */
+            $this->_setPort(1, 0);
+            $this->out("PORT 1 OFF:");
+            sleep(1);
+
+            $p1Volts = $this->_readUUTPort1Volts();
+            $this->out("Port 1 UUT     = ".$p1Volts." volts!");
+        
+            if ($p1Volts <= 0.2) {
+                $offsetHexVal = $this->_runAdcOffsetCalibration();
+                $this->_ADC_OFFSET = $offsetHexVal;
+                $this->_TEST_DATA["ADCoffset"] = $offsetHexVal;
+
+                /* remove 12 Ohm load */
+                $this->_setRelay(4, 0);
+                sleep(1);
+                $this->out("Setting Port 1 to 10V Reference");
+                $this->_setRelay(2,1);  /* Select 10V reference */
+                usleep(1000);
+                $this->_setRelay(3,1);  /* Select Voltage supply */
+                usleep(1000);
+                $this->_setRelay(4,1);  /* Connect 10V reference */
+                sleep(1);
+
+                /* measure port 1 voltage with tester */
+                $voltsP1 = $this->_readTesterP1Volt();
+                $this->out("Port 1  Tester  = ".$voltsP1." volts");
+                
+                /* measure port 1 voltage with UUT */
+                $voltsUp1 = $this->_readUUTPort1Volts();
+                $this->out("Port 1 UUT     = ".$voltsUp1." volts");
+            
+                $gainErrorValue = $this->_runAdcGainCorr($offsetIntVal);
+                $this->_TEST_DATA["ADCgain"] = $gainErrorValue;
+                sleep(1);
+                
+                $this->out("");
+                $this->out("** Setting ADC Gain Correction **");
+                $retVal = $this->_setAdcGainCorr($gainErrorValue);
+                $this->_ADC_GAIN = $retVal;
+                
+                /* measure port 1 voltage with UUT */
+                $voltsUp1 = $this->_readUUTPort1Volts();
+                $this->out("Port 1 UUT     = ".$voltsUp1." volts");
+                
+                $this->_setRelay(4,0); /* Disconnect Port 1 */
+                $this->_setRelay(3,0); /* Select load */
+                $this->_setRelay(2,0); /* Select 12V   */
+                sleep(1);
+
+                $this->out("********************************");
+                $this->out("*  ADC CALIBRATION COMPLETE!   *");
+                $this->out("********************************\n\r");
+                
+                $testResult = self::PASS;
+            } else {
+                $this->out("Port 1 fail, unable to calibrate ADC!");
+                /* remove 12 Ohm load */
+                $this->_setRelay(4, 0);
+                sleep(1);
+                $testResult = self::HFAIL;
+            
+            }
+        } else {
+        
+            $this->out("Port 1 fail unable to calibrate ADC!");
+            /* Turn off Port 1 */
+            $this->_setPort(1, 0);
+            $this->out("PORT 1 OFF:");
+            sleep(1);
+        
+            /* remove 12 Ohm load */
+            $this->_setRelay(4, 0);
+            
+            $testResult = self::HFAIL;
+        }
+
+        return $testResult;
+    }
+
+   
+    /**
+    ***********************************************************
+    * Run ADC offset Calibration Routine
+    *
+    * This function performs the adc offset calibration by 
+    * measuring port 1 voltage which is set at zero volts.  It
+    * then calculates the offset error, converts the value to a 
+    * two byte hex value which is written to the adc offset 
+    * correction register.
+    *
+    *
+    */
+    private function _runAdcOffsetCalibration()
+    {
+ 
+        $rawVal = $this->_readUUT_ADCval(self::UUT_P1_VOLT);
+        if ($rawVal > 0x7ff) {
+            $newVal= dechex($rawVal);
+            $len = strlen($newVal);
+            $hexVal = substr($newVal, $len-4, 4);
+            $rawVal = $this->_twosComplement_to_negInt($hexVal);
+        }
+    
+
+        $offsetIntVal = number_format($rawVal, 0, "", "");
+        $hexVal = dechex($offsetIntVal);
+        $len = strlen($hexVal);
+    
+        if ($len < 4) {
+            do {
+                $hexVal = "0".$hexVal;
+                $len = strlen($hexVal);
+            } while ($len < 4);
+        } else {
+            $hexVal = substr($hexVal, len-4, 4);
+        }
+        $this->out("Hex Value for the offset ".$hexVal);
+      
+        $this->out("*** Setting ADC Offset ****");
+        $retVal = $this->_setAdcOffset($hexVal);
+
+        $this->out("");
+    
+    
+    
+        return $retVal;
+    
+    }
+    
+    /**
+    ************************************************************
+    * Run ADC Gain Error Correction Routine
+    * 
+    * This function performs the gain error correction by 
+    * measuring port 1 voltage which is set at the reference
+    * voltage of 10.0V.  It then uses the following formula
+    * to calculate the gain error correction value:
+    *
+    *                         expected value
+    *  GAIN CORR = 2048 X -----------------------
+    *                      (MeasuredValue - OffsetCor)
+    *
+    */
+    private function _runAdcGainCorr($offsetIntValue)
+    {
+
+        $rawAvg = $this->_readUUT_ADCval(self::UUT_P1_VOLT);;
+
+        
+        $this->out("\n\r");
+        $this->out("**************************************");
+        $this->out("*  Calculating Gain Error Value      *");
+        $this->out("**************************************");
+        
+        $gainIntVal = number_format($rawAvg, 0, "", "");
+        $this->out("Integer Value = ".$gainIntVal);
+        
+        $tempVal = $gainIntVal - $offsetIntValue;
+        //$this->out("Gain Int - Offset Int = ".$tempVal);
+        
+        $gainRatio = 975/ $tempVal;
+        //$this->out("Gain Ratio = ".$gainRatio);
+        
+        $gainVal = 2048 * $gainRatio;
+    
+        $this->out("Gain Value    = ".$gainVal);
+    
+        $gainIntValue = number_format($gainVal, 0, "", "");
+    
+        $hexVal = dechex($gainIntValue);
+    
+        $len = strlen($hexVal);
+        if ($len < 4) {
+            while ($len < 4) {
+                $hexVal = "0".$hexVal;
+                $len = strlen($hexVal);
+            }
+        } else if ($len > 4) {
+            $hexVal = substr($hexVal, $len-4, 4);
+        }
+
+        return $hexVal;
+    }
+    
+    /**
+    ************************************************************
+    * Set ADC Offset Routine
+    *
+    * This function sends a command and data to the UUT to 
+    * set the ADC offset correction register and enable
+    * ADC error correction.
+    *
+    * @param $dataVal a two byte hex string
+    *
+    * @return $offVal  a two byte string read from offsetCorr
+    */
+    private function _setAdcOffset($dataVal)
+    {
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_ADCOFFSET_COMMAND; 
+
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        $this->out("Offset Value   = ".$ReplyData);
+        
+        return $ReplyData;
+    
+    }
+    
+    /**
+    ************************************************************
+    * Set ADC Gain Error Correction Routine
+    *
+    * This function sends a command and the data to the UUT to
+    * set the ADC gain error correction register and enable 
+    * ADC error correction
+    *
+    * @param $dataVal a two byte hex string
+    *
+    * @return $retVal a two byte string read from gainCorr
+    */
+    private function _setAdcGainCorr($dataVal)
+    {
+         $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_ADCGAINCOR_COMMAND; 
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        $this->out("Gain Set Value = ".$ReplyData);
+        
+        return $ReplyData;
+    }
+   
+
+    /**********************************************************/
+    /*              DAC  CALIBRATION  ROUTINES                */
+    /**********************************************************/
+
+
+    /**
+    ************************************************************
+    * Run UUT DAC Calibration Routine
+    *
+    * This function runs the calibration routines that determine
+    * the DAC offset and gain error correction values. 
+    * Those values are saved to write into the user signature 
+    * memory along with the serial number, hardware part number
+    * and adc offset and gain correction values.
+    */
+    private function _runUUTdacCalibration()
+    {
+        $this->out("************************************");
+        $this->out("* Entering DAC Calibration Routine *");
+        $this->out("************************************");
+
+        $this->out("");
+        $this->out("Starting DAC offset calibration");
+        $this->out("Setting DAC output to ".self::DAC_OFFCAL_LEVEL." volts");
+
+ 
+        $result = $this->_runDacOffsetCalibration();
+        
+        if ($result) {
+            $this->out("Setting DAC offset to :".$this->_DAC_OFFSET);
+            $this->_setDacOffset($this->_DAC_OFFSET);
+            $this->_TEST_DATA["DACoffset"] = $this->_DAC_OFFSET;
+            sleep(1);
+
+            $dacVal = "0400";
+            $this->_setDAC($dacVal);
+
+            $dacVolts = $this->_readUUTdacVolts();
+            $this->out("Adjusted DAC volts : ".$dacVolts);
+            $this->out("");
+
+        } else {
+            $this->out("Offset Calibration Failed!");
+        }
+        
+        if ($result) {
+            $this->out("******************************");
+            $this->out("Starting DAC gain calibration");
+            $this->out("Setting DAC output to ".self::DAC_GAINCAL_LEVEL." volts");
+            
+            $result = $this->_runDacGainCalibration();
+            
+            if ($result) {
+                $this->out("Setting DAC Gain to :".$this->_DAC_GAIN);
+                $this->_setDacGain($this->_DAC_GAIN);
+                $this->_TEST_DATA["DACgain"] = $this->_DAC_GAIN;
+                sleep(1);
+
+                $dacVal = "07C2";
+                $this->_setDAC($dacVal);
+
+                $dacVolts = $this->_readUUTdacVolts();
+                $this->out("Adjusted DAC volts : ".$dacVolts);
+                $this->out("");
+
+            } else {
+                $this->out("Offset Calibration Failed!");
+            }
+        }
+
+        $this->out("********************************");
+        $this->out("*  DAC CALIBRATION COMPLETE!   *");
+        $this->out("********************************\n\r");
+        $result = self::PASS;
+
+        return $result;
+   }
+
+    /**
+    *****************************************************************
+    * Set DAC Routine
+    *
+    * This function sets the output of the DAC to the value 
+    * passed in to it.
+    */
+    private function _setDAC($dacVal)
+    {
+
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_DAC_COMMAND; 
+        $dataVal = $dacVal;
+
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+
+        if(!is_null($ReplyData)) {
+
+            $newData = $this->_convertReplyData($ReplyData);
+        } else {
+            $newData = $ReplyData;
+        }
+
+        return $newData;
+    }
+
+    /**
+    *****************************************************************
+    * Run DAC offset Calibration Routine
+    *
+    * This function runs the DAC offset calibration.  It does so by
+    * setting the DAC output to 0x400 or 1/4 of full scale and then
+    * measuring the resultant output.  If it is not at 0.825 volts,
+    * the DAC setting is increased or decreased until the output
+    * measures correctly.  Then the amount of change necessary to 
+    * produce the proper output becomes the offset correction value.
+    *
+    * **** IMPORTANT NOTE ****************************************
+    * There is an error in the documentation for the formula for the
+    * offset error calculation.
+    * It should be as follows:
+    *
+    * Vocal = VREF x (2 x OCAL[7] - 1) + (OCAL[6]/64 + OCAL[5]/128 +
+    *         OCAL[4]/256 + OCAL[3]/512 + OCAL[2]/1024 + OCAL[1]/2048
+    *         + OCAL[0]/4096).
+    *
+    * This forumula clearly makes bit 7 a sign bit for the offset value
+    * with a one being positive and a zero being negative.
+    *****************************************************************
+    * @param $dacStart integer value for DAC setting
+    *
+    * @return integer $result  1=pass, 0=fail, -1=hard fail
+    */
+    private function _runDacOffsetCalibration( )
+    {
+
+        $dacOffset = 0;
+
+        $dacVal = self::DAC_OFFCAL_START;
+        $dataVal = dechex($dacVal);
+        $dataVal = "0".$dataVal;
+        $replyData= $this->_setDAC($dataVal);
+
+        $dacVolts = $this->_readUUTdacVolts();
+        $this->out("DAC volts = ".$dacVolts);
+        
+        $this->out("Obtaining DAC offset ");
+        
+        if ($dacVolts < self::DAC_OFFCAL_LEVEL) {
+            $error = false;
+            /* lets add some code to reduce the number of steps needed */
+            $diffVolts = self::DAC_OFFCAL_LEVEL - $dacVolts;
+            $steps = 3.3/pow(2,12);
+            $numSteps = $diffVolts/$steps;
+            $numSteps = round($numSteps/2);
+            
+            $dacVal += $numSteps;
+            
+            do {
+                $dacVal++;
+                $dataVal = dechex($dacVal);
+                $dataVal = "0".$dataVal;
+                $replyData = $this->_setDAC($dataVal);
+
+                if(is_null($replyData)) {
+                    $error = true;
+                } else {
+                    $dacVolts = $this->_readUUTdacVolts();
+                    //$this->out("DAC volts = ".$dacVolts);
+                }
+                print "*";
+
+            } while (($dacVolts < self::DAC_OFFCAL_LEVEL) and (!$error));
+
+            if (!$error) {
+                /*******************************************************************
+                * Explaination of offset calculation:   
+                * ($dacVal - self::DAC_OFFCAL_START) represents the number of steps 
+                * above the start value necessary to get the DAC output to the 
+                * desired voltage level.  However, it appears that the MSB of the 
+                * the offset byte is a sign bit with a 1 being positive and a zero
+                * being negative.  So, in order to get the offset steps added to 
+                * the DAC output, it is necessary to set the MSB or add 128 to the 
+                * the offset value.
+                */
+                $offset = $dacVal - self::DAC_OFFCAL_START + 128;
+                
+                $hexOffset = dechex($offset);
+
+                /* make sure we have one hex byte */
+                $len = strlen($hexOffset);
+                if ($len < 2) {
+                    $hexOffset = "0".$hexOffset;
+                } else if ($len > 2) {
+                    $hexOffset = substr($hexOffset, $len-2, 2);
+                }
+                
+                $this->_DAC_OFFSET = $hexOffset;
+                $this->out("");
+                $this->out("Offset Value = ".$hexOffset);
+                $result = self::PASS;
+            } else {
+                $result = self::FAIL;
+            }
+
+        } else {
+            $error = false;
+            do {
+                $dacVal--;
+                $dataVal = dechex($dacVal);
+                $dataVal = "0".$dataVal;
+                $replyData = $this->_setDAC($dataVal);
+
+                if(is_null($replyData)) {
+                    $error = true;
+                } else {
+                    $dacVolts = $this->_readUUTdacVolts();
+                }
+                print "*";
+            } while (($dacVolts > self::DAC_OFFCAL_LEVEL) and (!$error));
+
+            if (!$error) {
+                $offset = self::DAC_OFFCAL_START - $dacVal;
+                
+                $hexOffset = dechex($offset);
+                /* make sure we have one hex byte */
+                $len = strlen($hexOffset);
+                if ($len < 2) {
+                    $hexOffset = "0".$hexOffset;
+                } else if ($len > 2) {
+                    $hexOffset = substr($hexOffset, $len-2, 2);
+                }
+
+                $this->_DAC_OFFSET = $hexOffset;
+                $this->out("");
+                $this->out("Offset Value : ".$hexOffset);
+                $result = self::PASS;
+            } else {
+                $result = self::FAIL;
+            }
+        }
+
+        return $result;
+
+    }
+    
+    /**
+    *******************************************************************
+    * Run DAC Gain Calibration Routine
+    *
+    * This function runs the gain error calibration routine.  It does 
+    * so by setting the DAC output to 1/2 of the reference voltage
+    * which would be 0x800.  It then measures the DAC output and 
+    * adjusts the setting until the desired output voltage is reached.
+    * This then becomes the gain error correction value.
+    *
+    */
+    private function _runDacGainCalibration()
+    {
+        $result = self::PASS;
+        
+        $dacVal = self::DAC_GAINCAL_START;
+        $dataVal = dechex($dacVal);
+        $dataVal = "0".$dataVal;
+        $replyData= $this->_setDAC($dataVal);
+
+        $dacVolts = $this->_readUUTdacVolts();
+        $this->out("DAC volts = ".$dacVolts);
+        
+        $this->out("Obtaining DAC gain value ");
+        if ($dacVolts < self::DAC_GAINCAL_LEVEL) {
+            $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
+            $steps = 3.3/ pow(2,12);
+            $numSteps = round($diffVolts/$steps);
+            
+            $hexGainCor = dechex($numSteps);
+            
+            $len = strlen($hexGainCor);
+            if ($len < 2) {
+                $hexGainCor = "0".$hexGainCor;
+            } else if ($len > 2) {
+                $hexGainCor = substr($hexGainCor, $len-2, 2);
+            }
+            $replyData= $this->_setDacGain($hexGainCor);
+
+            $dacVolts = $this->_readUUTdacVolts();
+            $this->_DAC_GAIN = $hexGainCor;
+            
+            do {
+                    $error = false;
+                    $numSteps++;
+                    $hexGainCor = dechex($numSteps);
+                    $len = strlen($hexGainCor);
+                    if ($len < 2) {
+                        $hexGainCor = "0".$hexGainCor;
+                    } else if ($len > 2) {
+                        $hexGainCor = substr($hexGainCor, $len-2, 2);
+                    }
+                    $replyData = $this->_setDacGain($hexGainCor);
+
+                    if(is_null($replyData)) {
+                        $error = true;
+                    } else {
+                        $dacVolts = $this->_readUUTdacVolts();
+                        //$this->out("DAC volts = ".$dacVolts);
+                    }
+                    print "*";
+                } while (($dacVolts < self::DAC_GAINCAL_LEVEL) and (!$error));
+           
+            
+                if (!$error) {
+                    $this->_DAC_GAIN = $hexGainCor;
+                    $this->out("");
+                    $this->out("Gain Error Value = ".$hexGainCor);
+                    $result = self::PASS;
+                } else {
+                    $result = self::FAIL;
+                } 
+       } else {
+            
+            $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
+            $steps = 3.3/ pow(2,12);
+            $numSteps = round($diffVolts/$steps);
+            
+            $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
+            
+            $len = strlen($hexGainCor);
+            if ($len < 2) {
+                $hexGainCor = "0".$hexGainCor;
+            } else if ($len > 2) {
+                $hexGainCor = substr($hexGainCor, $len-2, 2);
+            }
+            $replyData= $this->_setDacGain($hexGainCor);
+
+            $dacVolts = $this->_readUUTdacVolts();
+            $this->_DAC_GAIN = $hexGainCor;
+            
+            do {
+                    $error = false;
+                    $numSteps--;
+                    $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
+                    
+                    $len = strlen($hexGainCor);
+                    if ($len < 2) {
+                        $hexGainCor = "0".$hexGainCor;
+                    } else if ($len > 2) {
+                        $hexGainCor = substr($hexGainCor, $len-2, 2);
+                    }
+                    
+                    $replyData = $this->_setDacGain($hexGainCor);
+
+                    if(is_null($replyData)) {
+                        $error = true;
+                    } else {
+                        $dacVolts = $this->_readUUTdacVolts();
+                        //$this->out("DAC volts = ".$dacVolts);
+                    }
+                    print "*";
+                } while (($dacVolts > self::DAC_GAINCAL_LEVEL) and (!$error));
+           
+            
+                if (!$error) {
+                    $this->_DAC_GAIN = $hexGainCor;
+                    $this->out("");
+                    $this->out("Gain Error Value = ".$hexGainCor);
+                    $result = self::PASS;
+                } else {
+                    $result = self::FAIL;
+                } 
+       }
+       
+    
+        return $result;
+    }
+
+    /**
+    ************************************************************
+    * Set DAC Offset Routine
+    *
+    * This function sends a command and data to the UUT to 
+    * set the DAC offset correction register.
+    *
+    * @param $dataVal a one byte hex string
+    *
+    * @return $ReplyData  a one byte string read from offset register
+    */
+    private function _setDacOffset($dataVal)
+    {
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_DACOFFSET_COMMAND; 
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        //$this->out("DAC Offset Set Reply Value   = ".$ReplyData);
+        
+        return $ReplyData;
+    
+    }
+    
+    
+    /**
+    ************************************************************
+    * Set DAC Gain Routine
+    *
+    * This function sends a command and data to the UUT to 
+    * set the DAC Gain error correction register.
+    *
+    * @param $dataVal a one byte hex string
+    *
+    * @return $ReplyData  a one byte string read from gain register
+    */
+    private function _setDacGain($dataVal)
+    {
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::SET_DACGAIN_COMMAND; 
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        //$this->out("DAC Gain Set Reply Value   = ".$ReplyData);
+        
+        return $ReplyData;
+    
+    }
+
 
     /*****************************************************************************/
     /*                                                                           */
