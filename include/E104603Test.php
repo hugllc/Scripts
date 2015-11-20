@@ -42,6 +42,8 @@ require_once "HUGnetLib/ui/Daemon.php";
 require_once "HUGnetLib/devices/inputTable/Driver.php";
 /** This is needed */
 require_once "HUGnetLib/devices/inputTable/DriverAVR.php";
+/** Database class */
+require_once "HUGnetLib/db/tables/DeviceTests.php";
 /** Displays class */
 require_once "HUGnetLib/ui/Displays.php";
 
@@ -161,6 +163,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     private $_DAC_OFFSET;
     private $_DAC_GAIN;
     private $_ENDPT_SN;
+    private $_FAIL_FLAG;
     
     private $_TEST_DATA = array(
                             "BusVolts"  => 0.0,
@@ -187,11 +190,8 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @param mixed &$config The configuration to use
     */
-    protected function __construct(&$config)
+    protected function __construct(&$config, &$sys)
     {
-        parent::__construct($config);
-
-        $sys = $this->system();
         $this->_system = &$sys;
         $this->_evalDevice = $this->_system->device();
         $this->_evalDevice->set("id", self:: EVAL_BOARD_ID);
@@ -208,53 +208,16 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return null
     */
-    static public function &factory(&$config = array())
+    static public function &factory(&$config = array(), &$sys)
     {
-        $obj = new E104603Test($config);
+        $obj = new E104603Test($config, $sys);
         return $obj;
     }
-
-    /**
-    *****************************************************************************
-    *
-    *                          M A I N 
-    *
-    *****************************************************************************
-    *
-    * It would be nice to have a test fixture ID test to verify
-    * that the fixture matches the menu selection.
-    * 
-    * @return null
-    */
-    public function main()
-    {
-        $exitTest = false;
-        $result;
-
-        do{
-            $this->display->clearScreen();
-            $selection = $this->display->displayMenu(self::HEADER_STR, 
-                            $this->_eptestMainMenu);
-
-            if (($selection == "A") || ($selection == "a")) {
-                $this->_test104603Main();
-            } else if (($selection == "B") || ($selection == "b")){
-                $this->_troubleshoot104603Main();
-            } else {
-                $exitTest = true;
-                $this->out("Exit 104603 Tool");
-            }
-
-        } while ($exitTest == false);
-    }
-
-
-
 
     /*****************************************************************************/
     /*                                                                           */
     /*                                                                           */
-    /*                     T E S T   R O U T I N E S                             */
+    /*                              M A I N                                      */
     /*                                                                           */
     /*                                                                           */
     /*****************************************************************************/
@@ -285,29 +248,30 @@ class E104603Test extends \HUGnet\ui\Daemon
     * @return void
     *   
     */
-    private function _test104603Main()
+    public function run104603Test()
     {
         $this->display->clearScreen();
         $this->display->displayHeader("Testing 104603 Dual Battery Socializer");
 
+        $this->_FAIL_FLAG = false;
         $result = $this->_checkEvalBoard();
         if ($result == self::PASS) {
             $result = $this->_testUUTpower();
             if ($result == self::PASS) {
                 $this->out("UUT Power UP - Passed\n\r");
                 sleep(1);
-                $this->_loadTestFirmware();
+                //$this->_loadTestFirmware();
                 $result = $this->_checkUUTBoard();
                 $this->_readMicroSN();
                 if ($result == self::PASS) {
-                    $result = $this->_runUUTadcCalibration();
+                    /*$result = $this->_runUUTadcCalibration();
                     if ($result == self::PASS) {
                         $this->_runUUTdacCalibration();
                     } 
-                    $this->_ENDPT_SN = $this->_getSerialNumber();
+                    $this->_ENDPT_SN = $this->_getSerialNumber();*/
                     $result = $this->_testUUT();
-                    if ($result == self::PASS) {
-                        $result = $this->_loadUUTprograms();
+                    if (($result == self::PASS) and (!$this->_FAIL_FLAG)) {
+                        //$result = $this->_loadUUTprograms();
                         
                         if ($result == self::PASS) {
                             $this->display->displayPassed();
@@ -341,6 +305,15 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $choice = readline("\n\rHit Enter to Continue: ");
     }
+    
+    /*****************************************************************************/
+    /*                                                                           */
+    /*                                                                           */
+    /*                     T E S T   R O U T I N E S                             */
+    /*                                                                           */
+    /*                                                                           */
+    /*****************************************************************************/
+    
     
     /**
     ***********************************************************
@@ -397,7 +370,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return boolean result
     */
-    private function _powerUUT($state)
+    public function _powerUUT($state)
     {
         $idNum = self::EVAL_BOARD_ID;
         
@@ -623,6 +596,7 @@ class E104603Test extends \HUGnet\ui\Daemon
             $this->out("UUT Thermistors - PASSED!");
         } else {
             $testResult = self::FAIL;
+            $this->_FAIL_FLAG = true;
             $this->out("UUT Thermistors - FAILED!");
         }
 
@@ -1297,6 +1271,7 @@ class E104603Test extends \HUGnet\ui\Daemon
             $testResult = self::PASS;
         } else {
             $this->out("LED Test - FAILED!");
+            $this->_FAIL_FLAG = true;
             $testResult = self::FAIL;
         }
         
@@ -1988,56 +1963,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     }
     
     
-    
-
-    /*****************************************************************************/
-    /*                                                                           */
-    /*             T R O U B L E S H O O T I N G   R O U T I N E S               */
-    /*                                                                           */
-    /*****************************************************************************/
-   
-    /**
-    ************************************************************
-    *Troubleshoot Main Routine
-    *
-    * This is the main routine for troubleshooting the tester 
-    * or the 10460301 Dual Battery Socializer.  
-    * 
-    * @return void
-    *
-    */
-    private function _troubleshoot104603Main()
-    {
-        do{
-            $this->display->clearScreen();
-            $selection = $this->display->displayMenu(self::HEADER_STR, 
-                            $this->_eptroubleMainMenu);
-
-            if (($selection == "A") || ($selection == "a")) {
-                $this->_readUserSig();
-            } else if (($selection == "B") || ($selection == "b")){
-                $this->_writeUserSig();
-            } else if (($selection == "C") || ($selection == "c")){
-                $this->_eraseUserSig();
-            } else if (($selection == "D") || ($selection == "d")){
-                $this->_testLoadFirmware();
-            } else if (($selection == "E") || ($selection == "e")){
-                $this->_writeUserSigFile();
-                $selection = "A";
-            } else if (($selection == "F") || ($selection == "f")){
-                $this->_read();
-            } else if (($selection == "G") || ($selection == "g")){
-                $this->_testProgramUUT();
-            } else {
-                $exitTest = true;
-                $this->out("Exit Troubleshooting Tool");
-            }
-
-        } while ($exitTest == false);
-
-        $choice = readline("\n\rHit Enter to Continue: ");
-    }
-
     /**
     ************************************************************
     * Test User Signature routines
@@ -2617,7 +2542,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return integer $testResult  1=pass, 0=fail, -1=hard fail
     */
-    private function _checkUUTBoard()
+    public function _checkUUTBoard()
     {
         $this->out("Testing UUT Communications");
         $this->out("******************************");
@@ -3961,7 +3886,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     * @return reply data from endpoint
     *
     */
-    private function _sendPacket($Sn, $Cmd, $DataVal)
+    public function _sendPacket($Sn, $Cmd, $DataVal)
     {
 
 

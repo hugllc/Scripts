@@ -43,11 +43,9 @@ require_once "HUGnetLib/devices/inputTable/Driver.php";
 /** Displays class */
 require_once "HUGnetLib/ui/Displays.php";
 /** This is the HUGnetLab endpoint test */
-require_once "E003937Test.php";
+require_once "E104603Test.php";
 /** This is the HUGnet endpoint 003928 test */
-require_once "E003928Test.php";
-/** This is the HUGnet endpoint 003912 test */
-require_once "E003912Test.php";
+require_once "E104603TroubleShoot.php";
 
 /**
  * This code tests, serializes and programs endpoints with bootloader code.
@@ -66,22 +64,22 @@ require_once "E003912Test.php";
  * @version    Release: 0.9.7
  * @link       http://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class EndpointTest extends \HUGnet\ui\Daemon
+class SocializerTest extends \HUGnet\ui\Daemon
 {
 
-    const HEADER_STR    = "HUGnet Endpoint Test & Program Tool";
+    const HEADER_STR    = "Battery Socializer Test & Program Tool";
 
     private $_fixtureTest;
     private $_device;
     private $_goodDevice;
-    private $_eptestMainMenu = array(
-                                0 => "Test 003937 HUGnetLab Endpoint",
-                                1 => "Test 003928 HUGnet Endpoint",
-                                2 => "Test 003912 HUGnet Endpoint",
+    private $_socialtestMainMenu = array(
+                                0 => "Test 104603",
+                                1 => "Troubleshoot 104603",
+                                2 => "Troubleshoot 104607 Tester",
                                 );
 
     public $display;
-    
+    public $sys;
     /*
     * Sets our configuration
     *
@@ -92,7 +90,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
         parent::__construct($config);
         $this->_device = $this->system()->device();
         $this->display = \HUGnet\ui\Displays::factory($config);
-
+        $this->sys = $this->system();
     }
 
     /**
@@ -104,7 +102,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
     */
     static public function &factory(&$config = array())
     {
-        $obj = new EndpointTest($config);
+        $obj = new SocializerTest($config);
         return $obj;
     }
 
@@ -128,17 +126,17 @@ class EndpointTest extends \HUGnet\ui\Daemon
         do{
             $this->display->clearScreen();
             $selection = $this->display->displayMenu(self::HEADER_STR, 
-                            $this->_eptestMainMenu);
+                            $this->_socialtestMainMenu);
 
             if (($selection == "A") || ($selection == "a")) {
-                $this->_test003937Main();
+                $this->_test104603Main();
             } else if (($selection == "B") || ($selection == "b")){
-                $this->_test003928Main();
+                $this->_troubleshoot104603Main();
             } else if (($selection == "C") || ($selection == "c")){
-                $this->_test003912Main();
+                $this->_troubleshoot104607Main();
             } else {
                 $exitTest = true;
-                $this->out("Exit Test Tool");
+                $this->out("Exit Test & Troubleshoot Tool");
             }
 
         } while ($exitTest == false);
@@ -156,7 +154,7 @@ class EndpointTest extends \HUGnet\ui\Daemon
  
     /**
     ************************************************************
-    * Main Test Routine
+    * 104603 Main Test Routine
     * 
     * This is the main routine for testing, serializing and 
     * programming in the bootloader for HUGnet endpoints.
@@ -164,11 +162,11 @@ class EndpointTest extends \HUGnet\ui\Daemon
     * @return void
     *   
     */
-    private function _test003937Main()
+    private function _test104603Main()
     {
-        $sys = $this->system();
-        $this->_fixtureTest = E003937Test::factory($config, $sys);
-        $this->_fixtureTest->runTestMain();
+        //$sys = $this->system();
+        $this->_fixtureTest = E104603Test::factory($config, $this->sys);
+        $this->_fixtureTest->run104603Test();
 
     }
 
@@ -183,12 +181,11 @@ class EndpointTest extends \HUGnet\ui\Daemon
     * @return void
     *
     */
-    private function _test003928Main()
+    private function _troubleshoot104603Main()
     {
-
-        $sys = $this->system();
-        $this->_fixtureTest = E003928Test::factory($config, $sys);
-        $this->_fixtureTest->runTestMain();
+        //$sys = $this->system();
+        $this->_fixtureTest = E104603Troubleshoot::factory($config, $this->sys);
+        $this->_fixtureTest->runTroubleshootMain();
     }
 
     /**
@@ -201,14 +198,13 @@ class EndpointTest extends \HUGnet\ui\Daemon
     * @return void
     *
     */
-    private function _test003912Main()
+    private function _troubleshoot104607Main()
     {
 
 
-        $sys = $this->system();
-        $this->_fixtureTest = E003912Test::factory($config, $sys);
-        $this->_fixtureTest->runTestMain();
-
+        $this->out(" Not Done!");
+        
+        $choice = readline("Hit Enter to Continue");
     }
 
 
