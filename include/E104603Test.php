@@ -146,15 +146,6 @@ class E104603Test extends \HUGnet\ui\Daemon
                                 1 => "Troubleshoot 104603 ",
                                 );
 
-    private $_eptroubleMainMenu = array(
-                                0 => "Read User Signature Bytes",
-                                1 => "Write User Signature Bytes",
-                                2 => "Erase User Signature Bytes",
-                                3 => "Load Test Firmware",
-                                4 => "Write User Signature File",
-                                5 => "Calibrate DAC",
-                                6 => "Program UUT",
-                                );
                                 
     public $display;
 
@@ -164,6 +155,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     private $_DAC_GAIN;
     private $_ENDPT_SN;
     private $_FAIL_FLAG;
+    private $_MICRO_SN;
     
     private $_TEST_DATA = array(
                             "BusVolts"  => 0.0,
@@ -184,6 +176,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                             );
 
     private $_TEST_FAIL = array();
+    private $_DB_DATA = array();
 
     /**
     * Sets our configuration
@@ -228,7 +221,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     * Main Test Routine
     * 
     * This is the main routine for testing, serializing and 
-    * programming in the bootloader for HUGnet endpoints.
+    * programming Battery Socializer endpoints.
     * 
     * Test Steps 
     *   1: Check Eval Board
@@ -260,18 +253,18 @@ class E104603Test extends \HUGnet\ui\Daemon
             if ($result == self::PASS) {
                 $this->out("UUT Power UP - Passed\n\r");
                 sleep(1);
-                //$this->_loadTestFirmware();
+                $this->_loadTestFirmware();
                 $result = $this->_checkUUTBoard();
-                $this->_readMicroSN();
+                $this->_MICRO_SN = $this->_readMicroSN();
                 if ($result == self::PASS) {
-                    /*$result = $this->_runUUTadcCalibration();
+                    $result = $this->_runUUTadcCalibration();
                     if ($result == self::PASS) {
                         $this->_runUUTdacCalibration();
                     } 
-                    $this->_ENDPT_SN = $this->_getSerialNumber();*/
+                    $this->_ENDPT_SN = $this->_getSerialNumber();
                     $result = $this->_testUUT();
                     if (($result == self::PASS) and (!$this->_FAIL_FLAG)) {
-                        //$result = $this->_loadUUTprograms();
+                       $result = $this->_loadUUTprograms();
                         
                         if ($result == self::PASS) {
                             $this->display->displayPassed();
@@ -281,15 +274,18 @@ class E104603Test extends \HUGnet\ui\Daemon
                         
                     } else {
                         $this->display->displayFailed();
+                        $result = self::FAIL;
                     }
-                    $result = $this->_powerUUT(self::OFF);   
+                    $this->_powerUUT(self::OFF);   
                     $this->_clearTester();
                 } else {
-                    $result = $this->_powerUUT(self::OFF);                    
+                    $this->_powerUUT(self::OFF);                    
                     $this->out("\n\rUUT Communications Failed!\n\r");
                     $this->_TEST_FAIL[] = "UUT Com Fail";
                     $this->display->displayFailed();
                 }
+                $this->_logTestData($result);
+
             } else {
                 $this->out("\n\rUUT power failed!\n\r");
                 $this->display->displayFailed();
@@ -299,9 +295,6 @@ class E104603Test extends \HUGnet\ui\Daemon
             $this->_TEST_FAIL[] = "Eval Board Comm Fail";
             $this->display->displayFailed();
         }
-
-        $this->_displayTestData();
-        $this->_displayTestFailures();
 
         $choice = readline("\n\rHit Enter to Continue: ");
     }
@@ -333,22 +326,23 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $result = $this->_powerUUT(self::ON);
         sleep(1);
+
         if ($result) {
             $voltsVB = $this->_readTesterBusVolt();
             $this->_TEST_DATA["BusVolts"] = $voltsVB;
-            $this->out("Bus Voltage = ".$voltsVB." volts");
+
             if (($voltsVB > 11.5) and ($voltsVB < 13.00)) {
-                $volts = $this->_readTesterVCC();
-                $vccv = number_format($volts, 2);
-                $this->_TEST_DATA["Vcc"] = $vccv;
-                $this->out("Vcc = ".$vccv." volts");
-                if (($volts > 3.1) and ($volts < 3.4)) {
+                $VccVolts = $this->_readTesterVCC();
+                $this->_TEST_DATA["Vcc"] = $VccVolts;
+
+                if (($VccVolts > 3.1) and ($VccVolts < 3.4)) {
                     $testResult = self::PASS;
                 } else {
                     $testResult = self::HFAIL;
                     $this->_TEST_FAIL[] = "Vcc Volts Failed:".$volts."V";
                     $this->_powerUUT(self::OFF);
                 }
+
             } else {
                 $testResult = self::HFAIL;
                 $this->_TEST_FAIL[] = "Bus Volts Failed:".$voltsVB."V";
@@ -472,14 +466,11 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("******************************");
 
         $voltsVbus = $this->_readUUTBusVolts();
-        $this->out("UUT Bus Volts    = ".$voltsVbus." volts");
 
         if (($voltsVbus > 11.5) and ($voltsVbus < 13.0)) {
             $voltsVcc = $this->_readUUTVccVolts();
-            $vC = number_format($voltsVcc, 2);
-            $this->out("UUT Vcc Volts    = ".$vC." volts");
 
-            if (($vC > 3.1) and ($vC < 3.4)) {
+            if (($voltsVcc > 3.1) and ($voltsVcc < 3.4)) {
                 $this->out("UUT Supply Voltages - PASSED!");
                 $testResult = self::PASS;
             } else {
@@ -551,10 +542,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("******************************");
         sleep(2);
 
-        $busData = $this->_readUUTBusTemp();
-        $busTemp = $this->_convertTempData($busData);
-        $busTemp = number_format($busTemp, 2);
-        $this->out("Bus Temp    : ".$busTemp." C");
+        $busTemp = $this->_readUUTBusTemp();
         $this->_TEST_DATA["BusTemp"] = $busTemp;
 
         if (($busTemp > 11.00) and ($busTemp < 26.00)) {
@@ -564,10 +552,7 @@ class E104603Test extends \HUGnet\ui\Daemon
             $this->_TEST_FAIL[] = "Bus Temp:".$busTemp."C";
         }
 
-        $p1Data = $this->_readUUTP1Temp();
-        $p1Temp = $this->_convertTempData($p1Data);
-        $p1Temp = number_format($p1Temp, 2);
-        $this->out("Port 1 Temp : ".$p1Temp." C");
+        $p1Temp = $this->_readUUTP1Temp();
         $this->_TEST_DATA["P1Temp"] = $p1Temp;
 
         if (($p1Temp > 11.00) and ($p1Temp < 26.00)) {
@@ -577,10 +562,7 @@ class E104603Test extends \HUGnet\ui\Daemon
             $this->_TEST_FAIL[] = "Port 1 Temp:".$p1Temp."C";
         }
         
-        $p2Data = $this->_readUUTP2Temp(); 
-        $p2Temp = $this->_convertTempData($p2Data);
-        $p2Temp = number_format($p2Temp, 2);
-        $this->out("Port 2 Temp : ".$p2Temp." C");
+        $p2Temp = $this->_readUUTP2Temp(); 
         $this->_TEST_DATA["P2Temp"] = $p2Temp;
 
         if (($p2Temp > 11.00) and ($p2Temp < 26.00)) {
@@ -622,16 +604,11 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Testing UUT Port 1");
         $this->out("******************************");
 
-        $this->_setRelay(4, 1); /* Connect Port 1 Load */
-        sleep(1);
-        $this->_setPort(1, 1); /* Port 1 On */
-        $this->out("PORT 1 ON:");
-        sleep(1);
+        $this->_setPort1Load(self::ON);
+        $this->_setPort1(self::ON);
 
         $voltsP1 = $this->_readTesterP1Volt(); 
-        $this->out("Port 1 Tester  = ".$voltsP1." volts");
         $p1Volts = $this->_readUUTPort1Volts();
-        $this->out("Port 1 UUT     = ".$p1Volts." volts");
         $this->_TEST_DATA["P1Volts"] = $p1Volts;
 
         $p1Amps = $this->_readUUTPort1Current();
@@ -640,16 +617,11 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         if (($p1Volts > 11.00) and ($p1Volts < 13.00)) {
             $testResult = $this->_runP1FaultTest();
-
-            $this->_setPort(1, 0);  /* Port 1 Off */
-            $this->out("PORT 1 OFF:");
-            sleep(1);
+            $this->_setPort1(self::OFF);
 
             if ($testResult == self::PASS) {
                 $voltsP1 = $this->_readTesterP1Volt();
-                $this->out("Port 1 Tester  = ".$voltsP1." volts");
                 $p1Volts = $this->_readUUTPort1Volts();
-                $this->out("Port 1 UUT     = ".$p1Volts." volts");
                 
                 if ($p1Volts <= 0.1) {
                     $testResult = self::PASS;
@@ -663,13 +635,12 @@ class E104603Test extends \HUGnet\ui\Daemon
                 $this->out("Port 1 Fault Test - FAILED!");
             }
         } else {
-            $this->_setPort(1, 0); /* Port 1 Off */
-            $this->out("PORT 1 OFF:");
+            $this->_setPort1(self::OFF);
             $this->out("Port 1 Load Test - FAILED!");
             $this->_TEST_FAIL[] = "P1 On Load:".$p1Volts."V";
             $testResult = self::HFAIL;
         }
-        $this->_setRelay(4, 0); /* Disconnect Port 1 Load */
+        $this->_setPort1Load(self::OFF); /* Disconnect Port 1 Load */
         $this->out("");
         return $testResult;
     }
@@ -691,7 +662,6 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         /* Measure Port 1 voltage */
         $voltsP1 = $this->_readTesterP1Volt();
-        $this->out("Port 1 Fault   = ".$voltsP1." volts");
         $this->_TEST_DATA["P1Fault"] = $voltsP1;
 
         if ($voltsP1 < 0.1) {
@@ -700,7 +670,6 @@ class E104603Test extends \HUGnet\ui\Daemon
             sleep(1);
 
             $voltsP1 = $this->_readTesterP1Volt();
-            $this->out("Port 1 Fault   = ".$voltsP1." volts");
             
             if (($voltsP1 > 11.00) and ($voltsP1 < 13.00)) {
                 $testResult = self::PASS;
@@ -738,39 +707,25 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Testing UUT Port 2 ");
         $this->out("******************************");
 
-        /* Connect 12 ohm load  to port 2 */
-        $this->_setRelay(6, 1);
-        sleep(1);
+        $this->_setPort2Load(self::ON);
+        $this->_setPort2(self::ON);
 
-        $this->_setPort(2, 1); /* Port 2 On */
-        $this->out("PORT 2 ON:");
-        sleep(2);
-
-        /* Measure Port 2 Voltage */
         $voltsP2 = $this->_readTesterP2Volt();
-        $this->out("Port 2 Tester  = ".$voltsP2." volts");
 
-        /* UUT Port 2 voltage */
         $p2Volts = $this->_readUUTPort2Volts();
         $this->out("Port 2 UUT     = ".$p2Volts." volts");
         $this->_TEST_DATA["P2Volts"] = $p2Volts;
 
-        /* UUT Port 2 Current */
         $p2Amps = $this->_readUUTPort2Current();
         $this->out("Port 2 Current = ".$p2Amps." amps");
         $this->_TEST_DATA["P2Current"] = $p2Amps;
 
         if (($p2Volts > 11.50) and ($p2Volts < 13.00)) {
             $testResult = $this->_runP2Faulttest();
-
-            $this->_setPort(2, 0); /* Port 2 off */
-            $this->out("PORT 2 OFF:");
-            sleep(1);
+            $this->_setPort2(self::OFF);
 
             if ($testResult == self::PASS) {
-            
                 $voltsP2 = $this->_readTesterP2Volt();
-                $this->out("Port 2 Tester  = ".$voltsP2." volts");
                 $p2Volts = $this->_readUUTPort2Volts();
                 $this->out("Port 2 UUT     = ".$p2Volts." volts");
 
@@ -786,14 +741,12 @@ class E104603Test extends \HUGnet\ui\Daemon
                 $this->out("Port 2 Fault Test - FAILED!");
             }
         } else {
-            $this->_setPort(2, 0);
-            $this->out("PORT 2 OFF:");
+            $this->_setPort2(self::OFF);
             $this->out("Port 2 Fault Test - FAILED!");
             $this->_TEST_FAIL[] = "P2 On Load:".$p2Volts."V";
             $testResult = self::HFAIL;
         }
-        /* Disconnect load resistor */
-        $this->_setRelay(6, 0);
+        $this->_setPort2Load(self::OFF); /* Remove 12 ohm load */
 	
         $this->out("");
         return $testResult;
@@ -815,7 +768,6 @@ class E104603Test extends \HUGnet\ui\Daemon
         
         /* Measure Port 1 voltage */
         $voltsP2 = $this->_readTesterP2Volt();
-        $this->out("Port 2 Fault   = ".$voltsP2." volts");
         $this->_TEST_DATA["P2Fault"] = $voltsP2;
 
         if ($voltsP2 < 0.1) {
@@ -824,7 +776,6 @@ class E104603Test extends \HUGnet\ui\Daemon
             sleep(1);
 
             $voltsP2 = $this->_readTesterP2Volt();
-            $this->out("Port 2 Fault   = ".$voltsP2." volts");
             
             if (($voltsP2 > 11.00) and ($voltsP2 < 13.00)) {
                 $testResult = self::PASS;
@@ -893,52 +844,32 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _Port1ToVbusTest()
     {
-
-        $this->_setRelay(3, 1);  /* close K3 to select +12V */
-        $this->_setRelay(4, 1);  /* close K4 to connect +12V to Port 1 */
-        $this->out("PORT 1 +12V CONNECTED:");
-        sleep(1);
-        
+        $this->_setPort1_V12(self::ON); /* +12V to Port 1 */
         $voltsP1 = $this->_readTesterP1Volt();
-        $this->out("Port 1  Tester  = ".$voltsP1." volts");
 
         if (($voltsP1 > 11.50) and ($voltsP1 < 13.00)) { 
-            $this->_setRelay(1, 0);  /* open K1 to remove +12V and connect Load */
-            $this->out("VBUS 12 OHM LOAD CONNECTED:");
-            sleep(1);
-
+            $this->_setVBus_V12(self::OFF); /* connects 12 ohm load */
             $voltsVB = $this->_readTesterBusVolt();
             $this->out("Bus Volts Tester = ".$voltsVB." volts");
             $VBvolts = $this->_readUUTBusVolts();
             $this->out("Bus Volts UUT    = ".$VBvolts." volts");
 
             if ($VBvolts < 0.2) {
-                $this->_setPort(1, 1);  /* Port 1 On */
-                $this->out("PORT 1 ON:");
-                sleep(1);
+                $this->_setPort1(self::ON);
 
-                /* Measure Vbus voltage */
                 $voltsVB = $this->_readTesterBusVolt();
                 $this->out("Bus Volts Tester = ".$voltsVB." volts");
                 $VBvolts = $this->_readUUTBusVolts();
                 $this->out("Bus Volts UUT    = ".$VBvolts." volts");
                 $p1Volts = $this->_readUUTPort1Volts();
-                $this->out("Port 1 UUT       = ".$p1Volts." volts");
-
-                /* UUT Port 1 current */
                 $p1Amps = $this->_readUUTPort1Current();
                 $this->out("Port 1 current   = ".$p1Amps." amps");
 
                 if (($VBvolts > 11.4) and ($VBvolts < 13.00)) {
+                    $this->_setPort1(self::OFF);
 
-                    $this->_setPort(1, 0); /* Port 1 Off */
-                    $this->out("PORT 1 OFF:");
-                    sleep(1);
-
-                    /* Measure Vbus Voltage */
                     $voltsVB = $this->_readTesterBusVolt();
                     $this->out("Bus Volts Tester = ".$voltsVB." volts");
-
                     $p1Amps = $this->_readUUTPort1Current();
                     $this->out("Port 1 current   = ".$p1Amps." amps");
 
@@ -950,47 +881,23 @@ class E104603Test extends \HUGnet\ui\Daemon
                     }
 
                 } else {
-                    $this->_setPort(1,0); /* turn off Port 1 */
-                    $this->out("PORT 1 OFF:");
-                    sleep(1);
-
-                    $this->_setRelay(1, 1);  /* close K1 to select +12V */
-                    $this->out("Bus Voltage ON:");
-                    sleep(1);
-
+                    $this->_setPort1(self::OFF);
+                    $this->_setVBus_V12(self::ON);
                     $this->_TEST_FAIL[] = "P1 on to Vbus:".$VBvolts."V";
-                    $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
-                    $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
-                    $this->out("Port 1 +12V OFF:");
-
+                    $this->_setPort1_V12(self::OFF);
                     $testResult = self::HFAIL;
                 }
             } else {
-
-                $this->_setRelay(1, 1);  /* close K1 to select +12V */
-                $this->out("Bus Voltage ON:");
-                sleep(1);
-
+                $this->_setVBus_V12(self::ON);
                 $this->_TEST_FAIL[] = "Bus Voltage Off:".$VBvolts."V";
-
-                $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
-                $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
-                $this->out("Port 1 +12V OFF:");
-
+                $this->_setPort1_V12(self::OFF);
                 $testResult = self::HFAIL;
             }
         } else {
-            /*  Disconnect +12V from Port 1 */
-            $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
-            $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
-            $this->out("Port 1 +12V OFF:");
-            sleep(1);
-
+            $this->_setPort1_V12(self::OFF);
             $this->_TEST_FAIL[] = "P1 Supply :".$voltsP1."V";
-            
             $voltsP1 = $this->_readTesterP1Volt();
             $this->out("Port 1  Tester = ".$voltsP1." volts");
-            
             $testResult = self::HFAIL;
         }
 
@@ -1010,54 +917,32 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _Port2ToVbusTest()
     {
-        $this->_setRelay(5, 1);  /* close K5 to select +12V */
-        $this->_setRelay(6, 1);  /* close K6 to connect +12V to Port 2 */
-        $this->out("PORT 2 +12V CONNECTED:");
-        sleep(1);
-        
+        $this->_setPort2_V12(self::ON);
         $voltsP2 = $this->_readTesterP2Volt();
-        $this->out("Port 2  Tester   = ".$voltsP2." volts");
-
-        /* UUT Port 2 voltage */
         $p2Volts = $this->_readUUTPort2Volts();
         $this->out("Port 2 UUT       = ".$p2Volts." volts");
         
         if (($p2Volts > 11.50) and ($p2Volts < 13.00)) {
-            $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
-            $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
-            $this->out("Port 1 +12V OFF:");
-            sleep(1);
+            $this->_setPort1_V12(self::OFF);
             
             $voltsP1 = $this->_readTesterP1Volt();
-            $this->out("Port 1  Tester   = ".$voltsP1." volts");
+            $this->_setPort2(self::ON);
             
-            $this->_setPort(2, 1);  /* Port 2 On */
-            $this->out("PORT 2 ON:");
-            sleep(1);
-            
-            /* Measure Vbus voltage */
             $voltsVB = $this->_readTesterBusVolt();
             $this->out("Bus Volts Tester = ".$voltsVB." volts");
             $VBvolts = $this->_readUUTBusVolts();
             $this->out("Bus Volts UUT    = ".$VBvolts." volts");
             $p2Volts = $this->_readUUTPort2Volts();
-            $this->out("Port 2 UUT       = ".$p2Volts." volts");
-
-            /* UUT Port 2 Current */
             $p2Amps = $this->_readUUTPort2Current();
             $this->out("Port 2 current   = ".$p2Amps." amps");
 
             if (($VBvolts > 11.50) and ($VBvolts < 13.00)) {
-                $this->_setPort(2, 0);  /* Port 2 Off */
-                $this->out("PORT 2 OFF:");
-                sleep(1);
+                $this->_setPort2(self::OFF);
 
-                /* Measure Vbus voltage */
                 $voltsVB = $this->_readTesterBusVolt();
                 $this->out("Bus Volts Tester = ".$voltsVB." volts");
                 $VBvolts = $this->_readUUTBusVolts();
                 $this->out("Bus Volts UUT    = ".$VBvolts." volts");
-
                 $p2Amps = $this->_readUUTPort2Current();
                 $this->out("Port 2 current   = ".$p2Amps." amps");
                 
@@ -1067,68 +952,28 @@ class E104603Test extends \HUGnet\ui\Daemon
                     $testResult = self::HFAIL;
                     $this->_TEST_FAIL[] = "P2 off to Vbus:".$VBvolts."V";
                 }
-                
-                $this->_setRelay(1, 1);  /* close K1 to select +12V */
-                $this->out("Bus Voltage ON:");
-                sleep(1);
+                $this->_setVBus_V12(self::ON);
 
                 $voltsVB = $this->_readTesterBusVolt();
                 $this->out("Bus Volts Tester = ".$voltsVB." volts");
-
                 $VBvolts = $this->_readUUTBusVolts();
                 $this->out("Bus Volts UUT    = ".$VBvolts." volts");
-
-                $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
-                $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
-                $this->out("Port 2 +12V OFF:");
-                sleep(1);
-                
+                $this->_setPort2_V12(self::OFF);
                 $voltsP2 = $this->_readTesterP2Volt();
-                $this->out("Port 2  Tester   = ".$voltsP2." volts");
 
             } else {
-                /* turn off Port 2 */
-                $this->_setPort(2, 0);
-                $this->out("PORT 2 OFF:");
-                sleep(1);
-
-                /* Disconnect +12V from Port 2 */
-                $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
-                $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
-                $this->out("Port 2 +12V OFF:");
-
+                $this->_setPort2(self::OFF);
+                $this->_setPort2_V12(self::OFF);
                 $this->_TEST_FAIL[] = "P2 on to Vbus:".$VBvolts."V";
-
-                /* 25. Connect +12V to Vbus */
-                $this->_setRelay(1, 1);  /* close K1 to select +12V */
-                $this->out("Bus Voltage ON:");
-                sleep(1);
-
-                $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
-                $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
-                $this->out("Port 1 +12V OFF:");
-
+                $this->_setVBus_V12(self::ON);
+                $this->_setPort1_V12(self::OFF);
                 $testResult = self::HFAIL;
-
             }
         } else {
-
-            /* Disconnect +12V from Port 2 */
-            $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
-            $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
-            $this->out("Port 2 +12V OFF:");
-
+            $this->_setPort2_V12(self::OFF);
             $this->_TEST_FAIL[] = "P2 Supply :".$p2Volts."V";
-
-            /* 25. Connect +12V to Vbus */
-            $this->_setRelay(1, 1);  /* close K1 to select +12V */
-            $this->out("Bus Voltage ON:");
-            sleep(1);
-
-            $this->_setRelay(4, 0);  /* open K4 to remove +12V from Port 1 */
-            $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
-            $this->out("Port 1 +12V OFF:");
-
+            $this->_setVBus_V12(self::ON);
+            $this->_setPort1_V12(self::OFF);
             $testResult = self::HFAIL;
         }
 
@@ -1237,9 +1082,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_LED_COMMAND;
-
-         /* turn on all Green LEDs */
-        $dataVal = "01";
+        $dataVal = "01"; /*turn on Green Status LEDs */
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         $choice = readline("\n\rAre all 3 Green Status LEDs on? (Y/N) ");
@@ -1250,8 +1093,7 @@ class E104603Test extends \HUGnet\ui\Daemon
             $this->_TEST_FAIL[] = "Green LED Fail";
         }
 
-         /* turn on all Red LEDs */
-        $dataVal = "02";
+        $dataVal = "02"; /* Turn on Red status LEDs */
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); 
 
         $choice = readline("\n\rAre all 3 Red Status LEDs on? (Y/N) ");
@@ -1262,8 +1104,7 @@ class E104603Test extends \HUGnet\ui\Daemon
             $this->_TEST_FAIL[] = "Red LED Fail";
         }
 
-        /* turn off all LEDs */
-        $dataVal = "00";
+        $dataVal = "00";  /* Turn off all LEDs */
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
        
         if (($result1 == self::PASS) and ($result2 == self::PASS)) {
@@ -1348,8 +1189,6 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Testing Application Program");
         $this->out("***************************");
 
-        
-
         $this->out("Checking UUT Communication");
         //$this->_ENDPT_SN = "8012";
         $decVal = hexdec($this->_ENDPT_SN);
@@ -1358,142 +1197,161 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         if ($replyData == true) {
             $this->out("UUT Board Responding!");
-        
-            $this->out("Read Port 1 Control Channel");
-            $idNum = $decVal;
-            $cmdNum = self::READCONTROLCHAN_COMMAND;
-            $dataVal = "00";
-        
-            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-            $this->out("Port 1 Control Channel Reply = ".$ReplyData);
-
-            /* 1.  connect 12 ohm load  to port 1 */
-            $this->_setRelay(4, 1);
-            sleep(1);
-
-            $voltsP1 = $this->_readTesterP1Volt();
-            $p1v = number_format($voltsP1, 2);
-            $this->out("Port 1 No Action  = ".$p1v." volts");
-    
-            $this->out("Turning on Port 1");
-            $cmdNum = self::SETCONTROLCHAN_COMMAND;
-            $dataVal = "0000000000";
-            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-            $this->out("Set Control Channel Reply = ".$ReplyData);
-            sleep(1);
-        
-            /* 4.  Eval Board Measure Port 1 Voltage */
-            $voltsP1 = $this->_readTesterP1Volt();
-            $p1v = number_format($voltsP1, 2);
-            $this->out("Port 1 ON  = ".$p1v." volts");
-
-            if (($p1v > 11.00) and ($p1v < 13.00)) {
-                $this->out("Turning off Port 1");
-
-                $cmdNum = self::SETCONTROLCHAN_COMMAND;
-                $dataVal = "00204E0000";
-                $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-                $this->out("Set Control Channel Reply = ".$ReplyData);
-                sleep(1);
-
-                $voltsP1 = $this->_readTesterP1Volt();
-                $p1v = number_format($voltsP1, 2);
-                $this->out("Port 1 OFF  = ".$p1v." volts");
-                
-                /* remove 12 ohm load from Port 1 */
-                $this->_setRelay(4, 0);
-
-                if ($p1V < 0.2) {
-                    /* Connect 12 ohm load to Port 2 */
-                    $this->_setRelay(6,1);
-                    sleep(1);
-                    
-                    $voltsP2 = $this->_readTesterP1Volt();
-                    $p2v = number_format($voltsP2, 2);
-                    $this->out("Port 2 No Action  = ".$p2v." volts");
+            $testResult = $this->_runPort1AppTest($decVal);
             
-                    $this->out("Turning on Port 2");
-                    $cmdNum = self::SETCONTROLCHAN_COMMAND;
-                    $dataVal = "0100000000";
-                    $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-                    $this->out("Set Control Channel Reply = ".$ReplyData);
-                    sleep(1);
-                
-                    /* 4.  Eval Board Measure Port 1 Voltage */
-                    $voltsP2 = $this->_readTesterP2Volt();
-                    $p2v = number_format($voltsP2, 2);
-                    $this->out("Port 2 ON  = ".$p2v." volts");
-                    
-                    if (($p2v > 11.00) and ($p2v < 13.00)) {
-                        $this->out("Turning off Port 2");
-
-                        $cmdNum = self::SETCONTROLCHAN_COMMAND;
-                        $dataVal = "01204E0000";
-                        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-                        $this->out("Set Control Channel Reply = ".$ReplyData);
-                        sleep(1);
-
-                        $voltsP2 = $this->_readTesterP1Volt();
-                        $p2v = number_format($voltsP2, 2);
-                        $this->out("Port 1 OFF  = ".$p2v." volts");
-                        
-                        /* remove 12 ohm load from Port 1 */
-                        $this->_setRelay(6, 0);
-
-                        if ($p2v < 0.2) {
-                            $this->out("Application Test - PASSED!");
-                            $testResult = self::PASS;
-                        
-                        } else {
-                            $this->out("Application Test - FAILED!");
-                            $testResult = self::HFAIL;
-                            $this->_TEST_FAIL[] = "App Code P2 off:".$p2v."V";
-                        }
-                    } else {
-                        $this->out("Application Test - FAILED!");
-                        $cmdNum = self::SETCONTROLCHAN_COMMAND;
-                        $dataVal = "01204E0000";
-                        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-                        $this->out("Set Control Channel Off Reply = ".$ReplyData);
-                        sleep(1);
-                        $this->_setRelay(6, 0);
-                        $testResult = self::HFAIL;
-                        $this->_TEST_FAIL[] = "App Code P2 on:".$p2V."V";
-                    }
+            if ($testResult == self::PASS) {
+                $testResult = $this->_runPort2AppTest($decVal);
+                if ($testResult == self::PASS) {
+                    $this->out("Application Test - PASSED!");
                 } else {
                     $this->out("Application Test - FAILED!");
-                    $testResult = self::HFAIL;
-                    $this->_TEST_FAIL[] = "App Code P1 off:".$p1v."V";
                 }
+                
             } else {
                 $this->out("Application Test - FAILED!");
-                $cmdNum = self::SETCONTROLCHAN_COMMAND;
-                $dataVal = "00204E0000";
-                $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-                $this->out("Set Control Channel Off Reply = ".$ReplyData);
-                sleep(2);
-                $this->_setRelay(4, 0);
-                $testResult = self::HFAIL;
-                $this->_TEST_FAIL[] = "App Code P1 on:".$p1v."V";
             }
-
         } else {
             $this->_system->out("UUT Board Failed to Respond!\n\r");
             $testResult = self::HFAIL;
             $this->_TEST_FAIL[] = "UUT with App Code Failed Com";
         }
         
+        return $testResult;
+    }
 
+
+    /**
+    *************************************************************
+    * Run Port 1 Application Test Routine
+    *
+    * This function runs the port 1 test on the application code
+    * to verify that the application code is running properly.
+    *
+    * @param integer $SNVal device serial number
+    *
+    * @return integer $testResult  1=pass, 0=fail, -1=hard fail
+    */
+    private function _runPort1AppTest($SNVal)
+    {
+        $this->out("Read Port 1 Control Channel");
+        $idNum = $SNVal;
+        $cmdNum = self::READCONTROLCHAN_COMMAND;
+        $dataVal = "00";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->out("Port 1 Control Channel Reply = ".$ReplyData);
+
+        $this->_setPort1Load(self::ON);
+        $voltsP1 = $this->_readTesterP1Volt();
+
+        $this->out("Turning on Port 1");
+        $cmdNum = self::SETCONTROLCHAN_COMMAND;
+        $dataVal = "0000000000";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->out("Set Control Channel Reply = ".$ReplyData);
+        sleep(1);
+    
+        $voltsP1 = $this->_readTesterP1Volt();
+
+        if (($voltsP1 > 11.00) and ($voltsP1 < 13.00)) {
+            $this->out("Turning off Port 1");
+
+            $cmdNum = self::SETCONTROLCHAN_COMMAND;
+            $dataVal = "00204E0000";
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $this->out("Set Control Channel Reply = ".$ReplyData);
+            sleep(1);
+
+            $voltsP1 = $this->_readTesterP1Volt();
+            $this->_setPort1Load(self::OFF); /* Remove 12 ohm load */
+
+            if ($voltsP1 < 0.2) {
+                $testResult = self::PASS;
+            } else {
+                $testResult = self::HFAIL;
+                $this->_TEST_FAIL[] = "App Code P1 off:".$p1v."V";
+            }
+        } else {
+            $cmdNum = self::SETCONTROLCHAN_COMMAND;
+            $dataVal = "00204E0000";
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $this->out("Set Control Channel Off Reply = ".$ReplyData);
+            sleep(2);
+            $this->_setPort1Load(self::OFF);
+            $testResult = self::HFAIL;
+            $this->_TEST_FAIL[] = "App Code P1 on:".$p1v."V";
+        }
+
+        return $testResult;
+    }
+
+
+
+    /**
+    *************************************************************
+    * Run Port 2 Application Test Routine
+    *
+    * This function runs the port 2 test on the application code
+    * to verify that the application code is running properly.
+    *
+    * @param integer $SNval device serial number
+    *
+    * @return integer $testResults  1=pass, 0=fail, -1=hard fail
+    */
+    private function _runPort2AppTest($SNval)
+    {
+        $idNum = $SNval;
+        $this->_setPort2Load(self::ON);
+        
+        $voltsP2 = $this->_readTesterP2Volt();
+
+        $this->out("Turning on Port 2");
+        $cmdNum = self::SETCONTROLCHAN_COMMAND;
+        $dataVal = "0100000000";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->out("Set Control Channel Reply = ".$ReplyData);
+        sleep(1);
+    
+        $voltsP2 = $this->_readTesterP2Volt();
+        
+        if (($voltsP2 > 11.00) and ($voltsP2 < 13.00)) {
+            $this->out("Turning off Port 2");
+
+            $cmdNum = self::SETCONTROLCHAN_COMMAND;
+            $dataVal = "01204E0000";
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $this->out("Set Control Channel Reply = ".$ReplyData);
+            sleep(1);
+
+            $voltsP2 = $this->_readTesterP2Volt();
+            $this->_setPort2Load(self::OFF); /* Remove 12 ohm load */
+
+            if ($voltsP2 < 0.2) {
+                $testResult = self::PASS;
+            } else {
+                $testResult = self::HFAIL;
+                $this->_TEST_FAIL[] = "App Code P2 off:".$p2v."V";
+            }
+        } else {
+            $this->out("Application Test - FAILED!");
+            $cmdNum = self::SETCONTROLCHAN_COMMAND;
+            $dataVal = "01204E0000";
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $this->out("Set Control Channel Off Reply = ".$ReplyData);
+            sleep(1);
+            $this->_setPort2Load(self::OFF);
+            $testResult = self::HFAIL;
+            $this->_TEST_FAIL[] = "App Code P2 on:".$p2V."V";
+        }
         
         return $testResult;
-
-
     }
 
 
     /*****************************************************************************/
     /*                                                                           */
+    /*                                                                           */
     /*               T E S T E R   A N A L O G   R O U T I N E S                 */
+    /*                                                                           */
     /*                                                                           */
     /*****************************************************************************/
    
@@ -1515,8 +1373,10 @@ class E104603Test extends \HUGnet\ui\Daemon
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
         $volts = $volts * 6.6;
+        $vccv = number_format($volts, 2);
 	
-        return $volts;
+        $this->out("Tester Vcc Volts = ".$VccVolts." volts");
+        return $vccv;
     }
 
      /**
@@ -1542,6 +1402,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $volts = $volts * 21;
         $voltsVB = number_format($volts, 2);
 
+        $this->out("Tester Bus Volts = ".$voltsVB." volts");
         return $voltsVB;
     }
     
@@ -1568,6 +1429,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $volts = $volts * 21;
         $voltsP2 = number_format($volts, 2);
 	
+        $this->out("Port 2 Tester    = ".$voltsP2." volts");
         return $voltsP2;
     }
   
@@ -1594,6 +1456,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $volts = $volts * 21;
         $voltsP1 = number_format($volts, 2);
 	
+        $this->out("Port 1 Tester    = ".$voltsP1." volts");
         return $voltsP1;
     }
     
@@ -1645,11 +1508,12 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     /*****************************************************************************/
     /*                                                                           */
+    /*                                                                           */
     /*                 U U T   A N A L O G   R O U T I N E S                     */
+    /*                                                                           */
     /*                                                                           */
     /*****************************************************************************/
     
-
 
     /**
     **************************************************************
@@ -1696,8 +1560,11 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_BUS_TEMP);
 
+        $bTemp = $this->_convertTempData($rawVal);
+        $busTemp = number_format($bTemp, 2);
         
-        return $rawVal;
+        $this->out("Bus Temp    : ".$busTemp." C");
+        return $busTemp;
 
     }
 
@@ -1714,8 +1581,11 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_P2_TEMP);
 
+        $p2Temp = $this->_convertTempData($rawVal);
+        $port2Temp = number_format($p2Temp, 2);
         
-        return $rawVal;
+        $this->out("Port 2 Temp : ".$port2Temp." C");
+        return $port2Temp;
 
     }
 
@@ -1792,6 +1662,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         $volts = $volts * 21;
         $voltsVB = number_format($volts, 2);
         
+        $this->out("UUT Bus Volts    = ".$voltsVbus." volts");
         return $voltsVB;
 
     }
@@ -1820,6 +1691,7 @@ class E104603Test extends \HUGnet\ui\Daemon
         return $volts;
 
     }
+
      /**
     *****************************************************************
     * Read UUT External Temperature 1 Routine
@@ -1858,12 +1730,13 @@ class E104603Test extends \HUGnet\ui\Daemon
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_P1_TEMP);
 
+        $p1Temp = $this->_convertTempData($rawVal);
+        $port1Temp = number_format($p1Temp, 2);
         
-        return $rawVal;
+        $this->out("Port 1 Temp : ".$port1Temp." C");
+        return $port1Temp;
 
     }
-
-
 
     /**
     **************************************************************
@@ -1892,6 +1765,8 @@ class E104603Test extends \HUGnet\ui\Daemon
         $volts = $volts * 21;
         
         $p1Volts = number_format($volts, 2);
+        $this->out("Port 1 UUT       = ".$p1Volts." volts");
+
         return $p1Volts;
     }
 
@@ -1913,7 +1788,9 @@ class E104603Test extends \HUGnet\ui\Daemon
         $volts = $steps * $rawVal;
         $volts = $volts * 10;
         
-        return $volts;
+        $VccVolts = number_format($volts, 2);
+        $this->out("UUT Vcc Volts    = ".$VccVolts." volts");
+        return $VccVolts;
 
     }
 
@@ -1937,8 +1814,6 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     }
 
-
-    
     /**
     *********************************************************
     * Read UUT ADC DataChan Value
@@ -1962,331 +1837,6 @@ class E104603Test extends \HUGnet\ui\Daemon
         return $newData;
     }
     
-    
-    /**
-    ************************************************************
-    * Test User Signature routines
-    *
-    * This function will send packet commands to the UUT test
-    * firmware to read the user signature bytes and write them.
-    *
-    */
-    private function _readUserSig()
-    {
-        $this->out("Powering up UUT");
-        $result = $this->_testUUTpower();
-        sleep(1);
-        $choice = readline("\n\rHit Enter to Continue: ");
-
-        $this->out("Sending Read User Signature Command!");
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::READ_USERSIG_COMMAND;
-        $dataVal = "00";
-        
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        $this->out("Reply Data = ".$ReplyData);
- 
-        $choice = readline("\n\rHit Enter to Continue: ");
-
-        $this->out("Powering down UUT");
-        $this->_powerUUT(self::OFF);
-        $this->_clearTester();
-        $choice = readline("\n\rHit Enter to Continue: ");
-    }
-
-    /**
-    **************************************************************
-    * Write User Signature Bytes
-    *
-    * This function sends a command to the UUT to write the 
-    * hardware part number, serial number, adc offset and adc
-    * gain error correction bytes to the user signature memory
-    * page.
-    *
-    */
-    private function _writeUserSig()
-    {
-        $this->out("Writing User Signature Bytes!");
-
-        $Avrdude = "sudo avrdude -px32e5 -c avrisp2 -P usb -B 10 -i 100 ";
-        $usig  = "-U usersig:w:104603test.usersig:r ";
-
-        $Prog = $Avrdude.$usig;
-        exec($Prog, $output, $return); 
-
-        if ($return == 0) {
-            $this->out("Writing User Signature Bytes - PASSED");
-            $result = self::PASS;
-        } else {
-            $this->out("Writing User Signature Bytes - FAILED");
-            $result = self::FAIL;
-            $this->_TEST_FAIL[] = "Fail to write User Sig Bytes";
-        }
-        
-        return $result;
-        
-    }
-
-    /**
-    **************************************************************
-    * Erase User Signature Routine
-    *
-    * This function sends a command to the UUT to erase the user
-    * signature bytes.
-    *
-    */
-    private function _eraseUserSig()
-    {
-
-        $this->out("Sending Erase User Signature Command!");
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::ERASE_USERSIG_COMMAND;
-        $dataVal = "00";
-        
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        
-        if ($ReplyData == "80") {
-            $this->out("Erase User Signature - PASSED");
-            $result = self::PASS;
-        } else {
-            $this->out("Erase User Signature - FAILED");
-            $result = self::FAIL;
-            $this->_TEST_FAIL[] = "Failed to Erase User Signature Memory";
-        }
-        
-        
-        return $result;
-
-    }
-
-    /**
-    ****************************************************
-    * Test Load Firmware
-    *
-    * This function powers up the UUT and waits for 
-    * the user to remotely load firmware into the 
-    * device.
-    */
-    private function _testLoadFirmware()
-    {
-        $this->out("Powering Up UUT!\n\r");
-        $this->_powerUUT(self::ON);
-        sleep(3);
-        $this->out("More Sleep!");
-        sleep(2);
-        $this->out("Done sleeping!");
-
-        $this->out("Go ahead and load code");
-        
-        //$this->_ENDPT_SN = 0x8012;
-        //$this->_writePowerTable();
-        
-        /* next set the channel on */
-        $this->_runApplicationTest();
-
-        $choice = readline("\n\rHit Enter to Continue: ");
-
-
-        $this->_powerUUT(self::OFF);
-        $this->_clearTester();
-       $choice = readline("\n\rHit Enter to Continue: ");
-
-    }
-
-    /**
-    * Write User Signature File Routine
-    *
-    * This function collects the information needed for 
-    * the user signature bytes and writes them out into 
-    * a raw hex file that can be used to program the 
-    * user signature memory.
-    *
-    */
-    private function _writeUserSigFile()
-    {
-     
-        $this->out("******************************");
-        $this->out("* Creating UserSig Data File *");
-        $this->out("******************************");
-
-        $SNdata = $this->_ENDPT_SN;
-        $HWPNdata = self::HWPN;
-        $CALdata = $this->_ADC_OFFSET;
-        $CALdata .= $this->_ADC_GAIN;
-        $DACcal = $this->_DAC_OFFSET;
-        $DACcal .= $this->_DAC_GAIN;
-
-        $this->out("SNdata   = ".$SNdata);
-        $this->out("HWPNdata = ".$HWPNdata);
-        $this->out("CALdata  = ".$CALdata);
-        $this->out("DACcal   = ".$DACcal);
-        
-        $Sdata = $SNdata.$HWPNdata.$CALdata.$DACcal;
-
-        $SIGdata = pack("H*",$Sdata);
-        $fp = fopen("104603test.usersig","wb");
-        if ($fp != NULL) {
-            fwrite($fp, $SIGdata);
-            $this->out("User Signature Bytes File Written!");
-            $result = self::PASS;
-        } else {
-            $this->out("Failed to write Signature bytes file!");
-            $result = self::FAIL;
-            $this->_TEST_FAIL[] = "Failed to Write Sig Bytes File";
-        }
-        fclose($fp);
-
- 
-        return $result;
-    }
-
-    
-    
-    /**
-    **********************************************************
-    * Program UUT Routine
-    *
-    * This function loads the bootloader program and writes 
-    * the usersignature bytes.  It then allows the user to 
-    * load the current application code through a hugnet_load
-    * command.
-    */
-    private function _testProgramUUT()
-    {
-        $output = array();
-
-        $this->display->displayHeader("Testing Programmed UUT");
-        $this->out("\n\r");
-        $this->_powerUUT(self::ON);
-        $this->out("Power Up Delay");
-        sleep(5);
-        $this->_ENDPT_SN = "8012";
-        
-        $choice = readline("\n\rHit Enter to Continue: ");
-        $result = $this->_setPowerTable();
-        
-        if ($result == self::PASS) {
-            $this->_runApplicationTest();
-        } else { 
-            $this->out("Unable to run App Test!");
-        }
-        
-        $this->_powerUUT(self::OFF);
-        $choice = readline("\n\rHit Enter to Continue: ");
-
-    }
-
-
-
-    
-    /**
-    ************************************************************
-    * Relay Test Routine
-    *
-    * This function steps through the relays K1-K8, closing and
-    * opening each one.
-    *
-    */
-    private function _relayTest()
-    {
-        $idNum = self::EVAL_BOARD_ID;
-
-        /* close K1 - +12V to VBus */
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0300";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        sleep(1);
-        /* open K1  - 12 Ohm Load to VBUS */
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0300";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        sleep(1);
-        /* close K2 */
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0301";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        sleep(1);
-        /* open K2 */
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0301";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-         sleep(1);
-       /* close K3 */
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0302";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        sleep(1);
-        /* open K3 */
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0302";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-         sleep(1);
-       /* close K4 */
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0303";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        sleep(1);
-        /* open K4 */
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0303";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-         sleep(1);
-       /* close K5 */
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0204";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        sleep(1);
-        /* open K5 */
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0204";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-         sleep(1);
-       /* close K6 */
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0205";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        sleep(1);
-        /* open K6 */
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0205";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-         sleep(1);
-       /* close K7 */
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0206";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        sleep(1);
-        /* open K7 */
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0206";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-         sleep(1);
-       /* close K8 */
-        $cmdNum = self::SET_DIGITAL_COMMAND; 
-        $dataVal = "0207";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-
-        sleep(1);
-        /* open K8 */
-        $cmdNum = self::CLR_DIGITAL_COMMAND; 
-        $dataVal = "0207";
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-    }
-
 
     /*****************************************************************************/
     /*                                                                           */
@@ -2329,8 +1879,198 @@ class E104603Test extends \HUGnet\ui\Daemon
     }
 
 
+    /**
+    ************************************************************
+    * Set Port 1 Load Routine
+    *
+    * This function connects the 12 ohm load resistor to port
+    * port 1 and delays for 1 second before returning.  It 
+    * assumes that relay K3 is open so that the load is 
+    * selected.
+    *
+    * @param int $state  1=On, 0=off
+    * @return void
+    */
+    private function _setPort1Load($state)
+    {
+        switch ($state) {
+            case 0: 
+                /* open relay K4 to remove 12 ohm load from port 1 */
+                $this->_setRelay(4,0);
+                break;
+            case 1:
+                /* close relay K4 to connect 12 ohm load to Port 1 */
+                $this->_setRelay(4, 1);
+                break;
+        }
+        sleep(1);
+
+    }
+
+    /**
+    ***********************************************************
+    * Set Port 1 State Routine
+    *
+    * This function turns Port 1 FET's on or off for the load
+    * or supply tests and delays 1 second.
+    *
+    * @param int $state  1=on, 0= off
+    * @return void
+    */
+    private function _setPort1($state)
+    {
+        switch ($state) {
+            case 0:
+                $this->_setPort(1,0); /* Port 1 off */
+                $this->out("PORT 1 OFF:");
+                break;
+            case 1:
+                $this->_setPort(1, 1); /* Port 1 On */
+                $this->out("PORT 1 ON:");
+                break;
+        }
+
+        sleep(1);
+    }
     
+    /**
+    ************************************************************
+    * Set Port 1 +12V Routine
+    *
+    * This function connects the +12V supply to port 1
+    * and delays for 1 second before returning.  
+    *
+    * @param int $state  1=On, 0=off
+    * @return void
+    */
+    private function _setPort1_V12($state)
+    {
+        switch ($state) {
+            case 0: 
+                $this->_setRelay(4, 0);  /* open K4 to remove +12V */
+                $this->_setRelay(3, 0);  /* Open K3 to select 12 Ohm Load */
+                $this->out("Port 1 +12V OFF:");
+                break;
+            case 1:
+                $this->_setRelay(3, 1);  /* close K3 to select +12V  */
+                $this->_setRelay(4, 1);  /* close K4 to connect +12V */
+                $this->out("PORT 1 +12V CONNECTED:");
+                break;
+        }
+        sleep(1);
+
+    }
+
+    /**
+    ************************************************************
+    * Set Port 2 Load Routine
+    *
+    * This function connects the 12 ohm load resistor to
+    * port 2 and delays for 1 second before returning. It 
+    * assumes that relay K5 is open so that the load is 
+    * selected.
+    *
+    * @param int $state  1=On, 0=off
+    * @return void
+    */
+    private function _setPort2Load($state)
+    {
+        switch ($state) {
+            case 0: 
+                /* open relay K6 to disconnect 12 ohm load from Port 2 */
+                $this->_setRelay(6,0);
+                break;
+            case 1:
+                /* close relay K6 to connect 12 ohm load to Port 2 */
+                $this->_setRelay(6, 1);
+                break;
+        }
+        sleep(1);
+
+    }
+
+    /**
+    ***********************************************************
+    * Set Port 2 State Routine
+    *
+    * This function turns Port 2 FET's on or off for the load
+    * or supply tests and delays 1 second.
+    *
+    * @param int $state  1=on, 0= off
+    * @return void
+    */
+    private function _setPort2($state)
+    {
+        switch ($state) {
+            case 0:
+                $this->_setPort(2,0); /* Port 1 off */
+                $this->out("PORT 2 OFF:");
+                break;
+            case 1:
+                $this->_setPort(2, 1); /* Port 1 On */
+                $this->out("PORT 2 ON:");
+                break;
+        }
+
+        sleep(1);
+    }
     
+    /**
+    ************************************************************
+    * Set Port 2 +12V Routine
+    *
+    * This function connects the +12V supply to port 2
+    * and delays for 1 second before returning.  
+    *
+    * @param int $state  1=On, 0=off
+    * @return void
+    */
+    private function _setPort2_V12($state)
+    {
+        switch ($state) {
+            case 0: 
+                $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
+                $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
+                $this->out("Port 2 +12V OFF:");
+                break;
+            case 1:
+                $this->_setRelay(5, 1);  /* close K5 to select +12V */
+                $this->_setRelay(6, 1);  /* close K6 to connect +12V to Port 2 */
+                $this->out("PORT 2 +12V CONNECTED:");
+                break;
+        }
+        sleep(1);
+
+    }
+
+    /**
+    ************************************************************
+    * Set VBus Routine
+    *
+    * This function sets the connection to VBus for either +12V
+    * on state or the 12 ohm load in the off state.
+    *
+    * @param int $state  1=On, 0=Off
+    *
+    * @return void
+    */
+    private function _setVBus_V12($state)
+    {
+        switch ($state) {
+            case 0:
+                /* open K1 to remove +12V and connect Load */
+                $this->_setRelay(1, 0);  
+                $this->out("VBUS 12 OHM LOAD CONNECTED:");
+                break;
+            case 1:
+                /* close K1 to select +12V */
+                $this->_setRelay(1, 1);  
+                $this->out("Bus Voltage ON:");
+                break;
+        }
+        sleep(1);
+    }
+
      /**
     ************************************************************
     * Set Relay Routine
@@ -2509,7 +2249,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
     
     
-    /**gateways
+    /**
     ************************************************************
     * Check Eval Board Routine
     *
@@ -2559,6 +2299,158 @@ class E104603Test extends \HUGnet\ui\Daemon
         return $testResult;
     }
 
+    /*****************************************************************************/
+    /*                                                                           */
+    /*                                                                           */
+    /*                  F I R M W A R E    R O U T I N E S                       */
+    /*                                                                           */
+    /*                                                                           */
+    /*****************************************************************************/
+    
+
+    
+    /**
+    ************************************************************
+    * Test User Signature routines
+    *
+    * This function will send packet commands to the UUT test
+    * firmware to read the user signature bytes and write them.
+    *
+    */
+    private function _readUserSig()
+    {
+        $this->out("Powering up UUT");
+        $result = $this->_testUUTpower();
+        sleep(1);
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+        $this->out("Sending Read User Signature Command!");
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::READ_USERSIG_COMMAND;
+        $dataVal = "00";
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->out("Reply Data = ".$ReplyData);
+ 
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+        $this->out("Powering down UUT");
+        $this->_powerUUT(self::OFF);
+        $this->_clearTester();
+        $choice = readline("\n\rHit Enter to Continue: ");
+    }
+
+    /**
+    **************************************************************
+    * Write User Signature Bytes
+    *
+    * This function sends a command to the UUT to write the 
+    * hardware part number, serial number, adc offset and adc
+    * gain error correction bytes to the user signature memory
+    * page.
+    *
+    */
+    private function _writeUserSig()
+    {
+        $this->out("Writing User Signature Bytes!");
+
+        $Avrdude = "sudo avrdude -px32e5 -c avrisp2 -P usb -B 10 -i 100 ";
+        $usig  = "-U usersig:w:104603test.usersig:r ";
+
+        $Prog = $Avrdude.$usig;
+        exec($Prog, $output, $return); 
+
+        if ($return == 0) {
+            $this->out("Writing User Signature Bytes - PASSED");
+            $result = self::PASS;
+        } else {
+            $this->out("Writing User Signature Bytes - FAILED");
+            $result = self::FAIL;
+            $this->_TEST_FAIL[] = "Fail to write User Sig Bytes";
+        }
+        
+        return $result;
+    }
+
+    /**
+    **************************************************************
+    * Erase User Signature Routine
+    *
+    * This function sends a command to the UUT to erase the user
+    * signature bytes.
+    *
+    */
+    private function _eraseUserSig()
+    {
+
+        $this->out("Sending Erase User Signature Command!");
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::ERASE_USERSIG_COMMAND;
+        $dataVal = "00";
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        if ($ReplyData == "80") {
+            $this->out("Erase User Signature - PASSED");
+            $result = self::PASS;
+        } else {
+            $this->out("Erase User Signature - FAILED");
+            $result = self::FAIL;
+            $this->_TEST_FAIL[] = "Failed to Erase User Signature Memory";
+        }
+        
+        
+        return $result;
+    }
+
+    /**
+    * Write User Signature File Routine
+    *
+    * This function collects the information needed for 
+    * the user signature bytes and writes them out into 
+    * a raw hex file that can be used to program the 
+    * user signature memory.
+    *
+    */
+    private function _writeUserSigFile()
+    {
+     
+        $this->out("******************************");
+        $this->out("* Creating UserSig Data File *");
+        $this->out("******************************");
+
+        $SNdata = $this->_ENDPT_SN;
+        $HWPNdata = self::HWPN;
+        $CALdata = $this->_ADC_OFFSET;
+        $CALdata .= $this->_ADC_GAIN;
+        $DACcal = $this->_DAC_OFFSET;
+        $DACcal .= $this->_DAC_GAIN;
+
+        $this->out("SNdata   = ".$SNdata);
+        $this->out("HWPNdata = ".$HWPNdata);
+        $this->out("CALdata  = ".$CALdata);
+        $this->out("DACcal   = ".$DACcal);
+        
+        $Sdata = $SNdata.$HWPNdata.$CALdata.$DACcal;
+
+        $SIGdata = pack("H*",$Sdata);
+        $fp = fopen("104603test.usersig","wb");
+        if ($fp != NULL) {
+            fwrite($fp, $SIGdata);
+            $this->out("User Signature Bytes File Written!");
+            $result = self::PASS;
+        } else {
+            $this->out("Failed to write Signature bytes file!");
+            $result = self::FAIL;
+            $this->_TEST_FAIL[] = "Failed to Write Sig Bytes File";
+        }
+        fclose($fp);
+
+ 
+        return $result;
+    }
+
+    
  
     /**
     ************************************************************
@@ -2847,7 +2739,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         
-        $this->out("Serial number in reply data: ".$ReplyData);
+        //$this->out("Serial number in reply data: ".$ReplyData);
         
         /* convert data to big endian */
         $len = strlen($ReplyData);
@@ -2896,16 +2788,9 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("****************************************");
 
         /*****************************************
-        * Set up port 1 for measuring offset 
-        * error.
-
-        /* 1.  connect 12 ohm load  to port 1 */
-        $this->_setRelay(4, 1);
-        sleep(1);
-    
-        /* 2.  turn on Port 1 */
-        $this->_setPort(1, 1);
-        sleep(1);
+        * Set up port 1 for measuring offset error. */
+        $this->_setPort1Load(self::ON);
+        $this->_setPort1(self::ON);
 
         /* 3.  Get UUT Port 1 voltage */
         $p1Volts = $this->_readUUTPort1Volts();
@@ -2919,22 +2804,15 @@ class E104603Test extends \HUGnet\ui\Daemon
         
             sleep(1);
 
-            /* Turn off Port 1 */
-            $this->_setPort(1, 0);
-            $this->out("PORT 1 OFF:");
-            sleep(1);
-
+            $this->_setPort1(self::OFF);
             $p1Volts = $this->_readUUTPort1Volts();
-            $this->out("Port 1 UUT     = ".$p1Volts." volts!");
         
             if ($p1Volts <= 0.2) {
                 $offsetHexVal = $this->_runAdcOffsetCalibration();
                 $this->_ADC_OFFSET = $offsetHexVal;
                 $this->_TEST_DATA["ADCoffset"] = $offsetHexVal;
 
-                /* remove 12 Ohm load */
-                $this->_setRelay(4, 0);
-                sleep(1);
+                $this->_setPort1Load(self::OFF);
                 $this->out("Setting Port 1 to 10V Reference");
                 $this->_setRelay(2,1);  /* Select 10V reference */
                 usleep(1000);
@@ -2943,13 +2821,8 @@ class E104603Test extends \HUGnet\ui\Daemon
                 $this->_setRelay(4,1);  /* Connect 10V reference */
                 sleep(1);
 
-                /* measure port 1 voltage with tester */
                 $voltsP1 = $this->_readTesterP1Volt();
-                $this->out("Port 1  Tester  = ".$voltsP1." volts");
-                
-                /* measure port 1 voltage with UUT */
                 $voltsUp1 = $this->_readUUTPort1Volts();
-                $this->out("Port 1 UUT     = ".$voltsUp1." volts");
             
                 $gainErrorValue = $this->_runAdcGainCorr($offsetIntVal);
                 $this->_TEST_DATA["ADCgain"] = $gainErrorValue;
@@ -2962,7 +2835,6 @@ class E104603Test extends \HUGnet\ui\Daemon
                 
                 /* measure port 1 voltage with UUT */
                 $voltsUp1 = $this->_readUUTPort1Volts();
-                $this->out("Port 1 UUT     = ".$voltsUp1." volts");
                 
                 $this->_setRelay(4,0); /* Disconnect Port 1 */
                 $this->_setRelay(3,0); /* Select load */
@@ -2976,22 +2848,15 @@ class E104603Test extends \HUGnet\ui\Daemon
                 $testResult = self::PASS;
             } else {
                 $this->out("Port 1 fail, unable to calibrate ADC!");
-                /* remove 12 Ohm load */
-                $this->_setRelay(4, 0);
-                sleep(1);
+                $this->_setPort1Load(self::OFF);
                 $this->_TEST_FAIL[] = "P1 Off in ADC Cal:".$p1Volts."V";
                 $testResult = self::HFAIL;
             }
         } else {
         
             $this->out("Port 1 fail unable to calibrate ADC!");
-            /* Turn off Port 1 */
-            $this->_setPort(1, 0);
-            $this->out("PORT 1 OFF:");
-            sleep(1);
-        
-            /* remove 12 Ohm load */
-            $this->_setRelay(4, 0);
+            $this->_setPort1(self::OFF);
+            $this->_setPort1Load(self::OFF);
             $this->_TEST_FAIL[] = "P1 On in ADC Cal:".$p1Volts."V";
             $testResult = self::HFAIL;
         }
@@ -3738,8 +3603,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     }
 
 
-
-
     /**
     ************************************************************
     * Convert Reply Data String
@@ -3831,8 +3694,46 @@ class E104603Test extends \HUGnet\ui\Daemon
         return $value;
     }
 
-        
+    /**
+    ***************************************************
+    * Fill DB Data Array Routine
+    *
+    * This function fills the DB_DATA array with the 
+    * values accumulated from the test.
+    *
+    * @return void
+    */
+    public function _fillDBarray($result)
+    {
+        $this->_DB_DATA["id"] = hexdec($this->_ENDPT_SN);
+        $this->_DB_DATA["HWPartNum"] = "10460301A";
+        $this->_DB_DATA["FWPartNum"] = "00393801C";
+        $this->_DB_DATA["FWVersion"] = "0.3.0";
+        $this->_DB_DATA["BtldrVersion"] = "0.3.0";
+        $this->_DB_DATA["MicroSN"] = $this->_MICRO_SN;
+        $this->_DB_DATA["TestDate"] = time();
+        $this->_DB_DATA["TestResult"] = $result;
+        $this->_DB_DATA["TestData"] = $this->_TEST_DATA;
+        $this->_DB_DATA["TestsFailed"] = $this->_TEST_FAIL;
 
+    }
+
+    /**
+    ****************************************************
+    * Log Test Data Routine
+    * 
+    * This function writes the test data for each 
+    * board tested to the deviceTests database table.
+    *
+    */
+    private function _logTestData($testResult)
+    {
+        
+        $this->_fillDBarray($testResult);
+        $db = $this->_system->table("DeviceTests");
+        $db->fromArray($this->_DB_DATA);
+        $db->insertRow();
+    }
 
 
     /*****************************************************************************/
@@ -3841,9 +3742,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     /*                                                                           */
     /*****************************************************************************/
 
-    
-    
-    
     
     /**
     ***********************************************************
@@ -3888,8 +3786,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     public function _sendPacket($Sn, $Cmd, $DataVal)
     {
-
-
 
         $dev = $this->_system->device($Sn);
         $pkt = $dev->action()->send(

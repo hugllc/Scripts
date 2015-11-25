@@ -196,6 +196,24 @@ class E104603TroubleShoot extends E104603Test
         $this->_powerUUT(self::ON);
         $this->out("Sleeping");
         sleep(2);
+        $result = self::PASS;
+
+        $this->_DB_DATA["id"] = hexdec("0x8012");
+        $this->_DB_DATA["HWPartNum"] = "10460301A";
+        $this->_DB_DATA["FWPartNum"] = "00393801C";
+        $this->_DB_DATA["FWVersion"] = "0.3.0";
+        $this->_DB_DATA["BtldrVersion"] = "0.3.0";
+        $this->_DB_DATA["MicroSN"] = "0011223344556677889933";
+        $this->_DB_DATA["TestDate"] = time();
+        $this->_DB_DATA["TestResult"] = self::PASS;
+        $this->_DB_DATA["TestData"] = $this->_TEST_DATA;
+        $this->_DB_DATA["TestsFailed"] = $this->_TEST_FAIL;
+
+
+        $db = $this->_system->table("DeviceTests");
+        $db->fromArray($this->_DB_DATA);
+        $db->insertRow();
+
         $this->out("Powering down UUT!");
         $this->_powerUUT(self::OFF);
         
@@ -331,6 +349,76 @@ class E104603TroubleShoot extends E104603Test
     }
 
     /**
+    ****************************************************
+    * Test Load Firmware
+    *
+    * This function powers up the UUT and waits for 
+    * the user to remotely load firmware into the 
+    * device.
+    */
+    private function _testLoadFirmware()
+    {
+        $this->out("Powering Up UUT!\n\r");
+        $this->_powerUUT(self::ON);
+        sleep(3);
+        $this->out("More Sleep!");
+        sleep(2);
+        $this->out("Done sleeping!");
+
+        $this->out("Go ahead and load code");
+        
+        //$this->_ENDPT_SN = 0x8012;
+        //$this->_writePowerTable();
+        
+        /* next set the channel on */
+        $this->_runApplicationTest();
+
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+
+        $this->_powerUUT(self::OFF);
+        $this->_clearTester();
+       $choice = readline("\n\rHit Enter to Continue: ");
+
+    }
+
+    
+    /**
+    **********************************************************
+    * Program UUT Routine
+    *
+    * This function loads the bootloader program and writes 
+    * the usersignature bytes.  It then allows the user to 
+    * load the current application code through a hugnet_load
+    * command.
+    */
+    private function _testProgramUUT()
+    {
+        $output = array();
+
+        $this->display->displayHeader("Testing Programmed UUT");
+        $this->out("\n\r");
+        $this->_powerUUT(self::ON);
+        $this->out("Power Up Delay");
+        sleep(5);
+        $this->_ENDPT_SN = "8012";
+        
+        $choice = readline("\n\rHit Enter to Continue: ");
+        $result = $this->_setPowerTable();
+        
+        if ($result == self::PASS) {
+            $this->_runApplicationTest();
+        } else { 
+            $this->out("Unable to run App Test!");
+        }
+        
+        $this->_powerUUT(self::OFF);
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+    }
+
+
+    /**
     ************************************************************
     * Relay Test Routine
     *
@@ -439,6 +527,11 @@ class E104603TroubleShoot extends E104603Test
     }
 
     
+    /*****************************************************************************/
+    /*                                                                           */
+    /*                    H U G N ET   R O U T I N E S                           */
+    /*                                                                           */
+    /*****************************************************************************/
     
     /**
     ***********************************************************
