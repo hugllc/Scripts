@@ -291,7 +291,7 @@ class E104603Test extends \HUGnet\ui\Daemon
                     break;
                 case 5:
                     $this->_MICRO_SN = $this->_readMicroSN();
-                    //$stepResult = $this->_runUUTadcCalibration();
+                    $stepResult = $this->_runUUTadcCalibration();
                     break;
                 case 6:
                     $stepResult = $this->_runUUTdacCalibration();
@@ -302,14 +302,14 @@ class E104603Test extends \HUGnet\ui\Daemon
                     break;
                 case 8:
                     if (!$this->_FAIL_FLAG) {
-                      $stepResult = $this->_loadUUTprograms();
+                      //$stepResult = $this->_loadUUTprograms();
                     }
                     break;
             }
         } while (($stepResult != self::HFAIL) and ($stepNum < 8));
 
         if ($stepNum > 3) {
-           $this->_logTestData($stepResult);
+           //$this->_logTestData($stepResult);
         }
         $this->_powerUUT(self::OFF);
         $this->_clearTester();
@@ -2858,27 +2858,14 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _runUUTadcCalibration()
     {
         $this->display->displaySMHeader("  Entering ADC Calibration Routine  ");
-        $this->_setPort1Load(self::ON);
-        $this->_setPort1(self::ON);
-        $p1Volts = $this->_readUUTPort1Volts();
-        $p1Amps = $this->_readUUTPort1Current();
-        
-        if (($p1Volts > 11.00) and ($p1Volts < 13.00)) {
-            sleep(1);
-            $this->_setPort1(self::OFF);
-            $p1Volts = $this->_readUUTPort1Volts();
-        
-            if ($p1Volts <= 0.2) {
-                $offsetHexVal = $this->_runAdcOffsetCalibration();
-                $this->_ADC_OFFSET = $offsetHexVal;
-                $this->_TEST_DATA["ADCoffset"] = $offsetHexVal;
 
-                $this->_setPort1Load(self::OFF);
-                $this->out("Setting Port 1 to 10V Reference");
-                $this->_set10VRef(self::ON);
-                $voltsP1 = $this->_readTesterP1Volt();
-                $voltsUp1 = $this->_readUUTPort1Volts();
-            
+        $testResult = $this->_setupP1_ADCoffset();
+
+        if ($testResult == self::PASS) {
+            $offsetHexVal = $this->_runAdcOffsetCalibration();
+            $testResult = $this->_setupReferenceVoltage();
+        
+            if ($testResult == self::PASS) {
                 $gainErrorValue = $this->_runAdcGainCorr($offsetIntVal);
                 $this->_TEST_DATA["ADCgain"] = $gainErrorValue;
                 sleep(1);
@@ -2889,7 +2876,42 @@ class E104603Test extends \HUGnet\ui\Daemon
                 
                 $voltsUp1 = $this->_readUUTPort1Volts();
                 $this->_set10VRef(self::OFF);
-                $this->_displaySmallHeading(" ADC CALIBRATION COMPLETE! ");
+                $this->display->displaySMHeader(" ADC CALIBRATION COMPLETE! ");
+                $testResult = self::PASS;
+            } else {
+                $this->_set10VRef(self::OFF);
+                $this->out("Failed to set up 10V reference.");
+            }
+        }
+
+        return $testResult;
+    }
+
+    /**
+    ***********************************************************
+    * Set Up Port 1 for ADC Calibration Routine
+    *
+    * This function sets up Port 1 for the ADC offset
+    * calibration.  It connects the load resistor, turns on
+    * the port, measures and tests the voltage, turns off the 
+    * port and measures and tests the voltage for offset 
+    * calibration.
+    *
+    * @return int $testResult  1=pass, 0=fail, -1=hard fail
+    */
+    private function _setupP1_ADCoffset()
+    {
+        $this->_setPort1Load(self::ON);
+        $this->_setPort1(self::ON);
+        $p1Volts = $this->_readUUTPort1Volts();
+        $p1Amps = $this->_readUUTPort1Current();
+        sleep(1);
+
+        if (($p1Volts > 11.00) and ($p1Volts < 13.00)) {
+            $this->_setPort1(self::OFF);
+            $p1Volts = $this->_readUUTPort1Volts();
+        
+            if ($p1Volts <= 0.2) {
                 $testResult = self::PASS;
             } else {
                 $this->out("Port 1 fail, unable to calibrate ADC!");
@@ -2907,6 +2929,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         return $testResult;
     }
+
 
    
     /**
@@ -2948,15 +2971,42 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Hex Value for the offset ".$hexVal);
       
         $this->out("*** Setting ADC Offset ****");
-        $retVal = $this->_setAdcOffset($hexVal);
+        $offsetHexVal = $this->_setAdcOffset($hexVal);
+
+        $this->_ADC_OFFSET = $offsetHexVal;
+        $this->_TEST_DATA["ADCoffset"] = $offsetHexVal;
 
         $this->out("");
-    
-    
-    
-        return $retVal;
+        return $offsetHexVal;
     
     }
+
+    /**
+    ************************************************************
+    * Set Up Reference Voltage Routine
+    *
+    * This function removes the load resistor from Port 1, 
+    * connects the 10 volt reference voltage to Port 1 and 
+    * tests the voltage.
+    */
+    private function _setupReferenceVoltage()
+    {
+        $this->_setPort1Load(self::OFF);
+        $this->out("Setting Port 1 to 10V Reference");
+        $this->_set10VRef(self::ON);
+        $voltsP1 = $this->_readTesterP1Volt();
+        $voltsUp1 = $this->_readUUTPort1Volts();
+        
+        if (($voltsUp1 > 9.6) and ($voltsUp1 < 10.4)) {
+            $result = self::PASS;
+        } else {
+            $result = self::HFAIL;
+            $this->_TEST_FAIL[] = "10V Ref Failed :".$voltsUp1."V";
+        }
+
+        return $result;
+    }
+
     
     /**
     ************************************************************
@@ -3078,8 +3128,6 @@ class E104603Test extends \HUGnet\ui\Daemon
     private function _runUUTdacCalibration()
     {
         $this->display->displaySMHeader(" Entering DAC Calibration Routine ");
-        $this->out("Starting DAC offset calibration");
-        $this->out("Setting DAC output to ".self::DAC_OFFCAL_LEVEL." volts");
         $result = $this->_runDacOffsetCalibration();
         
         if ($result == self::PASS) {
@@ -3092,17 +3140,12 @@ class E104603Test extends \HUGnet\ui\Daemon
             $this->_setDAC($dacVal);
             $dacVolts = $this->_readUUTdacVolts();
             $this->out("Adjusted DAC volts : ".$dacVolts);
-            $this->out("");
-
         } else {
             $this->out("Offset Calibration Failed!");
             $this->_FAIL_FLAG = true;
         }
         
         if ($result == self::PASS) {
-            $this->out("******************************");
-            $this->out("Starting DAC gain calibration");
-            $this->out("Setting DAC output to ".self::DAC_GAINCAL_LEVEL." volts");
             $result = $this->_runDacGainCalibration();
             
             if ($result == self::PASS) {
@@ -3182,8 +3225,8 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _runDacOffsetCalibration( )
     {
-
-        $dacOffset = 0;
+        $this->out("Starting DAC offset calibration");
+        $this->out("Setting DAC output to ".self::DAC_OFFCAL_LEVEL." volts");
 
         $dacVal = self::DAC_OFFCAL_START;
         $dataVal = dechex($dacVal);
@@ -3196,105 +3239,131 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("Obtaining DAC offset ");
         
         if ($dacVolts < self::DAC_OFFCAL_LEVEL) {
-            $error = false;
-            /* lets add some code to reduce the number of steps needed */
-            $diffVolts = self::DAC_OFFCAL_LEVEL - $dacVolts;
-            $steps = 3.3/pow(2,12);
-            $numSteps = $diffVolts/$steps;
-            $numSteps = round($numSteps/2);
-            
-            $dacVal += $numSteps;
-            
-            do {
-                $dacVal++;
-                $dataVal = dechex($dacVal);
-                $dataVal = "0".$dataVal;
-                $replyData = $this->_setDAC($dataVal);
-
-                if(is_null($replyData)) {
-                    $error = true;
-                } else {
-                    $dacVolts = $this->_readUUTdacVolts();
-                    //$this->out("DAC volts = ".$dacVolts);
-                }
-                print "*";
-
-            } while (($dacVolts < self::DAC_OFFCAL_LEVEL) and (!$error));
-
-            if (!$error) {
-                /*******************************************************************
-                * Explaination of offset calculation:   
-                * ($dacVal - self::DAC_OFFCAL_START) represents the number of steps 
-                * above the start value necessary to get the DAC output to the 
-                * desired voltage level.  However, it appears that the MSB of the 
-                * the offset byte is a sign bit with a 1 being positive and a zero
-                * being negative.  So, in order to get the offset steps added to 
-                * the DAC output, it is necessary to set the MSB or add 128 to the 
-                * the offset value.
-                */
-                $offset = $dacVal - self::DAC_OFFCAL_START + 128;
-                
-                $hexOffset = dechex($offset);
-
-                /* make sure we have one hex byte */
-                $len = strlen($hexOffset);
-                if ($len < 2) {
-                    $hexOffset = "0".$hexOffset;
-                } else if ($len > 2) {
-                    $hexOffset = substr($hexOffset, $len-2, 2);
-                }
-                
-                $this->_DAC_OFFSET = $hexOffset;
-                $this->out("");
-                $this->out("Offset Value = ".$hexOffset);
-                $result = self::PASS;
-            } else {
-                $this->_TEST_FAIL[] = "Com Fail Setting DAC";
-                $result = self::FAIL;
-            }
-
+            $result = $this->_runDACplusOffset($dacVolts, $dacVal);
         } else {
-            $error = false;
-            do {
-                $dacVal--;
-                $dataVal = dechex($dacVal);
-                $dataVal = "0".$dataVal;
-                $replyData = $this->_setDAC($dataVal);
-
-                if(is_null($replyData)) {
-                    $error = true;
-                } else {
-                    $dacVolts = $this->_readUUTdacVolts();
-                }
-                print "*";
-            } while (($dacVolts > self::DAC_OFFCAL_LEVEL) and (!$error));
-
-            if (!$error) {
-                $offset = self::DAC_OFFCAL_START - $dacVal;
-                
-                $hexOffset = dechex($offset);
-                /* make sure we have one hex byte */
-                $len = strlen($hexOffset);
-                if ($len < 2) {
-                    $hexOffset = "0".$hexOffset;
-                } else if ($len > 2) {
-                    $hexOffset = substr($hexOffset, $len-2, 2);
-                }
-
-                $this->_DAC_OFFSET = $hexOffset;
-                $this->out("");
-                $this->out("Offset Value : ".$hexOffset);
-                $result = self::PASS;
-            } else {
-                $result = self::FAIL;
-                $this->_TEST_FAIL[] = "Com Fail Setting DAC";
-            }
+            $result = $this->_runDACnegOffset($dacVolts, $dacVal);
         }
 
         return $result;
 
     }
     
+    /**
+    ******************************************************************
+    * Run DAC Plus Offset Routine
+    *
+    * This function increases the DAC output slowly until the output
+    * voltage reaches the desired set point of 0.825 volts.  The 
+    * positive offset is then determined by how many steps were 
+    * necessary to meet the desired output.  
+    *
+    ********************************************************************
+    * Explaination of offset calculation:   
+    * ($dacVal - self::DAC_OFFCAL_START) represents the number of steps 
+    * above the start value necessary to get the DAC output to the 
+    * desired voltage level.  However, it appears that the MSB of the 
+    * the offset byte is a sign bit with a 1 being positive and a zero
+    * being negative.  So, in order to get the offset steps added to 
+    * the DAC output, it is necessary to set the MSB or add 128 to the 
+    * the offset value.
+    *
+    * @param float $dacVolts  DAC output voltage measurement
+    * @param int $dacVal      Starting dac value for calibration
+    *
+    * @return int $result  1=pass, 0=fail, -1= hard fail
+    *
+    */
+    private function _runDACplusOffset($dacVolts, $dacVal)
+    {
+        $error = false;
+        $diffVolts = self::DAC_OFFCAL_LEVEL - $dacVolts;
+        $steps = 3.3/pow(2,12);
+        $numSteps = $diffVolts/$steps;
+        $numSteps = round($numSteps/2);
+        $dacVal += $numSteps;
+        
+        do {
+            $dacVal++;
+            $dataVal = dechex($dacVal);
+            $dataVal = "0".$dataVal;
+            $replyData = $this->_setDAC($dataVal);
+
+            if(is_null($replyData)) {
+                $error = true;
+            } else {
+                $dacVolts = $this->_readUUTdacVolts();
+            }
+            print "*";
+        } while (($dacVolts < self::DAC_OFFCAL_LEVEL) and (!$error));
+
+        if (!$error) {
+            $offset = $dacVal - self::DAC_OFFCAL_START + 128;
+            $hexOffset = dechex($offset);
+
+            $hexOffset = $this->_oneHexByteStr($hexOffset);
+
+            $this->_DAC_OFFSET = $hexOffset;
+            $this->out("");
+            $this->out("Offset Value = ".$hexOffset);
+            $result = self::PASS;
+        } else {
+            $this->_TEST_FAIL[] = "Com Fail Setting DAC";
+            $result = self::FAIL;
+        }
+        return $result;
+    }
+
+
+    /**
+    *******************************************************************
+    * Run DAC Negative Offset Routine
+    *
+    * this function decreases the DAC output slowly until the output
+    * voltage reaches the desired set point of 0.825 volts.  The 
+    * negative offset is then determined by how many steps were
+    * necessary to meet the desired output.
+    *
+    * @param float $dacVolts  DAC output voltage measurement
+    * @param int $dacVal      Starting dac value for calibration
+    *
+    * @return int $result  1=pass, 0=fail, -1= hard fail
+    */
+    private function _runDACnegOffset($dacVolts, $dacVal)
+    {
+        $error = false;
+        do {
+            $dacVal--;
+            $dataVal = dechex($dacVal);
+            $dataVal = "0".$dataVal;
+            $replyData = $this->_setDAC($dataVal);
+
+            if(is_null($replyData)) {
+                $error = true;
+            } else {
+                $dacVolts = $this->_readUUTdacVolts();
+            }
+            print "*";
+        } while (($dacVolts > self::DAC_OFFCAL_LEVEL) and (!$error));
+
+        if (!$error) {
+            $offset = self::DAC_OFFCAL_START - $dacVal;
+            
+            $hexOffset = dechex($offset);
+            /* make sure we have one hex byte */
+            $hexOffset = $this->_oneHexByteStr($hexOffset);
+
+            $this->_DAC_OFFSET = $hexOffset;
+            $this->out("");
+            $this->out("Offset Value : ".$hexOffset);
+            $result = self::PASS;
+        } else {
+            $result = self::FAIL;
+            $this->_TEST_FAIL[] = "Com Fail Setting DAC";
+        }
+        return $result;
+    }
+
+
     /**
     *******************************************************************
     * Run DAC Gain Calibration Routine
@@ -3308,8 +3377,10 @@ class E104603Test extends \HUGnet\ui\Daemon
     */
     private function _runDacGainCalibration()
     {
-        $result = self::PASS;
-        
+        $this->out("\n\r******************************");
+        $this->out("Starting DAC gain calibration");
+        $this->out("Setting DAC output to ".self::DAC_GAINCAL_LEVEL." volts");
+
         $dacVal = self::DAC_GAINCAL_START;
         $dataVal = dechex($dacVal);
         $dataVal = "0".$dataVal;
@@ -3319,112 +3390,121 @@ class E104603Test extends \HUGnet\ui\Daemon
         $this->out("DAC volts = ".$dacVolts);
         
         $this->out("Obtaining DAC gain value ");
+
         if ($dacVolts < self::DAC_GAINCAL_LEVEL) {
-            $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
-            $steps = 3.3/ pow(2,12);
-            $numSteps = round($diffVolts/$steps);
-            
-            $hexGainCor = dechex($numSteps);
-            
-            $len = strlen($hexGainCor);
-            if ($len < 2) {
-                $hexGainCor = "0".$hexGainCor;
-            } else if ($len > 2) {
-                $hexGainCor = substr($hexGainCor, $len-2, 2);
-            }
-            $replyData= $this->_setDacGain($hexGainCor);
-
-            $dacVolts = $this->_readUUTdacVolts();
-            $this->_DAC_GAIN = $hexGainCor;
-            
-            do {
-                    $error = false;
-                    $numSteps++;
-                    $hexGainCor = dechex($numSteps);
-                    $len = strlen($hexGainCor);
-                    if ($len < 2) {
-                        $hexGainCor = "0".$hexGainCor;
-                    } else if ($len > 2) {
-                        $hexGainCor = substr($hexGainCor, $len-2, 2);
-                    }
-                    $replyData = $this->_setDacGain($hexGainCor);
-
-                    if(is_null($replyData)) {
-                        $error = true;
-                    } else {
-                        $dacVolts = $this->_readUUTdacVolts();
-                        //$this->out("DAC volts = ".$dacVolts);
-                    }
-                    print "*";
-                } while (($dacVolts < self::DAC_GAINCAL_LEVEL) and (!$error));
-           
-            
-                if (!$error) {
-                    $this->_DAC_GAIN = $hexGainCor;
-                    $this->out("");
-                    $this->out("Gain Error Value = ".$hexGainCor);
-                    $result = self::PASS;
-                } else {
-                    $result = self::FAIL;
-                    $this->_TEST_FAIL[] = "Com Error Setting DAC Gain";
-                } 
+            $result = $this->_runDACplusGain($dacVolts);
        } else {
-            
-            $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
-            $steps = 3.3/ pow(2,12);
-            $numSteps = round($diffVolts/$steps);
-            
-            $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
-            
-            $len = strlen($hexGainCor);
-            if ($len < 2) {
-                $hexGainCor = "0".$hexGainCor;
-            } else if ($len > 2) {
-                $hexGainCor = substr($hexGainCor, $len-2, 2);
-            }
-            $replyData= $this->_setDacGain($hexGainCor);
-
-            $dacVolts = $this->_readUUTdacVolts();
-            $this->_DAC_GAIN = $hexGainCor;
-            
-            do {
-                    $error = false;
-                    $numSteps--;
-                    $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
-                    
-                    $len = strlen($hexGainCor);
-                    if ($len < 2) {
-                        $hexGainCor = "0".$hexGainCor;
-                    } else if ($len > 2) {
-                        $hexGainCor = substr($hexGainCor, $len-2, 2);
-                    }
-                    
-                    $replyData = $this->_setDacGain($hexGainCor);
-
-                    if(is_null($replyData)) {
-                        $error = true;
-                    } else {
-                        $dacVolts = $this->_readUUTdacVolts();
-                        //$this->out("DAC volts = ".$dacVolts);
-                    }
-                    print "*";
-                } while (($dacVolts > self::DAC_GAINCAL_LEVEL) and (!$error));
-           
-            
-                if (!$error) {
-                    $this->_DAC_GAIN = $hexGainCor;
-                    $this->out("");
-                    $this->out("Gain Error Value = ".$hexGainCor);
-                    $result = self::PASS;
-                } else {
-                    $result = self::FAIL;
-                    $this->_TEST_FAIL[] = "Com Error Setting DAC Gain";
-                } 
+            $result = $this->_runDACnegGain($dacVolts);
        }
-       
     
         return $result;
     }
+
+    /**
+    ************************************************************
+    * Run DAC Postive Gain Routine
+    *
+    * This function increments the DAC gain correction value 
+    * until the DAC output reaches desired set point of 1.60 volts.
+    *
+    * @param float $dacVolts  DAC output voltage measurement
+    *
+    * @return int $result  1=pass, 0=fail, -1=hard fail
+    */
+    private function _runDACplusGain($dacVolts)
+    {
+        $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
+        $steps = 3.3/ pow(2,12);
+        $numSteps = round($diffVolts/$steps);
+        $hexGainCor = dechex($numSteps);
+        $len = strlen($hexGainCor);
+
+        if ($len < 2) {
+            $hexGainCor = "0".$hexGainCor;
+        } else if ($len > 2) {
+            $hexGainCor = substr($hexGainCor, $len-2, 2);
+        }
+
+        $replyData= $this->_setDacGain($hexGainCor);
+        $dacVolts = $this->_readUUTdacVolts();
+        $this->_DAC_GAIN = $hexGainCor;
+        
+        do {
+            $error = false;
+            $numSteps++;
+            $hexGainCor = dechex($numSteps);
+            $hexGainCor = $this->_oneHexByteStr($hexGainCor);
+
+            $replyData = $this->_setDacGain($hexGainCor);
+            if(is_null($replyData)) {
+                $error = true;
+            } else {
+                $dacVolts = $this->_readUUTdacVolts();
+            }
+            print "*";
+        } while (($dacVolts < self::DAC_GAINCAL_LEVEL) and (!$error));
+        
+        if (!$error) {
+            $this->_DAC_GAIN = $hexGainCor;
+            $this->out("\n\rGain Error Value = ".$hexGainCor);
+            $result = self::PASS;
+        } else {
+            $result = self::FAIL;
+            $this->_TEST_FAIL[] = "Com Error Setting DAC Gain";
+        } 
+        return $result;
+    }
+
+    /**
+    ************************************************************
+    * Run DAC Negative Gain Routine
+    *
+    * This function decrements the DAC gain correction value 
+    * until the DAC output reaches desired set point of 1.60 volts.
+    *
+    * @param float $dacVolts  DAC output voltage measurement
+    *
+    * @return int $result  1=pass, 0=fail, -1=hard fail
+    */
+    private function _runDACnegGain($dacVolts)
+    {
+        $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
+        $steps = 3.3/ pow(2,12);
+        $numSteps = round($diffVolts/$steps);
+        $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
+        
+        $hexGainCor = $this->_oneHexByteStr($hexGainCor);
+
+        $replyData= $this->_setDacGain($hexGainCor);
+        $dacVolts = $this->_readUUTdacVolts();
+        $this->_DAC_GAIN = $hexGainCor;
+        
+        do {
+            $error = false;
+            $numSteps--;
+            $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
+            
+            $hexGainCor = $this->_oneHexByteStr($hexGainCor);
+            $replyData = $this->_setDacGain($hexGainCor);
+            if(is_null($replyData)) {
+                $error = true;
+            } else {
+                $dacVolts = $this->_readUUTdacVolts();
+            }
+            print "*";
+        } while (($dacVolts > self::DAC_GAINCAL_LEVEL) and (!$error));
+        
+        if (!$error) {
+            $this->_DAC_GAIN = $hexGainCor;
+            $this->out("\n\rGain Error Value = ".$hexGainCor);
+            $result = self::PASS;
+        } else {
+            $result = self::FAIL;
+            $this->_TEST_FAIL[] = "Com Error Setting DAC Gain";
+        }
+        return $result;
+    }
+
 
     /**
     ************************************************************
@@ -3680,6 +3760,32 @@ class E104603Test extends \HUGnet\ui\Daemon
         
         return $newVal;
 
+    }
+
+    /**
+    ****************************************************
+    * One Hex Byte String Routine
+    *
+    * This function takes in a hex value string and 
+    * makes sure there are 2 hex characters in the 
+    * string.  
+    *
+    * @param string $inHexStr  input hex string
+    *
+    * @return string $outHexStr  output one byte string.
+    */
+    private function _oneHexByteStr($inHexStr)
+    {
+        $len = strlen($inHexStr);
+        if ($len < 2) {
+            $outHexStr = "0".$inHexStr;
+        } else if ($len > 2) {
+            $outHexStr = substr($inHexStr, $len-2, 2);
+        } else {
+            $outHexStr = $inHexStr;
+        }
+
+        return $outHexStr;
     }
 
     /**
