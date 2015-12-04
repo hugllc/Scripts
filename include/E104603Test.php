@@ -153,26 +153,30 @@ class E104603Test extends \HUGnet\ui\Daemon
     private $_ADC_GAIN;
     private $_DAC_OFFSET;
     private $_DAC_GAIN;
+    private $_P1_AOFFSET = 0;
+    private $_P2_AOFFSET = 0;
     private $_ENDPT_SN;
     private $_FAIL_FLAG;
     private $_MICRO_SN;
     
     private $_TEST_DATA = array(
-                            "BusVolts"  => 0.0,
-                            "Vcc"       => 0.0,
-                            "ADCoffset" => "",
-                            "ADCgain"   => "",
-                            "DACoffset" => "",
-                            "DACgain"   => "",
-                            "BusTemp"   => 0.0,
-                            "P1Temp"    => 0.0,
-                            "P2Temp"    => 0.0,
-                            "P1Volts"   => 0.0,
-                            "P1Current" => 0.0,
-                            "P1Fault"   => 0.0,
-                            "P2Volts"   => 0.0,
-                            "P2Current" => 0.0,
-                            "P2Fault"   => 0.0,
+                            "BusVolts"        => 0.0,
+                            "Vcc"             => 0.0,
+                            "ADCoffset"       => "",
+                            "ADCgain"         => "",
+                            "DACoffset"       => "",
+                            "DACgain"         => "",
+                            "P1CurrentOffset" => "",
+                            "P2CurrentOffset" => "",
+                            "BusTemp"         => 0.0,
+                            "P1Temp"          => 0.0,
+                            "P2Temp"          => 0.0,
+                            "P1Volts"         => 0.0,
+                            "P1Current"       => 0.0,
+                            "P1Fault"         => 0.0,
+                            "P2Volts"         => 0.0,
+                            "P2Current"       => 0.0,
+                            "P2Fault"         => 0.0,
                             );
 
     private $_TEST_FAIL = array();
@@ -297,16 +301,19 @@ class E104603Test extends \HUGnet\ui\Daemon
                     $stepResult = $this->_runUUTdacCalibration();
                     break;
                 case 7:
+                    $stepResult = $this->_runCurrentCalibration();
+                    break;
+                case 8:
                     $this->_ENDPT_SN = $this->_getSerialNumber();
                     $stepResult = $this->_testUUT();
                     break;
-                case 8:
+                case 9:
                     if (!$this->_FAIL_FLAG) {
                       //$stepResult = $this->_loadUUTprograms();
                     }
                     break;
             }
-        } while (($stepResult != self::HFAIL) and ($stepNum < 8));
+        } while (($stepResult != self::HFAIL) and ($stepNum < 9));
 
         if ($stepNum > 3) {
            //$this->_logTestData($stepResult);
@@ -1308,7 +1315,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     * 
     * @return $volts a floating point value for Vcc 
     */
-    private function _readTesterVCC()
+    public function _readTesterVCC()
     {
     
         $rawVal = $this->_readTesterADCinput(self::TSTR_VCC_PORT);
@@ -1331,7 +1338,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     * 
     * @return $volts  a floating point value for Bus voltage 
     */
-    private function _readTesterBusVolt()
+    public function _readTesterBusVolt()
     {
     
         $rawVal = $this->_readTesterADCinput(self::TSTR_VBUS_PORT);
@@ -1552,7 +1559,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $volts *= 2;
         $newVal = $volts - 1.65;
-        $current = $newVal / 0.0532258;
+        $current = $newVal / 0.0532258;   /* 0.0432258 */
         $p1Amps = number_format($current, 2);
 
         $this->out("Port 1 Current   = ".$p1Amps." amps");
@@ -1567,6 +1574,12 @@ class E104603Test extends \HUGnet\ui\Daemon
     * This function reads the Port 2 Current flow measured 
     * by the Unit Under Test (UUT).  Index 4
     *
+    * slope for the current to voltage output from the 
+    * current sensor IC is:
+    *       y2 - y1       3.3 - 1.65     1.65
+    *  m = ---------  =  ------------ = ------ = 0.0532258
+    *       X2 - X1        31 - 0         31
+    *
     * @return $volts 
     */
     private function _readUUTPort2Current()
@@ -1577,7 +1590,7 @@ class E104603Test extends \HUGnet\ui\Daemon
 
         $volts *= 2;
         $newVal = $volts - 1.65;
-        $current = $newVal / 0.0532258;
+        $current = $newVal / 0.0532258;   /* 0.0432258  */
 
         $p2Amps = number_format($current, 2);
         $this->out("Port 2 Current   = ".$p2Amps." amps");
@@ -2541,7 +2554,7 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return int $result  
     */
-    private function _loadTestFirmware()
+    public function _loadTestFirmware()
     {
         $output = array();
         $this->display->displayHeader("Loading Test Firmware");
@@ -3571,14 +3584,116 @@ class E104603Test extends \HUGnet\ui\Daemon
     *
     * @return int $testResult 1=pass, 0=fail, -1=hard fail
     */
-    private function _runCurrentCalibration()
+    public function _runCurrentCalibration()
     {
-        $this->display->displaySMHeader(" Entering Current Calibration Routine ");
-
-        $testResult = self::PASS;
+        $this->display->displaySMHeader(" Current Calibration Test Routine ");
+        
+        $testResult = $this->_runPort1CurrentCal();
+        
+        if ($testResult == self::PASS) {
+            $testResult = $this->_runPort2CurrentCal();
+        }
+        
+        return $testResult;
+    }
+    
+    /**
+    ************************************************************
+    * Run Port 1 Current Calibration Test
+    *
+    * This function runs the current calibration test on Port 1.
+    * The offset counts are not set but simply recorded in the 
+    * test data.
+    *
+    */
+    private function _runPort1CurrentCal()
+    {
+        $this->out("Testing Port 1 Current Calibration");
+        $this->out("**********************************");
+        
+        $this->_setPort1Load(self::ON);
+        $this->_setPort1(self::ON);
+        $p1Volts = $this->_readUUTPort1Volts();
+        $p1Amps = $this->_readUUTPort1Current();
+        
+        if (($p1Volts > 11.0) and ($p1Volts < 13.00)) {
+            $expectedAmps = $p1Volts/12;
+            if ($expectedAmps > $p1Amps) {
+                $p1AmpsOffset = $expectedAmps - $p1Amps;
+            } else {
+                $p1AmpsOffset = $p1Amps - $expectedAmps;
+            }
+            
+            $p1Aoffset = number_format($p1AmpsOffset, 4);
+            $this->out("Port 1 current offset: ".$p1Aoffset);
+            
+            $adcOffsetCounts = $this->_currentToADCcounts($p1AmpsOffset);
+            
+            $this->_TEST_DATA["P1CurrentOffset"] = $adcOffsetCounts;
+            $this->out("Port 1 current adc offset counts: ".$adcOffsetCounts);
+            $this->_P1_AOFFSET = $adcOffsetCounts;
+            $testResult = self::PASS;
+        } else {
+            $testResult = self::HFAIL;
+            $this->_TEST_FAIL[] = "P1 volts fail in current cal:".$p1Volts;
+        }
+        
+        sleep(1);
+        $this->_setPort1(self::OFF);
+        $this->_setPort1Load(self::OFF);
+        $this->out("");
+    
         return $testResult;
     }
 
+    /**
+    ************************************************************
+    * Run Port 2 Current Calibration Test
+    *
+    * This function runs the current calibration test on Port 2.
+    * The offset counts are not set but simply recorded in the 
+    * test data.
+    *
+    */
+    private function _runPort2CurrentCal()
+    {
+        $this->out("Testing Port 2 Current Calibration");
+        $this->out("**********************************");
+        
+        $this->_setPort2Load(self::ON);
+        $this->_setPort2(self::ON);
+        $p2Volts = $this->_readUUTPort2Volts();
+        $p2Amps = $this->_readUUTPort2Current();
+        
+        if (($p2Volts > 11.0) and ($p2Volts < 13.00)) {
+            $expectedAmps = $p2Volts/12;
+            if ($expectedAmps > $p2Amps) {
+                $p2AmpsOffset = $expectedAmps - $p2Amps;
+            } else {
+                $p2AmpsOffset = $p2Amps - $expectedAmps;
+            }
+            
+            $p2Aoffset = number_format($p2AmpsOffset, 4);
+            $this->out("Port 2 current offset: ".$p2Aoffset);
+            
+            $adcOffsetCounts = $this->_currentToADCcounts($p2AmpsOffset);
+            
+            $this->_TEST_DATA["P2CurrentOffset"] = $adcOffsetCounts;
+            $this->out("Port 2 current adc offset counts: ".$adcOffsetCounts);
+            $this->_P2_AOFFSET = $adcOffsetCounts;
+            $testResult = self::PASS;
+        } else {
+            $testResult = self::HFAIL;
+            $this->_TEST_FAIL[] = "P2 volts fail in current cal:".$p1Volts;
+        }
+        
+        sleep(1);
+        $this->_setPort2(self::OFF);
+        $this->_setPort2Load(self::OFF);
+        $this->out("");
+    
+        return $testResult;
+    }
 
     /*****************************************************************************/
     /*                                                                           */
@@ -3852,6 +3967,34 @@ class E104603Test extends \HUGnet\ui\Daemon
         }
 
         return $value;
+    }
+    
+    /**
+    ***************************************************
+    * Current to AtoD Counts Routine
+    *  
+    * This function converts the current offset given
+    * in amps to the offset in ADC counts.
+    *
+    * @param float $offsetAmps
+    *
+    * @return integer $adcCounts
+    */
+    private function _currentToADCcounts($offsetAmps)
+    {
+    
+        $newVal = $offsetAmps * 0.0532258;
+        $volts = $newVal + 1.65;
+        $volts /=2;
+        
+        $steps = (1.65 / pow(2,11));
+        $rawVal = round($volts/$steps);
+        
+        $this->out("rawVal : ".$rawVal);
+        
+        $adcCounts = $rawVal - 1024;
+        
+        return $adcCounts;
     }
 
     /**

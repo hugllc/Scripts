@@ -77,8 +77,8 @@ class E104603TroubleShoot extends E104603Test
     const HEADER_STR    = "Battery Socializer Troubleshoot & Program Tool";
     
     private $_eptroubleMainMenu = array(
-                                0 => "Read User Signature Bytes",
-                                1 => "Write User Signature Bytes",
+                                0 => "UUT Power Up",
+                                1 => "Load Test Firmware",
                                 2 => "Erase User Signature Bytes",
                                 3 => "Load Test Firmware",
                                 4 => "Write User Signature File",
@@ -103,7 +103,7 @@ class E104603TroubleShoot extends E104603Test
         $this->_evalDevice->set("id", self:: EVAL_BOARD_ID);
         $this->_evalDevice->set("Role","TesterEvalBoard");
 
-        $this->_display = \HUGnet\ui\Displays::factory($config);
+        $this->display = \HUGnet\ui\Displays::factory($config);
     }
 
     /**
@@ -138,8 +138,8 @@ class E104603TroubleShoot extends E104603Test
 
         do{
         do{
-            $this->_display->clearScreen();
-            $selection = $this->_display->displayMenu(self::HEADER_STR, 
+            $this->display->clearScreen();
+            $selection = $this->display->displayMenu(self::HEADER_STR, 
                             $this->_eptroubleMainMenu);
 
             if (($selection == "A") || ($selection == "a")) {
@@ -192,38 +192,36 @@ class E104603TroubleShoot extends E104603Test
     */
     private function _troubleshoot1()
     {
-        $this->out("Powering up UUT!");
+        $this->out("\n\r  Powering up UUT!");
+        $this->out("********************\n\r");
+        
         $this->_powerUUT(self::ON);
-        $this->out("Sleeping");
-        sleep(2);
-        $result = self::PASS;
-
-        $this->_DB_DATA["id"] = hexdec("0x8012");
-        $this->_DB_DATA["HWPartNum"] = "10460301A";
-        $this->_DB_DATA["FWPartNum"] = "00393801C";
-        $this->_DB_DATA["FWVersion"] = "0.3.0";
-        $this->_DB_DATA["BtldrVersion"] = "0.3.0";
-        $this->_DB_DATA["MicroSN"] = "0011223344556677889933";
-        $this->_DB_DATA["TestDate"] = time();
-        $this->_DB_DATA["TestResult"] = self::PASS;
-        $this->_DB_DATA["TestData"] = $this->_TEST_DATA;
-        $this->_DB_DATA["TestsFailed"] = $this->_TEST_FAIL;
-
-
-        $db = $this->_system->table("DeviceTests");
-        $db->fromArray($this->_DB_DATA);
-        $db->insertRow();
+        
+        $voltsVB = $this->_readTesterBusVolt();
+        $voltsVcc = $this->_readTesterVCC();
+        $this->out("");
+        
+        If (($voltsVB > 11.5) and ($voltsVB < 13.00)) {
+            $this->out("Bus Voltage is within range");
+            
+            if (($voltsVcc > 3.0) and ($voltsVcc < 3.4)) {
+                $this->out("Vcc is within range");
+            } else {
+                $this->out("Vcc is out of range");
+                $this->out("Scope out power supply circuit");
+            }
+        } else {
+            $this->out("Bus Voltage out of range");
+            $this->out("Scope out Bus Voltage Circuit");
+        }
+        
+        $choice = readline("\n\rTake Measurements and Hit Enter to Exit: ");
+        
 
         $this->out("Powering down UUT!");
         $this->_powerUUT(self::OFF);
         
-        $this->out("************************");
-        $this->out("*    Troubleshoot 1    *");
-        $this->out("*       Not Done!      *");
-        $this->out("************************");
-        $this->out("");
         
-        $choice = readline("\n\rHit Enter to Continue: ");
     }
 
 
@@ -238,14 +236,27 @@ class E104603TroubleShoot extends E104603Test
     */
     private function _troubleshoot2()
     {
-    
-        $this->_system->out("************************");
-        $this->_system->out("*    Troubleshoot 2    *");
-        $this->_system->out("*       Not Done!      *");
-        $this->_system->out("************************");
-        $this->_system->out("");
+        $this->out("\n\r  Powering up UUT!");
+        $this->out("********************\n\r");
+        $this->_powerUUT(self::ON);
+        sleep(1);
         
-        $choice = readline("\n\rHit Enter to Continue: ");
+        $result = $this->_loadTestFirmware();
+        
+        if ($result == self::PASS) {
+            $this->out("Test Firmware Loaded");
+        } else {
+            $this->out("If load firmware fails, first verify the programmer connections.");
+            $this->out("If connections to the programmer are good, then the problem is a bad microcontroller.");
+            $this->out("Change the microcontroller and retest.");
+        }
+   
+        $choice = readline("\n\rHit Enter to Exit: ");
+        
+        $this->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
+        
+        
     }
 
     /**
