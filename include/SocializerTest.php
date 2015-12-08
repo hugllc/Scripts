@@ -70,6 +70,7 @@ class SocializerTest extends \HUGnet\ui\Daemon
     const HEADER_STR    = "Battery Socializer Test & Program Tool";
 
     private $_fixtureTest;
+    private $_fixtureTrbl;
     private $_device;
     private $_goodDevice;
     private $_socialtestMainMenu = array(
@@ -90,7 +91,6 @@ class SocializerTest extends \HUGnet\ui\Daemon
         parent::__construct($config);
         $this->_device = $this->system()->device();
         $this->display = \HUGnet\ui\Displays::factory($config);
-        $this->sys = $this->system();
     }
 
     /**
@@ -164,8 +164,8 @@ class SocializerTest extends \HUGnet\ui\Daemon
     */
     private function _test104603Main()
     {
-        //$sys = $this->system();
-        $this->_fixtureTest = E104603Test::factory($config, $this->sys);
+        $sys = $this->system();
+        $this->_fixtureTest = E104603Test::factory($config, $sys);
         $this->_fixtureTest->run104603Test();
 
     }
@@ -183,9 +183,9 @@ class SocializerTest extends \HUGnet\ui\Daemon
     */
     private function _troubleshoot104603Main()
     {
-        //$sys = $this->system();
-        $this->_fixtureTest = E104603Troubleshoot::factory($config, $this->sys);
-        $this->_fixtureTest->runTroubleshootMain();
+        $sys = $this->system();
+        $this->_fixtureTrbl= E104603Troubleshoot::factory($config, $sys);
+        $this->_fixtureTrbl->runTroubleshootMain();
     }
 
     /**

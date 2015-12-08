@@ -79,8 +79,8 @@ class E104603TroubleShoot extends E104603Test
     private $_eptroubleMainMenu = array(
                                 0 => "UUT Power Up",
                                 1 => "Load Test Firmware",
-                                2 => "Erase User Signature Bytes",
-                                3 => "Load Test Firmware",
+                                2 => "Port 1",
+                                3 => "Port 2",
                                 4 => "Write User Signature File",
                                 5 => "Calibrate DAC",
                                 6 => "Program UUT",
@@ -97,6 +97,7 @@ class E104603TroubleShoot extends E104603Test
     */
     protected function __construct(&$config, &$sys)
     {
+        parent::__construct($config, $sys);
         $this->_system = &$sys; 
         $this->_device = $this->_system->device();
         $this->_evalDevice = $this->_system->device();
@@ -137,19 +138,18 @@ class E104603TroubleShoot extends E104603Test
         $result;
 
         do{
-        do{
             $this->display->clearScreen();
             $selection = $this->display->displayMenu(self::HEADER_STR, 
                             $this->_eptroubleMainMenu);
 
             if (($selection == "A") || ($selection == "a")) {
-                $this->_troubleshoot1();
+                $this->_trblshtPwrUp();
             } else if (($selection == "B") || ($selection == "b")){
-                $this->_troubleshoot2();
+                $this->_trblshtLoadFirmware();
             } else if (($selection == "C") || ($selection == "c")){
-                $this->_troubleshoot3();
+                $this->_trblshtPort1();
             } else if (($selection == "D") || ($selection == "d")){
-                $this->_troubleshoot4();
+                $this->_trblshtPort2();
             } else if (($selection == "E") || ($selection == "e")){
                 $this->_troubleshoot5();
             } else if (($selection == "F") || ($selection == "f")){
@@ -165,7 +165,6 @@ class E104603TroubleShoot extends E104603Test
 
         $choice = readline("\n\rHit Enter to Continue: ");
 
-        } while ($exitTest == false);
     }
 
 
@@ -190,38 +189,36 @@ class E104603TroubleShoot extends E104603Test
     * routine for the battery socializer board.
     *
     */
-    private function _troubleshoot1()
+    private function _trblshtPwrUp()
     {
-        $this->out("\n\r  Powering up UUT!");
-        $this->out("********************\n\r");
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
         
         $this->_powerUUT(self::ON);
         
         $voltsVB = $this->_readTesterBusVolt();
         $voltsVcc = $this->_readTesterVCC();
-        $this->out("");
+        $this->_system->out("");
         
         If (($voltsVB > 11.5) and ($voltsVB < 13.00)) {
-            $this->out("Bus Voltage is within range");
+            $this->_system->out("Bus Voltage is within range");
             
             if (($voltsVcc > 3.0) and ($voltsVcc < 3.4)) {
-                $this->out("Vcc is within range");
+                $this->_system->out("Vcc is within range");
             } else {
-                $this->out("Vcc is out of range");
-                $this->out("Scope out power supply circuit");
+                $this->_system->out("Vcc is out of range");
+                $this->_system->out("Scope out power supply circuit");
             }
         } else {
-            $this->out("Bus Voltage out of range");
-            $this->out("Scope out Bus Voltage Circuit");
+            $this->_system->out("Bus Voltage out of range");
+            $this->_system->out("Scope out Bus Voltage Circuit");
         }
         
         $choice = readline("\n\rTake Measurements and Hit Enter to Exit: ");
         
 
-        $this->out("Powering down UUT!");
+        $this->_system->out("Powering down UUT!");
         $this->_powerUUT(self::OFF);
-        
-        
     }
 
 
@@ -234,26 +231,26 @@ class E104603TroubleShoot extends E104603Test
     * routine for the battery socializer board.
     *
     */
-    private function _troubleshoot2()
+    private function _trblshtLoadFirmware()
     {
-        $this->out("\n\r  Powering up UUT!");
-        $this->out("********************\n\r");
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
         $this->_powerUUT(self::ON);
         sleep(1);
         
         $result = $this->_loadTestFirmware();
         
         if ($result == self::PASS) {
-            $this->out("Test Firmware Loaded");
+            $this->_system->out("Test Firmware Loaded");
         } else {
-            $this->out("If load firmware fails, first verify the programmer connections.");
-            $this->out("If connections to the programmer are good, then the problem is a bad microcontroller.");
-            $this->out("Change the microcontroller and retest.");
+            $this->_system->out("If load firmware fails, first verify the programmer connections.");
+            $this->_system->out("If connections are good, check signal to microcontroller.");
+            $this->_system->out("If signal is good, it may be a bad microcontroller.");
         }
    
         $choice = readline("\n\rHit Enter to Exit: ");
         
-        $this->out("Powering down UUT!");
+        $this->_system->out("Powering down UUT!");
         $this->_powerUUT(self::OFF);
         
         
@@ -267,16 +264,47 @@ class E104603TroubleShoot extends E104603Test
     * routine for the battery socializer board.
     *
     */
-    private function _troubleshoot3()
+    private function _trblshtPort1()
     {
     
-        $this->_system->out("************************");
-        $this->_system->out("*    Troubleshoot 3    *");
-        $this->_system->out("*       Not Done!      *");
-        $this->_system->out("************************");
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        $this->_powerUUT(self::ON);
+        sleep(1);
+
+        $this->_setPort1Load(self::ON);
+
+        $this->_system->out("Port 1 Load connected!");
+        $voltsP1 = $this->_readTesterP1Volt(); 
+        $p1Volts = $this->_readUUTPort1Volts();
+        $p1Amps = $this->_readUUTPort1Current();
+
+        if ($p1Volts < 0.2) {
+            $this->_system->out("Port 1 off test pass!");
+        } else {
+            $this->_system->out("Port 1 off test fail!");
+            $this->_system->out("Check upper FET for Short");
+        }
+
+        $this->_setPort1(self::ON);
+        $this->_system->out("Port 1 turned on.\n\r");
+
+        $voltsP1 = $this->_readTesterP1Volt(); 
+        $p1Volts = $this->_readUUTPort1Volts();
+        $p1Amps = $this->_readUUTPort1Current();
+
+        $this->_system->out("\n\rScope PWM output and measure voltages.");
         $this->_system->out("");
+
+        $choice = readline("Hit Enter to Continue");
+
         
-        $choice = readline("\n\rHit Enter to Continue: ");
+        $this->_setPort1(self::OFF);
+        $this->_setPort1Load(self::OFF); /* Disconnect Port 1 Load */
+
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
     }
 
     /**
@@ -287,16 +315,46 @@ class E104603TroubleShoot extends E104603Test
     * routine for the battery socializer board.
     *
     */
-    private function _troubleshoot4()
+    private function _trblshtPort2()
     {
-    
-        $this->_system->out("************************");
-        $this->_system->out("*    Troubleshoot 4    *");
-        $this->_system->out("*       Not Done!      *");
-        $this->_system->out("************************");
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        $this->_powerUUT(self::ON);
+        sleep(1);
+
+        $this->_setPort2Load(self::ON);
+
+        $this->_system->out("Port 2 Load connected!");
+        $voltsP2 = $this->_readTesterP2Volt(); 
+        $p2Volts = $this->_readUUTPort2Volts();
+        $p2Amps = $this->_readUUTPort2Current();
+
+        if ($p2Volts < 0.2) {
+            $this->_system->out("Port 2 off test pass!");
+        } else {
+            $this->_system->out("Port 2 off test fail!");
+            $this->_system->out("Check upper FET for Short");
+        }
+
+        $this->_setPort2(self::ON);
+        $this->_system->out("Port 2 turned on.\n\r");
+
+        $voltsP2 = $this->_readTesterP2Volt(); 
+        $p2Volts = $this->_readUUTPort2Volts();
+        $p2Amps = $this->_readUUTPort2Current();
+
+        $this->_system->out("\n\rScope PWM output and measure voltages.");
         $this->_system->out("");
+
+        $choice = readline("Hit Enter to Continue");
+
         
-        $choice = readline("\n\rHit Enter to Continue: ");
+        $this->_setPort2(self::OFF);
+        $this->_setPort2Load(self::OFF); /* Disconnect Port 1 Load */
+
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
     }
 
     /**
