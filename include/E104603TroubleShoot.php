@@ -81,8 +81,8 @@ class E104603TroubleShoot extends E104603Test
                                 1 => "Load Test Firmware",
                                 2 => "Port 1",
                                 3 => "Port 2",
-                                4 => "Write User Signature File",
-                                5 => "Calibrate DAC",
+                                4 => "VBus",
+                                5 => "Read Micro SN",
                                 6 => "Program UUT",
                                 );
                                 
@@ -151,9 +151,9 @@ class E104603TroubleShoot extends E104603Test
             } else if (($selection == "D") || ($selection == "d")){
                 $this->_trblshtPort2();
             } else if (($selection == "E") || ($selection == "e")){
-                $this->_troubleshoot5();
+                $this->_trblshtVBus();
             } else if (($selection == "F") || ($selection == "f")){
-                $this->_troubleshoot6();
+                $this->_trblshtReadMicroSN();
             } else if (($selection == "G") || ($selection == "g")){
                 $this->_troubleshoot7();
             } else {
@@ -183,7 +183,7 @@ class E104603TroubleShoot extends E104603Test
 
     /**
     ************************************************************
-    * Troubleshoot 1 routine
+    * Troubleshoot Power Up Routine
     *
     * This function will eventually do some troubleshooting 
     * routine for the battery socializer board.
@@ -225,7 +225,7 @@ class E104603TroubleShoot extends E104603Test
     
     /**
     ************************************************************
-    * Troubleshoot 2 routine
+    * Troubleshoot Load Firmware Routine
     *
     * This function will eventually do some troubleshooting 
     * routine for the battery socializer board.
@@ -258,7 +258,7 @@ class E104603TroubleShoot extends E104603Test
 
     /**
     ************************************************************
-    * Troubleshoot 3 routine
+    * Troubleshoot Port 1 Routine
     *
     * This function will eventually do some troubleshooting 
     * routine for the battery socializer board.
@@ -309,7 +309,7 @@ class E104603TroubleShoot extends E104603Test
 
     /**
     ************************************************************
-    * Troubleshoot 4 routine
+    * Troubleshoot Port 2 Routine
     *
     * This function will eventually do some troubleshooting 
     * routine for the battery socializer board.
@@ -359,42 +359,85 @@ class E104603TroubleShoot extends E104603Test
 
     /**
     ************************************************************
-    * Troubleshoot 5 routine
+    * Troubleshoot VBus Routine
     *
     * This function will eventually do some troubleshooting 
     * routine for the battery socializer board.
     *
     */
-    private function _troubleshoot5()
+    private function _trblshtVBus()
     {
-    
-        $this->_system->out("************************");
-        $this->_system->out("*    Troubleshoot 5    *");
-        $this->_system->out("*       Not Done!      *");
-        $this->_system->out("************************");
-        $this->_system->out("");
-        
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        $this->_powerUUT(self::ON);
+        sleep(1);
+
+
+        $this->_setPort1_V12(self::ON); /* +12V to Port 1 */
+        $voltsP1 = $this->_readTesterP1Volt();
+
+        if (($voltsP1 > 11.50) and ($voltsP1 < 13.00)) { 
+            $this->_setVBus_V12(self::OFF); /* connects 12 ohm load */
+            $voltsVB = $this->_readTesterBusVolt();
+            $VBvolts = $this->_readUUTBusVolts();
+            $tVolts = $this->_readTesterP1Volt();
+
+            $choice = readline("\n\rHit Enter to Continue: ");
+
+            if ($VBvolts < 0.2) {
+                $this->_setPort1(self::ON);
+                sleep(1);
+                $voltsVB = $this->_readTesterBusVolt();
+                $VBvolts = $this->_readUUTBusVolts();
+                $p1Volts = $this->_readUUTPort1Volts();
+                $p1Amps = $this->_readUUTPort1Current();
+                $choice = readline("\n\rHit Enter to Continue: ");
+
+
+                $this->_setPort1(self::OFF);
+                $this->_setVBus_V12(self::ON);
+                $this->_system->out("Vbus Troubleshoot Complete");
+                $this->_setPort1_V12(self::OFF);
+            } else {
+                $this->_setVBus_V12(self::ON);
+                $this->_system->out("Bus Voltage Off:".$VBvolts."V");
+                $this->_setPort1_V12(self::OFF);
+            }
+
+        } else {
+            $this->_setPort1_V12(self::OFF);
+            $voltsP1 = $this->_readTesterP1Volt();
+            $this->_system->out("Port 1 Supply Failed!");
+            $this->_system->out("Port 1  Tester = ".$voltsP1." volts");
+        }
+            
         $choice = readline("\n\rHit Enter to Continue: ");
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
     }
 
     /**
     ************************************************************
-    * Troubleshoot 6 routine
+    * Troubleshoot Read Micro Serial Number Routine
     *
     * This function will eventually do some troubleshooting 
     * routine for the battery socializer board.
     *
     */
-    private function _troubleshoot6()
+    private function _trblshtReadMicroSN()
     {
     
-        $this->_system->out("************************");
-        $this->_system->out("*    Troubleshoot 6    *");
-        $this->_system->out("*       Not Done!      *");
-        $this->_system->out("************************");
-        $this->_system->out("");
-        
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        $this->_powerUUT(self::ON);
+        sleep(1);
+
+        $MicroSN = $this->_readMicroSN();
         $choice = readline("\n\rHit Enter to Continue: ");
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
     }
 
     /**

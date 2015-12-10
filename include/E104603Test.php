@@ -316,7 +316,7 @@ class E104603Test
         } while (($stepResult != self::HFAIL) and ($stepNum < 9));
 
         if ($stepNum > 3) {
-           //$this->_logTestData($stepResult);
+           $this->_logTestData($stepResult);
         }
         $this->_powerUUT(self::OFF);
         $this->_clearTester();
@@ -872,12 +872,13 @@ class E104603Test
 
         if (($voltsP1 > 11.50) and ($voltsP1 < 13.00)) { 
             $this->_setVBus_V12(self::OFF); /* connects 12 ohm load */
+            sleep(1);
             $voltsVB = $this->_readTesterBusVolt();
             $VBvolts = $this->_readUUTBusVolts();
 
             if ($VBvolts < 0.2) {
                 $this->_setPort1(self::ON);
-
+                sleep(1);
                 $voltsVB = $this->_readTesterBusVolt();
                 $VBvolts = $this->_readUUTBusVolts();
                 $p1Volts = $this->_readUUTPort1Volts();
@@ -1906,7 +1907,7 @@ class E104603Test
     * @param int $state  1=On, 0=off
     * @return void
     */
-    private function _setPort1_V12($state)
+    public function _setPort1_V12($state)
     {
         switch ($state) {
             case 0: 
@@ -1988,7 +1989,7 @@ class E104603Test
     * @param int $state  1=On, 0=off
     * @return void
     */
-    private function _setPort2_V12($state)
+    public function _setPort2_V12($state)
     {
         switch ($state) {
             case 0: 
@@ -2017,7 +2018,7 @@ class E104603Test
     *
     * @return void
     */
-    private function _setVBus_V12($state)
+    public function _setVBus_V12($state)
     {
         switch ($state) {
             case 0:
@@ -2817,7 +2818,7 @@ class E104603Test
     *
     * @return integer $result  1=pass, 0=fail, -1=hard fail
     */
-    private function _readMicroSN()
+    public function _readMicroSN()
     {
         $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::READ_PRODSIG_COMMAND;
@@ -2825,16 +2826,34 @@ class E104603Test
     
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         
-        //$this->out("Serial number in reply data: ".$ReplyData);
+        $this->_system->out("Serial number in reply data: ".$ReplyData);
         
-        /* convert data to big endian */
+        /* convert data to big endian 
         $len = strlen($ReplyData);
         $loops = $len/2;
         
         for ($i = 0; $i < $loops; $i++) {
             $start = $len - (2 * ($i+1));
             $newData .= substr($ReplyData, $start, 2);
+        } */
+
+        /* new conversion routine */
+        $len = strlen($ReplyData);
+        /* copy lot number so it reads Lotnum 5 .... Lotnum0 */
+        for ($i=0; $i < 6; $i++) {
+            $start = 0 + (2*$i);
+            $newData = substr($ReplyData, $start, 2) . $newData;
         }
+        /* copy wafer number */
+        $newData .= substr($ReplyData, 12, 2);
+
+        /* next copy X1 and X0 */
+        $newData .= substr($ReplyData, 16, 2);
+        $newData .= substr($ReplyData, 14, 2);
+
+        /* Finally add Y1 and Y0 */
+        $newData .= substr($ReplyData, 20, 2);
+        $newData .= substr($ReplyData, 18, 2);
         
         $this->_system->out("Serial Number is : ".$newData);
         $this->_system->out("");
@@ -3481,10 +3500,12 @@ class E104603Test
     */
     private function _runDACnegGain($dacVolts)
     {
-        $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
+        // $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
+        $diffVolts = $dacVolts - self::DAC_GAINCAL_LEVEL;
         $steps = 3.3/ pow(2,12);
         $numSteps = round($diffVolts/$steps);
-        $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
+        // $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
+        $hexGainCor = dechex($numSteps);
         
         $hexGainCor = $this->_oneHexByteStr($hexGainCor);
 
@@ -3495,8 +3516,8 @@ class E104603Test
         do {
             $error = false;
             $numSteps--;
-            $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
-            
+            //$hexGainCor = $this->_negInt_to_twosComplement($numSteps);
+            $hexTGainCor = dechex($numSteps);
             $hexGainCor = $this->_oneHexByteStr($hexGainCor);
             $replyData = $this->_setDacGain($hexGainCor);
             if(is_null($replyData)) {
