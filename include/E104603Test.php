@@ -1638,7 +1638,7 @@ class E104603Test
     *
     * @return $rawVal 
     */
-    private function _readUUTExtTemp2()
+    public function _readUUTExtTemp2()
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_EXT_TEMP2);
         if ($rawVal > 0x7ff) {
@@ -1664,7 +1664,7 @@ class E104603Test
     *
     * @return $rawVal 
     */
-    private function _readUUTExtTemp1()
+    public function _readUUTExtTemp1()
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_EXT_TEMP1);
         if ($rawVal > 0x7ff) {
@@ -2082,7 +2082,7 @@ class E104603Test
     *
     * @return void
     */
-    private function _setExternalTherms($state)
+    public function _setExternalTherms($state)
     {
         switch ($state) {
             case 0:
@@ -2328,7 +2328,7 @@ class E104603Test
     * event of a test failure.
     *
     */
-    private function _clearTester()
+    public function _clearTester()
     {
         $idNum = self::EVAL_BOARD_ID;
         $cmdNum = self:: RESET_DIGITAL_COMMAND;
@@ -2402,36 +2402,6 @@ class E104603Test
     
 
     
-    /**
-    ************************************************************
-    * Test User Signature routines
-    *
-    * This function will send packet commands to the UUT test
-    * firmware to read the user signature bytes and write them.
-    *
-    */
-    private function _readUserSig()
-    {
-        $this->_system->out("Powering up UUT");
-        $result = $this->_testUUTpower();
-        sleep(1);
-        $choice = readline("\n\rHit Enter to Continue: ");
-
-        $this->_system->out("Sending Read User Signature Command!");
-        $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::READ_USERSIG_COMMAND;
-        $dataVal = "00";
-        
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        $this->_system->out("Reply Data = ".$ReplyData);
- 
-        $choice = readline("\n\rHit Enter to Continue: ");
-
-        $this->_system->out("Powering down UUT");
-        $this->_powerUUT(self::OFF);
-        $this->_clearTester();
-        $choice = readline("\n\rHit Enter to Continue: ");
-    }
 
     /**
     **************************************************************
@@ -2826,17 +2796,6 @@ class E104603Test
     
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         
-        $this->_system->out("Serial number in reply data: ".$ReplyData);
-        
-        /* convert data to big endian 
-        $len = strlen($ReplyData);
-        $loops = $len/2;
-        
-        for ($i = 0; $i < $loops; $i++) {
-            $start = $len - (2 * ($i+1));
-            $newData .= substr($ReplyData, $start, 2);
-        } */
-
         /* new conversion routine */
         $len = strlen($ReplyData);
         /* copy lot number so it reads Lotnum 5 .... Lotnum0 */
@@ -3500,26 +3459,27 @@ class E104603Test
     */
     private function _runDACnegGain($dacVolts)
     {
-        // $diffVolts = self::DAC_GAINCAL_LEVEL - $dacVolts;
         $diffVolts = $dacVolts - self::DAC_GAINCAL_LEVEL;
         $steps = 3.3/ pow(2,12);
         $numSteps = round($diffVolts/$steps);
-        // $hexGainCor = $this->_negInt_to_twosComplement($numSteps);
-        $hexGainCor = dechex($numSteps);
         
+        /* set the sign bit */
+        $numSteps += 128;
+        
+        $hexGainCor = dechex($numSteps);
         $hexGainCor = $this->_oneHexByteStr($hexGainCor);
-
+        
         $replyData= $this->_setDacGain($hexGainCor);
         $dacVolts = $this->_readUUTdacVolts();
         $this->_DAC_GAIN = $hexGainCor;
         
         do {
             $error = false;
-            $numSteps--;
-            //$hexGainCor = $this->_negInt_to_twosComplement($numSteps);
-            $hexTGainCor = dechex($numSteps);
+            $numSteps++;
+            $hexGainCor = dechex($numSteps);
             $hexGainCor = $this->_oneHexByteStr($hexGainCor);
             $replyData = $this->_setDacGain($hexGainCor);
+            
             if(is_null($replyData)) {
                 $error = true;
             } else {

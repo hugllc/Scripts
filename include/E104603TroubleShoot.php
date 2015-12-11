@@ -81,9 +81,11 @@ class E104603TroubleShoot extends E104603Test
                                 1 => "Load Test Firmware",
                                 2 => "Port 1",
                                 3 => "Port 2",
-                                4 => "VBus",
-                                5 => "Read Micro SN",
-                                6 => "Program UUT",
+                                4 => "Port 1 to VBus",
+                                5 => "Port 2 to VBus",
+                                6 => "External Thermistor Connections",
+                                7 => "Read Micro SN",
+                                8 => "Read User Signature",
                                 );
                                 
     public $display;
@@ -151,11 +153,15 @@ class E104603TroubleShoot extends E104603Test
             } else if (($selection == "D") || ($selection == "d")){
                 $this->_trblshtPort2();
             } else if (($selection == "E") || ($selection == "e")){
-                $this->_trblshtVBus();
+                $this->_trblshtVBusP1();
             } else if (($selection == "F") || ($selection == "f")){
-                $this->_trblshtReadMicroSN();
+                $this->_trblshtVBusP2();
             } else if (($selection == "G") || ($selection == "g")){
-                $this->_troubleshoot7();
+                $this->_trblshtExtTherms();
+            } else if (($selection == "H") || ($selection == "h")){
+                $this->_trblshtReadMicroSN();
+            } else if (($selection == "I") || ($selection == "i")){
+                $this->_trblshtReadUserSig();
             } else {
                 $exitTest = true;
                 $this->_system->out("Exit Troubleshooting Tool");
@@ -359,20 +365,21 @@ class E104603TroubleShoot extends E104603Test
 
     /**
     ************************************************************
-    * Troubleshoot VBus Routine
+    * Troubleshoot Port 1 to VBus Routine
     *
     * This function will eventually do some troubleshooting 
     * routine for the battery socializer board.
     *
     */
-    private function _trblshtVBus()
+    private function _trblshtVBusP1()
     {
         $this->_system->out("\n\r  Powering up UUT!");
         $this->_system->out("********************\n\r");
         $this->_powerUUT(self::ON);
         sleep(1);
 
-
+        $this->_system->out("Troubleshoot Port 1 to VBUS");
+        
         $this->_setPort1_V12(self::ON); /* +12V to Port 1 */
         $voltsP1 = $this->_readTesterP1Volt();
 
@@ -396,7 +403,7 @@ class E104603TroubleShoot extends E104603Test
 
                 $this->_setPort1(self::OFF);
                 $this->_setVBus_V12(self::ON);
-                $this->_system->out("Vbus Troubleshoot Complete");
+                $this->_system->out("Port 1 to Vbus Troubleshoot Complete");
                 $this->_setPort1_V12(self::OFF);
             } else {
                 $this->_setVBus_V12(self::ON);
@@ -417,7 +424,68 @@ class E104603TroubleShoot extends E104603Test
         $this->_powerUUT(self::OFF);
     }
 
-    /**
+     /**
+    ************************************************************
+    * Troubleshoot Port 2 to VBus Routine
+    *
+    * This function will eventually do some troubleshooting 
+    * routine for the battery socializer board.
+    *
+    */
+    private function _trblshtVBusP2()
+    {
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        $this->_powerUUT(self::ON);
+        sleep(1);
+
+        $this->_system->out("Troubleshoot Port 2 to VBUS");
+
+        $this->_setPort2_V12(self::ON); /* +12V to Port 2 */
+        $voltsP2 = $this->_readTesterP2Volt();
+
+        if (($voltsP2 > 11.50) and ($voltsP2 < 13.00)) { 
+            $this->_setVBus_V12(self::OFF); /* connects 12 ohm load */
+            $voltsVB = $this->_readTesterBusVolt();
+            $VBvolts = $this->_readUUTBusVolts();
+            $tVolts = $this->_readTesterP2Volt();
+
+            $choice = readline("\n\rHit Enter to Continue: ");
+
+            if ($VBvolts < 0.2) {
+                $this->_setPort2(self::ON);
+                sleep(1);
+                $voltsVB = $this->_readTesterBusVolt();
+                $VBvolts = $this->_readUUTBusVolts();
+                $p2volts = $this->_readUUTPort2Volts();
+                $p2Amps = $this->_readUUTPort2Current();
+                $choice = readline("\n\rHit Enter to Continue: ");
+
+
+                $this->_setPort2(self::OFF);
+                $this->_setVBus_V12(self::ON);
+                $this->_system->out("Port 2 to VBus Troubleshoot Complete");
+                $this->_setPort2_V12(self::OFF);
+            } else {
+                $this->_setVBus_V12(self::ON);
+                $this->_system->out("Bus Voltage Off:".$VBvolts."V");
+                $this->_setPort2_V12(self::OFF);
+            }
+
+        } else {
+            $this->_setPort2_V12(self::OFF);
+            $voltsP2 = $this->_readTesterP2Volt();
+            $this->_system->out("Port 2 Supply Failed!");
+            $this->_system->out("Port 2  Tester = ".$voltsP2." volts");
+        }
+            
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
+    }
+
+   /**
     ************************************************************
     * Troubleshoot Read Micro Serial Number Routine
     *
@@ -448,51 +516,39 @@ class E104603TroubleShoot extends E104603Test
     * routine for the battery socializer board.
     *
     */
-    private function _troubleshoot7()
+    private function _trblshtExtTherms()
     {
-    
-        $this->_system->out("************************");
-        $this->_system->out("*    Troubleshoot 7    *");
-        $this->_system->out("*       Not Done!      *");
-        $this->_system->out("************************");
-        $this->_system->out("");
-        
-        $choice = readline("\n\rHit Enter to Continue: ");
-    }
-
-    /**
-    ****************************************************
-    * Test Load Firmware
-    *
-    * This function powers up the UUT and waits for 
-    * the user to remotely load firmware into the 
-    * device.
-    */
-    private function _testLoadFirmware()
-    {
-        $this->out("Powering Up UUT!\n\r");
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
         $this->_powerUUT(self::ON);
-        sleep(3);
-        $this->out("More Sleep!");
-        sleep(2);
-        $this->out("Done sleeping!");
-
-        $this->out("Go ahead and load code");
+        sleep(1);
         
-        //$this->_ENDPT_SN = 0x8012;
-        //$this->_writePowerTable();
-        
-        /* next set the channel on */
-        $this->_runApplicationTest();
+        $this->_system->out("Testing UUT External Thermistor Circuits");
+        $this->_system->out("****************************************");
+        $this->_system->out("EXT THERM CIRCUITS OPEN:");
 
+        $extTemp1 = $this->_readUUTExtTemp1();
+        $extTemp2 = $this->_readUUTExtTemp2();
+
+        $choice = readline("\n\rTake measurements and hit enter to continue!");
+        
+        $this->_setExternalTherms(self::ON);
+        $extTemp1 = $this->_readUUTExtTemp1();
+        $extTemp2 = $this->_readUUTExtTemp2();
+        
+        $choice = readline("\n\rTake measurements and hit enter to continue!");
+        
+        $this->_setExternalTherms(self::OFF);
+
+        $extTemp1 = $this->_readUUTExtTemp1();
+        $extTemp2 = $this->_readUUTExtTemp2();
+        
+        
         $choice = readline("\n\rHit Enter to Continue: ");
-
-
+        $this->_system->out("Powering down UUT!");
         $this->_powerUUT(self::OFF);
-        $this->_clearTester();
-       $choice = readline("\n\rHit Enter to Continue: ");
-
     }
+
 
     
     /**
@@ -530,7 +586,52 @@ class E104603TroubleShoot extends E104603Test
     }
 
 
-    /**
+     /**
+    ************************************************************
+    * Read User Signature Routine
+    *
+    * This function will send packet commands to the UUT test
+    * firmware to read the user signature bytes and display 
+    * them.
+    *
+    */
+    private function _trblshtReadUserSig()
+    {
+        $this->_system->out("Powering up UUT");
+        $result = $this->_testUUTpower();
+        sleep(1);
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+        $this->_system->out("Sending Read User Signature Command!");
+        $idNum = self::UUT_BOARD_ID;
+        $cmdNum = self::READ_USERSIG_COMMAND;
+        $dataVal = "00";
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->_system->out("Reply Data = ".$ReplyData);
+        
+        $this->_system->out("\n\r*********************************");
+        $SerialNumber = substr($ReplyData, 0, 10);
+        $this->_system->out("Serial Number: ".$SerialNumber);
+        
+        $HardwarePartNum = substr($ReplyData, 10, 10);
+        $this->_system->out("Hardware Part Number: ".$HardwarePartNum);
+        
+        $AdcOffset = substr($ReplyData,20, 4);
+        $this->_system->out("ADC Calibration Offset: ".$AdcOffset);
+        
+        $AdcGain = substr($ReplyData, 24,4);
+        $this->_system->out("ADC Calibration Gain Error Correction : ".$AdcGain);
+ 
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+        $this->_system->out("Powering down UUT");
+        $this->_powerUUT(self::OFF);
+        $this->_clearTester();
+        $choice = readline("\n\rHit Enter to Continue: ");
+    }
+    
+   /**
     ************************************************************
     * Relay Test Routine
     *
