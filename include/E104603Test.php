@@ -100,7 +100,7 @@ class E104603Test
     const SETCONTROLCHAN_COMMAND = 0x64;
     const READCONTROLCHAN_COMMAND = 0x65;
 
-    const HEADER_STR    = "Battery Socializer Test & Program Tool";
+    const HEADER_STR    = "Battery Coach Test & Program Tool";
     
     const TSTR_VCC_PORT  = 0;
     const TSTR_VBUS_PORT = 1;
@@ -248,7 +248,7 @@ class E104603Test
     public function run104603Test()
     {
         $this->display->clearScreen();
-        $this->display->displayHeader("Testing 104603 Dual Battery Socializer");
+        $this->display->displayHeader("Testing 104603 Dual Battery Coach");
 
         $this->_FAIL_FLAG = false;
 
@@ -301,19 +301,16 @@ class E104603Test
                     $stepResult = $this->_runUUTdacCalibration();
                     break;
                 case 7:
-                    $stepResult = $this->_runCurrentCalibration();
-                    break;
-                case 8:
                     $this->_ENDPT_SN = $this->_getSerialNumber();
                     $stepResult = $this->_testUUT();
                     break;
-                case 9:
+                case 8:
                     if (!$this->_FAIL_FLAG) {
                       $stepResult = $this->_loadUUTprograms();
                     }
                     break;
             }
-        } while (($stepResult != self::HFAIL) and ($stepNum < 9));
+        } while (($stepResult != self::HFAIL) and ($stepNum < 8));
 
         if ($stepNum > 3) {
            $this->_logTestData($stepResult);
@@ -2112,7 +2109,7 @@ class E104603Test
     * @return $result true = success; false = failure
     *
     */
-    private function _setRelay($relay, $state)
+    public function _setRelay($relay, $state)
     {
         $idNum = self::EVAL_BOARD_ID;
         
@@ -2173,7 +2170,7 @@ class E104603Test
     *
     * @return integer $testResult
     */
-    private function _faultSet($portNum, $state)
+    public function _faultSet($portNum, $state)
     {
         $idNum = self::EVAL_BOARD_ID;
         

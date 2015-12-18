@@ -42,10 +42,12 @@ require_once "HUGnetLib/ui/Daemon.php";
 require_once "HUGnetLib/devices/inputTable/Driver.php";
 /** Displays class */
 require_once "HUGnetLib/ui/Displays.php";
-/** This is the HUGnetLab endpoint test */
+/** This is the Battery Coach 104603 endpoint test */
 require_once "E104603Test.php";
-/** This is the HUGnet endpoint 003928 test */
+/** This is the Batery Coach 104603 troubleshoot app */
 require_once "E104603TroubleShoot.php";
+/** This is the 104607 tester **/
+require_once "E104607TroubleShoot.php";
 
 /**
  * This code tests, serializes and programs endpoints with bootloader code.
@@ -71,6 +73,7 @@ class SocializerTest extends \HUGnet\ui\Daemon
 
     private $_fixtureTest;
     private $_fixtureTrbl;
+    private $_fixtureTrblTester;
     private $_device;
     private $_goodDevice;
     private $_socialtestMainMenu = array(
@@ -201,10 +204,10 @@ class SocializerTest extends \HUGnet\ui\Daemon
     private function _troubleshoot104607Main()
     {
 
-
-        $this->out(" Not Done!");
-        
-        $choice = readline("Hit Enter to Continue");
+        $sys = $this->system();
+        $this->_fixtureTrblTester= E104607Troubleshoot::factory($config, $sys);
+        $this->_fixtureTrblTester->runTrblshtTesterMain();
+ 
     }
 
 
