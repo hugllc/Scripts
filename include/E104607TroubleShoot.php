@@ -79,7 +79,7 @@ class E104607TroubleShoot extends E104603Test
     
     private $_testerTrblShtMainMenu = array(
                                 0 => "Relay Test",
-                                1 => "Troubleshoot 2",
+                                1 => "Fault Signals",
                                 2 => "Troubleshoot 3",
                                 );
    
@@ -148,7 +148,7 @@ class E104607TroubleShoot extends E104603Test
             if (($selection == "A") || ($selection == "a")) {
                 $this->_trblshtRelays();
             } else if (($selection == "B") || ($selection == "b")){
-                $this->_trblsht2();
+                $this->_trblshtFaultSignals();
             } else if (($selection == "C") || ($selection == "c")){
                 $this->_trblsht3();
             } else {
@@ -192,8 +192,8 @@ class E104607TroubleShoot extends E104603Test
             $this->display->clearScreen();
 
             $this->_system->out("");
-            $this->_system->out("RELAY TROUBLESHOOTING IS TO BE DONE WITH NO");
-            $this->_system->out("BATTERY SOCIALIZER BOARD IN THE TEST BED");
+            $this->_system->out("= RELAY TROUBLESHOOTING IS TO BE DONE WITH NO =");
+            $this->_system->out("= BATTERY SOCIALIZER BOARD IN THE TEST BED!   =");
             $this->_system->out("");
             
             $selection = $this->display->displayMenu(self::RELAY_TST_STR, 
@@ -221,11 +221,17 @@ class E104607TroubleShoot extends E104603Test
     * routine for the battery coach functional tester.
     *
     */
-    private function _trblsht2()
+    private function _trblshtFaultSignals()
     {
-        $this->_system->out("\n\r  Hey #2 Not Done!");
-        $this->_system->out("********************\n\r");
-        
+        $this->display->clearScreen();
+
+        $this->_system->out("");
+        $this->_system->out("= INSTALL KNOWN GOOD BATTERY SOCIALIZER BOARD =");
+        $this->_system->out("= IN THE TEST BED FOR TROUBLESHOOTING TESTER  =");
+        $this->_system->out("= FAULT SIGNAL DRIVERS.                       =");
+        $this->_system->out("");
+
+        $this->_system->out("****   NOT DONE!  *****");
         $choice = readline("\n\rHit Enter to Exit: ");
         
     }
