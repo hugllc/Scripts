@@ -145,14 +145,16 @@ if ($loadable && !$config->a) {
         case "atxmegae5":
             $ptarget = "x32e5";
             break;
-        case "ATMega168":
+        case "atmega168":
             $ptarget = "m168";
             break;
-        case "ATTiny861":
+        case "attiny861":
             $ptarget = "t861";
             break;
+        default:
+            $ptarget = "targetunknown";
+            break;
     }
-
 
     $Prog = 'avrdude -c '.$programmer.' -p '.$ptarget.' -P usb -B 10 -i 100';
 
