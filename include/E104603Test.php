@@ -2299,16 +2299,16 @@ class E104603Test
         switch ($chanNum) {
             case 1:
                 if ($state == self::ON) {
-                    $dataVal = "0000000000";
-                } else {
                     $dataVal = "00204E0000";
+                } else {
+                    $dataVal = "0000000000";
                 }
                 break;
             case 2:
                 if ($state == self::ON) {
-                    $dataVal = "0100000000";
-                } else {
                     $dataVal = "01204E0000";
+                } else {
+                    $dataVal = "0100000000";
                 }
                 break;
         }

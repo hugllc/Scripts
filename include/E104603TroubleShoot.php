@@ -208,23 +208,32 @@ class E104603TroubleShoot extends E104603Test
         
         $this->_powerUUT(self::ON);
         
-        $voltsVB = $this->_readTesterBusVolt();
-        $voltsVcc = $this->_readTesterVCC();
-        $this->_system->out("");
-        
-        If (($voltsVB > 11.5) and ($voltsVB < 13.00)) {
-            $this->_system->out("Bus Voltage is within range");
+        $choice = readline("\n\rIs test firmware loaded (Y/N): ");
+
+        if (($choice == 'Y') || ($choice == 'y')) {
+            $voltsVB = $this->_readTesterBusVolt();
+            $voltsVcc = $this->_readTesterVCC();
+            $this->_system->out("");
             
-            if (($voltsVcc > 3.0) and ($voltsVcc < 3.4)) {
-                $this->_system->out("Vcc is within range");
+            If (($voltsVB > 11.5) and ($voltsVB < 13.00)) {
+                $this->_system->out("Bus Voltage is within range");
+                
+                if (($voltsVcc > 3.0) and ($voltsVcc < 3.4)) {
+                    $this->_system->out("Vcc is within range");
+                } else {
+                    $this->_system->out("Vcc is out of range");
+                    $this->_system->out("Scope out power supply circuit");
+                }
             } else {
-                $this->_system->out("Vcc is out of range");
-                $this->_system->out("Scope out power supply circuit");
+                $this->_system->out("Bus Voltage out of range");
+                $this->_system->out("Scope out Bus Voltage Circuit");
             }
         } else {
-            $this->_system->out("Bus Voltage out of range");
-            $this->_system->out("Scope out Bus Voltage Circuit");
+            $this->_system->out("No Internal Voltage Measurements available");
+            $this->_system->out("when running application firmware.        ");
         }
+
+        
         
         $choice = readline("\n\rTake Measurements and Hit Enter to Exit: ");
         
