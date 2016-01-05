@@ -75,8 +75,13 @@ class E104603TroubleShoot extends E104603Test
     private $_evalDevice;
 
     const HEADER_STR    = "Battery Coach Troubleshoot & Program Tool";
-    
+
     private $_eptroubleMainMenu = array(
+                                0 => "Troubleshoot with Test Firmware",
+                                1 => "Troubleshoot with Application Firmware",
+                                );
+    
+    private $_eptroubleTestMenu = array(
                                 0  => "UUT Power Up",
                                 1  => "Load Test Firmware",
                                 2  => "Port 1",
@@ -88,6 +93,13 @@ class E104603TroubleShoot extends E104603Test
                                 8  => "External Thermistor Connections",
                                 9  => "Read Micro SN",
                                 10 => "Read User Signature",
+                                );
+
+    private $_eptroubleAppMenu = array(
+                                0 => "UUT Power Up",
+                                1 => "Read Calibration Values",
+                                2 => "Port 1",
+                                3 => "Port 2",
                                 );
                                 
     public $display;
@@ -147,6 +159,50 @@ class E104603TroubleShoot extends E104603Test
                             $this->_eptroubleMainMenu);
 
             if (($selection == "A") || ($selection == "a")) {
+                $this->_runTroubleshootTest();
+            } else if (($selection == "B") || ($selection == "b")){
+                $this->_runTroubleshootApp();
+            } else {
+                $exitTest = true;
+                $this->_system->out("Exit Troubleshooting Tool");
+            }
+
+        } while ($exitTest == false);
+
+        $choice = readline("\n\rHit Enter to Continue: ");
+
+    }
+
+
+
+
+    /*****************************************************************************/
+    /*                                                                           */
+    /*                                                                           */
+    /*          T R O U B L E S H O O T   T E S T   R O U T I N E S              */
+    /*                                                                           */
+    /*                                                                           */
+    /*****************************************************************************/
+
+    /**
+    *************************************************************************
+    * Troubleshoot with Test Firmware Routine
+    * 
+    * This function runs the menu and calls functions for troubleshooting
+    * an endpoint that either has test firmware loaded or will have the 
+    * test firmware loaded for troubleshooting.
+    */
+    private function _runTroubleshootTest()
+    {
+        $exitTest = false;
+        $result;
+
+        do{
+            $this->display->clearScreen();
+            $selection = $this->display->displayMenu(self::HEADER_STR, 
+                            $this->_eptroubleTestMenu);
+
+            if (($selection == "A") || ($selection == "a")) {
                 $this->_trblshtPwrUp();
             } else if (($selection == "B") || ($selection == "b")){
                 $this->_trblshtLoadFirmware();
@@ -170,26 +226,11 @@ class E104603TroubleShoot extends E104603Test
                 $this->_trblshtReadUserSig();
             } else {
                 $exitTest = true;
-                $this->_system->out("Exit Troubleshooting Tool");
+                $this->_system->out("Exit Troubleshooting Test");
             }
 
         } while ($exitTest == false);
-
-        $choice = readline("\n\rHit Enter to Continue: ");
-
     }
-
-
-
-
-    /*****************************************************************************/
-    /*                                                                           */
-    /*                                                                           */
-    /*             T R O U B L E S H O O T   R O U T I N E S                     */
-    /*                                                                           */
-    /*                                                                           */
-    /*****************************************************************************/
-
  
 
 
@@ -229,8 +270,8 @@ class E104603TroubleShoot extends E104603Test
                 $this->_system->out("Scope out Bus Voltage Circuit");
             }
         } else {
-            $this->_system->out("No Internal Voltage Measurements available");
-            $this->_system->out("when running application firmware.        ");
+            $this->_system->out("Use Load Test Firmware item to make ");
+            $this->_system->out("Bus and VCC Voltage Measurements available");
         }
 
         
@@ -912,7 +953,338 @@ class E104603TroubleShoot extends E104603Test
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
     }
 
+
+    /*****************************************************************************/
+    /*                                                                           */
+    /*                                                                           */
+    /*     T R O U B L E S H O O T   A P P L I C A T I O N   R O U T I N E S     */
+    /*                                                                           */
+    /*                                                                           */
+    /*****************************************************************************/
+
+    /**
+    *************************************************************************
+    * Troubleshoot with Application Firmware Routine
+    * 
+    * This function runs the menu and calls functions for troubleshooting
+    * an endpoint that either has application firmware loaded.
+    */
+    private function _runTroubleshootApp()
+    {
+        $exitTest = false;
+        $result;
+
+        do{
+            $this->display->clearScreen();
+            $selection = $this->display->displayMenu(self::HEADER_STR, 
+                            $this->_eptroubleAppMenu);
+
+            if (($selection == "A") || ($selection == "a")) {
+                $this->_trblshtAppPwrUp();
+            } else if (($selection == "B") || ($selection == "b")){
+                $this->_trblshtUserCalibration();
+            } else if (($selection == "C") || ($selection == "c")){
+                $this->_trblshtAppPort1();
+            } else if (($selection == "D") || ($selection == "d")){
+                $this->_trblshtAppPort2();
+            } else {
+                $exitTest = true;
+                $this->_system->out("Exit Troubleshooting Application");
+            }
+
+        } while ($exitTest == false);
+
+    }
+ 
+     /**
+    ************************************************************
+    * Troubleshoot Application Power Up Routine
+    *
+    * This function will eventually do some troubleshooting 
+    * routine for the battery socializer board.
+    *
+    */
+    private function _trblshtAppPwrUp()
+    {
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        
+        $this->_powerUUT(self::ON);
+        
+        $choice = readline("\n\rTake Measurements and Hit Enter to Exit: ");
+        
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
+    }
+
+    /**
+    ***********************************************************
+    * Troubleshoot User Calibration Routine
+    *
+    * This function reads the user signature calibration values
+    * for the ADC and the DAC.  It will display the offset and 
+    * gain values and indicate whether or not they are within
+    * the proper range for the correction.
+    */
+    private function _trblshtUserCalibration()
+    {
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        
+        $this->_powerUUT(self::ON);
+        sleep(5);
+
+        $this->_system->out("Sending Read Config Command");
+        $this->_system->out("");
+
+         //$this->_system->out("Not Done!");
+        $idNum = 0x8012;
+        $cmdNum = self::READ_CONFIG_COMMAND;
+        $dataVal = "";
+
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal); 
+        
+        $length = strlen($ReplyData);
+
+        if ($length >= 62) {
+            $serialNum = substr($ReplyData, 0, 10);
+            $hwPartNum = substr($ReplyData,10, 10);
+            $fwPartNum = substr($ReplyData,20, 16);
+            $spacers   = substr($ReplyData, 36, 8);
+            $signature = substr($ReplyData, 44, 6);
+            $userCal   = substr($ReplyData, 50, 12);
+            
+            $this->_system->out("Serial Number        = ".$serialNum);
+            $this->_system->out("Hardware Part Number = ".$hwPartNum);
+            $this->_system->out("Firmware Part Number = ".$fwPartNum);
+            $this->_system->out("Signature Bytes      = ".$signature);
+            $this->_system->out("");
+
+            $this->_formatUserCalBytes($userCal);
+        } else {
+
+            $this->_system->out("Not enough reply data to contain user");
+            $this->_system->out("    calibration bytes.");
+            $this->_system->out("");
+            $this->_system->out("Reply Data = ".$ReplyData);
+        }
+
+        $choice = readline("\n\rHit Enter to Continue");
+
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
+    }
+
+    /**
+    *************************************************************
+    * Format User Calibration Bytes Routine
+    *
+    * This function separates the User Calibration bytes into
+    * the ADC offset, ADC gain, DAC offset and DAC gain values
+    * and displays them.
+    */
+    private function _formatUserCalBytes($usrCal)
+    {
+        $length = strlen($usrCal);
+        if ($length == 12) {
+            $adcOffset = substr($usrCal, 2, 2);
+            $adcOffset .= substr($usrCal, 0, 2);
+            
+            $this->_system->out("ADC Offset: ".$adcOffset);
+
+            $adcGain = substr($usrCal, 6,2);
+            $adcGain .= substr($usrCal, 4, 2);
+            $this->_system->out("ADC Gain  : ".$adcGain);
+
+            $dacOffset = substr($usrCal, 8, 2);
+            $this->_system->out("DAC Offset: ".$dacOffset);
+
+            $dacGain = substr($usrCal, 10, 2);
+            $this->_system->out("DAC Gain  : ".$dacGain);
+        } else {
+            $this->_system->out("Not enough characters for proper formatting.");
+            $this->_system->out("User Cal Bytes: ".$usrCal);
+        }
+
+    }
+
+
+    /**
+    *************************************************************
+    * Run Port 1 Application Test Routine
+    *
+    * This function runs the port 1 test on the application code
+    * to verify that the application code is running properly.
+    *
+    * @param integer $SNVal device serial number
+    *
+    * @return integer $testResult  1=pass, 0=fail, -1=hard fail
+    */
+    private function _trblshtAppPort1()
+    {
+
+        $this->_system->out("Not done!");
+        /*****************************************************
+        $this->_system->out("Read Port 1 Control Channel");
+        $chan = 1;
+        $this->_readControlChan($SNVal, $chan);
+
+        $this->_setPort1Load(self::ON);
+        $voltsP1 = $this->_readTesterP1Volt();
+
+        $this->_system->out("Turning on Port 1");
+        $this->_setControlChan($SNVal, $chan, self::ON);
+        sleep(1);
     
+        $voltsP1 = $this->_readTesterP1Volt();
+
+        if (($voltsP1 > 11.00) and ($voltsP1 < 13.00)) {
+            $this->_system->out("Turning off Port 1");
+            $this->_setControlChan($SNVal, $chan, self::OFF);
+            sleep(1);
+
+            $voltsP1 = $this->_readTesterP1Volt();
+            $this->_setPort1Load(self::OFF); 
+
+            if ($voltsP1 < 0.2) {
+                $testResult = self::PASS;
+            } else {
+                $testResult = self::HFAIL;
+                $this->_TEST_FAIL[] = "App Code P1 off:".$voltsP1."V";
+            }
+        } else {
+            $this->_setControlChan($SNVal, $chan, self::OFF);
+            sleep(2);
+            $this->_setPort1Load(self::OFF);
+            $testResult = self::HFAIL;
+            $this->_TEST_FAIL[] = "App Code P1 on:".$voltsP1."V";
+        } **********************************************************/
+
+        $choice = readline("\n\rHit Enter to Continue");
+    }
+
+
+
+    /**
+    *************************************************************
+    * Run Port 2 Application Test Routine
+    *
+    * This function runs the port 2 test on the application code
+    * to verify that the application code is running properly.
+    *
+    * @param integer $SNval device serial number
+    *
+    * @return integer $testResults  1=pass, 0=fail, -1=hard fail
+    */
+    private function _trblshtAppPort2()
+    {
+        $this->_system->out("Not Done!");
+        /*******************************************************
+        $chan = 2;
+        $this->_setPort2Load(self::ON);
+        
+        $voltsP2 = $this->_readTesterP2Volt();
+
+        $this->_system->out("Turning on Port 2");
+        $this->_setControlChan($SNval, $chan, self::ON);
+        sleep(1);
+    
+        $voltsP2 = $this->_readTesterP2Volt();
+        
+        if (($voltsP2 > 11.00) and ($voltsP2 < 13.00)) {
+            $this->_system->out("Turning off Port 2");
+            $this->_setControlChan($SNval, $chan, self::OFF);
+            sleep(1);
+
+            $voltsP2 = $this->_readTesterP2Volt();
+            $this->_setPort2Load(self::OFF); 
+
+            if ($voltsP2 < 0.2) {
+                $testResult = self::PASS;
+            } else {
+                $testResult = self::HFAIL;
+                $this->_TEST_FAIL[] = "App Code P2 off:".$voltsP2."V";
+            }
+        } else {
+            $this->_system->out("Application Test - FAILED!");
+            $this->_setControlChan($SNval, $chan, self::OFF);
+            sleep(1);
+            $this->_setPort2Load(self::OFF);
+            $testResult = self::HFAIL;
+            $this->_TEST_FAIL[] = "App Code P2 on:".$voltsP2."V";
+        } **********************************************************/
+        
+        $choice = readline("\n\rHit Enter to Continue");
+    }
+
+
+
+    /**
+    ************************************************************
+    * Read Control Channel Routine
+    *
+    * This function reads the control channel value for the 
+    * channel passed in to it.
+    *
+    * @param int $snNum  serial number for endpoint
+    * @param int $chanNum  channel number
+    *
+    * @return void
+    */
+    private function _readControlChan($snNum, $chanNum)
+    {
+        $idNum = $snNum;
+        $cmdNum = self::READCONTROLCHAN_COMMAND;
+        if ($chanNum == 1) {
+            $dataVal = "00";
+        } else {
+            $dataVal = "01";
+        }
+
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->_system->out("Port ".$chanNum." Control Channel Reply = ".$ReplyData);
+    }
+
+    /**
+    ************************************************************
+    * Set Control Channel Routine
+    *
+    * This function sets the control channel of the channel number 
+    * passed in to it either on or off depending on the state 
+    * parameter.
+    *
+    * @param int $snNum    device serial number
+    * @param int $chanNum  channel number
+    * @param int $state    On or Off
+    * 
+    */
+    private function  _setControlChan($snNum, $chanNum, $state)
+    {
+        $idNum = $snNum;
+        $cmdNum = self::SETCONTROLCHAN_COMMAND;
+        switch ($chanNum) {
+            case 1:
+                if ($state == self::ON) {
+                    $dataVal = "00204E0000";
+                } else {
+                    $dataVal = "0000000000";
+                }
+                break;
+            case 2:
+                if ($state == self::ON) {
+                    $dataVal = "01204E0000";
+                } else {
+                    $dataVal = "0100000000";
+                }
+                break;
+        }
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->_system->out("Set Control Channel Reply = ".$ReplyData);
+
+    }
+   
     /*****************************************************************************/
     /*                                                                           */
     /*                    H U G N ET   R O U T I N E S                           */

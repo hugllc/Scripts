@@ -69,7 +69,7 @@ require_once "E104607TroubleShoot.php";
 class SocializerTest extends \HUGnet\ui\Daemon
 {
 
-    const HEADER_STR    = "Battery Socializer Test & Program Tool";
+    const HEADER_STR    = "Battery Coach Test & Program Tool";
 
     private $_fixtureTest;
     private $_fixtureTrbl;
