@@ -76,6 +76,22 @@ class E104603TroubleShoot extends E104603Test
 
     const HEADER_STR    = "Battery Coach Troubleshoot & Program Tool";
 
+    const ADC_POFFSET_MAX = "0x0200";
+    const ADC_NOFFSET_MAX = "0x0E66";
+    const ADC_GAINCOR_MIN = "0x0400";
+    const ADC_GAINCOR_MAX = "0x0FFF";
+
+    const DAC_POFFSET_MAX = "0xDE";
+    const DAC_POFFSET_MIN = "0x80";
+    const DAC_NOFFSET_MAX = "0x5E";
+
+    const DAC_PGAINCOR_MAX = "0x3E";
+    const DAC_NGAINCOR_MIN = "0x80";
+    const DAC_NGAINCOR_MAX = "0xBE";
+
+    
+    private $_ENDPT_SN;
+
     private $_eptroubleMainMenu = array(
                                 0 => "Troubleshoot with Test Firmware",
                                 1 => "Troubleshoot with Application Firmware",
@@ -100,6 +116,7 @@ class E104603TroubleShoot extends E104603Test
                                 1 => "Read Calibration Values",
                                 2 => "Port 1",
                                 3 => "Port 2",
+                                4 => "Read Sensors",
                                 );
                                 
     public $display;
@@ -974,6 +991,9 @@ class E104603TroubleShoot extends E104603Test
         $exitTest = false;
         $result;
 
+        $this->display->clearScreen();
+        $this->_ENDPT_SN = $this->getSerialNumber();
+
         do{
             $this->display->clearScreen();
             $selection = $this->display->displayMenu(self::HEADER_STR, 
@@ -987,6 +1007,8 @@ class E104603TroubleShoot extends E104603Test
                 $this->_trblshtAppPort1();
             } else if (($selection == "D") || ($selection == "d")){
                 $this->_trblshtAppPort2();
+            } else if (($selection == "E") || ($selection == 'e')){
+                $this->_trblshtSensors();
             } else {
                 $exitTest = true;
                 $this->_system->out("Exit Troubleshooting Application");
@@ -1033,13 +1055,17 @@ class E104603TroubleShoot extends E104603Test
         $this->_system->out("********************\n\r");
         
         $this->_powerUUT(self::ON);
-        sleep(5);
+
+        for ($i = 0; $i < 5; $i++) {
+            print "*";
+            sleep(1);
+        }
+        $this->_system->out("");
 
         $this->_system->out("Sending Read Config Command");
         $this->_system->out("");
 
-         //$this->_system->out("Not Done!");
-        $idNum = 0x8012;
+        $idNum = hexdec($this->_ENDPT_SN);
         $cmdNum = self::READ_CONFIG_COMMAND;
         $dataVal = "";
 
@@ -1049,8 +1075,14 @@ class E104603TroubleShoot extends E104603Test
 
         if ($length >= 62) {
             $serialNum = substr($ReplyData, 0, 10);
+            $serialNum = ltrim($serialNum, "0");
+
             $hwPartNum = substr($ReplyData,10, 10);
+            $hwPartNum = $this->_formatHardwarePartNumber($hwPartNum);
+
             $fwPartNum = substr($ReplyData,20, 16);
+            $fwPartNum = $this->_formatFirmwarePartNumber($fwPartNum);
+
             $spacers   = substr($ReplyData, 36, 8);
             $signature = substr($ReplyData, 44, 6);
             $userCal   = substr($ReplyData, 50, 12);
@@ -1077,32 +1109,152 @@ class E104603TroubleShoot extends E104603Test
         $this->_powerUUT(self::OFF);
     }
 
+
+    /**
+    *************************************************************
+    * Format Hardware Part Number Routine
+    *
+    * This function formats the hardware part number string by
+    * placing dashes in the appropriate spots and changing the 
+    * hex ascii value at the end of the string to a letter.
+    *
+    * @param $hwNum hex string containing the hardware part number
+    *
+    * @return $hwStr  formatted hardware part number string
+    */
+    private function _formatHardwarePartNumber($hwNum)
+    {
+        $len = strlen($hwNum);
+        if ($len == 10 ) {
+            $hwStr = substr($hwNum, 0, 4);
+            $hwStr .= "-";
+            $hwStr .= substr($hwNum, 4, 2);
+            $hwStr .= "-";
+            $hwStr .= substr($hwNum, 6, 2);
+
+            $rev = substr($hwNum, 8,2);
+            $rev = "0x".$rev;
+            $revChar = chr($rev);
+
+            $hwStr.= "-". $revChar;
+        } else {
+            $hwStr = $hwNum;
+        }
+
+        return $hwStr;
+
+    }
+
+    /**
+    *************************************************************
+    * Format Firmware Part Number Routine
+    *
+    * This function formats the firmware part number string by
+    * placing dashes in the appropriate spots, changing the 
+    * hex ascii value to a letter and placing decimal points 
+    * in for version value.
+    *
+    * @param $fwNum hex string containing the firmware part number
+    *
+    * @return $fwStr  formatted firmware part number string
+    */
+    private function _formatFirmwarePartNumber($fwNum)
+    {
+        $len = strlen($fwNum);
+        if ($len == 16) {
+            $fwStr = substr($fwNum, 0, 4);
+            $fwStr .= "-";
+            $fwStr .= substr($fwNum, 4, 2);
+            $fwStr .= "-";
+            $fwStr .= substr($fwNum, 6, 2);
+            $fwStr .= "-";
+
+            $rev = substr($fwNum, 8,2);
+            $rev = "0x".$rev;
+            $revChar = chr($rev);
+
+            $fwStr.= $revChar;
+            
+            $ver = substr($fwNum, 10, 2);
+            $intVer = hexdec($ver);
+            $fwStr .= " ".strval($intVer);
+            $fwStr .= ".";
+
+            $ver = substr($fwNum, 12, 2);
+            $intVer = hexdec($ver);
+            $fwStr .= strval($intVer);
+            $fwStr .= ".";
+
+            $ver = substr($fwNum, 14, 2);
+            $intVer = hexdec($ver);
+            $fwStr .= strval($intVer);
+        } else {
+            $fwStr = $fwNum;
+        }
+
+        return $fwStr;
+    }
+
     /**
     *************************************************************
     * Format User Calibration Bytes Routine
     *
     * This function separates the User Calibration bytes into
     * the ADC offset, ADC gain, DAC offset and DAC gain values
-    * and displays them.
+    * does range checking and displays them.
+    * 
+    * @param $usrCal  The string of user calibration bytes.
+    *
+    * @return void
     */
     private function _formatUserCalBytes($usrCal)
     {
+
         $length = strlen($usrCal);
         if ($length == 12) {
+
             $adcOffset = substr($usrCal, 2, 2);
             $adcOffset .= substr($usrCal, 0, 2);
-            
-            $this->_system->out("ADC Offset: ".$adcOffset);
+            $adcOffset = "0x".$adcOffset;
 
             $adcGain = substr($usrCal, 6,2);
             $adcGain .= substr($usrCal, 4, 2);
-            $this->_system->out("ADC Gain  : ".$adcGain);
+            $adcGain = "0x".$adcGain;
 
-            $dacOffset = substr($usrCal, 8, 2);
-            $this->_system->out("DAC Offset: ".$dacOffset);
+            $dacOffset = "0x".substr($usrCal, 8, 2);
+            $dacGain = "0x".substr($usrCal, 10, 2);
 
-            $dacGain = substr($usrCal, 10, 2);
-            $this->_system->out("DAC Gain  : ".$dacGain);
+            if (($adcOffset < self::ADC_POFFSET_MAX) || 
+                ($adcOffset > self::ADC_NOFFSET_MAX)) {
+                $this->_system->out("ADC Offset Valid: ".$adcOffset);
+            } else {
+                $this->_system->out("*** ADC Offset Invalid: ", $adcOffset);
+            }
+
+            /* ADC_GAINCOR_MIN = "0x0400" */
+            /* ADC_GAINCOR_MAX = "0x0FFF" */
+            if (($adcGain >= self::ADC_GAINCOR_MIN) &&
+                ($adcGain <= self::ADC_GAINCOR_MAX)) { 
+                $this->_system->out("ADC Gain Valid  : ".$adcGain);
+            } else {
+                $this->_system->out("*** ADC Gain Invalid  : ". $adcGain);
+            }
+
+            if (($dacOffset <= self::DAC_NOFFSET_MAX) || 
+                (($dacOffset > self::DAC_POFFSET_MIN) && 
+                 ($dacOffset < self::DAC_POFFSET_MAX))) {
+                $this->_system->out("DAC Offset Valid: ".$dacOffset);
+            } else {
+                $this->_system->out("*** DAC Offset Invalid: ".$dacOffset);
+            }
+
+            if (($dacGain <= self::DAC_PGAINCOR_MAX) ||
+                (($dacGain > self::DAC_NGAINCOR_MIN) &&
+                 ($dacGain < self::DAC_NGAINCOR_MAX))) {
+                $this->_system->out("DAC Gain Valid  : ".$dacGain);
+            } else {
+                $this->_system->out("*** DAC Gain Invalid : ".$dacGain);
+            }
         } else {
             $this->_system->out("Not enough characters for proper formatting.");
             $this->_system->out("User Cal Bytes: ".$usrCal);
@@ -1124,9 +1276,19 @@ class E104603TroubleShoot extends E104603Test
     */
     private function _trblshtAppPort1()
     {
+        $SNVal = hexdec($this->_ENDPT_SN);
 
-        $this->_system->out("Not done!");
-        /*****************************************************
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        
+        $this->_powerUUT(self::ON);
+        for ($i = 0; $i < 4; $i++) {
+            print "*";
+            sleep(1);
+        }
+        $this->_system->out("");
+
+
         $this->_system->out("Read Port 1 Control Channel");
         $chan = 1;
         $this->_readControlChan($SNVal, $chan);
@@ -1149,20 +1311,21 @@ class E104603TroubleShoot extends E104603Test
             $this->_setPort1Load(self::OFF); 
 
             if ($voltsP1 < 0.2) {
-                $testResult = self::PASS;
+                $this->_system->out("PASS");
             } else {
-                $testResult = self::HFAIL;
-                $this->_TEST_FAIL[] = "App Code P1 off:".$voltsP1."V";
+                $this->_system->out("FAIL");
             }
         } else {
             $this->_setControlChan($SNVal, $chan, self::OFF);
             sleep(2);
             $this->_setPort1Load(self::OFF);
-            $testResult = self::HFAIL;
-            $this->_TEST_FAIL[] = "App Code P1 on:".$voltsP1."V";
-        } **********************************************************/
+            $this->_system->out("FAIL");
+        } 
 
         $choice = readline("\n\rHit Enter to Continue");
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
     }
 
 
@@ -1180,43 +1343,56 @@ class E104603TroubleShoot extends E104603Test
     */
     private function _trblshtAppPort2()
     {
-        $this->_system->out("Not Done!");
-        /*******************************************************
+        $SNVal = hexdec($this->_ENDPT_SN);
+
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        
+        $this->_powerUUT(self::ON);
+        for ($i = 0; $i < 4; $i++) {
+            print "*";
+            sleep(1);
+        }
+        $this->_system->out("");
+
+        $this->_system->out("Read Port 2 Control Channel");
         $chan = 2;
+        $this->_readControlChan($SNVal, $chan);
+
         $this->_setPort2Load(self::ON);
         
         $voltsP2 = $this->_readTesterP2Volt();
 
         $this->_system->out("Turning on Port 2");
-        $this->_setControlChan($SNval, $chan, self::ON);
+        $this->_setControlChan($SNVal, $chan, self::ON);
         sleep(1);
     
         $voltsP2 = $this->_readTesterP2Volt();
         
         if (($voltsP2 > 11.00) and ($voltsP2 < 13.00)) {
             $this->_system->out("Turning off Port 2");
-            $this->_setControlChan($SNval, $chan, self::OFF);
+            $this->_setControlChan($SNVal, $chan, self::OFF);
             sleep(1);
 
             $voltsP2 = $this->_readTesterP2Volt();
             $this->_setPort2Load(self::OFF); 
 
             if ($voltsP2 < 0.2) {
-                $testResult = self::PASS;
+                $this->_system->out("PASS");
             } else {
-                $testResult = self::HFAIL;
-                $this->_TEST_FAIL[] = "App Code P2 off:".$voltsP2."V";
+                $this->_system->out("FAIL");
             }
         } else {
-            $this->_system->out("Application Test - FAILED!");
-            $this->_setControlChan($SNval, $chan, self::OFF);
+            $this->_setControlChan($SNVal, $chan, self::OFF);
             sleep(1);
             $this->_setPort2Load(self::OFF);
-            $testResult = self::HFAIL;
-            $this->_TEST_FAIL[] = "App Code P2 on:".$voltsP2."V";
-        } **********************************************************/
+            $this->_system->out("FAIL");
+        } 
         
         $choice = readline("\n\rHit Enter to Continue");
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
     }
 
 
@@ -1285,6 +1461,44 @@ class E104603TroubleShoot extends E104603Test
 
     }
    
+
+    /**
+    ***********************************************************
+    * Run Read Sensors Routine
+    *
+    * This function sends a PACKET_READSENSORS_COMMAND to the
+    * Unit Under Test, formats and displays the return data.
+    *
+    *
+    */
+    private function _trblshtSensors()
+    {
+        $idNum = hexdec($this->_ENDPT_SN);
+        $cmdNum = self::READ_SENSORS_COMMAND;
+        $dataVal = "";
+
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        
+        $this->_powerUUT(self::ON);
+        for ($i = 0; $i < 4; $i++) {
+            print "*";
+            sleep(1);
+        }
+        $this->_system->out("");
+
+
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->_system->out("Reply Data:".$ReplyData);
+
+
+        $choice = readline("\n\rHit Enter to Continue");
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
+    }
+
+
     /*****************************************************************************/
     /*                                                                           */
     /*                    H U G N ET   R O U T I N E S                           */

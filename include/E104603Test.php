@@ -95,6 +95,7 @@ class E104603Test
     
     const SET_POWERTABLE_COMMAND = 0x45;
 
+    const READ_SENSORS_COMMAND   = 0x55;
     const READ_CONFIG_COMMAND    = 0x5C;
 
     const SETCONTROLCHAN_COMMAND = 0x64;
@@ -301,7 +302,7 @@ class E104603Test
                     $stepResult = $this->_runUUTdacCalibration();
                     break;
                 case 7:
-                    $this->_ENDPT_SN = $this->_getSerialNumber();
+                    $this->_ENDPT_SN = $this->getSerialNumber();
                     $stepResult = $this->_testUUT();
                     break;
                 case 8:
@@ -2745,7 +2746,7 @@ class E104603Test
     *
     * @return $SN the serial number in integer form.
     */
-    private function _getSerialNumber()
+    public function getSerialNumber()
     {
         do {
             $this->display->displaySMHeader("   OBTAINING SERIAL NUMBER   ");
