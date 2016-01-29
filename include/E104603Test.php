@@ -103,6 +103,33 @@ class E104603Test
 
     const HEADER_STR    = "Battery Coach Test & Program Tool";
     
+    /*****************************************/
+    /* ADC index values changed for 10460303 */
+    /* The old values are saved in comment   */
+    /* field below.                          */
+    /*****************************************/
+    const TSTR_VCC_PORT  = 0;
+    const TSTR_VBUS_PORT = 1;
+    const TSTR_P0_PORT   = 2;
+    const TSTR_P1_PORT   = 3;
+    const TSTR_SW3V_PORT = 4;
+    
+    const UUT_P0_VOLT    = 0;
+    const UUT_P1_VOLT    = 1;
+    const UUT_BUS_VOLT   = 2;
+    const UUT_BUS_TEMP0  = 3;
+    const UUT_BUS_TEMP1  = 4;
+    const UUT_P0_TEMP    = 5;
+    const UUT_P1_CURRENT = 6;
+    const UUT_P0_CURRENT = 7;
+    const UUT_EXT_TEMP2  = 8;
+    const UUT_EXT_TEMP1  = 9;
+    const UUT_P1_TEMP    = 0xA;
+    const UUT_CAL_VOLT   = 0xB;
+    const UUT_VCC_VOLT   = 0xC;
+    const UUT_DAC_VOLT   = 0xD;
+    /******************************
+      10460301 ADC index values
     const TSTR_VCC_PORT  = 0;
     const TSTR_VBUS_PORT = 1;
     const TSTR_P2_PORT   = 2;
@@ -121,10 +148,10 @@ class E104603Test
     const UUT_P1_TEMP    = 9;
     const UUT_VCC_VOLT   = 0xA;
     const UUT_DAC_VOLT   = 0xB;
-    
+    ******************************/
     const ON = 1;
     const OFF = 0;
-
+    
     const PASS = 1;
     const FAIL = 0;
     const HFAIL = -1;
@@ -134,7 +161,7 @@ class E104603Test
     const DAC_GAINCAL_LEVEL = 1.60;
     const DAC_GAINCAL_START = 1986;
     
-    const HWPN = "1046030141";
+    const HWPN = "1046030241";
     
     
 
@@ -568,38 +595,48 @@ class E104603Test
         $this->_system->out("******************************");
         sleep(1);
 
-        $busTemp = $this->_readUUTBusTemp();
-        $this->_TEST_DATA["BusTemp"] = $busTemp;
+        $busTemp0 = $this->_readUUTBusTemp0();
+        $this->_TEST_DATA["BusTemp0"] = $busTemp0;
 
-        if (($busTemp > 11.00) and ($busTemp < 26.00)) {
+        if (($busTemp0 > 11.00) and ($busTemp0 < 26.00)) {
             $resultT1 = self::PASS;
         } else {
             $resultT1 = self::FAIL;
-            $this->_TEST_FAIL[] = "Bus Temp:".$busTemp."C";
+            $this->_TEST_FAIL[] = "Bus Temp0:".$busTemp0."C";
         }
 
+        $busTemp1 = $this->_readUUTBusTemp1();
+        $this->_TEST_DATA["BusTemp1"] = $busTemp1;
+
+        if (($busTemp1 > 11.00) and ($busTemp1 < 26.00)) {
+            $resultT2 = self::PASS;
+        } else {
+            $resultT2 = self::FAIL;
+            $this->_TEST_FAIL[] = "Bus Temp1:".$busTemp1."C";
+        }
+        
         $p1Temp = $this->_readUUTP1Temp();
         $this->_TEST_DATA["P1Temp"] = $p1Temp;
 
         if (($p1Temp > 11.00) and ($p1Temp < 26.00)) {
-            $resultT2 = self::PASS;
-        } else {
-            $resultT2 = self::FAIL;
-            $this->_TEST_FAIL[] = "Port 1 Temp:".$p1Temp."C";
-        }
-        
-        $p2Temp = $this->_readUUTP2Temp(); 
-        $this->_TEST_DATA["P2Temp"] = $p2Temp;
-
-        if (($p2Temp > 11.00) and ($p2Temp < 26.00)) {
             $resultT3 = self::PASS;
         } else {
             $resultT3 = self::FAIL;
-            $this->_TEST_FAIL[] = "Port 2 Temp:".$p2Temp."C";
+            $this->_TEST_FAIL[] = "Port 1 Temp:".$p1Temp."C";
+        }
+        
+        $p0Temp = $this->_readUUTP0Temp(); 
+        $this->_TEST_DATA["P0Temp"] = $p0Temp;
+
+        if (($p0Temp > 11.00) and ($p0Temp < 26.00)) {
+            $resultT4 = self::PASS;
+        } else {
+            $resultT4 = self::FAIL;
+            $this->_TEST_FAIL[] = "Port 0 Temp:".$p0Temp."C";
         }
 
         if (($resultT1 == self::PASS) and ($resultT2 == self::PASS)
-                            and ($resultT3 == self::PASS)) {
+           and ($resultT3 == self::PASS) and ($resultT4 == self::PASS)) {
             $testResult = self::PASS;
             $this->_system->out("UUT Thermistors - PASSED!");
         } else {
@@ -716,9 +753,9 @@ class E104603Test
 
     /**
     ***************************************************************
-    * Port 2 Load Test Routine
+    * Port 0 Load Test Routine
     *
-    * This function connects a load to Port 2 and turns on the 
+    * This function connects a load to Port 0 and turns on the 
     * FET.  It then measures the port voltage and reads the 
     * Port voltage and current from the UUT.  It tests the 
     * voltage and current against expected values for each.  Then
@@ -727,47 +764,47 @@ class E104603Test
     * 
     * @return integer $testResult  1=pass, 0=fail, -1=hard fail
     */
-    private function _testUUTport2()
+    private function _testUUTport0()
     {
-        $this->_system->out("Testing UUT Port 2 ");
+        $this->_system->out("Testing UUT Port 0 ");
         $this->_system->out("******************************");
 
-        $this->_setPort2Load(self::ON);
-        $this->_setPort2(self::ON);
+        $this->_setPort0Load(self::ON);
+        $this->_setPort0(self::ON);
 
-        $voltsP2 = $this->_readTesterP2Volt();
-        $p2Volts = $this->_readUUTPort2Volts();
-        $this->_TEST_DATA["P2Volts"] = $p2Volts;
+        $voltsP0 = $this->_readTesterP0Volt();
+        $p0Volts = $this->_readUUTPort0Volts();
+        $this->_TEST_DATA["P0Volts"] = $p0Volts;
 
-        $p2Amps = $this->_readUUTPort2Current();
-        $this->_TEST_DATA["P2Current"] = $p2Amps;
+        $p0Amps = $this->_readUUTPort0Current();
+        $this->_TEST_DATA["P0Current"] = $p0Amps;
 
-        if (($p2Volts > 11.50) and ($p2Volts < 13.00)) {
-            $testResult = $this->_runP2Faulttest();
-            $this->_setPort2(self::OFF);
+        if (($p0Volts > 11.50) and ($p0Volts < 13.00)) {
+            $testResult = $this->_runP0Faulttest();
+            $this->_setPort0(self::OFF);
 
             if ($testResult == self::PASS) {
-                $voltsP2 = $this->_readTesterP2Volt();
-                $p2Volts = $this->_readUUTPort2Volts();
+                $voltsP0 = $this->_readTesterP0Volt();
+                $p0Volts = $this->_readUUTPort0Volts();
 
-                if ($p2Volts <= 0.1) {
+                if ($p0Volts <= 0.1) {
                     $testResult = self::PASS;
-                    $this->_system->out("Port 2 Load Test - PASSED!");
+                    $this->_system->out("Port 0 Load Test - PASSED!");
                 } else {
                     $testResult = self::HFAIL;
-                    $this->_system->out("Port 2 Load Test - FAILED!");
-                    $this->_TEST_FAIL[] = "P2 Off Load:".$p2Volts."V";
+                    $this->_system->out("Port 0 Load Test - FAILED!");
+                    $this->_TEST_FAIL[] = "P0 Off Load:".$p0Volts."V";
                 }
             } else {
-                $this->_system->out("Port 2 Fault Test - FAILED!");
+                $this->_system->out("Port 0 Fault Test - FAILED!");
             }
         } else {
-            $this->_setPort2(self::OFF);
-            $this->_system->out("Port 2 Fault Test - FAILED!");
-            $this->_TEST_FAIL[] = "P2 On Load:".$p2Volts."V";
+            $this->_setPort0(self::OFF);
+            $this->_system->out("Port 0 Fault Test - FAILED!");
+            $this->_TEST_FAIL[] = "P0 On Load:".$p0Volts."V";
             $testResult = self::HFAIL;
         }
-        $this->_setPort2Load(self::OFF); /* Remove 12 ohm load */
+        $this->_setPort0Load(self::OFF); /* Remove 12 ohm load */
 	
         $this->_system->out("");
         return $testResult;
@@ -775,40 +812,40 @@ class E104603Test
 
     /**
     ***************************************************************
-    * Port 2 Fault Test Routine
+    * Port 0 Fault Test Routine
     *
-    * This function runs the fault test on Port 2
+    * This function runs the fault test on Port 0
     * 
     * @return $int $testResult  1=pass, 0=fail, -1=hard fail
     */
-    private function _runP2FaultTest()
+    private function _runP0FaultTest()
     {
         $this->_system->out("PORT 2 FAULT ON:");
-        $this->_faultSet(2, 1); /* Set fault */
+        $this->_faultSet(0, 1); /* Set fault */
         sleep(1);
         
-        /* Measure Port 1 voltage */
-        $voltsP2 = $this->_readTesterP2Volt();
-        $this->_TEST_DATA["P2Fault"] = $voltsP2;
+        /* Measure Port 0 voltage */
+        $voltsP0 = $this->_readTesterP0Volt();
+        $this->_TEST_DATA["P0Fault"] = $voltsP0;
 
-        if ($voltsP2 < 0.1) {
-            $this->_system->out("PORT 2 FAULT OFF:");
-            $this->_faultSet(2, 0); /* Remove fault */
+        if ($voltsP0 < 0.1) {
+            $this->_system->out("PORT 0 FAULT OFF:");
+            $this->_faultSet(0, 0); /* Remove fault */
             sleep(1);
 
-            $voltsP2 = $this->_readTesterP2Volt();
+            $voltsP0 = $this->_readTesterP0Volt();
             
-            if (($voltsP2 > 11.00) and ($voltsP2 < 13.00)) {
+            if (($voltsP0 > 11.00) and ($voltsP0 < 13.00)) {
                 $testResult = self::PASS;
             } else {
-                $this->_TEST_FAIL[] = "P2 Fault Off:".$voltsP2."V";
+                $this->_TEST_FAIL[] = "P0 Fault Off:".$voltsP0."V";
                 $testResult = self::HFAIL;
             }
         } else {
-            $this->_system->out("PORT 2 FAULT OFF:");
-            $this->_faultSet(2, 0);
+            $this->_system->out("PORT 0 FAULT OFF:");
+            $this->_faultSet(0, 0);
             sleep(1);
-            $this->_TEST_FAIL[] = "P2 Fault On:".$voltsP2."V";
+            $this->_TEST_FAIL[] = "P0 Fault On:".$voltsP0."V";
             $testResult = self::HFAIL;
         }
 
@@ -839,7 +876,7 @@ class E104603Test
         $testResult = $this->_Port1ToVbusTest();
 
         if ($testResult == self::PASS) {
-            $testResult = $this->_Port2ToVbusTest();
+            $testResult = $this->_Port0ToVbusTest();
         }
 
         if ($testResult == self::PASS) {
@@ -920,61 +957,61 @@ class E104603Test
    
     /**
     *******************************************************************
-    * Port 2 to VBus Test Routine
+    * Port 0 to VBus Test Routine
     *
-    * This function tests the ability of Port 2 to supply current and
+    * This function tests the ability of Port 0 to supply current and
     * voltage to VBus.  It assumes that Vbus is currently connected 
-    * to the load resistor through relay K1 and Port 1 is connected to
+    * to the load resistor through relay K1 and Port 0 is connected to
     * +12V through relay K4.
     *
     * @return int $testResult 1=pass, 0=fail, -1=hard fail
     */
-    private function _Port2ToVbusTest()
+    private function _Port0ToVbusTest()
     {
-        $this->_setPort2_V12(self::ON);
-        $voltsP2 = $this->_readTesterP2Volt();
-        $p2Volts = $this->_readUUTPort2Volts();
+        $this->_setPort0_V12(self::ON);
+        $voltsP0 = $this->_readTesterP0Volt();
+        $p0Volts = $this->_readUUTPort0Volts();
         
-        if (($p2Volts > 11.50) and ($p2Volts < 13.00)) {
+        if (($p0Volts > 11.50) and ($p0Volts < 13.00)) {
             $this->_setPort1_V12(self::OFF);
             
             $voltsP1 = $this->_readTesterP1Volt();
-            $this->_setPort2(self::ON);
+            $this->_setPort0(self::ON);
             
             $voltsVB = $this->_readTesterBusVolt();
             $VBvolts = $this->_readUUTBusVolts();
-            $p2Volts = $this->_readUUTPort2Volts();
-            $p2Amps = $this->_readUUTPort2Current();
+            $p0Volts = $this->_readUUTPort0Volts();
+            $p0Amps = $this->_readUUTPort0Current();
 
             if (($VBvolts > 11.50) and ($VBvolts < 13.00)) {
-                $this->_setPort2(self::OFF);
+                $this->_setPort0(self::OFF);
                 $voltsVB = $this->_readTesterBusVolt();
                 $VBvolts = $this->_readUUTBusVolts();
-                $p2Amps = $this->_readUUTPort2Current();
+                $p0Amps = $this->_readUUTPort0Current();
                 
                 if ($VBvolts < 0.2) {
                     $testResult = self::PASS;
                 } else {
                     $testResult = self::HFAIL;
-                    $this->_TEST_FAIL[] = "P2 off to Vbus:".$VBvolts."V";
+                    $this->_TEST_FAIL[] = "P0 off to Vbus:".$VBvolts."V";
                 }
                 $this->_setVBus_V12(self::ON);
                 $voltsVB = $this->_readTesterBusVolt();
                 $VBvolts = $this->_readUUTBusVolts();
-                $this->_setPort2_V12(self::OFF);
-                $voltsP2 = $this->_readTesterP2Volt();
+                $this->_setPort0_V12(self::OFF);
+                $voltsP0 = $this->_readTesterP0Volt();
 
             } else {
-                $this->_setPort2(self::OFF);
-                $this->_setPort2_V12(self::OFF);
-                $this->_TEST_FAIL[] = "P2 on to Vbus:".$VBvolts."V";
+                $this->_setPort0(self::OFF);
+                $this->_setPort0_V12(self::OFF);
+                $this->_TEST_FAIL[] = "P0 on to Vbus:".$VBvolts."V";
                 $this->_setVBus_V12(self::ON);
                 $this->_setPort1_V12(self::OFF);
                 $testResult = self::HFAIL;
             }
         } else {
-            $this->_setPort2_V12(self::OFF);
-            $this->_TEST_FAIL[] = "P2 Supply :".$p2Volts."V";
+            $this->_setPort0_V12(self::OFF);
+            $this->_TEST_FAIL[] = "P0 Supply :".$p0Volts."V";
             $this->_setVBus_V12(self::ON);
             $this->_setPort1_V12(self::OFF);
             $testResult = self::HFAIL;
@@ -1063,7 +1100,7 @@ class E104603Test
         $dataVal = "01"; /*turn on Green Status LEDs */
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
-        $choice = readline("\n\rAre all 3 Green Status LEDs on? (Y/N) ");
+        $choice = readline("\n\rAre both Green Status LEDs on? (Y/N) ");
         if (($choice == "Y") || ($choice == "y")) {
             $result1 = self::PASS; 
         } else {
@@ -1074,7 +1111,7 @@ class E104603Test
         $dataVal = "02"; /* Turn on Red status LEDs */
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal); 
 
-        $choice = readline("\n\rAre all 3 Red Status LEDs on? (Y/N) ");
+        $choice = readline("\n\rAre both Red Status LEDs on? (Y/N) ");
         if (($choice == "Y") || ($choice == "y")) {
             $result2 = self::PASS; 
         } else {
@@ -1172,7 +1209,7 @@ class E104603Test
             $testResult = $this->_runPort1AppTest($decVal);
             
             if ($testResult == self::PASS) {
-                $testResult = $this->_runPort2AppTest($decVal);
+                $testResult = $this->_runPort0AppTest($decVal);
                 if ($testResult == self::PASS) {
                     $this->_system->out("Application Test - PASSED!");
                 } else {
@@ -1247,49 +1284,49 @@ class E104603Test
 
     /**
     *************************************************************
-    * Run Port 2 Application Test Routine
+    * Run Port 0 Application Test Routine
     *
-    * This function runs the port 2 test on the application code
+    * This function runs the port 0 test on the application code
     * to verify that the application code is running properly.
     *
     * @param integer $SNval device serial number
     *
     * @return integer $testResults  1=pass, 0=fail, -1=hard fail
     */
-    private function _runPort2AppTest($SNval)
+    private function _runPort0AppTest($SNval)
     {
         $chan = 2;
-        $this->_setPort2Load(self::ON);
+        $this->_setPort0Load(self::ON);
         
-        $voltsP2 = $this->_readTesterP2Volt();
+        $voltsP0 = $this->_readTesterP0Volt();
 
-        $this->_system->out("Turning on Port 2");
+        $this->_system->out("Turning on Port 0");
         $this->_setControlChan($SNval, $chan, self::ON);
         sleep(1);
     
-        $voltsP2 = $this->_readTesterP2Volt();
+        $voltsP0 = $this->_readTesterP0Volt();
         
-        if (($voltsP2 > 11.00) and ($voltsP2 < 13.00)) {
-            $this->_system->out("Turning off Port 2");
+        if (($voltsP0 > 11.00) and ($voltsP0 < 13.00)) {
+            $this->_system->out("Turning off Port 0");
             $this->_setControlChan($SNval, $chan, self::OFF);
             sleep(1);
 
-            $voltsP2 = $this->_readTesterP2Volt();
-            $this->_setPort2Load(self::OFF); /* Remove 12 ohm load */
+            $voltsP0 = $this->_readTesterP0Volt();
+            $this->_setPort0Load(self::OFF); /* Remove 12 ohm load */
 
-            if ($voltsP2 < 0.2) {
+            if ($voltsP0 < 0.2) {
                 $testResult = self::PASS;
             } else {
                 $testResult = self::HFAIL;
-                $this->_TEST_FAIL[] = "App Code P2 off:".$voltsP2."V";
+                $this->_TEST_FAIL[] = "App Code P0 off:".$voltsP0."V";
             }
         } else {
             $this->_system->out("Application Test - FAILED!");
             $this->_setControlChan($SNval, $chan, self::OFF);
             sleep(1);
-            $this->_setPort2Load(self::OFF);
+            $this->_setPort0Load(self::OFF);
             $testResult = self::HFAIL;
-            $this->_TEST_FAIL[] = "App Code P2 on:".$voltsP2."V";
+            $this->_TEST_FAIL[] = "App Code P0 on:".$voltsP0."V";
         }
         
         return $testResult;
@@ -1357,17 +1394,17 @@ class E104603Test
     
     /**
     ************************************************************
-    * Read Port 2 Voltage
+    * Read Port 0 Voltage
     * 
-    * This function reads the Battery Socializer Port 2 
+    * This function reads the Battery Socializer Port 0 
     * voltage and returns the value.
     * 
     * @return $volts  a floating point value for Bus voltage 
     */
-    public function _readTesterP2Volt()
+    public function _readTesterP0Volt()
     {
     
-        $rawVal = $this->_readTesterADCinput(self::TSTR_P2_PORT);
+        $rawVal = $this->_readTesterADCinput(self::TSTR_P0_PORT);
       
         if ($rawVal > 0x7fff) {
             $rawVal = 01;
@@ -1376,10 +1413,10 @@ class E104603Test
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
         $volts = $volts * 21;
-        $voltsP2 = number_format($volts, 2);
+        $voltsP0 = number_format($volts, 2);
 	
-        $this->_system->out("Port 2 Tester    = ".$voltsP2." volts");
-        return $voltsP2;
+        $this->_system->out("Port 0 Tester    = ".$voltsP0." volts");
+        return $voltsP0;
     }
   
     /**
@@ -1466,19 +1503,19 @@ class E104603Test
 
     /**
     **************************************************************
-    * Read UUT Port 2 Voltage
+    * Read UUT Port 0 Voltage
     *
     * This function gets the averaged adc reading for the Port 2
     * adc channel input.  It sends a command to the UUT to return
     * the DataChan value and then converts the adc steps into 
-    * voltage values.
+    * voltage values.  Index = 0
     *
-    * @return $volts  Port 2 voltage value.
+    * @return $volts  Port 0 voltage value.
     */
-    public function _readUUTPort2Volts()
+    public function _readUUTPort0Volts()
     {
         
-        $rawVal = $this->_readUUT_ADCval(self::UUT_P2_VOLT);
+        $rawVal = $this->_readUUT_ADCval(self::UUT_P0_VOLT);
        
         if ($rawVal > 0x7ff) {
             $newVal= dechex($rawVal);
@@ -1492,7 +1529,7 @@ class E104603Test
         $volts = $volts * 21;
         
         $p2Volts = number_format($volts, 2);
-        $this->_system->out("Port 2 UUT       = ".$p2Volts." volts");
+        $this->_system->out("Port 0 UUT       = ".$p2Volts." volts");
 
         return $p2Volts;
     }
@@ -1500,16 +1537,16 @@ class E104603Test
 
      /**
     ************************************************************
-    * Read UUT Bus Temperature Routine
+    * Read UUT Bus Temperature 0 Routine
     * 
     * This function reads the Bus temperature internally measured 
-    * by the Unit Under Test (UUT). Index 1
+    * by the Unit Under Test (UUT). Index 3
     *
     * @return $rawVal 
     */
-    private function _readUUTBusTemp()
+    private function _readUUTBusTemp0()
     {
-        $rawVal = $this->_readUUT_ADCval(self::UUT_BUS_TEMP);
+        $rawVal = $this->_readUUT_ADCval(self::UUT_BUS_TEMP0);
 
         $bTemp = $this->_convertTempData($rawVal);
         $busTemp = number_format($bTemp, 2);
@@ -1520,22 +1557,42 @@ class E104603Test
     }
 
      /**
-    *****************************************************************
-    * Read UUT Port 2 Temperature Routine
+    ************************************************************
+    * Read UUT Bus Temperature 1 Routine
     * 
-    * This function reads the Port 2 temperature internally measured 
-    * by the Unit Under Test (UUT). Index 2
+    * This function reads the Bus temperature internally measured 
+    * by the Unit Under Test (UUT). Index 4
     *
     * @return $rawVal 
     */
-    private function _readUUTP2Temp()
+    private function _readUUTBusTemp1()
     {
-        $rawVal = $this->_readUUT_ADCval(self::UUT_P2_TEMP);
+        $rawVal = $this->_readUUT_ADCval(self::UUT_BUS_TEMP1);
+
+        $bTemp = $this->_convertTempData($rawVal);
+        $busTemp = number_format($bTemp, 2);
+        
+        $this->_system->out("Bus Temp    : ".$busTemp." C");
+        return $busTemp;
+
+    }
+     /**
+    *****************************************************************
+    * Read UUT Port 0 Temperature Routine
+    * 
+    * This function reads the Port 0 temperature internally measured 
+    * by the Unit Under Test (UUT). Index 5
+    *
+    * @return $rawVal 
+    */
+    private function _readUUTP0Temp()
+    {
+        $rawVal = $this->_readUUT_ADCval(self::UUT_P0_TEMP);
 
         $p2Temp = $this->_convertTempData($rawVal);
         $port2Temp = number_format($p2Temp, 2);
         
-        $this->_system->out("Port 2 Temp : ".$port2Temp." C");
+        $this->_system->out("Port 0 Temp : ".$port2Temp." C");
         return $port2Temp;
 
     }
@@ -1546,7 +1603,7 @@ class E104603Test
     * Read UUT Port 1 Current Routine
     * 
     * This function reads the Port 1 Current flow measured 
-    * by the Unit Under Test (UUT).  Index 3
+    * by the Unit Under Test (UUT).  Index 6
     *
     * @return $volts 
     */
@@ -1571,7 +1628,7 @@ class E104603Test
     * Read UUT Port 2 Current Routine
     * 
     * This function reads the Port 2 Current flow measured 
-    * by the Unit Under Test (UUT).  Index 4
+    * by the Unit Under Test (UUT).  Index 7
     *
     * slope for the current to voltage output from the 
     * current sensor IC is:
@@ -1581,9 +1638,9 @@ class E104603Test
     *
     * @return $volts 
     */
-    public function _readUUTPort2Current()
+    public function _readUUTPort0Current()
     {
-        $rawVal = $this->_readUUT_ADCval(self::UUT_P2_CURRENT);
+        $rawVal = $this->_readUUT_ADCval(self::UUT_P0_CURRENT);
         $steps = 1.65/ pow(2,11);
         $volts = $steps * $rawVal;
 
@@ -1592,7 +1649,7 @@ class E104603Test
         $current = $newVal / 0.0532258;   /* 0.0432258  */
 
         $p2Amps = number_format($current, 2);
-        $this->_system->out("Port 2 Current   = ".$p2Amps." amps");
+        $this->_system->out("Port 0 Current   = ".$p2Amps." amps");
 
         return $p2Amps;
     }
@@ -1603,7 +1660,7 @@ class E104603Test
     * Read UUT Bus Voltage Routine
     * 
     * This function reads the Bus Voltage internally measured 
-    * by the Unit Under Test (UUT). Index 5
+    * by the Unit Under Test (UUT). Index 2
     *
     * @return $volts 
     */
@@ -1632,7 +1689,7 @@ class E104603Test
     * Read UUT External Temperature 2 Routine
     * 
     * This function reads the external temperature 2 measured 
-    * by the Unit Under Test (UUT). Index 6
+    * by the Unit Under Test (UUT). Index 8
     *
     * @return $rawVal 
     */
@@ -1658,7 +1715,7 @@ class E104603Test
     * Read UUT External Temperature 1 Routine
     * 
     * This function reads the external temperature 1 measured 
-    * by the Unit Under Test (UUT). Index 7
+    * by the Unit Under Test (UUT). Index 9
     *
     * @return $rawVal 
     */
@@ -1684,7 +1741,7 @@ class E104603Test
     * Read UUT Port 1 Temperature Routine
     * 
     * This function reads the Port 1 temperature internally measured 
-    * by the Unit Under Test (UUT). Index 8
+    * by the Unit Under Test (UUT). Index 10
     *
     * @return $rawVal 
     */
@@ -1707,7 +1764,7 @@ class E104603Test
     * This function gets the averaged adc reading for the Port 1
     * adc channel input.  It sends a command to the UUT to return
     * the DataChan value and then converts the adc steps into 
-    * voltage values.
+    * voltage values. Index = 1
     *
     * @return $volts  Port 1 voltage value.
     */
@@ -1732,13 +1789,36 @@ class E104603Test
         return $p1Volts;
     }
 
-
+    /**
+    ************************************************************
+    * Read UUT Calibration Voltage Routine
+    *
+    * This function reads the Calibration voltage that has been
+    * applied by the tester to the UUT ADC 11 input.
+    *
+    * @return $volts
+    */
+    public function _readCalibrationVolts()
+    {
+        $rawVal = $this->_readUUT_ADCval(self::UUT_CAL_VOLT);
+        
+        $steps = 1.65/ pow(2,11);
+        $volts = $steps * $rawVal;
+        $volts *= 2;
+   
+        $voltsVCal = number_format($volts, 3);
+        
+        $this->_system->out("UUT Calibration Volts    = ".$voltsVCal." volts");
+        return $voltsVCal;
+    
+    }
+    
     /**
     ************************************************************
     * Read UUT Vcc Voltage Routine
     * 
     * This function reads the Vcc Voltage internally measured 
-    * by the Unit Under Test (UUT). Index A
+    * by the Unit Under Test (UUT). Index 12
     *
     * @return $volts 
     */
@@ -1761,7 +1841,7 @@ class E104603Test
     * Read UUT DAC Voltage Routine
     * 
     * This function reads the DAC output voltage internally 
-    * measured by the Unit Under Test (UUT). Index B
+    * measured by the Unit Under Test (UUT). Index 13
     *
     * @return $volts 
     */
@@ -1925,25 +2005,25 @@ class E104603Test
 
     /**
     ************************************************************
-    * Set Port 2 Load Routine
+    * Set Port 0 Load Routine
     *
     * This function connects the 12 ohm load resistor to
-    * port 2 and delays for 1 second before returning. It 
+    * port 0 and delays for 1 second before returning. It 
     * assumes that relay K5 is open so that the load is 
     * selected.
     *
     * @param int $state  1=On, 0=off
     * @return void
     */
-    public function _setPort2Load($state)
+    public function _setPort0Load($state)
     {
         switch ($state) {
             case 0: 
-                /* open relay K6 to disconnect 12 ohm load from Port 2 */
+                /* open relay K6 to disconnect 12 ohm load from Port 0 */
                 $this->_setRelay(6,0);
                 break;
             case 1:
-                /* close relay K6 to connect 12 ohm load to Port 2 */
+                /* close relay K6 to connect 12 ohm load to Port 0 */
                 $this->_setRelay(6, 1);
                 break;
         }
@@ -1953,24 +2033,24 @@ class E104603Test
 
     /**
     ***********************************************************
-    * Set Port 2 State Routine
+    * Set Port 0 State Routine
     *
-    * This function turns Port 2 FET's on or off for the load
+    * This function turns Port 0 FET's on or off for the load
     * or supply tests and delays 1 second.
     *
     * @param int $state  1=on, 0= off
     * @return void
     */
-    public function _setPort2($state)
+    public function _setPort0($state)
     {
         switch ($state) {
             case 0:
-                $this->_setPort(2,0); /* Port 1 off */
-                $this->_system->out("PORT 2 OFF:");
+                $this->_setPort(0,0); /* Port 0 off */
+                $this->_system->out("PORT 0 OFF:");
                 break;
             case 1:
-                $this->_setPort(2, 1); /* Port 1 On */
-                $this->_system->out("PORT 2 ON:");
+                $this->_setPort(0, 1); /* Port 0 On */
+                $this->_system->out("PORT 0 ON:");
                 break;
         }
 
@@ -1979,26 +2059,26 @@ class E104603Test
     
     /**
     ************************************************************
-    * Set Port 2 +12V Routine
+    * Set Port 0 +12V Routine
     *
-    * This function connects the +12V supply to port 2
+    * This function connects the +12V supply to port 0
     * and delays for 1 second before returning.  
     *
     * @param int $state  1=On, 0=off
     * @return void
     */
-    public function _setPort2_V12($state)
+    public function _setPort0_V12($state)
     {
         switch ($state) {
             case 0: 
-                $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 2 */
+                $this->_setRelay(6, 0);  /* open K6 to remove +12V from Port 0 */
                 $this->_setRelay(5, 0);  /* open K5 to select 12 Ohm load */
-                $this->_system->out("Port 2 +12V OFF:");
+                $this->_system->out("Port 0 +12V OFF:");
                 break;
             case 1:
                 $this->_setRelay(5, 1);  /* close K5 to select +12V */
-                $this->_setRelay(6, 1);  /* close K6 to connect +12V to Port 2 */
-                $this->_system->out("PORT 2 +12V CONNECTED:");
+                $this->_setRelay(6, 1);  /* close K6 to connect +12V to Port 0 */
+                $this->_system->out("PORT 0 +12V CONNECTED:");
                 break;
         }
         sleep(1);
@@ -2166,7 +2246,7 @@ class E104603Test
     * This function sets or clears the fault current condition
     * on the Power Ports to test the circuits response.
     *
-    * @param $portNum  Power port 1 or 2
+    * @param $portNum  Power port 1 or 0
     * @param $state    0= clear, 1=set 
     *
     * @return integer $testResult
@@ -2233,19 +2313,19 @@ class E104603Test
             }
         } else if ($portNum == 2) {
             if ($state == 0) {
-                $dataVal = "0200";
-            } else if ($state == 1) {
-                $dataVal = "0201";
-            } else {
                 $dataVal = "0000";
+            } else if ($state == 1) {
+                $dataVal = "0001";
+            } else {
+                $dataVal = "0202";
             }
         } else {
-            $dataVal = "0000";
+            $dataVal = "0202";
         }
 
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
-        if ($ReplyData == "00") {
+        if ($ReplyData == "02") {
             $result = false;
         } else {
             $result = true;
