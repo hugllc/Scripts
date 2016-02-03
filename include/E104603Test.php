@@ -316,32 +316,32 @@ class E104603Test
                     $stepResult = $this->_testUUTpower();
                     break;
                 case 3:
-                    $stepResult = $this->_loadTestFirmware();
+                    //$stepResult = $this->_loadTestFirmware();
                     break;
                 case 4:
                     $stepResult = $this->_checkUUTBoard();
                     break;
                 case 5:
                     $this->_MICRO_SN = $this->_readMicroSN();
-                    $stepResult = $this->_runUUTadcCalibration();
+                    //$stepResult = $this->_runUUTadcCalibration();
                     break;
                 case 6:
-                    $stepResult = $this->_runUUTdacCalibration();
+                    //$stepResult = $this->_runUUTdacCalibration();
                     break;
                 case 7:
-                    $this->_ENDPT_SN = $this->getSerialNumber();
+                    //$this->_ENDPT_SN = $this->getSerialNumber();
                     $stepResult = $this->_testUUT();
                     break;
                 case 8:
-                    if (!$this->_FAIL_FLAG) {
+                    /*if (!$this->_FAIL_FLAG) {
                       $stepResult = $this->_loadUUTprograms();
-                    }
+                    }*/
                     break;
             }
         } while (($stepResult != self::HFAIL) and ($stepNum < 8));
 
         if ($stepNum > 3) {
-           $this->_logTestData($stepResult);
+           //$this->_logTestData($stepResult);
         }
         $this->_powerUUT(self::OFF);
         $this->_clearTester();
@@ -379,9 +379,11 @@ class E104603Test
 
         if ($testResult == self::PASS) {
             $voltsVB = $this->_readTesterBusVolt();
-            $this->_TEST_DATA["BusVolts"] = $voltsVB;
+            $choice = readline("\n\rHit Enter to Continue: ");
 
-            if (($voltsVB > 11.5) and ($voltsVB < 13.00)) {
+            //$this->_TEST_DATA["BusVolts"] = $voltsVB;
+
+            /*if (($voltsVB > 11.5) and ($voltsVB < 13.00)) {
                 $VccVolts = $this->_readTesterVCC();
                 $this->_TEST_DATA["Vcc"] = $VccVolts;
 
@@ -397,7 +399,7 @@ class E104603Test
                 $testResult = self::HFAIL;
                 $this->_TEST_FAIL[] = "Bus Volts Failed:".$voltsVB."V";
                 $this->_powerUUT(self::OFF);
-            }
+            } */
         }
 
         if ($testResult == self::HFAIL) {
@@ -437,6 +439,11 @@ class E104603Test
         
         if ($ReplyData == "30") {
             $result = self::PASS; /* Pass */
+
+            $dataVal = "0301";
+            /* set or clear relay K2 */
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+
         } else { 
             $result = self::HFAIL;  /* Failure */
         }
@@ -478,22 +485,22 @@ class E104603Test
                     $testResult = $this->_testUUTsupplyVoltages();
                     break;
                 case 2:
-                    $testResult = $this->_testUUTThermistors();
+                    //$testResult = $this->_testUUTThermistors();
                     break;
                 case 3: 
-                    $testResult = $this->_testUUTport1();
+                    //$testResult = $this->_testUUTport1();
                     break;
                 case 4: 
-                    $testResult = $this->_testUUTport2();
+                    //$testResult = $this->_testUUTport2();
                     break;
                 case 5:
-                    $testResult = $this->_testUUTvbus();
+                    //$testResult = $this->_testUUTvbus();
                     break;
                 case 6:
-                    $testResult = $this->_testUUTexttherms();
+                    //$testResult = $this->_testUUTexttherms();
                     break;
                 case 7:
-                    $testResult = $this->_testUUTleds();
+                    //$testResult = $this->_testUUTleds();
                     break;
             }
 
@@ -1824,7 +1831,7 @@ class E104603Test
     */
     public function _readUUTVccVolts()
     {
-        $rawVal = $this->_readUUT_ADCval("a");
+        $rawVal = $this->_readUUT_ADCval("c");
 
         $steps = 1.0/ pow(2,11);
         $volts = $steps * $rawVal;
@@ -1868,9 +1875,8 @@ class E104603Test
     private function _readUUT_ADCval($inputNum)
     {
         $idNum = self::UUT_BOARD_ID;
-        $cmdNum = self::READ_ANALOG_COMMAND;
+        $cmdNum = self::TEST_ANALOG_COMMAND;
         $dataVal = sprintf("0%s",$inputNum);
-        
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
 
         $newData = $this->_convertReplyData($ReplyData);
