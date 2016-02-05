@@ -88,7 +88,7 @@ $pkt = $dev->action()->send(
 
 if (is_object($pkt)) {
     $channels = $dev->dataChannels();
-    $byte = 0;
+    $byte = 1;
     $value = 0;
     $index = 0;
     $reply = str_split($pkt->reply(), 2);
@@ -107,7 +107,7 @@ if (is_object($pkt)) {
             /* This is a negative number */
             $value = -(pow(2, 32) - $value);
         }
-        $cli->out($chan->get("label").":  ".$value);
+        $cli->out($chan->get("label").":  ".$value." (".sprintf("%04X", $value).")");
         $index++;
     }
 
