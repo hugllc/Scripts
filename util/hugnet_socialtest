@@ -52,12 +52,12 @@
 
 /* ===========  Includes =============== */
 require_once 'HUGnetLib/HUGnetLib.php';
-require_once 'HUGnetScripts/E104603Test.php';
+require_once 'HUGnetScripts/SocializerTest.php';
 
 $config = HUGnetLib::Args(array(), "args", $argv);
 $config->addLocation("/usr/share/HUGnet/config.ini");
 
-$cli =  \HUGnet\processes\E104603Test::factory($config);
+$cli =  \HUGnet\processes\SocializerTest::factory($config);
 
 
 $cli->help(
