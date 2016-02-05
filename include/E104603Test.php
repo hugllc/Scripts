@@ -2152,39 +2152,6 @@ class E104603Test
         sleep(1);
     }
 
-    /**
-    ************************************************************
-    * Set the 10V Reference Routine
-    *
-    * This function sets the 10V reference voltage to the 
-    * state that is passed in to it.  It does so by closing 
-    * or opening the appropriate relays. 
-    *
-    * @param int $state  1=On, 0=Off
-    *
-    * @return void
-    */
-    private function _set10VRef($state)
-    {
-        switch ($state) {
-            case 0:
-                $this->_setRelay(4,0); /* Disconnect Port 1 */
-                $this->_setRelay(3,0); /* Select load */
-                $this->_setRelay(2,0); /* Select 12V   */
-                sleep(1);
-                break;
-            case 1:
-                $this->_setRelay(2,1);  /* Select 10V reference */
-                usleep(1000);
-                $this->_setRelay(3,1);  /* Select Voltage supply */
-                usleep(1000);
-                $this->_setRelay(4,1);  /* Connect 10V ref to Port 1 */
-                sleep(1);
-                break;
-        }
-
-
-    }
 
     /**
     ************************************************************
@@ -2241,10 +2208,10 @@ class E104603Test
 	
 	switch ($relay) {
 	  case 1:
-	    $dataVal = "0300";  /* VBUS */
+	    $dataVal = "0300";  /* V+ or Load to VBus */
 	    break;
 	  case 2:
-	    $dataVal = "0301";  /* +12V or 10V */
+	    $dataVal = "0301";  /* Connect to VBus */
 	    break;
 	  case 3:
 	    $dataVal = "0302";  /* V+ or Load to Port 1 */
@@ -4233,3 +4200,4 @@ class E104603Test
 
 }
 ?>
+3
