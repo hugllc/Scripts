@@ -317,32 +317,32 @@ class E104603Test
                     $stepResult = $this->_testUUTpower();
                     break;
                 case 3:
-                    //$stepResult = $this->_loadTestFirmware();
+                    $stepResult = $this->_loadTestFirmware();
                     break;
                 case 4:
                     $stepResult = $this->_checkUUTBoard();
                     break;
                 case 5:
                     $this->_MICRO_SN = $this->_readMicroSN();
-                    //$stepResult = $this->_runUUTadcCalibration();
+                    $stepResult = $this->_runUUTadcCalibration();
                     break;
                 case 6:
-                    //$stepResult = $this->_runUUTdacCalibration();
+                    $stepResult = $this->_runUUTdacCalibration();
                     break;
                 case 7:
-                    //$this->_ENDPT_SN = $this->getSerialNumber();
-                    $stepResult = $this->_testUUT();
+                    $this->_ENDPT_SN = $this->getSerialNumber();
+                    //$stepResult = $this->_testUUT();
                     break;
                 case 8:
-                    /*if (!$this->_FAIL_FLAG) {
+                    if (!$this->_FAIL_FLAG) {
                       $stepResult = $this->_loadUUTprograms();
-                    }*/
+                    }
                     break;
             }
         } while (($stepResult != self::HFAIL) and ($stepNum < 8));
 
         if ($stepNum > 3) {
-           //$this->_logTestData($stepResult);
+           $this->_logTestData($stepResult);
         }
         $this->_powerUUT(self::OFF);
         $this->_clearTester();
@@ -1208,11 +1208,11 @@ class E104603Test
     private function _runApplicationTest()
     {
         $this->display->displaySMHeader(" Testing Application Program ");
-
+        sleep(3);
         $this->_system->out("Checking UUT Communication");
-        //$this->_ENDPT_SN = "8012";
+        $this->_ENDPT_SN = "9003";
         $decVal = hexdec($this->_ENDPT_SN);
-        
+        $this->_system->out("Pinging Serial Number ".$decVal);
         $replyData = $this->_pingEndpoint($decVal);
 
         if ($replyData == true) {
@@ -1269,12 +1269,12 @@ class E104603Test
         if (($voltsP1 > 11.00) and ($voltsP1 < 13.00)) {
             $this->_system->out("Turning off Port 1");
             $this->_setControlChan($SNVal, $chan, self::OFF);
-            sleep(1);
+            sleep(2);
 
             $voltsP1 = $this->_readTesterP1Volt();
             $this->_setPort1Load(self::OFF); /* Remove 12 ohm load */
 
-            if ($voltsP1 < 0.2) {
+            if ($voltsP1 < 0.3) {
                 $testResult = self::PASS;
             } else {
                 $testResult = self::HFAIL;
@@ -1306,9 +1306,9 @@ class E104603Test
     */
     private function _runPort0AppTest($SNval)
     {
-        $chan = 2;
+        $chan = 0;
         $this->_setPort0Load(self::ON);
-        
+        sleep(1);
         $voltsP0 = $this->_readTesterP0Volt();
 
         $this->_system->out("Turning on Port 0");
@@ -1320,12 +1320,12 @@ class E104603Test
         if (($voltsP0 > 11.00) and ($voltsP0 < 13.00)) {
             $this->_system->out("Turning off Port 0");
             $this->_setControlChan($SNval, $chan, self::OFF);
-            sleep(1);
+            sleep(2);
 
             $voltsP0 = $this->_readTesterP0Volt();
             $this->_setPort0Load(self::OFF); /* Remove 12 ohm load */
 
-            if ($voltsP0 < 0.2) {
+            if ($voltsP0 < 0.3) {
                 $testResult = self::PASS;
             } else {
                 $testResult = self::HFAIL;
@@ -1836,17 +1836,16 @@ class E104603Test
     *
     * @return $volts
     */
-    public function _readCalibrationVolts()
+    public function _readUUTCalVolts()
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_CAL_VOLT);
         
         $steps = 1.65/ pow(2,11);
         $volts = $steps * $rawVal;
-        $volts *= 2;
    
         $voltsVCal = number_format($volts, 3);
         
-        $this->_system->out("UUT Calibration Volts    = ".$voltsVCal." volts");
+        $this->_system->out("UUT Calibration Volts = ".$voltsVCal." volts");
         return $voltsVCal;
     
     }
@@ -2357,9 +2356,9 @@ class E104603Test
         $idNum = $snNum;
         $cmdNum = self::READCONTROLCHAN_COMMAND;
         if ($chanNum == 1) {
-            $dataVal = "00";
-        } else {
             $dataVal = "01";
+        } else {
+            $dataVal = "00";
         }
 
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
@@ -2383,19 +2382,20 @@ class E104603Test
     {
         $idNum = $snNum;
         $cmdNum = self::SETCONTROLCHAN_COMMAND;
+
         switch ($chanNum) {
             case 1:
-                if ($state == self::ON) {
-                    $dataVal = "00204E0000";
-                } else {
-                    $dataVal = "0000000000";
-                }
-                break;
-            case 2:
                 if ($state == self::ON) {
                     $dataVal = "01204E0000";
                 } else {
                     $dataVal = "0100000000";
+                }
+                break;
+            case 0:
+                if ($state == self::ON) {
+                    $dataVal = "00204E0000";
+                } else {
+                    $dataVal = "0000000000";
                 }
                 break;
         }
@@ -2802,7 +2802,7 @@ class E104603Test
         $this->display->displayHeader("Loading Application Firmware");
 
         $hugnetLoad = "../bin/./hugnet_load";
-        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.3.0.gz";
+        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.3.1.gz";
 
         $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
 
@@ -2949,14 +2949,13 @@ class E104603Test
                 $retVal = $this->_setAdcGainCorr($gainErrorValue);
                 $this->_ADC_GAIN = $retVal;
                 
-                $voltsUp1 = $this->_readUUTPort1Volts();
-                $this->_set10VRef(self::OFF);
+                $voltsCal1 = $this->_readUUTCalVolts();
+                /* $this->_set10VRef(self::OFF); */
                 $this->display->displaySMHeader(" ADC CALIBRATION COMPLETE! ");
                 $testResult = self::PASS;
             } else {
-                $this->_set10VRef(self::OFF);
-                $this->_system->out("Failed to set up 10V reference.");
-            }
+                $this->_system->out("Failed to set up 1.235V reference.");
+            } 
         }
 
         return $testResult;
@@ -3061,22 +3060,20 @@ class E104603Test
     * Set Up Reference Voltage Routine
     *
     * This function removes the load resistor from Port 1, 
-    * connects the 10 volt reference voltage to Port 1 and 
+    * reads the 1.235 volt reference voltage to ADC input and 
     * tests the voltage.
     */
     private function _setupReferenceVoltage()
     {
         $this->_setPort1Load(self::OFF);
-        $this->_system->out("Setting Port 1 to 10V Reference");
-        $this->_set10VRef(self::ON);
-        $voltsP1 = $this->_readTesterP1Volt();
-        $voltsUp1 = $this->_readUUTPort1Volts();
+        $this->_system->out("Reading 1.235 Calibration Reference");
+        $voltsCal1 = $this->_readUUTCalVolts();
         
-        if (($voltsUp1 > 9.6) and ($voltsUp1 < 10.4)) {
+        if (($voltsCal1 > 1.0) and ($voltsCal1 < 1.5)) {
             $result = self::PASS;
         } else {
             $result = self::HFAIL;
-            $this->_TEST_FAIL[] = "10V Ref Failed :".$voltsUp1."V";
+            $this->_TEST_FAIL[] = "1.235V Ref Failed :".$voltsCal1."V";
         }
 
         return $result;
@@ -3088,8 +3085,8 @@ class E104603Test
     * Run ADC Gain Error Correction Routine
     * 
     * This function performs the gain error correction by 
-    * measuring port 1 voltage which is set at the reference
-    * voltage of 10.0V.  It then uses the following formula
+    * measuring the reference voltage input which is set at
+    * 1.235V.  It then uses the following formula
     * to calculate the gain error correction value:
     *
     *                         expected value
@@ -3100,7 +3097,7 @@ class E104603Test
     private function _runAdcGainCorr($offsetIntValue)
     {
 
-        $rawAvg = $this->_readUUT_ADCval(self::UUT_P1_VOLT);;
+        $rawAvg = $this->_readUUT_ADCval(self::UUT_CAL_VOLT);;
         
         $this->_system->out("\n\r");
         $this->display->displaySMHeader("  Calculating Gain Error Value  ");
@@ -3109,16 +3106,16 @@ class E104603Test
         $this->_system->out("Integer Value = ".$gainIntVal);
         
         $tempVal = $gainIntVal - $offsetIntValue;
-        //$this->out("Gain Int - Offset Int = ".$tempVal);
+        //$this->_system->out("Gain Int - Offset Int = ".$tempVal);
         
-        $gainRatio = 975/ $tempVal;
-        //$this->out("Gain Ratio = ".$gainRatio);
+        $gainRatio = 1533/ $tempVal;
+        //$this->_system->out("Gain Ratio = ".$gainRatio);
         
         $gainVal = 2048 * $gainRatio;
     
-        $this->_system->out("Gain Value    = ".$gainVal);
     
         $gainIntValue = number_format($gainVal, 0, "", "");
+        $this->_system->out("Gain Value    = ".$gainVal);
     
         $hexVal = dechex($gainIntValue);
     
@@ -4134,7 +4131,7 @@ class E104603Test
     {
         $dev = $this->_system->device($Sn);
         $result = $dev->action()->ping();
-        //var_dump($result);
+        var_dump($result);
         return $result;
     }
 

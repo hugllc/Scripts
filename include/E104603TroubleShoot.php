@@ -1282,7 +1282,7 @@ class E104603TroubleShoot extends E104603Test
         $this->_system->out("********************\n\r");
         
         $this->_powerUUT(self::ON);
-        for ($i = 0; $i < 4; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             print "*";
             sleep(1);
         }
@@ -1298,14 +1298,14 @@ class E104603TroubleShoot extends E104603Test
 
         $this->_system->out("Turning on Port 1");
         $this->_setControlChan($SNVal, $chan, self::ON);
-        sleep(1);
+        sleep(2);
     
         $voltsP1 = $this->_readTesterP1Volt();
 
         if (($voltsP1 > 11.00) and ($voltsP1 < 13.00)) {
             $this->_system->out("Turning off Port 1");
             $this->_setControlChan($SNVal, $chan, self::OFF);
-            sleep(1);
+            sleep(2);
 
             $voltsP1 = $this->_readTesterP1Volt();
             $this->_setPort1Load(self::OFF); 
@@ -1355,27 +1355,27 @@ class E104603TroubleShoot extends E104603Test
         }
         $this->_system->out("");
 
-        $this->_system->out("Read Port 2 Control Channel");
-        $chan = 2;
+        $this->_system->out("Read Port 0 Control Channel");
+        $chan = 0;
         $this->_readControlChan($SNVal, $chan);
 
-        $this->_setPort2Load(self::ON);
+        $this->_setPort0Load(self::ON);
         
-        $voltsP2 = $this->_readTesterP2Volt();
+        $voltsP2 = $this->_readTesterP0Volt();
 
-        $this->_system->out("Turning on Port 2");
+        $this->_system->out("Turning on Port 0");
         $this->_setControlChan($SNVal, $chan, self::ON);
         sleep(1);
     
-        $voltsP2 = $this->_readTesterP2Volt();
+        $voltsP2 = $this->_readTesterP0Volt();
         
         if (($voltsP2 > 11.00) and ($voltsP2 < 13.00)) {
-            $this->_system->out("Turning off Port 2");
+            $this->_system->out("Turning off Port 0");
             $this->_setControlChan($SNVal, $chan, self::OFF);
-            sleep(1);
+            sleep(2);
 
-            $voltsP2 = $this->_readTesterP2Volt();
-            $this->_setPort2Load(self::OFF); 
+            $voltsP2 = $this->_readTesterP0Volt();
+            $this->_setPort0Load(self::OFF); 
 
             if ($voltsP2 < 0.2) {
                 $this->_system->out("PASS");
@@ -1385,7 +1385,7 @@ class E104603TroubleShoot extends E104603Test
         } else {
             $this->_setControlChan($SNVal, $chan, self::OFF);
             sleep(1);
-            $this->_setPort2Load(self::OFF);
+            $this->_setPort0Load(self::OFF);
             $this->_system->out("FAIL");
         } 
         
@@ -1443,16 +1443,16 @@ class E104603TroubleShoot extends E104603Test
         switch ($chanNum) {
             case 1:
                 if ($state == self::ON) {
-                    $dataVal = "00204E0000";
-                } else {
-                    $dataVal = "0000000000";
-                }
-                break;
-            case 2:
-                if ($state == self::ON) {
                     $dataVal = "01204E0000";
                 } else {
                     $dataVal = "0100000000";
+                }
+                break;
+            case 0:
+                if ($state == self::ON) {
+                    $dataVal = "00204E0000";
+                } else {
+                    $dataVal = "0000000000";
                 }
                 break;
         }
