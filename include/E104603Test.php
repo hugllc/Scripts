@@ -104,9 +104,7 @@ class E104603Test
     const HEADER_STR    = "Battery Coach Test & Program Tool";
     
     /*****************************************/
-    /* ADC index values changed for 10460303 */
-    /* The old values are saved in comment   */
-    /* field below.                          */
+    /* ADC index values changed for 10460302 */
     /*****************************************/
     const TSTR_VCC_PORT     = 0;
     const TSTR_VBUS_PORT    = 1;
@@ -129,27 +127,7 @@ class E104603Test
     const UUT_P1_TEMP    = 0xb;
     const UUT_VCC_VOLT   = 0xc;
     const UUT_DAC_VOLT   = 0xd;
-    /******************************
-      10460301 ADC index values
-    const TSTR_VCC_PORT  = 0;
-    const TSTR_VBUS_PORT = 1;
-    const TSTR_P2_PORT   = 2;
-    const TSTR_P1_PORT   = 3;
-    const TSTR_SW3V_PORT = 4;
-    
-    const UUT_P2_VOLT    = 0;
-    const UUT_P1_VOLT    = 1;
-    const UUT_BUS_VOLT   = 2;
-    const UUT_BUS_TEMP   = 3;
-    const UUT_P2_TEMP    = 4;
-    const UUT_P1_CURRENT = 5;
-    const UUT_P2_CURRENT = 6;
-    const UUT_EXT_TEMP2  = 7;
-    const UUT_EXT_TEMP1  = 8;
-    const UUT_P1_TEMP    = 9;
-    const UUT_VCC_VOLT   = 0xA;
-    const UUT_DAC_VOLT   = 0xB;
-    ******************************/
+
     const ON = 1;
     const OFF = 0;
     
@@ -318,20 +296,22 @@ class E104603Test
                     break;
                 case 3:
                     $stepResult = $this->_loadTestFirmware();
+                    sleep(2);
                     break;
                 case 4:
                     $stepResult = $this->_checkUUTBoard();
                     break;
                 case 5:
                     $this->_MICRO_SN = $this->_readMicroSN();
-                    $stepResult = $this->_runUUTadcCalibration();
+                    //$stepResult = $this->_runUUTadcCalibration();
                     break;
                 case 6:
-                    $stepResult = $this->_runUUTdacCalibration();
+                    //$stepResult = $this->_runUUTdacCalibration();
                     break;
                 case 7:
+                    $this->_clearPorts();
                     $this->_ENDPT_SN = $this->getSerialNumber();
-                    //$stepResult = $this->_testUUT();
+                    $stepResult = $this->_testUUT();
                     break;
                 case 8:
                     if (!$this->_FAIL_FLAG) {
@@ -342,7 +322,7 @@ class E104603Test
         } while (($stepResult != self::HFAIL) and ($stepNum < 8));
 
         if ($stepNum > 3) {
-           $this->_logTestData($stepResult);
+          $this->_logTestData($stepResult);
         }
         $this->_powerUUT(self::OFF);
         $this->_clearTester();
@@ -381,7 +361,6 @@ class E104603Test
         if ($testResult == self::PASS) {
             $voltsVB = $this->_readTesterBusVolt();
             $voltsPV = $this->_readTesterP12BusVolt();
-            $choice = readline("Hit Enter to Continue");
             //$this->_TEST_DATA["BusVolts"] = $voltsVB;
 
             /*if (($voltsVB > 11.5) and ($voltsVB < 13.00)) {
@@ -486,7 +465,7 @@ class E104603Test
                     $testResult = $this->_testUUTsupplyVoltages();
                     break;
                 case 2:
-                    $testResult = $this->_testUUTThermistors();
+                    //$testResult = $this->_testUUTThermistors();
                     break;
                 case 3: 
                     $testResult = $this->_testUUTport1();
@@ -495,6 +474,7 @@ class E104603Test
                     $testResult = $this->_testUUTport0();
                     break;
                 case 5:
+                    $this->_clearPorts();
                     $testResult = $this->_testUUTvbus();
                     break;
                 case 6:
@@ -529,10 +509,10 @@ class E104603Test
         $voltsVbus = $this->_readUUTBusVolts();
         sleep(1);
 
-        if (($voltsVbus > 11.5) and ($voltsVbus < 13.0)) {
+        if (($voltsVbus > 11.4) and ($voltsVbus < 13.0)) {
             $voltsVcc = $this->_readUUTVccVolts();
 
-            if (($voltsVcc > 3.1) and ($voltsVcc < 3.4)) {
+            if (($voltsVcc > 2.8) and ($voltsVcc < 3.4)) {
                 $this->_system->out("UUT Supply Voltages - PASSED!");
                 $testResult = self::PASS;
             } else {
@@ -789,7 +769,7 @@ class E104603Test
         $p0Amps = $this->_readUUTPort0Current();
         $this->_TEST_DATA["P0Current"] = $p0Amps;
 
-        if (($p0Volts > 11.50) and ($p0Volts < 13.00)) {
+        if (($p0Volts > 11.40) and ($p0Volts < 13.00)) {
             //$testResult = $this->_runP0Faulttest();
             $testResult = self::PASS;
             $this->_setPort0(self::OFF);
@@ -798,7 +778,7 @@ class E104603Test
                 $voltsP0 = $this->_readTesterP0Volt();
                 $p0Volts = $this->_readUUTPort0Volts();
 
-                if ($p0Volts <= 0.1) {
+                if ($p0Volts <= 0.2) {
                     $testResult = self::PASS;
                     $this->_system->out("Port 0 Load Test - PASSED!");
                 } else {
@@ -915,7 +895,6 @@ class E104603Test
     {
         $this->_setPort1_V12(self::ON); /* +12V to Port 1 */
         $voltsP1 = $this->_readTesterP1Volt();
-
         if (($voltsP1 > 11.50) and ($voltsP1 < 13.00)) { 
             $this->_setVBus_V12(self::OFF); /* connects 12 ohm load */
             sleep(1);
@@ -932,10 +911,11 @@ class E104603Test
 
                 if (($VBvolts > 11.4) and ($VBvolts < 13.00)) {
                     $this->_setPort1(self::OFF);
+                    sleep(1);
                     $voltsVB = $this->_readTesterBusVolt();
                     $p1Amps = $this->_readUUTPort1Current();
 
-                    if ($voltsVB < 0.2) {
+                    if ($voltsVB < 0.3) {
                         $testResult = self::PASS;
                     } else { 
                         $this->_TEST_FAIL[] = "P1 off to Vbus:".$voltsVB."V";
@@ -980,27 +960,29 @@ class E104603Test
     private function _Port0ToVbusTest()
     {
         $this->_setPort0_V12(self::ON);
+        sleep(2);
         $voltsP0 = $this->_readTesterP0Volt();
         $p0Volts = $this->_readUUTPort0Volts();
         
-        if (($p0Volts > 11.50) and ($p0Volts < 13.00)) {
+        if (($p0Volts > 11.40) and ($p0Volts < 13.00)) {
             $this->_setPort1_V12(self::OFF);
-            
+            sleep(1);
             $voltsP1 = $this->_readTesterP1Volt();
             $this->_setPort0(self::ON);
-            
+            sleep(2);
             $voltsVB = $this->_readTesterBusVolt();
             $VBvolts = $this->_readUUTBusVolts();
             $p0Volts = $this->_readUUTPort0Volts();
             $p0Amps = $this->_readUUTPort0Current();
 
-            if (($VBvolts > 11.50) and ($VBvolts < 13.00)) {
+            if (($VBvolts > 11.40) and ($VBvolts < 13.00)) {
                 $this->_setPort0(self::OFF);
+                sleep(1);
                 $voltsVB = $this->_readTesterBusVolt();
                 $VBvolts = $this->_readUUTBusVolts();
                 $p0Amps = $this->_readUUTPort0Current();
                 
-                if ($VBvolts < 0.2) {
+                if ($VBvolts < 0.3) {
                     $testResult = self::PASS;
                 } else {
                     $testResult = self::HFAIL;
@@ -1209,12 +1191,14 @@ class E104603Test
     {
         $this->display->displaySMHeader(" Testing Application Program ");
         sleep(3);
-        $this->_system->out("Checking UUT Communication");
-        $this->_ENDPT_SN = "9003";
-        $decVal = hexdec($this->_ENDPT_SN);
-        $this->_system->out("Pinging Serial Number ".$decVal);
-        $replyData = $this->_pingEndpoint($decVal);
 
+        $choice = readline("Hey try pinging our board!");
+        //$this->_system->out("Checking UUT Communication");
+        //$this->_ENDPT_SN = "9003";
+        $decVal = hexdec($this->_ENDPT_SN);
+        //$this->_system->out("Pinging Serial Number ".$decVal);
+        //$replyData = $this->_pingEndpoint($decVal);
+        $replyData = true;
         if ($replyData == true) {
             $this->_system->out("UUT Board Responding!");
             $testResult = $this->_runPort1AppTest($decVal);
@@ -1653,7 +1637,7 @@ class E104603Test
 
         $volts *= 2;
         $newVal = $volts - 1.65;
-        $current = $newVal / 0.0532258;   /* 0.0432258 */
+        $current = $newVal / 0.0432258;  /* 0.0532258;  */ 
         $p1Amps = number_format($current, 2);
 
         $this->_system->out("Port 1 Current   = ".$p1Amps." amps");
@@ -1684,7 +1668,7 @@ class E104603Test
 
         $volts *= 2;
         $newVal = $volts - 1.65;
-        $current = $newVal / 0.0532258;   /* 0.0432258  */
+        $current = $newVal / 0.0432258;  /* 0.0532258;  */ 
 
         $p2Amps = number_format($current, 2);
         $this->_system->out("Port 0 Current   = ".$p2Amps." amps");
@@ -1974,10 +1958,14 @@ class E104603Test
     {
         switch ($state) {
             case 0: 
+                /* make sure K3 relay is open to select 12 ohm load */
+                $this->_setRelay(3,0); 
                 /* open relay K4 to remove 12 ohm load from port 1 */
                 $this->_setRelay(4,0);
                 break;
             case 1:
+                /* make sure K3 relay is open to select 12 ohm load */
+                $this->_setRelay(3,0); 
                 /* close relay K4 to connect 12 ohm load to Port 1 */
                 $this->_setRelay(4, 1);
                 break;
@@ -2056,10 +2044,14 @@ class E104603Test
     {
         switch ($state) {
             case 0: 
+                /* make sure K5 is open to select 12 ohm load */
+                $this->_setRelay(5,0); 
                 /* open relay K6 to disconnect 12 ohm load from Port 0 */
                 $this->_setRelay(6,0);
                 break;
             case 1:
+                /* make sure K5 is open to select 12 ohm load */
+                $this->_setRelay(5,0); 
                 /* close relay K6 to connect 12 ohm load to Port 0 */
                 $this->_setRelay(6, 1);
                 break;
@@ -2137,9 +2129,10 @@ class E104603Test
     {
         switch ($state) {
             case 0:
-                /* open K1 to remove +12V and connect Load */
+                $this->_setRelay(2, 0); /* Open K2 to disconnect Vbus */
+                sleep(1);
                 $this->_setRelay(1, 0); /* open K1 to select load */
-                $this->_setRelay(2, 0); /* close K2 to connect load to Vbus */
+                $this->_setRelay(2, 1); /* close K2 to connect load to Vbus */
                 $this->_system->out("VBUS 12 OHM LOAD CONNECTED:");
                 break;
             case 1:
@@ -2402,6 +2395,24 @@ class E104603Test
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         $this->_system->out("Set Control Channel Reply = ".$ReplyData);
 
+    }
+
+    /**
+    ************************************************************
+    * Clear Ports Routine
+    * 
+    * This function removes the port connections and sets 
+    * the default 12 ohm load selection.
+    *
+    */
+    public function _clearPorts()
+    {
+        $this->_setPort1(self::OFF);
+        $this->_setRelay(3,0);
+        $this->_setRelay(4,0);
+        $this->_setPort0(self::OFF);
+        $this->_setRelay(5,0);
+        $this->_setRelay(6,0);
     }
 
     /**
@@ -2688,6 +2699,7 @@ class E104603Test
             $this->_TEST_FAIL[] = "Failed to load Bootloader";
         }
 
+        sleep(2);
         return $result;
 
     }
@@ -2815,7 +2827,7 @@ class E104603Test
             $this->_TEST_FAIL[] = "Fail to load Application";
         } 
 
-
+        sleep(2);
         return $result;
     
     }
@@ -2938,6 +2950,10 @@ class E104603Test
 
         if ($testResult == self::PASS) {
             $offsetHexVal = $this->_runAdcOffsetCalibration();
+            $this->_setRelay(3,0);
+            $this->_setRelay(4,0);
+            $this->_setRelay(5,0);
+            $this->_setRelay(6,0);
             $testResult = $this->_setupReferenceVoltage();
         
             if ($testResult == self::PASS) {
@@ -2950,7 +2966,6 @@ class E104603Test
                 $this->_ADC_GAIN = $retVal;
                 
                 $voltsCal1 = $this->_readUUTCalVolts();
-                /* $this->_set10VRef(self::OFF); */
                 $this->display->displaySMHeader(" ADC CALIBRATION COMPLETE! ");
                 $testResult = self::PASS;
             } else {
@@ -2976,6 +2991,7 @@ class E104603Test
     private function _setupP1_ADCoffset()
     {
         $this->_setPort1Load(self::ON);
+        sleep(1);
         $this->_setPort1(self::ON);
         $p1Volts = $this->_readUUTPort1Volts();
         $p1Amps = $this->_readUUTPort1Current();
@@ -2983,6 +2999,7 @@ class E104603Test
 
         if (($p1Volts > 11.00) and ($p1Volts < 13.00)) {
             $this->_setPort1(self::OFF);
+            sleep(2);
             $p1Volts = $this->_readUUTPort1Volts();
         
             if ($p1Volts <= 0.2) {
@@ -3049,6 +3066,7 @@ class E104603Test
 
         $this->_ADC_OFFSET = $offsetHexVal;
         $this->_TEST_DATA["ADCoffset"] = $offsetHexVal;
+        $this->_setPort1Load(self::OFF);
 
         $this->_system->out("");
         return $offsetHexVal;
@@ -3065,7 +3083,6 @@ class E104603Test
     */
     private function _setupReferenceVoltage()
     {
-        $this->_setPort1Load(self::OFF);
         $this->_system->out("Reading 1.235 Calibration Reference");
         $voltsCal1 = $this->_readUUTCalVolts();
         
@@ -4131,7 +4148,7 @@ class E104603Test
     {
         $dev = $this->_system->device($Sn);
         $result = $dev->action()->ping();
-        var_dump($result);
+        //var_dump($result);
         return $result;
     }
 
