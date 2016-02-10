@@ -314,9 +314,9 @@ class E104603Test
                     $stepResult = $this->_testUUT();
                     break;
                 case 8:
-                    if (!$this->_FAIL_FLAG) {
+                    /*if (!$this->_FAIL_FLAG) {
                       $stepResult = $this->_loadUUTprograms();
-                    }
+                    }*/
                     break;
             }
         } while (($stepResult != self::HFAIL) and ($stepNum < 8));
