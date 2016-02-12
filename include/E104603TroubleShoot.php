@@ -234,7 +234,7 @@ class E104603TroubleShoot extends E104603Test
             } else if (($selection == "G") || ($selection == "g")){
                 $this->_trblshtVBusP1();
             } else if (($selection == "H") || ($selection == "h")){
-                $this->_trblshtVBusP2();
+                $this->_trblshtVBusP0();
             } else if (($selection == "I") || ($selection == "i")){
                 $this->_trblshtExtTherms();
             } else if (($selection == "J") || ($selection == "j")){
@@ -270,18 +270,26 @@ class E104603TroubleShoot extends E104603Test
 
         if (($choice == 'Y') || ($choice == 'y')) {
             $voltsVB = $this->_readTesterBusVolt();
-            //$voltsVcc = $this->_readTesterVCC();
+            $voltsP12 = $this->_readTesterP12BusVolt();
+            $voltsVcc = $this->_readUUTVccVolts();
             $this->_system->out("");
             
             If (($voltsVB > 11.5) and ($voltsVB < 13.00)) {
                 $this->_system->out("Bus Voltage is within range");
                 
-                /*if (($voltsVcc > 3.0) and ($voltsVcc < 3.4)) {
-                    $this->_system->out("Vcc is within range");
+                if (($voltsP12 > 11.0) and ($voltsP12 < 13.00)) {
+                    $this->_system->out("P12 Bus Voltage is within range");
+                
+                    if (($voltsVcc > 3.0) and ($voltsVcc < 3.4)) {
+                        $this->_system->out("Vcc is within range");
+                    } else {
+                        $this->_system->out("Vcc is out of range");
+                        $this->_system->out("Scope out power supply circuit");
+                    }
                 } else {
-                    $this->_system->out("Vcc is out of range");
-                    $this->_system->out("Scope out power supply circuit");
-                }*/
+                    $this->_system->out("P12 Bus Voltage is out of range");
+                    $this->_system->out("Scope out the power supply circuit");
+                }
             } else {
                 $this->_system->out("Bus Voltage out of range");
                 $this->_system->out("Scope out Bus Voltage Circuit");
@@ -681,44 +689,44 @@ class E104603TroubleShoot extends E104603Test
         $this->_powerUUT(self::ON);
         sleep(1);
 
-        $this->_system->out("Troubleshoot Port 2 to VBUS");
+        $this->_system->out("Troubleshoot Port 0 to VBUS");
 
-        $this->_setPort2_V12(self::ON); /* +12V to Port 2 */
-        $voltsP2 = $this->_readTesterP2Volt();
+        $this->_setPort0_V12(self::ON); /* +12V to Port 2 */
+        $voltsP0 = $this->_readTesterP0Volt();
 
-        if (($voltsP2 > 11.50) and ($voltsP2 < 13.00)) { 
+        if (($voltsP0 > 11.50) and ($voltsP0 < 13.00)) { 
             $this->_setVBus_V12(self::OFF); /* connects 12 ohm load */
             $voltsVB = $this->_readTesterBusVolt();
             $VBvolts = $this->_readUUTBusVolts();
-            $tVolts = $this->_readTesterP2Volt();
+            $tVolts = $this->_readTesterP0Volt();
 
             $choice = readline("\n\rHit Enter to Continue: ");
 
             if ($VBvolts < 0.2) {
-                $this->_setPort2(self::ON);
+                $this->_setPort0(self::ON);
                 sleep(1);
                 $voltsVB = $this->_readTesterBusVolt();
                 $VBvolts = $this->_readUUTBusVolts();
-                $p2volts = $this->_readUUTPort2Volts();
-                $p2Amps = $this->_readUUTPort2Current();
+                $p0volts = $this->_readUUTPort0Volts();
+                $p0Amps = $this->_readUUTPort0Current();
                 $choice = readline("\n\rHit Enter to Continue: ");
 
 
-                $this->_setPort2(self::OFF);
+                $this->_setPort0(self::OFF);
                 $this->_setVBus_V12(self::ON);
-                $this->_system->out("Port 2 to VBus Troubleshoot Complete");
-                $this->_setPort2_V12(self::OFF);
+                $this->_system->out("Port 0 to VBus Troubleshoot Complete");
+                $this->_setPort0_V12(self::OFF);
             } else {
                 $this->_setVBus_V12(self::ON);
                 $this->_system->out("Bus Voltage Off:".$VBvolts."V");
-                $this->_setPort2_V12(self::OFF);
+                $this->_setPort0_V12(self::OFF);
             }
 
         } else {
-            $this->_setPort2_V12(self::OFF);
-            $voltsP2 = $this->_readTesterP2Volt();
-            $this->_system->out("Port 2 Supply Failed!");
-            $this->_system->out("Port 2  Tester = ".$voltsP2." volts");
+            $this->_setPort0_V12(self::OFF);
+            $voltsP0 = $this->_readTesterP2Volt();
+            $this->_system->out("Port 0 Supply Failed!");
+            $this->_system->out("Port 0  Tester = ".$voltsP0." volts");
         }
             
         $choice = readline("\n\rHit Enter to Continue: ");

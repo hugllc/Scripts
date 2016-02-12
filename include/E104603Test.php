@@ -295,7 +295,7 @@ class E104603Test
                     $stepResult = $this->_testUUTpower();
                     break;
                 case 3:
-                    $stepResult = $this->_loadTestFirmware();
+                    //$stepResult = $this->_loadTestFirmware();
                     break;
                 case 4:
                     $stepResult = $this->_checkUUTBoard();
@@ -341,7 +341,7 @@ class E104603Test
     ***********************************************************
     * Power UUT Test
     *
-    * This function powers up the 10460301 board, measures the 
+    * This function powers up the 10460302 board, measures the 
     * bus voltage and the 3.3V to verify operation for the next
     * step which is loading the test firmware.
     *
@@ -472,7 +472,6 @@ class E104603Test
                     $testResult = $this->_testUUTport0();
                     break;
                 case 5:
-                    $this->_clearPorts();
                     $testResult = $this->_testUUTvbus();
                     break;
                 case 6:
