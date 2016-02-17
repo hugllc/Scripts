@@ -295,32 +295,32 @@ class E104603Test
                     $stepResult = $this->_testUUTpower();
                     break;
                 case 3:
-                    //$stepResult = $this->_loadTestFirmware();
+                    $stepResult = $this->_loadTestFirmware();
                     break;
                 case 4:
                     $stepResult = $this->_checkUUTBoard();
                     break;
                 case 5:
                     $this->_MICRO_SN = $this->_readMicroSN();
-                    //$stepResult = $this->_runUUTadcCalibration();
+                    $stepResult = $this->_runUUTadcCalibration();
                     break;
                 case 6:
-                    //$stepResult = $this->_runUUTdacCalibration();
+                    $stepResult = $this->_runUUTdacCalibration();
                     break;
                 case 7:
                     $this->_ENDPT_SN = $this->getSerialNumber();
                     $stepResult = $this->_testUUT();
                     break;
                 case 8:
-                    /*if (!$this->_FAIL_FLAG) {
+                    if (!$this->_FAIL_FLAG) {
                       $stepResult = $this->_loadUUTprograms();
-                    }*/
+                    }
                     break;
             }
         } while (($stepResult != self::HFAIL) and ($stepNum < 8));
 
         if ($stepNum > 3) {
-          //$this->_logTestData($stepResult);
+          $this->_logTestData($stepResult);
         }
         $this->_powerUUT(self::OFF);
         $this->_clearTester();
@@ -509,7 +509,7 @@ class E104603Test
         if (($voltsVbus > 11.4) and ($voltsVbus < 13.0)) {
             $voltsVcc = $this->_readUUTVccVolts();
 
-            if (($voltsVcc > 2.8) and ($voltsVcc < 3.4)) {
+            if (($voltsVcc > 2.8) and ($voltsVcc < 3.45)) {
                 $this->_system->out("UUT Supply Voltages - PASSED!");
                 $testResult = self::PASS;
             } else {
@@ -770,6 +770,7 @@ class E104603Test
             //$testResult = $this->_runP0Faulttest();
             $testResult = self::PASS;
             $this->_setPort0(self::OFF);
+            sleep(1);
 
             if ($testResult == self::PASS) {
                 $voltsP0 = $this->_readTesterP0Volt();
@@ -1189,9 +1190,7 @@ class E104603Test
         $this->display->displaySMHeader(" Testing Application Program ");
         sleep(3);
 
-        $choice = readline("Hey try pinging our board!");
-        //$this->_system->out("Checking UUT Communication");
-        //$this->_ENDPT_SN = "9003";
+        $this->_system->out("Checking UUT Communication");
         $decVal = hexdec($this->_ENDPT_SN);
         $this->_system->out("Pinging Serial Number ".$decVal);
         $replyData = $this->_pingEndpoint($decVal);
@@ -2294,7 +2293,6 @@ class E104603Test
     */
     private function _setPort($portNum, $state)
     {
-
         $idNum = self::UUT_BOARD_ID;
         $cmdNum = self::SET_POWERPORT_COMMAND; 
 
