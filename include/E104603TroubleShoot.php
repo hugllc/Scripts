@@ -109,6 +109,7 @@ class E104603TroubleShoot extends E104603Test
                                 8  => "External Thermistor Connections",
                                 9  => "Read Micro SN",
                                 10 => "Read User Signature",
+                                11 => "Current Calibration",
                                 );
 
     private $_eptroubleAppMenu = array(
@@ -241,6 +242,8 @@ class E104603TroubleShoot extends E104603Test
                 $this->_trblshtReadMicroSN();
             } else if (($selection == "K") || ($selection == "k")){
                 $this->_trblshtReadUserSig();
+            } else if (($selection == "L") || ($selection == "l")){
+                $this->_trblshtCurrentCalibrate();
             } else {
                 $exitTest = true;
                 $this->_system->out("Exit Troubleshooting Test");
@@ -879,6 +882,42 @@ class E104603TroubleShoot extends E104603Test
         $this->_powerUUT(self::OFF);
         $this->_clearTester();
         $choice = readline("\n\rHit Enter to Continue: ");
+    }
+    
+    /**
+    ************************************************************
+    * Troubleshoot Current Calibration Routine
+    *
+    * This function powers up the UUT, tests the power supply 
+    * voltages, tests the communications and then runs the 
+    * adc calibration to prepare for current calibration.  The 
+    * current calibration is then run and the resulting settings
+    * are tested to see if they improve current value readings.
+    *
+    */
+    private function _trblshtCurrentCalibrate()
+    {
+        $result = $this->_testUUTpower();
+        
+        if ($result == self::PASS) {
+            $result = $this->_checkUUTBoard();
+            if ($result == self::PASS) {
+                $result = $this->_runUUTadcCalibration();
+                $result = $this->_runCurrentCalibration();
+                $result = $this->_testUUTport1();
+                $result = $this->_testUUTport0();
+            } else {
+                $this->out("UUT communications failed!");
+            }
+        } else {
+            $this->_system->out("UUT Power up failed!");
+        }
+        
+        $choice = readline("\n\rHit Enter to Continue:");
+     
+        $this->_powerUUT(self::OFF);
+        $this->_clearTester();
+   
     }
     
    /**

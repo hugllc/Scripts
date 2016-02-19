@@ -161,7 +161,9 @@ class E104603Test
     private $_DAC_OFFSET;
     private $_DAC_GAIN;
     private $_P1_AOFFSET = 0;
-    private $_P2_AOFFSET = 0;
+    private $_P0_AOFFSET = 0;
+    private $_P1_AGAIN = 0.0532258;
+    private $_P0_AGAIN = 0.0532258;
     private $_ENDPT_SN;
     private $_FAIL_FLAG;
     private $_MICRO_SN;
@@ -295,7 +297,7 @@ class E104603Test
                     $stepResult = $this->_testUUTpower();
                     break;
                 case 3:
-                    $stepResult = $this->_loadTestFirmware();
+                    //$stepResult = $this->_loadTestFirmware();
                     break;
                 case 4:
                     $stepResult = $this->_checkUUTBoard();
@@ -308,19 +310,22 @@ class E104603Test
                     $stepResult = $this->_runUUTdacCalibration();
                     break;
                 case 7:
+                    $stepResult = $this->_runCurrentCalibration();
+                    break;
+                case 8:
                     $this->_ENDPT_SN = $this->getSerialNumber();
                     $stepResult = $this->_testUUT();
                     break;
-                case 8:
-                    if (!$this->_FAIL_FLAG) {
+                case 9:
+                   /* if (!$this->_FAIL_FLAG) {
                       $stepResult = $this->_loadUUTprograms();
-                    }
+                    } */
                     break;
             }
-        } while (($stepResult != self::HFAIL) and ($stepNum < 8));
+        } while (($stepResult != self::HFAIL) and ($stepNum < 9));
 
         if ($stepNum > 3) {
-          $this->_logTestData($stepResult);
+         // $this->_logTestData($stepResult);
         }
         $this->_powerUUT(self::OFF);
         $this->_clearTester();
@@ -648,7 +653,7 @@ class E104603Test
     * 
     * @return integer $testResult  1=pass, 0=fail, -1=HFAIL
     */
-    private function _testUUTport1()
+    public function _testUUTport1()
     {
         $this->_system->out("Testing UUT Port 1");
         $this->_system->out("******************************");
@@ -671,6 +676,7 @@ class E104603Test
             if ($testResult == self::PASS) {
                 $voltsP1 = $this->_readTesterP1Volt();
                 $p1Volts = $this->_readUUTPort1Volts();
+                $p1Amps = $this->_readUUTPort1Current();
                 
                 if ($p1Volts <= 0.1) {
                     $testResult = self::PASS;
@@ -751,7 +757,7 @@ class E104603Test
     * 
     * @return integer $testResult  1=pass, 0=fail, -1=hard fail
     */
-    private function _testUUTport0()
+    public function _testUUTport0()
     {
         $this->_system->out("Testing UUT Port 0 ");
         $this->_system->out("******************************");
@@ -775,6 +781,7 @@ class E104603Test
             if ($testResult == self::PASS) {
                 $voltsP0 = $this->_readTesterP0Volt();
                 $p0Volts = $this->_readUUTPort0Volts();
+                $p0Amps = $this->_readUUTPort0Current();
 
                 if ($p0Volts <= 0.2) {
                     $testResult = self::PASS;
@@ -1628,12 +1635,13 @@ class E104603Test
     public function _readUUTPort1Current()
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_P1_CURRENT);
+        $rawVal += $this->_P1_AOFFSET;
         $steps = 1.65/ pow(2,11);
         $volts = $steps * $rawVal;
 
         $volts *= 2;
         $newVal = $volts - 1.65;
-        $current = $newVal / 0.0432258;  /* 0.0532258;  */ 
+        $current = $newVal / $this->_P1_AGAIN;  /* 0.0532258;  */ 
         $p1Amps = number_format($current, 2);
 
         $this->_system->out("Port 1 Current   = ".$p1Amps." amps");
@@ -1659,12 +1667,13 @@ class E104603Test
     public function _readUUTPort0Current()
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_P0_CURRENT);
+        $rawVal += $this->_P0_AOFFSET;
         $steps = 1.65/ pow(2,11);
         $volts = $steps * $rawVal;
 
         $volts *= 2;
         $newVal = $volts - 1.65;
-        $current = $newVal / 0.0432258;  /* 0.0532258;  */ 
+        $current = $newVal / $this->_P0_AGAIN;  /* 0.0532258;  */ 
 
         $p2Amps = number_format($current, 2);
         $this->_system->out("Port 0 Current   = ".$p2Amps." amps");
@@ -2937,7 +2946,7 @@ class E104603Test
     *
     * @return integer $testResult  1=pass, 0=fail, -1=hard fail
     */
-    private function _runUUTadcCalibration()
+    public function _runUUTadcCalibration()
     {
         $this->display->displaySMHeader("  Entering ADC Calibration Routine  ");
 
@@ -3656,30 +3665,38 @@ class E104603Test
     */
     public function _runCurrentCalibration()
     {
-        $this->display->displaySMHeader(" Current Calibration Test Routine ");
+        $this->display->displaySMHeader(" Entering Current Calibration Routine ");
         
-        $testResult = $this->_runPort1CurrentCal();
+        $testResult = $this->_runPort1CurrentOffsetCal();
         
         if ($testResult == self::PASS) {
-            $testResult = $this->_runPort2CurrentCal();
+            $testResult = $this->_runPort0CurrentOffsetCal();
+            if ($testResult == self::PASS) {
+                $testResult = $this->_runPort1CurrentGain();
+                if ($testResult == self::PASS) {
+                    $testResult = $this->_runPort0CurrentGain();
+                }
+            }
         }
         
+        $this->display->displaySMHeader("  CURRENT CALIBRATION COMPLETE!  ");
+       
         return $testResult;
     }
     
     /**
     ************************************************************
-    * Run Port 1 Current Calibration Test
+    * Run Port 1 Current Offset Calibration Test
     *
     * This function runs the current calibration test on Port 1.
     * The offset counts are not set but simply recorded in the 
     * test data.
     *
     */
-    private function _runPort1CurrentCal()
+    private function _runPort1CurrentOffsetCal()
     {
-        $this->_system->out("Testing Port 1 Current Calibration");
-        $this->_system->out("**********************************");
+        $this->_system->out("Running Port 1 Offset Current Calibration");
+        $this->_system->out("*****************************************");
         
         $this->_setPort1Load(self::ON);
         $this->_setPort1(self::ON);
@@ -3687,30 +3704,112 @@ class E104603Test
         $p1Amps = $this->_readUUTPort1Current();
         
         if (($p1Volts > 11.0) and ($p1Volts < 13.00)) {
-            $expectedAmps = $p1Volts/12;
-            if ($expectedAmps > $p1Amps) {
-                $p1AmpsOffset = $expectedAmps - $p1Amps;
+            $this->_setPort1(self::OFF);
+            sleep(1);
+            $p1Volts = $this->_readUUTPort1Volts();
+            $p1Amps = $this->_readUUTPort1Current();
+            
+            if ($p1Volts <= 0.2) {
+                $expectedAmps = 0.00;
+                if ($expectedAmps > $p1Amps) {
+                    $p1AmpsOffset = $expectedAmps - $p1Amps;
+                    $offsetNegative = false;
+                } else {
+                    $p1AmpsOffset = $p1Amps - $expectedAmps;
+                    $offsetNegative = true;
+                }
+                
+                $p1Aoffset = number_format($p1AmpsOffset, 4);
+                $this->_system->out("Port 1 current offset: ".$p1Aoffset);
+                
+                $adcOffsetCounts = $this->_currentToADCcounts($p1AmpsOffset);
+                
+                if ($offsetNegative) {
+                    $adcOffsetCounts *= -1;
+                }
+                
+                $this->_TEST_DATA["P1CurrentOffset"] = $adcOffsetCounts;
+                $this->_system->out("Port 1 current adc offset counts: ".$adcOffsetCounts);
+                $this->_P1_AOFFSET = $adcOffsetCounts;
+                $testResult = self::PASS;
             } else {
-                $p1AmpsOffset = $p1Amps - $expectedAmps;
+                $testResult = self::HFAIL;
+                $this->_TEST_FAIL[] = "P1 volts fail in current cal:".$p1Volts;
             }
-            
-            $p1Aoffset = number_format($p1AmpsOffset, 4);
-            $this->_system->out("Port 1 current offset: ".$p1Aoffset);
-            
-            $adcOffsetCounts = $this->_currentToADCcounts($p1AmpsOffset);
-            
-            $this->_TEST_DATA["P1CurrentOffset"] = $adcOffsetCounts;
-            $this->_system->out("Port 1 current adc offset counts: ".$adcOffsetCounts);
-            $this->_P1_AOFFSET = $adcOffsetCounts;
-            $testResult = self::PASS;
         } else {
             $testResult = self::HFAIL;
+            $this->_setPort1(self::OFF);
             $this->_TEST_FAIL[] = "P1 volts fail in current cal:".$p1Volts;
         }
         
         sleep(1);
-        $this->_setPort1(self::OFF);
         $this->_setPort1Load(self::OFF);
+        $this->_system->out("");
+    
+        return $testResult;
+    }
+    
+
+    /**
+    ************************************************************
+    * Run Port 0 Current Offset Calibration Test
+    *
+    * This function runs the current calibration test on Port 0.
+    * The offset counts are not set but simply recorded in the 
+    * test data.
+    *
+    */
+    private function _runPort0CurrentOffsetCal()
+    {
+        $this->_system->out("Running Port 0 Offset Current Calibration");
+        $this->_system->out("*****************************************");
+        
+        $this->_setPort0Load(self::ON);
+        $this->_setPort0(self::ON);
+        $p0Volts = $this->_readUUTPort0Volts();
+        $p0Amps = $this->_readUUTPort0Current();
+        
+        if (($p0Volts > 11.0) and ($p0Volts < 13.00)) {
+            $this->_setPort0(self::OFF);
+            sleep(1);
+            $p0Volts = $this->_readUUTPort0Volts();
+            $p0Amps = $this->_readUUTPort0Current();
+            
+            if ($p0Volts <= 0.2) {
+                $expectedAmps = 0.00;
+                if ($expectedAmps > $p0Amps) {
+                    $p0AmpsOffset = $expectedAmps - $p0Amps;
+                    $offsetNegative = false;
+                } else {
+                    $p0AmpsOffset = $p0Amps - $expectedAmps;
+                    $offsetNegative = true;
+                }
+                
+                $p0Aoffset = number_format($p0AmpsOffset, 4);
+                $this->_system->out("Port 0 current offset: ".$p0AOffset);
+                
+                $adcOffsetCounts = $this->_currentToADCcounts($p0AmpsOffset);
+                
+                if ($offsetNegative) {
+                    $adcOffsetCounts *= -1;
+                }
+                
+                $this->_TEST_DATA["P0CurrentOffset"] = $adcOffsetCounts;
+                $this->_system->out("Port 0 current adc offset counts: ".$adcOffsetCounts);
+                $this->_P0_AOFFSET = $adcOffsetCounts;
+                $testResult = self::PASS;
+            } else {
+                $testResult = self::HFAIL;
+                $this->_setPort0(self::OFF);
+                $this->_TEST_FAIL[] = "P0 volts fail in current cal:".$p0Volts;
+            }
+        } else {
+            $testResult = self::HFAIL;
+            $this->_TEST_FAIL[] = "P0 volts fail in current cal:".$p0Volts;
+        }
+        
+        sleep(1);
+        $this->_setPort0Load(self::OFF);
         $this->_system->out("");
     
         return $testResult;
@@ -3718,53 +3817,109 @@ class E104603Test
 
     /**
     ************************************************************
-    * Run Port 2 Current Calibration Test
-    *
-    * This function runs the current calibration test on Port 2.
-    * The offset counts are not set but simply recorded in the 
-    * test data.
-    *
+    * Run Port 1 Current Gain Calibration Test
+    * 
+    * This function measures the current value on Port 1 at 
+    * full load and compares it to the calculated current value.
+    * A gain factor is determined from the difference in values
+    * and applied to the current measurement.
     */
-    private function _runPort2CurrentCal()
+    private function _runPort1CurrentGain()
     {
-        $this->_system->out("Testing Port 2 Current Calibration");
-        $this->_system->out("**********************************");
+        $this->_system->out("Running Port 1 Current Gain Calibration");
+        $this->_system->out("***************************************");
         
-        $this->_setPort2Load(self::ON);
-        $this->_setPort2(self::ON);
-        $p2Volts = $this->_readUUTPort2Volts();
-        $p2Amps = $this->_readUUTPort2Current();
+        $this->_setPort1Load(self::ON);
+        $this->_setPort1(self::ON);
+        $p1Volts = $this->_readUUTPort1Volts();
+        $p1Amps = $this->_readUUTPort1Current();
+    
+        if (($p1Volts > 11.0) and ($p1Volts < 13.00)) {
+            $expectedCurrent = $p1Volts/12;
+            
+            $rawVal = $this->_readUUT_ADCval(self::UUT_P1_CURRENT);
+            $rawVal += $this->_P1_AOFFSET;
+            $steps = 1.65/ pow(2,11);
+            $volts = $steps * $rawVal;
+            $volts *= 2;
         
-        if (($p2Volts > 11.0) and ($p2Volts < 13.00)) {
-            $expectedAmps = $p2Volts/12;
-            if ($expectedAmps > $p2Amps) {
-                $p2AmpsOffset = $expectedAmps - $p2Amps;
-            } else {
-                $p2AmpsOffset = $p2Amps - $expectedAmps;
-            }
+            $this->_system->out("Y2: ".number_format($volts,4)." - Y1: 1.65 ");
+            $this->_system->out("X2: ".number_format($expectedCurrent,4)." - X1: 0.0 ");
+            $this->_system->out("");
+            $currentGain = ($volts - 1.65)/$expectedCurrent;
+            $curGain = number_format($currentGain, 6);
+            $this->_system->out("Calculated Current Gain Ratio = ".$curGain);
             
-            $p2Aoffset = number_format($p2AmpsOffset, 4);
-            $this->_system->out("Port 2 current offset: ".$p2Aoffset);
+            $this->_P1_AGAIN = $curGain;
             
-            $adcOffsetCounts = $this->_currentToADCcounts($p2AmpsOffset);
-            
-            $this->_TEST_DATA["P2CurrentOffset"] = $adcOffsetCounts;
-            $this->_system->out("Port 2 current adc offset counts: ".$adcOffsetCounts);
-            $this->_P2_AOFFSET = $adcOffsetCounts;
+            $this->_setPort1(self::OFF);
             $testResult = self::PASS;
         } else {
             $testResult = self::HFAIL;
-            $this->_TEST_FAIL[] = "P2 volts fail in current cal:".$p1Volts;
+            $this->_setPort1(self::OFF);
+            $this->_TEST_FAIL[] = "P1 volts fail in current gain cal:".$p1Volts;
         }
         
         sleep(1);
-        $this->_setPort2(self::OFF);
-        $this->_setPort2Load(self::OFF);
+        $this->_setPort1Load(self::OFF);
         $this->_system->out("");
     
         return $testResult;
     }
-
+    
+    /**
+    ************************************************************
+    * Run Port 0 Current Gain Calibration Test
+    * 
+    * This function measures the current value on Port 0 at 
+    * full load and compares it to the calculated current value.
+    * A gain factor is determined from the difference in values
+    * and applied to the current measurement.
+    */
+    private function _runPort0CurrentGain()
+    {
+        $this->_system->out("Running Port 0 Current Gain Calibration");
+        $this->_system->out("***************************************");
+        
+        $this->_setPort0Load(self::ON);
+        $this->_setPort0(self::ON);
+        $p0Volts = $this->_readUUTPort0Volts();
+        $p0Amps = $this->_readUUTPort0Current();
+    
+        if (($p0Volts > 11.0) and ($p0Volts < 13.00)) {
+            $expectedCurrent = $p0Volts/12;
+            
+            $rawVal = $this->_readUUT_ADCval(self::UUT_P0_CURRENT);
+            $rawVal += $this->_P0_AOFFSET;
+            $steps = 1.65/ pow(2,11);
+            $volts = $steps * $rawVal;
+            $volts *= 2;
+        
+            $this->_system->out("Y2: ".number_format($volts,4)." - Y1: 1.65 ");
+            $this->_system->out("X2: ".number_format($expectedCurrent,4)." - X1: 0.0 ");
+            $this->_system->out("");
+            $currentGain = ($volts - 1.65)/$expectedCurrent;
+            $curGain = number_format($currentGain, 6);
+            $this->_system->out("Calculated Current Gain Ratio = ".$curGain);
+            
+            $this->_P0_AGAIN = $curGain;
+            
+            $this->_setPort0(self::OFF);
+            $testResult = self::PASS;
+        } else {
+            $testResult = self::HFAIL;
+            $this->_setPort0(self::OFF);
+            $this->_TEST_FAIL[] = "P0 volts fail in current gain cal:".$p1Volts;
+        }
+        
+        sleep(1);
+        $this->_setPort0Load(self::OFF);
+        $this->_system->out("");
+    
+        return $testResult;
+    }
+    
+    
     /*****************************************************************************/
     /*                                                                           */
     /*                                                                           */
