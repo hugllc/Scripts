@@ -100,16 +100,17 @@ class E104603TroubleShoot extends E104603Test
     private $_eptroubleTestMenu = array(
                                 0  => "UUT Power Up",
                                 1  => "Load Test Firmware",
-                                2  => "Port 1",
-                                3  => "Port 2",
-                                4  => "Port 1 Fault",
-                                5  => "Port 2 Fault",
-                                6  => "Port 1 to VBus",
-                                7  => "Port 2 to VBus",
-                                8  => "External Thermistor Connections",
-                                9  => "Read Micro SN",
-                                10 => "Read User Signature",
-                                11 => "Current Calibration",
+                                2  => "Thermistors",
+                                3  => "Port 1",
+                                4  => "Port 2",
+                                5  => "Port 1 Fault",
+                                6  => "Port 2 Fault",
+                                7  => "Port 1 to VBus",
+                                8  => "Port 2 to VBus",
+                                9  => "External Thermistor Connections",
+                                10  => "Read Micro SN",
+                                11 => "Read User Signature",
+                                12 => "Current Calibration",
                                 );
 
     private $_eptroubleAppMenu = array(
@@ -225,24 +226,26 @@ class E104603TroubleShoot extends E104603Test
             } else if (($selection == "B") || ($selection == "b")){
                 $this->_trblshtLoadFirmware();
             } else if (($selection == "C") || ($selection == "c")){
-                $this->_trblshtPort1();
+                $this->_trblshtThermistors();
             } else if (($selection == "D") || ($selection == "d")){
-                $this->_trblshtPort0();
+                $this->_trblshtPort1();
             } else if (($selection == "E") || ($selection == "e")){
-                $this->_trblshtP1Fault();
+                $this->_trblshtPort0();
             } else if (($selection == "F") || ($selection == "f")){
-                $this->_trblshtP2Fault();
+                $this->_trblshtP1Fault();
             } else if (($selection == "G") || ($selection == "g")){
-                $this->_trblshtVBusP1();
+                $this->_trblshtP2Fault();
             } else if (($selection == "H") || ($selection == "h")){
-                $this->_trblshtVBusP0();
+                $this->_trblshtVBusP1();
             } else if (($selection == "I") || ($selection == "i")){
-                $this->_trblshtExtTherms();
+                $this->_trblshtVBusP0();
             } else if (($selection == "J") || ($selection == "j")){
-                $this->_trblshtReadMicroSN();
+                $this->_trblshtExtTherms();
             } else if (($selection == "K") || ($selection == "k")){
-                $this->_trblshtReadUserSig();
+                $this->_trblshtReadMicroSN();
             } else if (($selection == "L") || ($selection == "l")){
+                $this->_trblshtReadUserSig();
+            } else if (($selection == "M") || ($selection == "m")){
                 $this->_trblshtCurrentCalibrate();
             } else {
                 $exitTest = true;
@@ -337,6 +340,81 @@ class E104603TroubleShoot extends E104603Test
             $this->_system->out("If connections are good, check signal to microcontroller.");
             $this->_system->out("If signal is good, it may be a bad microcontroller.");
         }
+   
+        $choice = readline("\n\rHit Enter to Exit: ");
+        
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
+        
+        
+    }
+
+    /**
+    ************************************************************
+    * Troubleshoot Thermistors Routine
+    *
+    * This function will eventually do some troubleshooting 
+    * routine for the battery socializer board.
+    *
+    */
+    private function _trblshtThermistors()
+    {
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        $this->_powerUUT(self::ON);
+        sleep(1);
+        
+        
+        $this->_system->out("Testing Thermistors");
+        $this->_system->out("******************************");
+        sleep(1);
+
+        $busTemp0 = $this->_readUUTBusTemp0();
+
+        if (($busTemp0 > 11.00) and ($busTemp0 < 26.00)) {
+            $resultT1 = self::PASS;
+        } else {
+            $resultT1 = self::FAIL;
+            $this->_system->out("Bus Temp0 Fail:".$busTemp0."C");
+        }
+
+        $busTemp1 = $this->_readUUTBusTemp1();
+
+        if (($busTemp1 > 11.00) and ($busTemp1 < 26.00)) {
+            $resultT2 = self::PASS;
+        } else {
+            $resultT2 = self::FAIL;
+            $this->_system->out("Bus Temp1:".$busTemp1."C");
+        }
+        
+        $p1Temp = $this->_readUUTP1Temp();
+
+        if (($p1Temp > 11.00) and ($p1Temp < 26.00)) {
+            $resultT3 = self::PASS;
+        } else {
+            $resultT3 = self::FAIL;
+            $this->_system->out("Port 1 Temp:".$p1Temp."C");
+        }
+        
+        $p0Temp = $this->_readUUTP0Temp(); 
+
+        if (($p0Temp > 11.00) and ($p0Temp < 26.00)) {
+            $resultT4 = self::PASS;
+        } else {
+            $resultT4 = self::FAIL;
+            $this->_system->out("Port 0 Temp:".$p0Temp."C");
+        }
+
+        if (($resultT1 == self::PASS) and ($resultT2 == self::PASS)
+           and ($resultT3 == self::PASS) and ($resultT4 == self::PASS)) {
+            $testResult = self::PASS;
+            $this->_system->out("UUT Thermistors - PASSED!");
+        } else {
+            $testResult = self::FAIL;
+            $this->_system->out("UUT Thermistors - FAILED!");
+        }
+
+        $this->_system->out("");
    
         $choice = readline("\n\rHit Enter to Exit: ");
         

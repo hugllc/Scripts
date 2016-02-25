@@ -297,7 +297,7 @@ class E104603Test
                     $stepResult = $this->_testUUTpower();
                     break;
                 case 3:
-                    //$stepResult = $this->_loadTestFirmware();
+                    $stepResult = $this->_loadTestFirmware();
                     break;
                 case 4:
                     $stepResult = $this->_checkUUTBoard();
@@ -317,15 +317,15 @@ class E104603Test
                     $stepResult = $this->_testUUT();
                     break;
                 case 9:
-                   /* if (!$this->_FAIL_FLAG) {
+                   if (!$this->_FAIL_FLAG) {
                       $stepResult = $this->_loadUUTprograms();
-                    } */
+                    } 
                     break;
             }
         } while (($stepResult != self::HFAIL) and ($stepNum < 9));
 
         if ($stepNum > 3) {
-         // $this->_logTestData($stepResult);
+         $this->_logTestData($stepResult);
         }
         $this->_powerUUT(self::OFF);
         $this->_clearTester();
@@ -914,7 +914,7 @@ class E104603Test
                 $p1Volts = $this->_readUUTPort1Volts();
                 $p1Amps = $this->_readUUTPort1Current();
 
-                if (($VBvolts > 11.5) and ($VBvolts < 13.00)) {
+                if (($VBvolts > 11.4) and ($VBvolts < 13.00)) {
                     $this->_setPort1(self::OFF);
                     sleep(1);
                     $voltsVB = $this->_readTesterBusVolt();
@@ -923,6 +923,7 @@ class E104603Test
                     if ($voltsVB < 0.3) {
                         $testResult = self::PASS;
                     } else { 
+                        $this->_system->out("P1 off to Vbus:".$voltsVB."V");
                         $this->_TEST_FAIL[] = "P1 off to Vbus:".$voltsVB."V";
                         $testResult = self::HFAIL;
                     }
@@ -930,6 +931,7 @@ class E104603Test
                 } else {
                     $this->_setPort1(self::OFF);
                     $this->_setVBus_V12(self::ON);
+                    $this->_system->out("P1 on to Vbus Fail :".$VBvolts."V");
                     $this->_TEST_FAIL[] = "P1 on to Vbus:".$VBvolts."V";
                     $this->_setPort1_V12(self::OFF);
                     $testResult = self::HFAIL;
@@ -1569,7 +1571,7 @@ class E104603Test
     *
     * @return $rawVal 
     */
-    private function _readUUTBusTemp0()
+    public function _readUUTBusTemp0()
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_BUS_TEMP0);
 
@@ -1590,7 +1592,7 @@ class E104603Test
     *
     * @return $rawVal 
     */
-    private function _readUUTBusTemp1()
+    public function _readUUTBusTemp1()
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_BUS_TEMP1);
 
@@ -1610,7 +1612,7 @@ class E104603Test
     *
     * @return $rawVal 
     */
-    private function _readUUTP0Temp()
+    public function _readUUTP0Temp()
     {
         $rawVal = $this->_readUUT_ADCval(self::UUT_P0_TEMP);
 
@@ -3850,7 +3852,9 @@ class E104603Test
             $curGain = number_format($currentGain, 6);
             $this->_system->out("Calculated Current Gain Ratio = ".$curGain);
             
-            $this->_P1_AGAIN = $curGain;
+            if ($curGain > 0.0) {
+                $this->_P1_AGAIN = $curGain;
+            }
             
             $this->_setPort1(self::OFF);
             $testResult = self::PASS;
@@ -3902,7 +3906,9 @@ class E104603Test
             $curGain = number_format($currentGain, 6);
             $this->_system->out("Calculated Current Gain Ratio = ".$curGain);
             
-            $this->_P0_AGAIN = $curGain;
+            if ($curGain > 0.0) {
+                $this->_P0_AGAIN = $curGain;
+            }
             
             $this->_setPort0(self::OFF);
             $testResult = self::PASS;
