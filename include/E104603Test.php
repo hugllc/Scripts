@@ -668,7 +668,8 @@ class E104603Test
         $p1Amps = $this->_readUUTPort1Current();
         $this->_TEST_DATA["P1Current"] = $p1Amps;
 
-        if (($p1Volts > 11.50) and ($p1Volts < 13.00)) {
+        if (($p1Volts > 11.40) and ($p1Volts < 13.00) and 
+            ($p1Amps > 0.7)) {
             //$testResult = $this->_runP1FaultTest();
             $testResult = self::PASS;
             $this->_setPort1(self::OFF);
@@ -692,7 +693,7 @@ class E104603Test
         } else {
             $this->_setPort1(self::OFF);
             $this->_system->out("Port 1 Load Test - FAILED!");
-            $this->_TEST_FAIL[] = "P1 On Load:".$p1Volts."V";
+            $this->_TEST_FAIL[] = "P1 On Load:".$p1Volts."V ".$p1Amps."A";
             $testResult = self::HFAIL;
         }
         $this->_setPort1Load(self::OFF); /* Disconnect Port 1 Load */
@@ -772,7 +773,8 @@ class E104603Test
         $p0Amps = $this->_readUUTPort0Current();
         $this->_TEST_DATA["P0Current"] = $p0Amps;
 
-        if (($p0Volts > 11.50) and ($p0Volts < 13.00)) {
+        if (($p0Volts > 11.40) and ($p0Volts < 13.00) and
+            ($p0Amps > 0.7)) {
             //$testResult = $this->_runP0Faulttest();
             $testResult = self::PASS;
             $this->_setPort0(self::OFF);
@@ -797,7 +799,7 @@ class E104603Test
         } else {
             $this->_setPort0(self::OFF);
             $this->_system->out("Port 0 Fault Test - FAILED!");
-            $this->_TEST_FAIL[] = "P0 On Load:".$p0Volts."V";
+            $this->_TEST_FAIL[] = "P0 On Load:".$p0Volts."V ".$p0Amps."A";
             $testResult = self::HFAIL;
         }
         $this->_setPort0Load(self::OFF); /* Remove 12 ohm load */
@@ -914,7 +916,8 @@ class E104603Test
                 $p1Volts = $this->_readUUTPort1Volts();
                 $p1Amps = $this->_readUUTPort1Current();
 
-                if (($VBvolts > 11.4) and ($VBvolts < 13.00)) {
+                if (($VBvolts > 11.4) and ($VBvolts < 13.00) and
+                    ($p1Amps < -0.7)) {
                     $this->_setPort1(self::OFF);
                     sleep(1);
                     $voltsVB = $this->_readTesterBusVolt();
@@ -931,8 +934,8 @@ class E104603Test
                 } else {
                     $this->_setPort1(self::OFF);
                     $this->_setVBus_V12(self::ON);
-                    $this->_system->out("P1 on to Vbus Fail :".$VBvolts."V");
-                    $this->_TEST_FAIL[] = "P1 on to Vbus:".$VBvolts."V";
+                    $this->_system->out("P1 on to Vbus Fail :".$VBvolts."V ".$p1Amps."A");
+                    $this->_TEST_FAIL[] = "P1 on to Vbus:".$VBvolts."V ".$p1Amps."A";
                     $this->_setPort1_V12(self::OFF);
                     $testResult = self::HFAIL;
                 }
@@ -982,7 +985,8 @@ class E104603Test
             $p0Volts = $this->_readUUTPort0Volts();
             $p0Amps = $this->_readUUTPort0Current();
 
-            if (($VBvolts > 11.5) and ($VBvolts < 13.00)) {
+            if (($VBvolts > 11.5) and ($VBvolts < 13.00) and 
+                ($p0Amps < -0.7)) {
                 $this->_setPort0(self::OFF);
                 sleep(1);
                 $voltsVB = $this->_readTesterBusVolt();
@@ -1004,7 +1008,8 @@ class E104603Test
             } else {
                 $this->_setPort0(self::OFF);
                 $this->_setPort0_V12(self::OFF);
-                $this->_TEST_FAIL[] = "P0 on to Vbus:".$VBvolts."V";
+                $this->_system->out("P0 on to Vbus Fail :".$VBvolts."V ".$p0Amps."A");
+                $this->_TEST_FAIL[] = "P0 on to Vbus:".$VBvolts."V ".$p0Amps."A";
                 $this->_setVBus_V12(self::ON);
                 $this->_setPort1_V12(self::OFF);
                 $testResult = self::HFAIL;
@@ -3000,16 +3005,24 @@ class E104603Test
         sleep(1);
 
         if (($p1Volts > 11.00) and ($p1Volts < 13.00)) {
-            $this->_setPort1(self::OFF);
-            sleep(2);
-            $p1Volts = $this->_readUUTPort1Volts();
-        
-            if ($p1Volts <= 0.2) {
-                $testResult = self::PASS;
+            if ($p1Amps > 0.35) {
+                $this->_setPort1(self::OFF);
+                sleep(2);
+                $p1Volts = $this->_readUUTPort1Volts();
+            
+                if ($p1Volts <= 0.2) {
+                    $testResult = self::PASS;
+                } else {
+                    $this->_system->out("Port 1 fail, unable to calibrate ADC!");
+                    $this->_setPort1Load(self::OFF);
+                    $this->_TEST_FAIL[] = "P1 Off in ADC Cal:".$p1Volts."V";
+                    $testResult = self::HFAIL;
+                }
             } else {
-                $this->_system->out("Port 1 fail, unable to calibrate ADC!");
+                $this->_system->out("Port 1 current fail unable to calibrate ADC!");
+                $this->_setPort1(self::OFF);
                 $this->_setPort1Load(self::OFF);
-                $this->_TEST_FAIL[] = "P1 Off in ADC Cal:".$p1Volts."V";
+                $this->_TEST_FAIL[] = "P1 current in ADC Cal:".$p1Amps."A";
                 $testResult = self::HFAIL;
             }
         } else {
