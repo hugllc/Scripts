@@ -87,7 +87,7 @@ $pkt = $cli->system()->device(hexdec($config->i))->action()->send(
     null,
     array(
         "timeout" => $dev->get("packetTimeout"),
-        "NoReply" => ($config->i == 0)
+        "NoReply" => (hexdec($config->i) == 0)
     )
 );
 if (is_object($pkt)) {
