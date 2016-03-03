@@ -115,10 +115,12 @@ class E104603TroubleShoot extends E104603Test
 
     private $_eptroubleAppMenu = array(
                                 0 => "UUT Power Up",
-                                1 => "Read Calibration Values",
-                                2 => "Port 1",
-                                3 => "Port 2",
-                                4 => "Read Sensors",
+                                1 => "Load Bootloader Firmware",
+                                2 => "Load Application Firmware",
+                                3 => "Read Calibration Values",
+                                4 => "Port 1",
+                                5 => "Port 2",
+                                6 => "Read Sensors",
                                 );
                                 
     public $display;
@@ -1138,12 +1140,16 @@ class E104603TroubleShoot extends E104603Test
             if (($selection == "A") || ($selection == "a")) {
                 $this->_trblshtAppPwrUp();
             } else if (($selection == "B") || ($selection == "b")){
-                $this->_trblshtUserCalibration();
+                $this->_trblshtAppLoadBoot();
             } else if (($selection == "C") || ($selection == "c")){
-                $this->_trblshtAppPort1();
+                $this->_trblshtAppLoadApp();
             } else if (($selection == "D") || ($selection == "d")){
+                $this->_trblshtUserCalibration();
+            } else if (($selection == "E") || ($selection == "e")){
+                $this->_trblshtAppPort1();
+            } else if (($selection == "F") || ($selection == "f")){
                 $this->_trblshtAppPort2();
-            } else if (($selection == "E") || ($selection == 'e')){
+            } else if (($selection == "G") || ($selection == 'g')){
                 $this->_trblshtSensors();
             } else {
                 $exitTest = true;
@@ -1175,6 +1181,84 @@ class E104603TroubleShoot extends E104603Test
         $this->_system->out("Powering down UUT!");
         $this->_powerUUT(self::OFF);
     }
+
+    /**
+    ***********************************************************
+    * Troubleshoot Application Load Bootloader Firmware Routine
+    *
+    * This function will power up the UUT, check communications
+    * and then load the bootloader firmware.
+    *
+    */
+    private function _trblshtAppLoadBoot()
+    {
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        
+        $this->_powerUUT(self::ON);
+
+        for ($i = 0; $i < 5; $i++) {
+            print "*";
+            sleep(1);
+        }
+        $this->_system->out("");
+
+        $result = $this->_loadBootLoaderFirmware();
+
+        if ($result == self::PASS) {
+            $choice = readline("\n\rBootloader Success Hit Enter to Continue");
+        } else {
+            $choice = readline("\n\rBootloader Failed Hit Enter to Continue");
+        }
+
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
+
+    }
+
+    /**
+    ***********************************************************
+    * Troubleshoot Application Load Application Firmware Routine
+    *
+    * This function will power up the UUT, check communications
+    * and then load the Application firmware.
+    *
+    */
+    private function _trblshtAppLoadApp()
+    {
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        
+        $this->_powerUUT(self::ON);
+
+        for ($i = 0; $i < 5; $i++) {
+            print "*";
+            sleep(1);
+        }
+        $this->_system->out("");
+
+        $this->display->displayHeader("Loading Application Firmware");
+
+        $hugnetLoad = "../bin/./hugnet_load";
+        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.3.1.gz";
+
+        $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
+
+        system($Prog, $return);
+
+        if ($return == 0) {
+            $choice = readline("\n\rApplication Loaded Hit Enter to Continue");
+        } else {
+            $choice = readline("\n\rApplication Load Failed Hit Enter to Continue");
+        } 
+
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
+
+    }
+
 
     /**
     ***********************************************************

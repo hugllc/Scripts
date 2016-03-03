@@ -2676,7 +2676,7 @@ class E104603Test
     *
     * @return int $result  
     */
-    private function _loadBootloaderFirmware()
+    public function _loadBootloaderFirmware()
     {
         $output = array();
         $this->display->displayHeader("Loading Bootloader Firmware");
