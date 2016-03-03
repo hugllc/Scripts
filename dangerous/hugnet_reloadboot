@@ -87,8 +87,8 @@ if (strlen($file) == 0) {
 
 $DevID = hexdec($config->i);
 $dev = $cli->system()->device($DevID);
-$firmware = $cli->system()->table("Firmware");
-$firmware->fromFile($file, $path);
+$firmware = $dev->firmware();
+$firmware->table()->fromFile($file, $path);
 if ($firmware->get("FWPartNum") !== "0039-38-03-C") {
     $cli->out();
     $cli->out("Error:  This firmware can not be loaded using this utility");
