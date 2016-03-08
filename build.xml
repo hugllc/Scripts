@@ -13,6 +13,12 @@
         <delete dir="${basedir}/build/pdepend"/>
         <delete dir="${basedir}/Documentation"/>
         <delete dir="${basedir}/php.core"/>
+        <delete dir="${basedir}/bin/*~" />
+        <delete dir="${basedir}/bin/*.hex" />
+        <delete dir="${basedir}/bin/*.eep" />
+        <delete dir="${basedir}/misc/*~" />
+        <delete dir="${basedir}/misc/*.hex" />
+        <delete dir="${basedir}/misc/*.eep" />
 
         <mkdir dir="${basedir}/build/api"/>
         <mkdir dir="${basedir}/build/code-browser"/>
