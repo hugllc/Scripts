@@ -138,10 +138,18 @@ if ($loadable && !$config->a) {
 } else if (($dev->get("arch") === "AVR") 
     || ($firmware->get("HWPartNum") == "0039-28")
     || ($firmware->get("HWPartNum") == "0039-12")
+    || (($fwpart == "0039-38-02-C") && (strtolower($firmware->get("Target")) == "atmega32"))
+    || (($fwpart == "0039-38-02-C") && (strtolower($firmware->get("Target")) == "atmega324"))
     || (($fwpart == "0039-38-81-C") && (strtolower($firmware->get("Target")) == "atxmegae5"))
     || $config->a
 ) {
     switch (strtolower($firmware->get("Target"))) {
+        case "atmega32":
+            $ptarget = "m32";
+            break;
+        case "atmega324":
+            $ptarget = "m324p";
+            break;
         case "atxmegae5":
             $ptarget = "x32e5";
             break;
