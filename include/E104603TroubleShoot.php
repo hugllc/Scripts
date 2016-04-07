@@ -1241,7 +1241,7 @@ class E104603TroubleShoot extends E104603Test
         $this->display->displayHeader("Loading Application Firmware");
 
         $hugnetLoad = "../bin/./hugnet_load";
-        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.3.1.gz";
+        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.0.gz";
 
         $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
 
@@ -1252,7 +1252,6 @@ class E104603TroubleShoot extends E104603Test
         } else {
             $choice = readline("\n\rApplication Load Failed Hit Enter to Continue");
         } 
-
 
         $this->_system->out("Powering down UUT!");
         $this->_powerUUT(self::OFF);
@@ -1589,7 +1588,7 @@ class E104603TroubleShoot extends E104603Test
         sleep(1);
     
         $voltsP2 = $this->_readTesterP0Volt();
-        
+         //$choice = readline("\n\rMeasure on states and Hit Enter to Continue");       
         if (($voltsP2 > 11.00) and ($voltsP2 < 13.00)) {
             $this->_system->out("Turning off Port 0");
             $this->_setControlChan($SNVal, $chan, self::OFF);

@@ -2726,7 +2726,7 @@ class E104603Test
     *
     * @return integer $result  1=pass, 0=fail, -1=hard fail
     */
-    private function _setPowerTable()
+    public function _setPowerTable()
     {
         $this->_system->out("");
         $this->_system->out("Setting Power Table");
@@ -2825,7 +2825,7 @@ class E104603Test
         $this->display->displayHeader("Loading Application Firmware");
 
         $hugnetLoad = "../bin/./hugnet_load";
-        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.3.1.gz";
+        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.0.gz";
 
         $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
 
