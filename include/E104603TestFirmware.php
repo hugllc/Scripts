@@ -267,6 +267,8 @@ class E104603TestFirmware
     /*                                                                           */
     /*****************************************************************************/
    
+
+
     /**
     ************************************************************
     * Set Power Table Normal Load Routine
@@ -287,42 +289,247 @@ class E104603TestFirmware
         $this->_system->out("*******************");
         
         $decVal = self::DEVICE3_ID;
-        $idNum = $decVal;
-        $cmdNum = self::SET_POWERTABLE_COMMAND;
-        $portData = "00";
-        $driverData ="A0000001";  /* Driver, Subdriver, Priority and mode */
-        $driverName = "4C6F616420310000000000000000000000000000000000";
-        $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
-        $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
-        $dataVal = $portData.$driverData.$driverName.
-                    $fillData.$fillData2;
-        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-        $ReplyData = substr($ReplyData, 0, 14);
-        $this->_system->out("Port 0 Reply = ".$ReplyData);
-        
-        $testReply = substr($ReplyData, 0, 4);
-        if ($testReply == "A000") {
-        
-            $this->_system->out("Setting Power Table 0 - PASSED!");
-            
-            $portData = "01";
+
+        $result = $this->_erasePowerPortTable($decVal);
+
+        if ($result == self::PASS) {
+            $idNum = $decVal;
+            $cmdNum = self::SET_POWERTABLE_COMMAND;
+
+            $portData = "00";
+            $driverData ="A0000001";  /* Driver, Subdriver, Priority and mode */
+            $driverName = "4C6F616420310000000000000000000000000000000000";
+            $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
+            $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
             $dataVal = $portData.$driverData.$driverName.
                         $fillData.$fillData2;
             $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
             $ReplyData = substr($ReplyData, 0, 14);
-            $this->_system->out("Port 1 Reply = ".$ReplyData);
+            $this->_system->out("Port 0 Reply = ".$ReplyData);
             
             $testReply = substr($ReplyData, 0, 4);
             if ($testReply == "A000") {
-                $this->_system->out("Setting Power Table 1 - PASSED!");
+            
+                $this->_system->out("Setting Power Table 0 - PASSED!");
+                
+                $portData = "01";
+                $dataVal = $portData.$driverData.$driverName.
+                            $fillData.$fillData2;
+                $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+                $ReplyData = substr($ReplyData, 0, 14);
+                $this->_system->out("Port 1 Reply = ".$ReplyData);
+                
+                $testReply = substr($ReplyData, 0, 4);
+                if ($testReply == "A000") {
+                    $this->_system->out("Setting Power Table 1 - PASSED!");
+                    $result = self::PASS;
+                } else {
+                    $this->_system->out("Setting Power Table 1 - FAILED!");
+                    $result = self::FAIL;
+                }
             } else {
-                $this->_system->out("Setting Power Table 1 - FAILED!");
+                $this->_system->out("Setting Power Table 0 - FAILED!");
+                $result = self::FAIL;
             }
         } else {
-            $this->_system->out("Setting Power Table 0 - FAILED!");
+            $this->_system->out("Failed to erase E2 Power Table");
         }
-    
+
+        return $result;
     }
+
+/***
+2016-04-14 15:08:04 local From: FD15F3 -> To: 009002 Command: 1A Type: WRITE_E2 (CRC)
+Data: 0000FFFFFFFF
+2016-04-14 15:08:04 default From: 009002 -> To: FD15F3 Command: 01 Type: REPLY (CRC)
+Data: FFFFFFFF
+2016-04-14 15:08:04 local From: FD15F3 -> To: 009002 Command: 45 Type: SETPOWERTABLE (CRC)
+Data: 0010000001506F727420410000000000000000000000000000000000100E0100B0360000EC2C0000E80300000100BC340000F82A000004290000E80300000F00D4300000FFFFFFFFFFFFFFFFFFFFFFFFFF
+2016-04-14 15:08:04 default From: 009000 -> To: 000000 Command: 7C Type: SENSORBROADCAST (CRC)
+Data: 181E00000013380000C05B00000000000000000000030000001E00000009380000545B0000000000000000000003000000C3FFFFFFD5370000B0620000EF0C000001F8FFFF01F8FFFF
+2016-04-14 15:08:05 default From: 009002 -> To: FD15F3 Command: 01 Type: REPLY (CRC)
+Data: 10000001506F727420410000000000000000000000000000000000100E0100B0360000EC2C0000E80300000100BC340000F82A000004290000E80300000F00D4300000FFFFFFFFFFFFFFFFFFFFFFFFFF
+2016-04-14 15:08:05 local From: FD15F3 -> To: 009002 Command: 45 Type: SETPOWERTABLE (CRC)
+Data: 01FF000001506F727420420000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+2016-04-14 15:08:06 default From: 009002 -> To: FD15F3 Command: 01 Type: REPLY (CRC)
+Data: FF000001506F727420420000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+****/
+
+    /**
+    ************************************************************
+    * Set Power Table Battery and EmptyPort Routine
+    *
+    * This routine sets up the power table in a UUT that already
+    * has the application code loaded.  It sets power port 0 
+    * to a battery driver and power port 1 to an empty port.
+    *
+    * @return integer $result  1=pass, 0=fail
+    */
+    private function _setPowerTableBattery()
+    {
+        $this->_system->out("");
+
+        $this->_system->out("");
+        $this->_system->out("Setting Power Table");
+        $this->_system->out("*******************");
+        
+        $decVal = self::DEVICE2_ID;
+
+        $result = $this->_erasePowerPortTable($decVal);
+
+        if ($result == self::PASS) {
+            $idNum = $decVal;
+            $cmdNum = self::SET_POWERTABLE_COMMAND;
+
+            $portData = "00";
+            $driverData ="10000001";  /* Driver, Subdriver, Priority and mode */
+            $driverName = "506F727420410000000000000000000000000000000000";
+            $fillData  = "100E0100B0360000EC2C0000E80300000100BC340000F82A000004";  /* 27 bytes */
+            $fillData2 = "290000E80300000F00D4300000FFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
+            $dataVal = $portData.$driverData.$driverName.
+                        $fillData.$fillData2;
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $ReplyData = substr($ReplyData, 0, 14);
+            $this->_system->out("Port 0 Reply = ".$ReplyData);
+            
+            $testReply = substr($ReplyData, 0, 4);
+            if ($testReply == "1000") {
+            
+                $this->_system->out("Setting Power Table 0 - PASSED!");
+                
+                $portData = "01";
+                $driverData ="FF000001";  /* Driver, Subdriver, Priority and mode */
+                $driverName = "506F727420420000000000000000000000000000000000";
+                $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
+                $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
+                $dataVal = $portData.$driverData.$driverName.
+                            $fillData.$fillData2;
+                $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+                $ReplyData = substr($ReplyData, 0, 14);
+                $this->_system->out("Port 1 Reply = ".$ReplyData);
+                
+                $testReply = substr($ReplyData, 0, 4);
+                if ($testReply == "FF00") {
+                    $this->_system->out("Setting Power Table 1 - PASSED!");
+                    $result = self::PASS;
+                } else {
+                    $this->_system->out("Setting Power Table 1 - FAILED!");
+                    $result = self::FAIL;
+                }
+            } else {
+                $this->_system->out("Setting Power Table 0 - FAILED!");
+                $result = self::FAIL;
+            }
+        } else {
+            $this->_system->out("Failed to erase E2 Power Table");
+        }
+
+        return $result;
+    }
+
+
+    /**
+    ************************************************************
+    * Set Power Table Power Supply and EmptyPort Routine
+    *
+    * This routine sets up the power table in a UUT that already
+    * has the application code loaded.  It sets power port 0 
+    * to a power supply driver and power port 1 to an empty port.
+    *
+    * @return integer $result  1=pass, 0=fail, -1=hard fail
+    */
+    private function _setPowerTablePowerSupply()
+    {
+        $this->_system->out("");
+
+        $this->_system->out("");
+        $this->_system->out("Setting Power Table");
+        $this->_system->out("*******************");
+        
+        $decVal = self::DEVICE3_ID;
+
+        $result = $this->_erasePowerPortTable($decVal);
+
+        if ($result == self::PASS) {
+            $idNum = $decVal;
+            $cmdNum = self::SET_POWERTABLE_COMMAND;
+
+            $portData = "00";
+            $driverData ="E0000001";  /* Driver, Subdriver, Priority and mode */
+            $driverName = "506F727420410000000000000000000000000000000000";
+            $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
+            $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
+            $dataVal = $portData.$driverData.$driverName.
+                        $fillData.$fillData2;
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $ReplyData = substr($ReplyData, 0, 14);
+            $this->_system->out("Port 0 Reply = ".$ReplyData);
+            
+            $testReply = substr($ReplyData, 0, 4);
+            if ($testReply == "E000") {
+            
+                $this->_system->out("Setting Power Table 0 - PASSED!");
+                
+                $portData = "01";
+                $driverData ="FF000001";  /* Driver, Subdriver, Priority and mode */
+                $driverName = "506F727420420000000000000000000000000000000000";
+                $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
+                $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
+                $dataVal = $portData.$driverData.$driverName.
+                            $fillData.$fillData2;
+                $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+                $ReplyData = substr($ReplyData, 0, 14);
+                $this->_system->out("Port 1 Reply = ".$ReplyData);
+                
+                $testReply = substr($ReplyData, 0, 4);
+                if ($testReply == "FF00") {
+                    $this->_system->out("Setting Power Table 1 - PASSED!");
+                    $result = self::PASS;
+                } else {
+                    $this->_system->out("Setting Power Table 1 - FAILED!");
+                    $result = self::FAIL;
+                }
+            } else {
+                $this->_system->out("Setting Power Table 0 - FAILED!");
+                $result = self::FAIL;
+            }
+        } else {
+            $this->_system->out("Failed to erase E2 Power Table");
+        }
+
+        return $result;
+    }
+
+    /**
+    ************************************************************
+    * Erase Power Port E2 Routine
+    * 
+    * This function sends a command to the device to erase 
+    * the power table eeprom memory so that new power table
+    * settings can be loaded.
+    *
+    * @param $deviceID  device serial number
+    *
+    * @return $result   1=pass, 0=fail
+    */
+    private function _erasePowerPortTable($deviceID)
+    {
+        $idNum = $deviceID;
+        $cmdNum = 0x1A;
+        $dataVal = "0000FFFFFFFF";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+
+        $testReply = substr($ReplyData, 0, 8);
+        if ($testReply == "FFFFFFFF") {
+            $testResult = self::PASS;
+        } else {
+            $testResult = self::FAIL;
+        }
+        
+        return $testResult;
+
+    }
+
 
 
 

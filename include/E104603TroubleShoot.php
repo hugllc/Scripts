@@ -1650,40 +1650,53 @@ class E104603TroubleShoot extends E104603Test
         
         $decVal = hexdec($this->_ENDPT_SN);
         $idNum = $decVal;
-        $cmdNum = self::SET_POWERTABLE_COMMAND;
-        $portData = "00";
-        $driverData ="A0000001";  /* Driver, Subdriver, Priority and mode */
-        $driverName = "4C6F616420310000000000000000000000000000000000";
-        $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
-        $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
-        $dataVal = $portData.$driverData.$driverName.
-                    $fillData.$fillData2;
+
+        $cmdNum = 0x1A;
+        $dataVal = "0000FFFFFFFF";
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-        $ReplyData = substr($ReplyData, 0, 14);
-        $this->_system->out("Port 1 Reply = ".$ReplyData);
-        
-        $testReply = substr($ReplyData, 0, 4);
-        if ($testReply == "A000") {
-        
-            $this->_system->out("Setting Power Table 1 - PASSED!");
-            
-            $portData = "01";
+
+        $testReply = substr($ReplyData, 0, 8);
+        if ($testReply == "FFFFFFFF") {
+            $this->_system->out("E2 erase succeeded!");
+
+            $cmdNum = self::SET_POWERTABLE_COMMAND;
+            $portData = "00";
+            $driverData ="A0000001";  /* Driver, Subdriver, Priority and mode */
+            $driverName = "4C6F616420310000000000000000000000000000000000";
+            $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
+            $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
             $dataVal = $portData.$driverData.$driverName.
                         $fillData.$fillData2;
             $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
             $ReplyData = substr($ReplyData, 0, 14);
-            $this->_system->out("Port 2 Reply = ".$ReplyData);
+            $this->_system->out("Port 1 Reply = ".$ReplyData);
             
             $testReply = substr($ReplyData, 0, 4);
             if ($testReply == "A000") {
+            
                 $this->_system->out("Setting Power Table 1 - PASSED!");
+                
+                $portData = "01";
+                $dataVal = $portData.$driverData.$driverName.
+                            $fillData.$fillData2;
+                $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+                $ReplyData = substr($ReplyData, 0, 14);
+                $this->_system->out("Port 2 Reply = ".$ReplyData);
+                
+                $testReply = substr($ReplyData, 0, 4);
+                if ($testReply == "A000") {
+                    $this->_system->out("Setting Power Table 1 - PASSED!");
+                } else {
+                    $this->_system->out("Setting Power Table 1 - FAILED!");
+                }
             } else {
-                $this->_system->out("Setting Power Table 1 - FAILED!");
+                $this->_system->out("Setting Power Table 0 - FAILED!");
             }
-        } else {
-            $this->_system->out("Setting Power Table 0 - FAILED!");
-        }
         
+        } else {
+            $this->_system->out("Erasing E2 Power Table failed!");
+        }
+
         $choice = readline("\n\rHit Enter to Continue");
 
         $this->_system->out("Powering down UUT!");
