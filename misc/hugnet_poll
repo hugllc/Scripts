@@ -74,6 +74,7 @@ if (strlen($config->i) == 0) {
 }
 
 $dev = $cli->system()->device(hexdec($config->i));
+$cli->out("Polling device ".$dev->get("DeviceID"));
 $history = $dev->action()->poll();
 if (is_object($history)) {
     $chans = $dev->dataChannels();
@@ -90,7 +91,7 @@ if (is_object($history)) {
         );
     }
 } else {
-    $cli->out("No reply from ".$dev->get("DeviceID"));
+    $cli->out("No reply");
     exit(-1);
 }
 
