@@ -2691,7 +2691,7 @@ class E104603Test
 
 
         $Avrdude = "sudo avrdude -px32e5 -c avrisp2 -P usb -e -B 10 -i 100 ";
-        $flash = "-U flash:w:104603boot.ihex ";
+        $flash = "-U flash:w:104603boot.ihex ";  /* changed to .srec from .ihex */
         $eeprm = "-U eeprom:w:104603boot.eep ";
         $fuse1 = "-U fuse1:w:".$FUSE1.":m ";
         $fuse2 = "-U fuse2:w:".$FUSE2.":m ";
@@ -2715,6 +2715,8 @@ class E104603Test
 
     }
     
+    
+     
     /**
     ************************************************************
     * Set Power Table Routine
@@ -2726,7 +2728,7 @@ class E104603Test
     *
     * @return integer $result  1=pass, 0=fail, -1=hard fail
     */
-    private function _setPowerTable()
+    public function _setPowerTable()
     {
         $this->_system->out("");
         $this->_system->out("Setting Power Table");
@@ -2736,28 +2738,27 @@ class E104603Test
         $idNum = $decVal;
         $cmdNum = self::SET_POWERTABLE_COMMAND;
         $portData = "00";
-        $driverData ="FE0000";  /* Driver, Subdriver and priority */
-        $driverCapacity = "10270000";
-        $driverName = "4C6F616420310000000000000000000000000000";
+        $driverData ="A0000001";  /* Driver, Subdriver, Priority and mode */
+        $driverName = "4C6F616420310000000000000000000000000000000000";
         $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
         $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
-        $dataVal = $portData.$driverData.$driverCapacity.$driverName.
+        $dataVal = $portData.$driverData.$driverName.
                     $fillData.$fillData2;
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         $ReplyData = substr($ReplyData, 0, 14);
         $this->_system->out("Port 1 Reply = ".$ReplyData);
         
         $testReply = substr($ReplyData, 0, 4);
-        if ($testReply == "FE00") {
+        if ($testReply == "A000") {
             $portData = "01";
-            $dataVal = $portData.$driverData.$driverCapacity.$driverName.
+            $dataVal = $portData.$driverData.$driverName.
                         $fillData.$fillData2;
             $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
             $ReplyData = substr($ReplyData, 0, 14);
             $this->_system->out("Port 2 Reply = ".$ReplyData);
             
             $testReply = substr($ReplyData, 0, 4);
-            if ($testReply == "FE00") {
+            if ($testReply == "A000") {
                 $this->_system->out("Setting Power Table - PASSED!");
                 $testResult = self::PASS;
             } else {
@@ -2825,7 +2826,7 @@ class E104603Test
         $this->display->displayHeader("Loading Application Firmware");
 
         $hugnetLoad = "../bin/./hugnet_load";
-        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.3.1.gz";
+        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.0-B63.gz";
 
         $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
 

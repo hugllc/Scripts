@@ -118,9 +118,10 @@ class E104603TroubleShoot extends E104603Test
                                 1 => "Load Bootloader Firmware",
                                 2 => "Load Application Firmware",
                                 3 => "Read Calibration Values",
-                                4 => "Port 1",
-                                5 => "Port 2",
-                                6 => "Read Sensors",
+                                4 => "Set Power Ports",
+                                5 => "Port 1",
+                                6 => "Port 2",
+                                7 => "Read Sensors",
                                 );
                                 
     public $display;
@@ -1146,10 +1147,12 @@ class E104603TroubleShoot extends E104603Test
             } else if (($selection == "D") || ($selection == "d")){
                 $this->_trblshtUserCalibration();
             } else if (($selection == "E") || ($selection == "e")){
-                $this->_trblshtAppPort1();
+                $this->_trblshtSetPowerTable();
             } else if (($selection == "F") || ($selection == "f")){
+                $this->_trblshtAppPort1();
+            } else if (($selection == "G") || ($selection == "g")){
                 $this->_trblshtAppPort2();
-            } else if (($selection == "G") || ($selection == 'g')){
+            } else if (($selection == "H") || ($selection == 'h')){
                 $this->_trblshtSensors();
             } else {
                 $exitTest = true;
@@ -1241,7 +1244,7 @@ class E104603TroubleShoot extends E104603Test
         $this->display->displayHeader("Loading Application Firmware");
 
         $hugnetLoad = "../bin/./hugnet_load";
-        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.3.1.gz";
+        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.0-B61.gz";
 
         $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
 
@@ -1252,7 +1255,6 @@ class E104603TroubleShoot extends E104603Test
         } else {
             $choice = readline("\n\rApplication Load Failed Hit Enter to Continue");
         } 
-
 
         $this->_system->out("Powering down UUT!");
         $this->_powerUUT(self::OFF);
@@ -1589,7 +1591,7 @@ class E104603TroubleShoot extends E104603Test
         sleep(1);
     
         $voltsP2 = $this->_readTesterP0Volt();
-        
+         //$choice = readline("\n\rMeasure on states and Hit Enter to Continue");       
         if (($voltsP2 > 11.00) and ($voltsP2 < 13.00)) {
             $this->_system->out("Turning off Port 0");
             $this->_setControlChan($SNVal, $chan, self::OFF);
@@ -1616,7 +1618,91 @@ class E104603TroubleShoot extends E104603Test
         $this->_system->out("Powering down UUT!");
         $this->_powerUUT(self::OFF);
     }
+    
 
+
+    /**
+    ************************************************************
+    * Set Power Table Routine
+    *
+    * This routine sets up the power table in a UUT that already
+    * has the application code loaded.  It sets both power ports
+    * to a normal load driver so they can be controlled with 
+    * a set control chan command.
+    *
+    * @return integer $result  1=pass, 0=fail, -1=hard fail
+    */
+    private function _trblshtSetPowerTable()
+    {
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        
+        $this->_powerUUT(self::ON);
+        for ($i = 0; $i < 4; $i++) {
+            print "*";
+            sleep(1);
+        }
+        $this->_system->out("");
+
+        $this->_system->out("");
+        $this->_system->out("Setting Power Table");
+        $this->_system->out("*******************");
+        
+        $decVal = hexdec($this->_ENDPT_SN);
+        $idNum = $decVal;
+
+        $cmdNum = 0x1A;
+        $dataVal = "0000FFFFFFFF";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+
+        $testReply = substr($ReplyData, 0, 8);
+        if ($testReply == "FFFFFFFF") {
+            $this->_system->out("E2 erase succeeded!");
+
+            $cmdNum = self::SET_POWERTABLE_COMMAND;
+            $portData = "00";
+            $driverData ="A0000001";  /* Driver, Subdriver, Priority and mode */
+            $driverName = "4C6F616420310000000000000000000000000000000000";
+            $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
+            $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
+            $dataVal = $portData.$driverData.$driverName.
+                        $fillData.$fillData2;
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $ReplyData = substr($ReplyData, 0, 14);
+            $this->_system->out("Port 1 Reply = ".$ReplyData);
+            
+            $testReply = substr($ReplyData, 0, 4);
+            if ($testReply == "A000") {
+            
+                $this->_system->out("Setting Power Table 1 - PASSED!");
+                
+                $portData = "01";
+                $dataVal = $portData.$driverData.$driverName.
+                            $fillData.$fillData2;
+                $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+                $ReplyData = substr($ReplyData, 0, 14);
+                $this->_system->out("Port 2 Reply = ".$ReplyData);
+                
+                $testReply = substr($ReplyData, 0, 4);
+                if ($testReply == "A000") {
+                    $this->_system->out("Setting Power Table 1 - PASSED!");
+                } else {
+                    $this->_system->out("Setting Power Table 1 - FAILED!");
+                }
+            } else {
+                $this->_system->out("Setting Power Table 0 - FAILED!");
+            }
+        
+        } else {
+            $this->_system->out("Erasing E2 Power Table failed!");
+        }
+
+        $choice = readline("\n\rHit Enter to Continue");
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
+    
+    }
 
 
     /**

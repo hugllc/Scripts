@@ -48,6 +48,8 @@ require_once "E104603Test.php";
 require_once "E104603TroubleShoot.php";
 /** This is the 104607 tester **/
 require_once "E104607TroubleShoot.php";
+/** This is the release firmware test **/
+require_once "E104603TestFirmware.php";
 
 /**
  * This code tests, serializes and programs endpoints with bootloader code.
@@ -77,9 +79,10 @@ class SocializerTest extends \HUGnet\ui\Daemon
     private $_device;
     private $_goodDevice;
     private $_socialtestMainMenu = array(
-                                0 => "Test 104603",
+                                0 => "Functional Test 104603",
                                 1 => "Troubleshoot 104603",
                                 2 => "Troubleshoot 104607 Tester",
+                                3 => "Firmware Release Test",
                                 );
 
     public $display;
@@ -137,6 +140,8 @@ class SocializerTest extends \HUGnet\ui\Daemon
                 $this->_troubleshoot104603Main();
             } else if (($selection == "C") || ($selection == "c")){
                 $this->_troubleshoot104607Main();
+            } else if (($selection == "D") || ($selection == "d")){
+                $this->_testfirmwareMain();
             } else {
                 $exitTest = true;
                 $this->out("Exit Test & Troubleshoot Tool");
@@ -210,6 +215,23 @@ class SocializerTest extends \HUGnet\ui\Daemon
  
     }
 
+    /**
+    ************************************************************
+    * Firmware Test Main Routine
+    * 
+    * This is the main routine for the firmware release 
+    * testing.
+    *
+    * @return void
+    *   
+    */
+    private function _testfirmwareMain()
+    {
+        $sys = $this->system();
+        $this->_fixtureTest = E104603TestFirmware::factory($config, $sys);
+        $this->_fixtureTest->runTestFirmwareMain();
+
+    }
 
 
 }
