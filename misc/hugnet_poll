@@ -75,11 +75,10 @@ if (strlen($config->i) == 0) {
 
 $dev = $cli->system()->device(hexdec($config->i));
 $history = $dev->action()->poll();
-
-$chans = $dev->dataChannels();
-$hist = $history->toArray(true);
-$chans->convert($hist);
 if (is_object($history)) {
+    $chans = $dev->dataChannels();
+    $hist = $history->toArray(true);
+    $chans->convert($hist);
     $channels = $dev->dataChannels();
     $cli->out("Date: ".date("Y-m-d H:i:s", $history->get("Date")));
     for ($i = 0; $i < $channels->count(); $i++) {
@@ -91,7 +90,7 @@ if (is_object($history)) {
         );
     }
 } else {
-    $cli->out("Failed");
+    $cli->out("No reply from ".$dev->get("DeviceID"));
     exit(-1);
 }
 
