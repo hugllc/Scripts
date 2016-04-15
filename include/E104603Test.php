@@ -1484,7 +1484,7 @@ class E104603Test
     public function _readTesterP12BusVolt()
     {
     
-        $rawVal = $this->_readTesterADCinput(self::TSTR_P12VBUS_PORT);
+        $rawVal = $this->_readTesterADCin104603 Firmware Release Testerput(self::TSTR_P12VBUS_PORT);
       
         if ($rawVal > 0x7fff) {
             $rawVal = 01;
@@ -3839,6 +3839,19 @@ class E104603Test
     * full load and compares it to the calculated current value.
     * A gain factor is determined from the difference in values
     * and applied to the current measurement.
+    *
+    * slope for the current to voltage output from the 
+    * current sensor IC is:
+    *       y2 - y1       3.3 - 1.65     1.65
+    *  m = ---------  =  ------------ = ------ = 0.0532258
+    *       X2 - X1        31 - 0         31
+    *
+    *  To calculate the new slope or current gain, turn on 
+    *  the load resistor and the +12V to the port.  The 
+    *  voltage on the port divided by the load resistance 
+    *  yields the expected current value.  Then,
+    *  (volts_port - 1.65V) / expected current = current gain.
+    *
     */
     private function _runPort1CurrentGain()
     {
