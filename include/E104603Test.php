@@ -1484,7 +1484,7 @@ class E104603Test
     public function _readTesterP12BusVolt()
     {
     
-        $rawVal = $this->_readTesterADCin104603 Firmware Release Testerput(self::TSTR_P12VBUS_PORT);
+        $rawVal = $this->_readTesterADCinput(self::TSTR_P12VBUS_PORT);
       
         if ($rawVal > 0x7fff) {
             $rawVal = 01;

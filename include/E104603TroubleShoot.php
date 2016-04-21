@@ -1657,7 +1657,6 @@ class E104603TroubleShoot extends E104603Test
 
         $testReply = substr($ReplyData, 0, 8);
         if ($testReply == "FFFFFFFF") {
-            $this->_system->out("E2 erase succeeded!");
 
             $cmdNum = self::SET_POWERTABLE_COMMAND;
             $portData = "00";
