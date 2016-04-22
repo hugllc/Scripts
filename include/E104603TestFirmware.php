@@ -79,8 +79,13 @@ class E104603TestFirmware
     const DEVICE2_ID = 0x9002;
     const DEVICE3_ID = 0x9000;
 
-    const SET_POWERTABLE_COMMAND = 0x45;
+    const SET_POWERTABLE_COMMAND  = 0x45;
+    const SETCONTROLCHAN_COMMAND  = 0x64;
+    const READCONTROLCHAN_COMMAND = 0x65;
 
+    const ON   = 1;
+    const OFF  = 0;
+    
     const PASS = 1;
     const FAIL = 0;
 
@@ -91,6 +96,17 @@ class E104603TestFirmware
                                 1 => "Single Step Tests",
                                 );
    
+    private $_singleStepMenu = array(
+                                0 => "Turn on Power Supply Port",    /* A */
+                                1 => "Turn off Power Supply Port",    /* B */
+                                2 => "Turn on Battery Port",          /* C */
+                                3 => "Turn off Battery Port",         /* D */
+                                4 => "Turn on Load Port A",           /* E */
+                                5 => "Turn on Load Port B",           /* F */
+                                6 => "Turn off Load Port A",          /* G */
+                                7 => "Turn off Load Port B",          /* H */
+                                );
+                                
                                 
     public $display;
 
@@ -196,21 +212,26 @@ class E104603TestFirmware
     {
         $this->display->clearScreen();
 
-
-        $serialNumber = self::DEVICE1_ID;
-        $this->_system->out("Checking ".dechex($serialNumber));
-        $result = $this->_checkTestBoard($serialNumber);
+        $result = $this->_checkTestBoards();
+        $result = self::PASS; 
+        if ($result == self::PASS) {
         
-        $serialNumber = self::DEVICE2_ID;
-        $this->_system->out("Checking ".dechex($serialNumber));
-        $result = $this->_checkTestBoard($serialNumber);
-
-        $serialNumber = self::DEVICE3_ID;
-        $this->_system->out("Checking ".dechex($serialNumber));
-        $result = $this->_checkTestBoard($serialNumber);
-
-
-        $this->_setPowerTableNormalLoad();
+           //$this->_setPowerTableNormalLoad();
+           // $this->_setPowerTableBattery();
+            //$this->_setPowerTablePowerSupply();
+            
+           //$this->_setBatteryPort(self::ON);
+           $this->_setPowerSupplyPort(self::ON);
+          // $chan = 0;
+          // $this->_setPortLoad($chan, self::OFF); 
+            
+            
+            
+        } else {
+            $this->_system->out("Test boards failed communications. ");
+            $this->_system->out("Correct the problem and retry testing. ");
+        }
+       
 
         $this->_system->out("");
         $this->_system->out("*** Not Done ***");
@@ -229,37 +250,181 @@ class E104603TestFirmware
     */
     private function _singleStepTests()
     {
-        $this->display->clearScreen();
+        $exitSingleStep = false;
+        $result;
+        do{
+            $this->display->clearScreen();
+            
+            $selection = $this->display->displayMenu(self::HEADER_STR, 
+                            $this->_singleStepMenu);
 
-        $this->_system->out("");
-        $this->_system->out("****   NOT DONE!  *****");
-        $choice = readline("\n\rHit Enter to Exit: ");
+            if (($selection == "A") || ($selection == "a")) {
+                $this->_setPowerSupplyPort(self::ON);
+            } else if (($selection == "B") || ($selection == "b")){
+                $this->_setPowerSupplyPort(self::OFF);
+            } else if (($selection == "C") || ($selection == "c")){
+                $this->_setBatteryPort(self::ON);
+            } else if (($selection == "D") || ($selection == "d")){
+                $this->_setBatteryPort(self::OFF);
+            } else if (($selection == "E") || ($selection == "e")){
+                $chan = 0;
+                $this->_setPortLoad($chan, self::ON);
+            } else if (($selection == "F") || ($selection == "f")){
+                $chan = 1;
+                $this->_setPortLoad($chan, self::ON);
+            } else if (($selection == "G") || ($selection == "g")){
+                $chan = 0;
+                $this->_setPortLoad($chan, self::OFF);
+            } else if (($selection == "H") || ($selection == "h")){
+                $chan = 1;
+                $this->_setPortLoad($chan, self::OFF);
+            } else {
+                $exitSingleStep = true;
+                $this->_system->out("Exit Single Step Test");
+            }
+
+        } while ($exitSingleStep == false);
+
+        $choice = readline("\n\rHit Enter to Continue: ");
+
         
     }
-
-
+    
+    /*****************************************************************************/
+    /*                                                                           */
+    /*                     T E S T    R O U T I N E S                            */
+    /*                                                                           */
+    /*****************************************************************************/
+    
     /**
     ************************************************************
-    * Check Test System Board Routine
+    * Set Power Supply Port Routine
+    * 
+    * This function sets the Power Supply Port 0 to on or _turn 
+    * line based on the state passed in to it.
     *
-    * This function pings the test board passed to it
-    * and returns the results.
-    *
-    * @return boolean $testResult   
     */
-    private function _checkTestBoard($serialNum)
+    private function _setPowerSupplyPort($state)
     {
-        $Result = $this->_pingEndpoint($serialNum);
-        if ($Result == true) {
-            $this->_system->out("SN ".dechex($serialNum)." Board Responding!");
-            $testResult = self::PASS;
-        } else {
-            $this->_system->out("\n\rTest Board ".dechex($serialNum)." Communications Failed!\n\r");
-            $testResult = self::FAIL;
-        }
-
-        return $testResult;
+        $chan = 0;
+        $snD1 = self::DEVICE1_ID;
+        
+        $this->_readControlChan($snD1, $chan);
+        sleep(2);
+        
+        $this->_setControlChan($snD1, $chan, $state);
+        sleep(2);
+        $this->_setControlChan($snD1, $chan, $state);
+        
     }
+    /** 
+    *************************************************************
+    * Set Battery Port Routine
+    *
+    * This function sets the Battery Port 0 on or off line 
+    * based on the state passed in to it.
+    *
+    */
+    private function _setBatteryPort($state)
+    {
+        $chan = 0;
+        $snD2 = self::DEVICE2_ID;
+        
+        $this->_readControlChan($snD2, $chan);
+        sleep(2);
+        $this->_setControlChan($snD2, $chan, $state);
+        sleep(2);
+        $this->_setControlChan($snD2, $chan, $state);
+        
+    }
+     
+     
+     
+   /**
+    ************************************************************
+    * Set Loads Off Routine
+    *
+    * This function turns off Ports A and B so there is no 
+    * load current flowing.
+    *
+    */
+    private function _turnOffLoads()
+    {
+    
+        $chan = 0;
+        $this->_setPortLoad($chan, self::OFF);
+        $chan = 1;
+        $this->_setPortLoad($chan, self::OFF);
+    }
+    
+    
+    
+    /**
+    ************************************************************
+    * Set Load Port A Routine
+    *
+    * This function sets the Port on the Load test board 
+    * to the desired state, either on or off.
+    *
+    */
+    private function _setPortLoad($chan, $state)
+    {
+        $snD3 = self::DEVICE3_ID;
+        $this->_readControlChan($snD3, $chan);
+        sleep(2);
+        
+        
+        $this->_setControlChan($snD3, $chan, $state);
+        sleep(2);
+        $this->_setControlChan($snD3, $chan, $state);
+    }
+     
+    
+    /**
+    ************************************************************
+    * Check Test System Boards Routine
+    * 
+    * This function pings the test system boards and returns 
+    * the results of the communications process.
+    *
+    * @return boolean $testResult
+    */
+    private function _checkTestBoards()
+    {
+    
+        $serNum1 = self::DEVICE1_ID;   /* Power Supply Board */
+        $serNum2 = self::DEVICE2_ID;   /* Battery Board      */
+        $serNum3 = self::DEVICE3_ID;   /* Load Board         */
+        
+        $result = $this->_pingEndpoint($serNum1);
+        if ($result == true) {
+            $this->_system->out("SN ".dechex($serNum1)." Board Responding!");
+            $result = $this->_pingEndpoint($serNum2);
+            if ($result == true) {
+                $this->_system->out("SN ".dechex($serNum2)." Board Responding!");
+                $result = $this->_pingEndpoint($serNum3);
+                if ($result == true) {
+                    $this->_system->out("SN ".dechex($serNum3)." Board Responding!");
+                    $testResult = self::PASS;
+                } else {
+                    $testResult = self::FAIL;
+                    $this->_system->out("SN ".dechex($serNum3)." Board Failed Ping!");
+                }
+            } else {
+                $testResult = self::FAIL;
+                $this->_system->out("SN ".dechex($serNum2)." Board Failed Ping!");
+            }
+        } else {
+            $testResult = self::FAIL;
+            $this->_system->out("SN ".dechex($serNum1)." Board Failed Ping!");
+        }
+        
+    
+        return $testResult;
+    
+    }
+
+
 
     /*****************************************************************************/
     /*                                                                           */
@@ -297,7 +462,7 @@ class E104603TestFirmware
             $cmdNum = self::SET_POWERTABLE_COMMAND;
 
             $portData = "00";
-            $driverData ="A0000001";  /* Driver, Subdriver, Priority and mode */
+            $driverData ="A0000000";  /* Driver, Subdriver, Priority and mode */
             $driverName = "4C6F616420310000000000000000000000000000000000";
             $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
             $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
@@ -339,6 +504,8 @@ class E104603TestFirmware
     }
 
 
+    
+    
     /**
     ************************************************************
     * Set Power Table Battery and EmptyPort Routine
@@ -366,10 +533,10 @@ class E104603TestFirmware
             $cmdNum = self::SET_POWERTABLE_COMMAND;
 
             $portData = "00";
-            $driverData ="10000001";  /* Driver, Subdriver, Priority and mode */
+            $driverData ="10000000";  /* Driver, Subdriver, Priority and mode */
             $driverName = "506F727420410000000000000000000000000000000000";
             $fillData  = "100E0100B0360000EC2C0000E80300000100BC340000F82A000004";  /* 27 bytes */
-            $fillData2 = "290000E80300000F00D4300000FFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
+            $fillData2 = "290000E8030000FC3A0000D4300000FFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
             $dataVal = $portData.$driverData.$driverName.
                         $fillData.$fillData2;
             $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
@@ -514,6 +681,70 @@ class E104603TestFirmware
 
     }
 
+    /**
+    ************************************************************
+    * Read Control Channel Routine
+    *
+    * This function reads the control channel value for the 
+    * channel passed in to it.
+    *
+    * @param int $snNum  serial number for endpoint
+    * @param int $chanNum  channel number
+    *
+    * @return void
+    */
+    private function _readControlChan($snNum, $chanNum)
+    {
+        $idNum = $snNum;
+        $cmdNum = self::READCONTROLCHAN_COMMAND;
+        if ($chanNum == 1) {
+            $dataVal = "00";
+        } else {
+            $dataVal = "01";
+        }
+
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->_system->out("Port ".$chanNum." Control Channel Reply = ".$ReplyData);
+    }
+
+    /**
+    ************************************************************
+    * Set Control Channel Routine
+    *
+    * This function sets the control channel of the channel number 
+    * passed in to it either on or off depending on the state 
+    * parameter.
+    *
+    * @param int $snNum    device serial number
+    * @param int $chanNum  channel number
+    * @param int $state    On or Off
+    * 
+    */
+    private function  _setControlChan($snNum, $chanNum, $state)
+    {
+        $idNum = $snNum;
+        $cmdNum = self::SETCONTROLCHAN_COMMAND;
+        switch ($chanNum) {
+            case 1:
+                if ($state == self::ON) {
+                    $dataVal = "01204E0000";
+                } else {
+                    $dataVal = "0100000000";
+                }
+                break;
+            case 0:
+                if ($state == self::ON) {
+                    $dataVal = "00204E0000";
+                } else {
+                    $dataVal = "0000000000";
+                }
+                break;
+        }
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->_system->out("Set Control Channel Reply = ".$ReplyData);
+
+    }
+   
 
 
 
