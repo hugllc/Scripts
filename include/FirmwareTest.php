@@ -42,15 +42,11 @@ require_once "HUGnetLib/ui/Daemon.php";
 require_once "HUGnetLib/devices/inputTable/Driver.php";
 /** Displays class */
 require_once "HUGnetLib/ui/Displays.php";
-/** This is the Battery Coach 104603 endpoint test */
-require_once "E104603Test.php";
-/** This is the Batery Coach 104603 troubleshoot app */
-require_once "E104603TroubleShoot.php";
-/** This is the 104607 tester **/
-require_once "E104607TroubleShoot.php";
+/** This is the Battery Coach Release Firmware test */
+require_once "E104603TestFirmware.php";
 
 /**
- * This code tests, serializes and programs endpoints with bootloader code.
+ * This code loads, tests and logs the results of release firmware tests.
  *
  * This is an endpoint test class, essentially.  It loads an endpoint without
  * test firmware, runs the tests, writes the serial number and hardware version
@@ -61,29 +57,28 @@ require_once "E104607TroubleShoot.php";
  * @subpackage UI
  * @author     Scott Price <prices@hugllc.com>
  * @author     Jeff Liesmaki <jeffl@hugllc.com>
- * @copyright  2012 Hunt Utilities Group, LLC
+ * @copyright  2016 Hunt Utilities Group, LLC
  * @license    http://opensource.org/licenses/gpl-license.php GNU Public License
  * @version    Release: 0.9.7
  * @link       http://dev.hugllc.com/index.php/Project:HUGnetLib
  */
-class SocializerTest extends \HUGnet\ui\Daemon
+class FirmwareTest extends \HUGnet\ui\Daemon
 {
 
-    const HEADER_STR    = "Battery Coach Test & Program Tool";
+    const HEADER_STR    = "HUGnet Release Firmware Test Tool";
 
     private $_fixtureTest;
-    private $_fixtureTrbl;
-    private $_fixtureTrblTester;
     private $_device;
     private $_goodDevice;
-    private $_socialtestMainMenu = array(
-                                0 => "Functional Test 104603",
-                                1 => "Troubleshoot 104603",
-                                2 => "Troubleshoot 104607 Tester",
+    private $_fwtestMainMenu = array(
+                                0 => "Test 104603 Application Firmware",
+                                1 => "Test 104603 Bootloader Firmware",
+                                2 => "Test 003912 Application Firmware",
+                                3 => "Test 003928 Application Firmware",
                                 );
 
     public $display;
-    public $sys;
+    
     /*
     * Sets our configuration
     *
@@ -94,6 +89,7 @@ class SocializerTest extends \HUGnet\ui\Daemon
         parent::__construct($config);
         $this->_device = $this->system()->device();
         $this->display = \HUGnet\ui\Displays::factory($config);
+
     }
 
     /**
@@ -105,7 +101,7 @@ class SocializerTest extends \HUGnet\ui\Daemon
     */
     static public function &factory(&$config = array())
     {
-        $obj = new SocializerTest($config);
+        $obj = new FirmwareTest($config);
         return $obj;
     }
 
@@ -129,17 +125,19 @@ class SocializerTest extends \HUGnet\ui\Daemon
         do{
             $this->display->clearScreen();
             $selection = $this->display->displayMenu(self::HEADER_STR, 
-                            $this->_socialtestMainMenu);
+                            $this->_fwtestMainMenu);
 
             if (($selection == "A") || ($selection == "a")) {
-                $this->_test104603Main();
+                $this->_test104603AppMain();
             } else if (($selection == "B") || ($selection == "b")){
-                $this->_troubleshoot104603Main();
+                $this->_test104603BootMain();
             } else if (($selection == "C") || ($selection == "c")){
-                $this->_troubleshoot104607Main();
+                $this->_test003928AppMain();
+            } else if (($selection == "D") || ($selection == "d")){
+                $this->_test003912AppMain();
             } else {
                 $exitTest = true;
-                $this->out("Exit Test & Troubleshoot Tool");
+                $this->out("Exit Test Tool");
             }
 
         } while ($exitTest == false);
@@ -156,21 +154,38 @@ class SocializerTest extends \HUGnet\ui\Daemon
 
  
     /**
-    ************************************************************
-    * 104603 Main Test Routine
+    ***************************************************************
+    * 104603 Release Firmware Test Routine
     * 
-    * This is the main routine for testing, serializing and 
-    * programming in the bootloader for HUGnet endpoints.
+    * This is the main routine for testing the release candidate
+    * application firmware for the 104603 battery coach endpoint.
     *
     * @return void
     *   
     */
-    private function _test104603Main()
+    private function _test104603AppMain()
     {
         $sys = $this->system();
-        $this->_fixtureTest = E104603Test::factory($config, $sys);
-        $this->_fixtureTest->run104603Test();
+        $this->_fixtureTest = E104603TestFirmware::factory($config, $sys);
+        $this->_fixtureTest->runTestFirmwareMain();
 
+    }
+
+    /**
+    ************************************************************
+    * 104603 Bootloader Release Firmware Test Routine
+    *
+    * This is the main routine for the 104603 release bootloader 
+    * firmware testing.
+    *
+    */
+    private function _test104603BootMain()
+    {
+        $this->display->clearScreen();
+        $this->out("\n\r");
+        $this->out("Not Done!");
+        $choice = readline("Hit Enter to Continue");
+        /* not done */
     }
 
    
@@ -184,11 +199,14 @@ class SocializerTest extends \HUGnet\ui\Daemon
     * @return void
     *
     */
-    private function _troubleshoot104603Main()
+    private function _test003928AppMain()
     {
-        $sys = $this->system();
-        $this->_fixtureTrbl= E104603Troubleshoot::factory($config, $sys);
-        $this->_fixtureTrbl->runTroubleshootMain();
+        $this->display->clearScreen();
+        $this->out("\n\r");
+        $this->out("Not Done!");
+        $choice = readline("Hit Enter to Continue");
+        /* not done */
+
     }
 
     /**
@@ -201,14 +219,15 @@ class SocializerTest extends \HUGnet\ui\Daemon
     * @return void
     *
     */
-    private function _troubleshoot104607Main()
+    private function _test003912AppMain()
     {
-
-        $sys = $this->system();
-        $this->_fixtureTrblTester= E104607Troubleshoot::factory($config, $sys);
-        $this->_fixtureTrblTester->runTrblshtTesterMain();
- 
+        $this->display->clearScreen();
+        $this->out("\n\r");
+        $this->out("Not Done!");
+        $choice = readline("Hit Enter to Continue");
+        /* not done */
     }
+
 
 
 }

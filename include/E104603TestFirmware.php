@@ -80,6 +80,11 @@ class E104603TestFirmware
     const DEVICE3_ID = 0x9000;
 
     const SET_POWERTABLE_COMMAND  = 0x45;
+
+    const READSENSOR_DATA_COMMAND = 0x53;
+    const READRAWSENSOR_COMMAND   = 0x54;
+    const READSENSORS_COMMAND     = 0x55;
+
     const SETCONTROLCHAN_COMMAND  = 0x64;
     const READCONTROLCHAN_COMMAND = 0x65;
 
@@ -105,6 +110,7 @@ class E104603TestFirmware
                                 5 => "Turn on Load Port B",           /* F */
                                 6 => "Turn off Load Port A",          /* G */
                                 7 => "Turn off Load Port B",          /* H */
+                                8 => "Measure Port A Voltage",
                                 );
                                 
                                 
@@ -278,6 +284,8 @@ class E104603TestFirmware
             } else if (($selection == "H") || ($selection == "h")){
                 $chan = 1;
                 $this->_setPortLoad($chan, self::OFF);
+            } else if (($selection == "I") || ($selection == "i")){
+                $this->_measurePortVoltage();
             } else {
                 $exitSingleStep = true;
                 $this->_system->out("Exit Single Step Test");
@@ -378,7 +386,106 @@ class E104603TestFirmware
         sleep(2);
         $this->_setControlChan($snD3, $chan, $state);
     }
-     
+
+
+/**   2016-04-25 13:36:22 local From: FDE266 -> To: 009010 Command: 55 Type: SENSORREAD (CRC)
+      2016-04-25 13:36:22 default From: 009010 -> To: FDE266 Command: 01 Type: REPLY (CRC)
+Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
+          C1380000 = 00 00 38 C1 = 38C1h = 14529d/1000 = 14.529 Volts Port A
+          1C570000 = 00 00 57 1C = 57C1h = 22465d/1000 = 22.465 Degrees C
+          00000000 = 00 00 00 00 = 0000h = 00/1000     = 0 Ah
+          00000000 = 00 00 00 00 = 0000h = 00/1000     = 0 Ah
+          03000000 = 00 00 00 03 = 0003h = 03  Raw Status
+          00000000 = 00 00 00 00 = 0000h = 00/1000     = 0.0 Amps Port B
+          70000000 = 00 00 00 70 = 0070h = 112d/1000   = 0.112 Volts Port B
+          38590000 = 00 00 59 38 = 5938h = 22840/1000  = 22.840 Degrees C
+          00000000 = 00 00 00 00 = 0000h = 00/1000     = 0 Ah
+          00000000 = 00 00 00 00 = 0000h = 00/1000     = 0 Ah
+          02000000 = 00 00 00 02 = 0002h = 02  Raw Status
+          47000000 = 00 00 00 47 = 0047h = 71/1000     = 0.071 Amps Bus
+          27380000 = 00 00 38 27 = 3827h = 14375/1000  = 14.375 Volts Bus
+          30650000 = 00 00 65 30 = 6530h = 25904/1000  = 25.904 Degrees C Bus PA
+          A8610000 = 00 00 61 A8 = 61A8h = 25000/1000  = 25.000 Degrees C Bus PB
+          07F8FFFF = FF FF F8 07 = -07F9h = -2041/1000 = -2.041 Degrees C Ext 1 
+          07F8FFFF = FF FF F8 07 = -07F9h = -2041/1000 = -2.041 Degrees C Ext 2
+**/
+
+
+    /**
+    ***********************************************************
+    * Measure Port Voltage Routine
+    *
+    * This function reads the Port A voltage from the power
+    * supply board.
+    *
+    * In the data array the values are as follows:
+    *
+    *    $powerSupply[0] = Port A Current
+    *    $powerSupply[1] = Port A Voltage
+    *    $powerSupply[2] = Port A Temperature
+    *    $powerSupply[3] = Port A Charge
+    *    $powerSupply[4] = Port A Capacity
+    *    $powerSupply[5] = Port A Status
+    * 
+    *    $powerSupply[6] = Port B Current
+    *    $powerSupply[7] = Port B Voltage
+    *    $powerSupply[8] = Port B Temperature
+    *    $powerSupply[9] = Port B Charge
+    *    $powerSupply[10]= Port B Capacity
+    *    $powerSupply[11]= Port B Status
+    *  
+    *    $powerSupply[12] = Bus Current
+    *    $powerSupply[13] = Bus Voltage
+    *    $powerSupply[14] = Bus Temp Port A
+    *    $powerSupply[15] = Bus Temp Port B
+    *
+    *    $powerSupply[16] = Ext Temp 1
+    *    $powerSupply[17] = Ext Temp 2
+    *
+    *
+    */
+    private function _measurePortVoltage()
+    {
+        $this->_system->out("***************************************");
+        $this->_system->out("* Hey let's try to get some readings! *");
+        $this->_system->out("***************************************");
+        $this->_system->out("\n\r");
+
+        /**   Lets comment this out for now and try read sensors command **********
+        $powerSupplyVals = array();
+
+        $this->_device1->action()->config();
+        $boardValues = $this->_device1->action()->poll();
+        $boardValues = $this->_device1->action()->poll();
+
+        if (is_object($boardValues)) {
+            $channels = $this->_device1->dataChannels();
+            $this->_system->out("\n\r");
+            $this->_system->out("Date: ".date("Y-m-d H:i:s", $boardValues->get("Date")));
+            for ($i = 0; $i < $channels->count(); $i++) {
+                $chan = $channels->dataChannel($i);
+                $powerSupplyVals[$i] = $boardValues->get("Data".$i);
+                $this->_system->out($chan->get("label").": ".$boardValues->get("Data".$i)." ".html_entity_decode($chan->get("units")));
+            }
+            $this->_system->out("\n\r");
+        } else {
+            $this->_system->out("No object returned from device poll!");
+        }
+        *********************************************************************/
+
+        $idNum = self::DEVICE1_ID;
+        $cmdNum = self::READSENSOR_DATA_COMMAND;
+        $dataVal = "01"; /* get PORT A voltage */
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->_system->out("Read Sensors Reply = ".$ReplyData);
+
+
+        $this->_system->out("\n\r");
+
+        $choice = readline("Hit Enter to Continue.");
+
+    }
+
     
     /**
     ************************************************************
@@ -746,7 +853,33 @@ class E104603TestFirmware
     }
    
 
+    /*****************************************************************************/
+    /*                                                                           */
+    /*               C O N V E R S I O N    R O U T I N E S                      */
+    /*                                                                           */
+    /*****************************************************************************/
 
+    /**
+    **********************************************************
+    * Convert Port Voltage Routine
+    *
+    * This function takes the reply string from the read 
+    * sensor data command for location 01 and converts 
+    * the hex data string into a floating point voltage.
+    *
+    */
+    private function _convertPortVoltage($dataString);
+    {
+
+        /** steps to convert **/
+        /* 1. convert hex string to little endian */
+        /* 2. verify not negative value           */
+        /* 3. convert hex string to decimal       */
+        /* 4. divide decimal amount by 1000       */
+        /* 5. return voltage value.
+
+
+    }
 
     /*****************************************************************************/
     /*                                                                           */
