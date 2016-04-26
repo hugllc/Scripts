@@ -213,21 +213,43 @@ class E104603TestFirmware
     * This function will run through the firmware test functions
     * and display the results.
     *
+    * Test Steps
+    * -------------------------
+    * 1.  Check communications with Battery Coach boards
+    * 2.  Load release application firmware into each board.
+    * 3.  Verify firmware version running.
+    * 4.  Configure boards for power supply, battery and loads.
+    * 5.  Make sure power supply port is on.
+    * 6.  make sure battery and load ports are off.
+    * 7.  Turn battery port on to determine charge level.
+    * 8.  If charged, then begin discharge procedure.
+    * 9.  To discharge, turn off power supply port so battery powers bus
+    * 10. verify bus voltage.
+    * 11. connect load port to bus to discharge the battery.
+    * 12.  Monitor battery voltage until discharged to 11.8volts.
+    * 13.  Turn off loads.
+    * 14.  Turn on power supply and monitor battery charge current 
+    *      and battery voltage.
+    * 15.  When battery voltage reaches 13.8volts test is complete.
+    *
+    * 
+    *
     */
     private function _runFirmwareTests()
     {
         $this->display->clearScreen();
 
         $result = $this->_checkTestBoards();
-        $result = self::PASS; 
         if ($result == self::PASS) {
+
+            $this->_loadReleaseFirmware();
         
            //$this->_setPowerTableNormalLoad();
            // $this->_setPowerTableBattery();
-            //$this->_setPowerTablePowerSupply();
+            $this->_setPowerTablePowerSupply();
             
            //$this->_setBatteryPort(self::ON);
-           $this->_setPowerSupplyPort(self::ON);
+          // $this->_setPowerSupplyPort(self::ON);
           // $chan = 0;
           // $this->_setPortLoad($chan, self::OFF); 
             
@@ -451,33 +473,22 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         $this->_system->out("***************************************");
         $this->_system->out("\n\r");
 
-        /**   Lets comment this out for now and try read sensors command **********
-        $powerSupplyVals = array();
-
-        $this->_device1->action()->config();
-        $boardValues = $this->_device1->action()->poll();
-        $boardValues = $this->_device1->action()->poll();
-
-        if (is_object($boardValues)) {
-            $channels = $this->_device1->dataChannels();
-            $this->_system->out("\n\r");
-            $this->_system->out("Date: ".date("Y-m-d H:i:s", $boardValues->get("Date")));
-            for ($i = 0; $i < $channels->count(); $i++) {
-                $chan = $channels->dataChannel($i);
-                $powerSupplyVals[$i] = $boardValues->get("Data".$i);
-                $this->_system->out($chan->get("label").": ".$boardValues->get("Data".$i)." ".html_entity_decode($chan->get("units")));
-            }
-            $this->_system->out("\n\r");
-        } else {
-            $this->_system->out("No object returned from device poll!");
-        }
-        *********************************************************************/
 
         $idNum = self::DEVICE1_ID;
         $cmdNum = self::READSENSOR_DATA_COMMAND;
+
+        $dataVal = "00"; /* get PORT A current */
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $portA_Amps = $this->_convertDataValue($ReplyData);
+
+        $this->_system->out("Port A Current: ".$portA_Amps);
+
+
         $dataVal = "01"; /* get PORT A voltage */
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-        $this->_system->out("Read Sensors Reply = ".$ReplyData);
+        $portAVolts = $this->_convertDataValue($ReplyData);
+
+        $this->_system->out("Port A Volts: ".$portAVolts);
 
 
         $this->_system->out("\n\r");
@@ -855,31 +866,193 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
 
     /*****************************************************************************/
     /*                                                                           */
+    /*                 F I R M W A R E    R O U T I N E S                        */
+    /*                                                                           */
+    /*****************************************************************************/
+
+    /**
+    *******************************************************
+    * Load Release Candidate Application Firmware Routine
+    * 
+    * this function loads the release candidate firmware into 
+    * each of the test system battery coach boards.
+    *
+    */
+    private function _loadReleaseFirmware()
+    {
+        
+        $this->display->displayHeader("Loading Application Firmware");
+
+        $this->_system->out(" Make sure you have downloaded the latest");
+        $this->_system->out(" release candidate firmware for testing. ");
+        $this->_system->out("");
+        $this->_system->out(" If you have not, go to:");
+        $this->_system->out("  hugnet.int.hugllc.com/downloads/rcfirmware/");
+        $this->_system->out("  download the release candidate application");
+        $this->_system->out("  for the 104603 and then continue.");
+
+        $response = readline("\n\rHit Enter to Continue:");
+
+        $firmwarefile = $this->_getReleaseFirmwareFileName();
+
+        $hugnetLoad = "../bin/./hugnet_load";
+        $firmwarepath = "~/Downloads/".$firmwarefile;
+
+        $Prog = $hugnetLoad." -i ".dechex(self::DEVICE1_ID)." -D ".$firmwarepath;
+        
+        system($Prog, $return);
+
+        if ($return == 0) {
+            $result = self::PASS;
+        } else {
+            $result = self::FAIL;
+        } 
+
+
+    }
+
+    /**
+    ***********************************************************
+    * Get Release Firmware File Name Routine
+    *
+    * This function prompts user to enter release candidate 
+    * file name that is in the Downloads directory.  It then
+    * checks the file name for proper target and firmware 
+    * part number and asks user to verify correctness.
+    *
+    */
+    private function _getReleaseFirmwareFileName()
+    {
+        $done = false;
+
+        do {
+            $this->display->clearScreen();
+            $this->display->displaySMHeader("   OBTAINING FIRMWARE FILE NAME   ");
+            $this->_listFirmwareFiles();
+            $firmwareVersion = readline("Enter the release candidate file name: ");
+            $fnameLen = strlen($firmwareVersion);
+            $testString = substr($firmwareVersion, 0, 17);
+            $testVer = substr($firmwareVersion, 17, 5);
+            $testExt = substr($firmwareVersion, $fnameLen -3, 3);
+
+            if (($testString == "104603-00393801C-") and ($testExt == ".gz")) {
+                $this->_system->out("RC Filename: ".$firmwareVersion."\n\r");
+                $this->_system->out("RC Version : ".$testVer."\n\r");
+                $response = readline("Is this correct?(Y/N): ");
+                if (($response == "Y") || ($response == "y")) {
+                    $firmwarefile = $firmwareVersion;
+                    $done = true;
+                } else {
+                    $done = false;
+                }
+
+            } else {
+                $this->_system->out("Error in Firmware File Name.");
+                $this->_system->out("Please re-enter the file name.");
+            }
+
+        } while (!$done);
+
+        return $firmwarefile;
+    }
+
+
+    /**
+    *********************************************************************
+    * List Release Firmware Files Routine
+    *
+    * This function lists the release candidate firmware files found 
+    * in the Downloads directory.
+    *
+    */
+    private function _listFirmwareFiles()
+    {
+        $this->_system->out("");
+        $this->_system->out("List of Downloaded 104603 Application Packages");
+        $this->_system->out("----------------------------------------------");
+
+        $myCmd = "ls ~/Downloads/104603-00393801C*";
+        system($myCmd, $return);
+        $this->_system->out("");
+
+    }
+
+
+
+    /*****************************************************************************/
+    /*                                                                           */
     /*               C O N V E R S I O N    R O U T I N E S                      */
     /*                                                                           */
     /*****************************************************************************/
 
     /**
     **********************************************************
-    * Convert Port Voltage Routine
+    * Convert Data Value Routine
     *
     * This function takes the reply string from the read 
-    * sensor data command for location 01 and converts 
-    * the hex data string into a floating point voltage.
+    * sensor data command and converts the hex data string
+    * into a floating point value.  It works for all sensor 
+    * data reads except the raw status.
     *
     */
-    private function _convertPortVoltage($dataString);
+    private function _convertDataValue($dataString)
     {
 
-        /** steps to convert **/
-        /* 1. convert hex string to little endian */
-        /* 2. verify not negative value           */
-        /* 3. convert hex string to decimal       */
-        /* 4. divide decimal amount by 1000       */
-        /* 5. return voltage value.
+        $portValue = 0.0;
+
+        $dataLen = strlen($dataString);
+        if ($dataLen == 8) {
+            /* convert hex string to little endian */
+            for ($i = 0; $i < 4; $i++) {
+                $tempStr .= substr($dataString, ($datalen - 2) - (2*$i), 2);
+            }
+
+            /* test for negative value */
+            $testhex = substr($tempStr, 0, 2);
+            $testdec = hexdec($testhex);
+
+            if ($testdec > 127) {
+                /* if MSBit set then use twos complement conversion */
+                $pVal = $this->_twosComplement_to_negInt($tempStr);
+            } else {
+                /* convert hex string to decimal value */
+                $pVal = hexdec($tempStr);
+            }
+            /* convert from milli-Units to Units */
+            $portValue = $pVal / 1000;
+        }
 
 
+        return $portValue;
     }
+
+
+    /**
+    ***************************************************
+    * Twos Complement to Negative Integer
+    *
+    * This function takes a 2 byte twos complement
+    * number and returns the negative integer values.
+    *
+    * @param $hexVal  input 4 byte hex string
+    *
+    * @return $retVal a signed integer number.
+    */
+    public function _twosComplement_to_negInt($hexVal)
+    {
+        $bits = 32;
+
+        $value = (hexdec($hexVal));
+        
+        $topBit = pow(2, ($bits-1));
+        
+        if (($value & $topBit) == $topBit) {
+            $value = -(pow(2, $bits) - $value);
+        }
+
+        return $value;
+    }
+
 
     /*****************************************************************************/
     /*                                                                           */
