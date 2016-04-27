@@ -84,6 +84,8 @@ class E104603TestFirmware
     const READSENSOR_DATA_COMMAND = 0x53;
     const READRAWSENSOR_COMMAND   = 0x54;
     const READSENSORS_COMMAND     = 0x55;
+    
+    const READCONFIG_COMMAND      = 0x5c;
 
     const SETCONTROLCHAN_COMMAND  = 0x64;
     const READCONTROLCHAN_COMMAND = 0x65;
@@ -102,19 +104,33 @@ class E104603TestFirmware
                                 );
    
     private $_singleStepMenu = array(
-                                0 => "Turn on Power Supply Port",    /* A */
-                                1 => "Turn off Power Supply Port",    /* B */
-                                2 => "Turn on Battery Port",          /* C */
-                                3 => "Turn off Battery Port",         /* D */
-                                4 => "Turn on Load Port A",           /* E */
-                                5 => "Turn on Load Port B",           /* F */
-                                6 => "Turn off Load Port A",          /* G */
-                                7 => "Turn off Load Port B",          /* H */
-                                8 => "Measure Port A Voltage",
+                                0 => "Power Supply Port",    /* A */
+                                1 => "Battery Port",         /* B */
+                                2 => "Load Ports",           /* C */
                                 );
                                 
+    private $_powerSupplyBdMenu = array(
+                                0 => "Read Data Values",
+                                1 => "Turn on Power Supply Port",
+                                2 => "Turn off Power Supply Port",
+                                );
+
+    private $_batteryBdMenu = array(
+                                0 => "Read Data Values",
+                                1 => "Turn on Battery Port",
+                                2 => "Turn off Battery Port",
+                                );
+   
+    private $_loadBdMenu = array(
+                                0 => "Read Data Values",
+                                1 => "Turn on Load Port A",
+                                2 => "Turn off Load Port A",
+                                3 => "Turn on Load Port B",
+                                4 => "Turn off Load Port B",
+                                );
                                 
     public $display;
+    private $_firmwareVersion;
 
     
 
@@ -238,20 +254,34 @@ class E104603TestFirmware
     private function _runFirmwareTests()
     {
         $this->display->clearScreen();
-
+        $this->_system->out("");
+        
         $result = $this->_checkTestBoards();
         if ($result == self::PASS) {
+            $this->_system->out("");
+            $choice = readline("Do you need to run the setup? (Y/N):");
+                
+            if (($choice == "Y") || ($choice =="y")){
 
-            $this->_loadReleaseFirmware();
-        
-           //$this->_setPowerTableNormalLoad();
-           // $this->_setPowerTableBattery();
-            $this->_setPowerTablePowerSupply();
-            
-           //$this->_setBatteryPort(self::ON);
-          // $this->_setPowerSupplyPort(self::ON);
-          // $chan = 0;
-          // $this->_setPortLoad($chan, self::OFF); 
+                $this->_loadReleaseFirmware();
+                
+                $this->_verifyFirmwareVersion(self::DEVICE1_ID);
+                $this->_verifyFirmwareVersion(self::DEVICE2_ID);
+                $this->_verifyFirmwareVersion(self::DEVICE3_ID);
+                
+                $this->_setPowerTablePowerSupply();
+                $this->_setPowerTableBattery();
+                $this->_setPowerTableNormalLoad();
+                    
+                $this->_setBatteryPort(self::OFF);
+                $this->_setPowerSupplyPort(self::ON);
+                $chan = 0;
+                $this->_setPortLoad($chan, self::OFF); 
+           }
+           
+           
+           $this->_readPowerSupplyBoard();
+           $this->_readBatteryBoard();
             
             
             
@@ -287,30 +317,14 @@ class E104603TestFirmware
                             $this->_singleStepMenu);
 
             if (($selection == "A") || ($selection == "a")) {
-                $this->_setPowerSupplyPort(self::ON);
+                $this->_singleStepPowerSupply();
             } else if (($selection == "B") || ($selection == "b")){
-                $this->_setPowerSupplyPort(self::OFF);
+                $this->_singleStepBattery();
             } else if (($selection == "C") || ($selection == "c")){
-                $this->_setBatteryPort(self::ON);
-            } else if (($selection == "D") || ($selection == "d")){
-                $this->_setBatteryPort(self::OFF);
-            } else if (($selection == "E") || ($selection == "e")){
-                $chan = 0;
-                $this->_setPortLoad($chan, self::ON);
-            } else if (($selection == "F") || ($selection == "f")){
-                $chan = 1;
-                $this->_setPortLoad($chan, self::ON);
-            } else if (($selection == "G") || ($selection == "g")){
-                $chan = 0;
-                $this->_setPortLoad($chan, self::OFF);
-            } else if (($selection == "H") || ($selection == "h")){
-                $chan = 1;
-                $this->_setPortLoad($chan, self::OFF);
-            } else if (($selection == "I") || ($selection == "i")){
-                $this->_measurePortVoltage();
+                $this->_singleStepLoads();
             } else {
                 $exitSingleStep = true;
-                $this->_system->out("Exit Single Step Test");
+                $this->_system->out("Exit Single Step Mode");
             }
 
         } while ($exitSingleStep == false);
@@ -325,6 +339,122 @@ class E104603TestFirmware
     /*                     T E S T    R O U T I N E S                            */
     /*                                                                           */
     /*****************************************************************************/
+    
+    
+    /**
+    ***********************************************************
+    * Single Step Power Supply Port Routine
+    *
+    * This function allows access to single step routines for
+    * the battery coach board with the power supply input.
+    *
+    */
+    private function _singleStepPowerSupply()
+    {
+    
+       $exitSStep = false;
+        $result;
+        do{
+            $this->display->clearScreen();
+            
+            $selection = $this->display->displayMenu(self::HEADER_STR, 
+                            $this->_powerSupplyBdMenu);
+
+            if (($selection == "A") || ($selection == "a")) {
+                $this->_readPowerSupplyBoard();
+            } else if (($selection == "B") || ($selection == "b")){
+                $this->_setPowerSupplyPort(self::ON);
+            } else if (($selection == "C") || ($selection == "c")){
+                $this->_setPowerSupplyPort(self::OFF);
+            } else {
+                $exitSStep = true;
+                $this->_system->out("Exit Single Step Power Supply Board");
+            }
+
+        } while ($exitSStep == false);
+
+        $choice = readline("\n\rHit Enter to Continue: ");
+    
+    
+    
+    }
+    
+    /**
+    ************************************************************
+    * Read Power Supply Board Data Values Routine
+    * 
+    * This function sends a read sensors request to the battery
+    * coach board with the power supply input.  It then parses
+    * the reply data and displays the values.
+    *
+    */
+    private function _readPowerSupplyBoard()
+    {
+    
+        $idNum = self::DEVICE1_ID;
+        $cmdNum = self::READSENSOR_DATA_COMMAND;
+
+        $dataVal = ""; /* get data values */
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $portA_Cdata = substr($ReplyData, 2, 8);
+        $portA_Vdata = substr($ReplyData, 10, 8);
+        $portA_Tdata = substr($ReplyData, 18, 8);
+        /* Port A Charge                 26, 8 */
+        /* Port A Capacity               34, 8 */
+        /* Port A Raw Status             42, 8 */
+       
+        $portB_Cdata = substr($ReplyData, 50, 8);
+        $portB_Vdata = substr($ReplyData, 58, 8);
+        $portB_Tdata = substr($ReplyData, 66, 8);
+        /* Port B Charge                 74, 8 */
+        /* Port B Capacity               82, 8 */
+        /* Port B Raw Status             90, 8 */
+        
+        $bus_Cdata = substr($ReplyData, 98, 8);
+        $bus_Vdata = substr($ReplyData, 106, 8);
+        $bus_TAdata = substr($ReplyData, 114, 8);
+        $bus_TBdata = substr($ReplyData, 122, 8);
+        
+        $portA_Current = $this->_convertDataValue($portA_Cdata);
+        $portA_Volts = $this->_convertDataValue($portA_Vdata);
+        $portA_Temp = $this->_convertDataValue($portA_Tdata);
+        
+        $portB_Current = $this->_convertDataValue($portB_Cdata);
+        $portB_Volts = $this->_convertDataValue($portB_Vdata);
+        $portB_Temp = $this->_convertDataValue($portB_Tdata);
+        
+        $bus_Current = $this->_convertDataValue($bus_Cdata);
+        $bus_Volts = $this->_convertDataValue($bus_Vdata);
+        $busportA_Temp = $this->_convertDataValue($bus_TAdata);
+        $busportB_Temp = $this->_convertDataValue($bus_TBdata);
+        
+        $this->_system->out("");
+        $this->_system->out("");
+        $this->_system->out("**********************************");
+        $this->_system->out("PORT A Current:".$portA_Current." Amps");
+        $this->_system->out("PORT A Voltage:".$portA_Volts." Volts");
+        $this->_system->out("PORT A Temp   :".$portA_Temp." Degrees C");
+        $this->_system->out("");
+        
+        $this->_system->out("PORT B Current:".$portB_Current." Amps");
+        $this->_system->out("PORT B Voltage:".$portB_Volts." Volts");
+        $this->_system->out("PORT B Temp   :".$portB_Temp." Degrees C");
+        $this->_system->out("");
+
+        $this->_system->out("BUS    Current:".$bus_Current." Amps");
+        $this->_system->out("BUS    Voltage:".$bus_Volts." Volts");
+        $this->_system->out("BUS PA Temp   :".$busportA_Temp." Degrees C");
+        $this->_system->out("BUS PB Temp   :".$busportB_Temp." Degrees C");
+        $this->_system->out("");
+
+        $this->_system->out("");
+        
+        $choice = readline("Hit Enter to Continue.");
+    
+    }
+    
+    
     
     /**
     ************************************************************
@@ -347,6 +477,120 @@ class E104603TestFirmware
         $this->_setControlChan($snD1, $chan, $state);
         
     }
+    
+    
+    /**
+    *************************************************************
+    * Single Step Battery Port Routine
+    * This function allows access to single step routines for
+    * the battery coach board with the Battery input.
+    *
+    */
+    private function _singleStepBattery()
+    {
+       $exitSStep = false;
+        $result;
+        do{
+            $this->display->clearScreen();
+            
+            $selection = $this->display->displayMenu(self::HEADER_STR, 
+                            $this->_batteryBdMenu);
+
+            if (($selection == "A") || ($selection == "a")) {
+                $this->_readBatteryBoard();
+            } else if (($selection == "B") || ($selection == "b")){
+                $this->_setBatteryPort(self::ON);
+            } else if (($selection == "C") || ($selection == "c")){
+                $this->_setBatteryPort(self::OFF);
+            } else {
+                $exitSStep = true;
+                $this->_system->out("Exit Single Step Battery Board");
+            }
+
+        } while ($exitSStep == false);
+
+        $choice = readline("\n\rHit Enter to Continue: ");
+    
+    }
+    
+    /**
+    ************************************************************
+    * Read Batter Board Data Values Routine
+    * 
+    * This function sends a read sensors request to the battery
+    * coach board with the batter input.  It then parses
+    * the reply data and displays the values.
+    *
+    */
+    private function _readBatteryBoard()
+    {
+        $idNum = self::DEVICE2_ID;
+        $cmdNum = self::READSENSOR_DATA_COMMAND;
+
+        $dataVal = ""; /* get data values */
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $portA_Cdata = substr($ReplyData, 2, 8);
+        $portA_Vdata = substr($ReplyData, 10, 8);
+        $portA_Tdata = substr($ReplyData, 18, 8);
+        $portA_Bdata = substr($ReplyData, 26, 8);
+        $portA_Sdata = substr($ReplyData, 34, 8);
+        /* Port A Raw Status             42, 8 */
+       
+        $portB_Cdata = substr($ReplyData, 50, 8);
+        $portB_Vdata = substr($ReplyData, 58, 8);
+        $portB_Tdata = substr($ReplyData, 66, 8);
+        /* Port B Charge                 74, 8 */
+        /* Port B Capacity               82, 8 */
+        /* Port B Raw Status             90, 8 */
+        
+        $bus_Cdata = substr($ReplyData, 98, 8);
+        $bus_Vdata = substr($ReplyData, 106, 8);
+        $bus_TAdata = substr($ReplyData, 114, 8);
+        $bus_TBdata = substr($ReplyData, 122, 8);
+        
+        $portA_Current = $this->_convertDataValue($portA_Cdata);
+        $portA_Volts = $this->_convertDataValue($portA_Vdata);
+        $portA_Temp = $this->_convertDataValue($portA_Tdata);
+        $portA_Charge = $this->_convertDataValue($portA_Bdata);
+        $portA_Capacity = $this->_convertDataValue($portA_Sdata);
+        
+        $portB_Current = $this->_convertDataValue($portB_Cdata);
+        $portB_Volts = $this->_convertDataValue($portB_Vdata);
+        $portB_Temp = $this->_convertDataValue($portB_Tdata);
+        
+        $bus_Current = $this->_convertDataValue($bus_Cdata);
+        $bus_Volts = $this->_convertDataValue($bus_Vdata);
+        $busportA_Temp = $this->_convertDataValue($bus_TAdata);
+        $busportB_Temp = $this->_convertDataValue($bus_TBdata);
+        
+        $this->_system->out("");
+        $this->_system->out("");
+        $this->_system->out("**********************************");
+        $this->_system->out("PORT A Current:".$portA_Current." Amps");
+        $this->_system->out("PORT A Voltage:".$portA_Volts." Volts");
+        $this->_system->out("PORT A Temp   :".$portA_Temp." Degrees C");
+        $this->_system->out("PORT A Charge :".$portA_Charge." Ah");
+        $this->_system->out("PORT A Capacty:".$portA_Capacity." Ah");
+        $this->_system->out("");
+        
+        $this->_system->out("PORT B Current:".$portB_Current." Amps");
+        $this->_system->out("PORT B Voltage:".$portB_Volts." Volts");
+        $this->_system->out("PORT B Temp   :".$portB_Temp." Degrees C");
+        $this->_system->out("");
+
+        $this->_system->out("BUS    Current:".$bus_Current." Amps");
+        $this->_system->out("BUS    Voltage:".$bus_Volts." Volts");
+        $this->_system->out("BUS PA Temp   :".$busportA_Temp." Degrees C");
+        $this->_system->out("BUS PB Temp   :".$busportB_Temp." Degrees C");
+        $this->_system->out("");
+
+        $this->_system->out("");
+        
+        $choice = readline("Hit Enter to Continue.");
+    
+    }
+    
     /** 
     *************************************************************
     * Set Battery Port Routine
@@ -368,8 +612,122 @@ class E104603TestFirmware
         
     }
      
-     
-     
+    /**
+    *************************************************************
+    * Single Step Load Ports Routine
+    * This function allows access to single step routines for
+    * the battery coach board with the load inputs.
+    *
+    */
+    private function _singleStepLoads()
+    {
+       $exitSStep = false;
+        $result;
+        do{
+            $this->display->clearScreen();
+            
+            $selection = $this->display->displayMenu(self::HEADER_STR, 
+                            $this->_loadBdMenu);
+
+            if (($selection == "A") || ($selection == "a")) {
+                $this->_readLoadBoard();
+            } else if (($selection == "B") || ($selection == "b")){
+                $chan = 0; /* Port A */
+                $this->_setPortLoad($chan, self::ON);
+            } else if (($selection == "C") || ($selection == "c")){
+                $chan = 0; /* Port A */
+                $this->_setPortLoad($chan, self::OFF);
+            } else if (($selection == "D") || ($selection == "d")){
+                $chan = 1; /* Port B */
+                $this->_setPortLoad($chan, self::ON);
+            } else if (($selection == "E") || ($selection == "e")){
+                $chan = 1; /* Port B */
+                $this->_setPortLoad($chan, self::OFF);
+            } else {
+                $exitSStep = true;
+                $this->_system->out("Exit Single Step Load Board");
+            }
+
+        } while ($exitSStep == false);
+
+        $choice = readline("\n\rHit Enter to Continue: ");
+    
+    }
+      
+    /**
+    ************************************************************
+    * Read Load Board Data Values Routine
+    * 
+    * This function sends a read sensors request to the battery
+    * coach board with the loads.  It then parses
+    * the reply data and displays the values.
+    *
+    */
+    private function _readLoadBoard()
+    {
+        $idNum = self::DEVICE3_ID;
+        $cmdNum = self::READSENSOR_DATA_COMMAND;
+
+        $dataVal = ""; /* get data values */
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $portA_Cdata = substr($ReplyData, 2, 8);
+        $portA_Vdata = substr($ReplyData, 10, 8);
+        $portA_Tdata = substr($ReplyData, 18, 8);
+        /* Port A Charge                 26, 8 */
+        /* Port A Capacity               34, 8 */
+        /* Port A Raw Status             42, 8 */
+       
+        $portB_Cdata = substr($ReplyData, 50, 8);
+        $portB_Vdata = substr($ReplyData, 58, 8);
+        $portB_Tdata = substr($ReplyData, 66, 8);
+        /* Port B Charge                 74, 8 */
+        /* Port B Capacity               82, 8 */
+        /* Port B Raw Status             90, 8 */
+        
+        $bus_Cdata = substr($ReplyData, 98, 8);
+        $bus_Vdata = substr($ReplyData, 106, 8);
+        $bus_TAdata = substr($ReplyData, 114, 8);
+        $bus_TBdata = substr($ReplyData, 122, 8);
+        
+        $portA_Current = $this->_convertDataValue($portA_Cdata);
+        $portA_Volts = $this->_convertDataValue($portA_Vdata);
+        $portA_Temp = $this->_convertDataValue($portA_Tdata);
+        
+        $portB_Current = $this->_convertDataValue($portB_Cdata);
+        $portB_Volts = $this->_convertDataValue($portB_Vdata);
+        $portB_Temp = $this->_convertDataValue($portB_Tdata);
+        
+        $bus_Current = $this->_convertDataValue($bus_Cdata);
+        $bus_Volts = $this->_convertDataValue($bus_Vdata);
+        $busportA_Temp = $this->_convertDataValue($bus_TAdata);
+        $busportB_Temp = $this->_convertDataValue($bus_TBdata);
+        
+        $this->_system->out("");
+        $this->_system->out("");
+        $this->_system->out("**********************************");
+        $this->_system->out("PORT A Current:".$portA_Current." Amps");
+        $this->_system->out("PORT A Voltage:".$portA_Volts." Volts");
+        $this->_system->out("PORT A Temp   :".$portA_Temp." Degrees C");
+        $this->_system->out("");
+        
+        $this->_system->out("PORT B Current:".$portB_Current." Amps");
+        $this->_system->out("PORT B Voltage:".$portB_Volts." Volts");
+        $this->_system->out("PORT B Temp   :".$portB_Temp." Degrees C");
+        $this->_system->out("");
+
+        $this->_system->out("BUS    Current:".$bus_Current." Amps");
+        $this->_system->out("BUS    Voltage:".$bus_Volts." Volts");
+        $this->_system->out("BUS PA Temp   :".$busportA_Temp." Degrees C");
+        $this->_system->out("BUS PB Temp   :".$busportB_Temp." Degrees C");
+        $this->_system->out("");
+
+        $this->_system->out("");
+        
+        $choice = readline("Hit Enter to Continue.");
+    }
+
+      
    /**
     ************************************************************
     * Set Loads Off Routine
@@ -894,21 +1252,40 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         $response = readline("\n\rHit Enter to Continue:");
 
         $firmwarefile = $this->_getReleaseFirmwareFileName();
+        $this->_firmwareVersion = substr($firmwarefile, 0, 22);
 
         $hugnetLoad = "../bin/./hugnet_load";
         $firmwarepath = "~/Downloads/".$firmwarefile;
 
         $Prog = $hugnetLoad." -i ".dechex(self::DEVICE1_ID)." -D ".$firmwarepath;
-        
         system($Prog, $return);
 
         if ($return == 0) {
-            $result = self::PASS;
+            $Prog = $hugnetLoad." -i ".dechex(self::DEVICE2_ID)." -D ".$firmwarepath;
+            system($Prog, $return);
+            
+            if ($return == 0) {
+                $Prog = $hugnetLoad." -i ".dechex(self::DEVICE3_ID)." -D ".$firmwarepath;
+                system($Prog, $return);
+                
+                if ($return == 0) {
+                    $result = self::PASS;
+                } else {
+                    $this->_system->out("FAILED TO LOAD FIRMWARE INTO 3rd DEVICE");
+                    $result = self::FAIL;
+                }
+                
+            } else {
+                $this->_system->out("FAILED TO LOAD FIRMWARE INTO 2nd DEVICE!");
+                $result = self::FAIL;
+            }
+            
         } else {
+            $this->_system->out("FAILED TO LOAD FIRMWARE INTO 1ST DEVICE!");
             $result = self::FAIL;
         } 
 
-
+        return $result;
     }
 
     /**
@@ -976,6 +1353,59 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         $this->_system->out("");
 
     }
+    
+    
+    /**
+    ************************************************************************
+    * Check Firmware Version Routine
+    * 
+    * This function sends a command to the Device whose serial number 
+    * is passed in to return the firmware part number and version.  It then
+    * compares the board version with the release candidate version to 
+    * verify the correct firmware is loaded and running on the device.
+    *
+    */
+    private function _verifyFirmwareVersion($SerNum)
+    {
+    
+        $this->_system->out("Verifying Serial Number: ".dechex($SerNum)." Firmware Version.");
+        $idNum = $SerNum;
+        $cmdNum = self::READCONFIG_COMMAND;
+        $dataVal = "";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $ReplyVersion = substr($ReplyData, 10, 6)."-".substr($ReplyData, 20, 8);
+        
+        
+        $letter = substr($ReplyData, 28, 2); 
+        $letter = "0x".$letter;
+        $letterChar = chr($letter);
+        $ReplyVersion .= $letterChar."-";
+        
+        
+        $ver = substr($ReplyData, 30, 2);
+        $intVer = hexdec($ver);
+        $ReplyVersion .= strval($intVer);
+        $ReplyVersion .= ".";
+
+        $ver = substr($ReplyData, 32, 2);
+        $intVer = hexdec($ver);
+        $ReplyVersion .= strval($intVer);
+        $ReplyVersion .= ".";
+
+        $ver = substr($ReplyData, 34, 2);
+        $intVer = hexdec($ver);
+        $ReplyVersion .= strval($intVer);
+
+        if ($ReplyVersion == $this->_firmwareVersion) {
+            $this->_system->out("Firmware Version Verified!");
+            $result = self::PASS;
+        } else {
+            $result == self::FAIL;
+        }
+        
+        return $result;
+    }
 
 
 
@@ -1001,15 +1431,17 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         $portValue = 0.0;
 
         $dataLen = strlen($dataString);
+        
         if ($dataLen == 8) {
             /* convert hex string to little endian */
             for ($i = 0; $i < 4; $i++) {
                 $tempStr .= substr($dataString, ($datalen - 2) - (2*$i), 2);
             }
-
+            
             /* test for negative value */
             $testhex = substr($tempStr, 0, 2);
             $testdec = hexdec($testhex);
+            
 
             if ($testdec > 127) {
                 /* if MSBit set then use twos complement conversion */
@@ -1031,7 +1463,7 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
     ***************************************************
     * Twos Complement to Negative Integer
     *
-    * This function takes a 2 byte twos complement
+    * This function takes a 4 byte twos complement
     * number and returns the negative integer values.
     *
     * @param $hexVal  input 4 byte hex string
@@ -1043,10 +1475,10 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         $bits = 32;
 
         $value = (hexdec($hexVal));
-        
         $topBit = pow(2, ($bits-1));
         
-        if (($value & $topBit) == $topBit) {
+        
+        if (abs($value & $topBit) == $topBit) {
             $value = -(pow(2, $bits) - $value);
         }
 
