@@ -89,6 +89,21 @@ class E104603TestFirmware
 
     const SETCONTROLCHAN_COMMAND  = 0x64;
     const READCONTROLCHAN_COMMAND = 0x65;
+    
+    
+    const ADC_POFFSET_MAX = "0x0200";
+    const ADC_NOFFSET_MAX = "0x0E66";
+    const ADC_GAINCOR_MIN = "0x0400";
+    const ADC_GAINCOR_MAX = "0x0FFF";
+
+    const DAC_POFFSET_MAX = "0xDE";
+    const DAC_POFFSET_MIN = "0x80";
+    const DAC_NOFFSET_MAX = "0x5E";
+
+    const DAC_PGAINCOR_MAX = "0x3E";
+    const DAC_NGAINCOR_MIN = "0x80";
+    const DAC_NGAINCOR_MAX = "0xBE";
+
 
     const ON   = 1;
     const OFF  = 0;
@@ -111,22 +126,28 @@ class E104603TestFirmware
                                 
     private $_powerSupplyBdMenu = array(
                                 0 => "Read Data Values",
-                                1 => "Turn on Power Supply Port",
-                                2 => "Turn off Power Supply Port",
+                                1 => "Read the Config",
+                                2 => "Turn on Power Supply Port",
+                                3 => "Turn off Power Supply Port",
+                                4 => "Write the Power Table",
                                 );
 
     private $_batteryBdMenu = array(
                                 0 => "Read Data Values",
-                                1 => "Turn on Battery Port",
-                                2 => "Turn off Battery Port",
+                                1 => "Read the Config",
+                                2 => "Turn on Battery Port",
+                                3 => "Turn off Battery Port",
+                                4 => "Write the Power Table",
                                 );
    
     private $_loadBdMenu = array(
                                 0 => "Read Data Values",
-                                1 => "Turn on Load Port A",
-                                2 => "Turn off Load Port A",
-                                3 => "Turn on Load Port B",
-                                4 => "Turn off Load Port B",
+                                1 => "Read the Config",
+                                2 => "Turn on Load Port A",
+                                3 => "Turn off Load Port A",
+                                4 => "Turn on Load Port B",
+                                5 => "Turn off Load Port B",
+                                6 => "Write the Power Table",
                                 );
                                 
     public $display;
@@ -280,9 +301,7 @@ class E104603TestFirmware
            }
            
            
-           $this->_readPowerSupplyBoard();
-           $this->_readBatteryBoard();
-            
+           $this->_runBatteryChargeTest();
             
             
         } else {
@@ -340,6 +359,273 @@ class E104603TestFirmware
     /*                                                                           */
     /*****************************************************************************/
     
+    /**
+    ***********************************************************
+    * Battery Charge Test Routine
+    *
+    * This function runs the battery charge test.  It tests the
+    * the ability of the firmware to current limit the power 
+    * being delivered to a battery on a port.
+    *
+    */
+    private function _runBatteryChargeTest()
+    {
+        
+        $this->_system->out("Running Battery Charge Test");
+        
+        $powerSupplyStatus = $this->_powerSupplyOnBus();
+        if (!$powerSupplyStatus) {
+            $this->_setPowerSupplyPort(self::ON);
+        }
+        
+        $this->_setBatteryPort(self::OFF);
+        sleep(2);
+        
+        $batteryStatus = $this->_batteryCharged();
+        if ($batteryStatus) {
+            $this->_system->out("Battery Charged\n\r");
+        } else {
+            $this->_system->out("Battery Needs Charging\n\r");
+        }
+        
+        /* if charged then lets discharge into loads */
+        if ($batteryStatus) {
+            $this->_system->out("Preparing to discharge battery");
+            $this->_setBatteryPort(self::ON);
+            sleep(2);
+            
+            $this->_setPowerSupplyPort(self::OFF);
+            sleep(2);
+            
+            $chan = 0;
+            $this->_setPortLoad($chan, self::ON);
+            $chan = 1;
+            $this->_setPortLoad($chan, self::ON);
+            
+            $this->_system->out("*** DISCHARGING BATTERY ****\n\r");
+            $this->_watchBatteryForDischarge();
+            
+            $chan = 0;
+            $this->_setPortLoad($chan, self::OFF);
+            $chan = 1;
+            $this->_setPortLoad($chan, self::OFF);
+            
+            $this->_setPowerSupplyPort(self::ON);
+        } else {
+            /* battery needs charging put it on line */
+            $this->_setBatteryPort(self::ON);
+            sleep(2);
+        }
+        
+        $this->_system->out("** CHARGING Battery ***\n\r");
+        /* monitor until charged */
+        $this->_watchBatteryForCharge();
+        $this->_setBatteryPort(self::OFF);
+        
+        $this->_system->out("Battery Charge Test Complete!");
+    }
+    
+    /**
+    ***********************************************************
+    * Power Supply On bus
+    * 
+    * This function reads the power supply boards bus voltage
+    * to determine if the power supply is feeding the bus. 
+    *
+    * @return boolean true  = power supply on Bus. 
+    *                 false = power supply not on Bus.
+    *
+    */
+    private function _powerSupplyOnBus()
+    {
+        $idNum  = self::DEVICE1_ID;
+        $cmdNum = self::READSENSOR_DATA_COMMAND;
+        $dataVal = "0D";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $busVoltage = $this->_convertDataValue($ReplyData);
+        $this->_system->out("Bus Voltage: ".$busVoltage);
+        
+        if ($busVoltage > 14.0) {
+            $this->_system->out("Power Supply feeding Bus\n\r");
+            $supplyOnBus = true;
+        } else {
+            $this->_system->out("Power Supply not on Bus\n\r");
+            $supplyOnBus = false;
+        }
+        
+        return $supplyOnBus;
+    }
+        
+    /**
+    ***********************************************************
+    * Battery Charged Routine
+    *
+    * This function turns on the battery port and monitors 
+    * the battery voltage to determine if it is charged.
+    *
+    * @return boolean true = charged; false = not fully charged.
+    */
+    private function _batteryCharged()
+    {
+        
+        $idNum  = self::DEVICE2_ID;
+        $cmdNum = self::READSENSOR_DATA_COMMAND;
+
+        $dataVal = "00"; /* get Port A current data value */
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $batCurrent = $this->_convertDataValue($ReplyData);
+        
+        $dataVal = "01"; /* get Port A voltage data value */
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $batVoltage = $this->_convertDataValue($ReplyData);
+        
+        $this->_system->out("Battery Current: ".$batCurrent);
+        $this->_system->out("Battery Voltage: ".$batVoltage);
+        $this->_system->out("");
+        
+        if ($batVoltage > 13.0) {
+            $charged = true;
+        } else {
+            $charged = false;
+        }
+        
+        return $charged;
+    }
+    
+    
+    /**
+    *****************************************************
+    * Watch Battery For Discharge Routine
+    * 
+    * This function monitors the battery voltage while
+    * it is under load until it is sufficiently discharged
+    * enough to run the charge test.
+    *
+    */
+    private function _watchBatteryForDischarge()
+    {
+        $idNum = self::DEVICE2_ID;
+        $cmdNum = self::READSENSOR_DATA_COMMAND;
+        
+        
+        $dataVal = "00";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $batAmps = $this->_convertDataValue($ReplyData);
+        
+        $dataVal = "01";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $batVolts = $this->_convertDataValue($ReplyData);
+        
+        $this->_system->out("Battery Current:".$batAmps);
+        $this->_system->out("Battery Voltage:".$batVolts);
+        $this->_system->out("");
+        
+        $count = 0;
+        
+        while (($batVolts > 11.80) and ($count < 10)) {
+        
+            for ($i = 0; $i < 10; $i++) {
+                print "*";
+                sleep(1);
+            }
+            print "\n\r";
+            
+            $dataVal = "00";
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $batAmps = $this->_convertDataValue($ReplyData);
+            
+            $dataVal = "01";
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $batVolts = $this->_convertDataValue($ReplyData);
+            
+            $this->_system->out("Battery Current:".$batAmps);
+            $this->_system->out("Battery Voltage:".$batVolts);
+            $this->_system->out("");
+            $count++;
+        }
+        
+        if ($count < 10) {
+            $this->_system->out("Battery Discharged!");
+        } else {
+            $this->_system->out("Not enough time for discharge!");
+            
+            
+        }
+    
+    }
+    
+    
+    /**
+    **********************************************************
+    * Watch Battery For Charge Routine
+    *
+    * This function monitors the battery current and voltage
+    * while it is being charged by the power supply until it
+    * is sufficiently charged.
+    *
+    */
+    private function _watchBatteryForCharge()
+    {
+        $idNum = self::DEVICE2_ID;
+        $cmdNum = self::READSENSOR_DATA_COMMAND;
+        
+        $dataVal = "00";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $batAmps = $this->_convertDataValue($ReplyData);
+        
+        $dataVal = "01";
+        
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $batVolts = $this->_convertDataValue($ReplyData);
+        $this->_system->out("Battery Current:".$batAmps);
+        $this->_system->out("Battery Voltage:".$batVolts);
+        $this->_system->out("");
+        
+        $count = 0;
+        
+        while ((($batVolts < 13.4) and ($count < 10)) or (($batAmps > 0.40) and ($count < 10))) {
+        
+            for ($i = 0; $i < 14; $i++) {
+                print "*";
+                sleep(1);
+            }
+            print "\n\r";
+            
+            $dataVal = "00";
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $batAmps = $this->_convertDataValue($ReplyData);
+            
+            $dataVal = "01";
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $batVolts = $this->_convertDataValue($ReplyData);
+            
+            $this->_system->out("Battery Current:".$batAmps);
+            $this->_system->out("Battery Voltage:".$batVolts);
+            $this->_system->out("");
+            $count++;
+        }
+        
+        if ($count < 10) {
+            $this->_system->out("Battery Charged!");
+        } else {
+            $this->_system->out("Not enough time for Charge!");
+            
+        }
+    
+    }
+    
+    
+    
+    /*****************************************************************************/
+    /*                                                                           */
+    /*               S I N G L E    S T E P    R O U T I N E S                   */
+    /*                                                                           */
+    /*****************************************************************************/
+    
+    
     
     /**
     ***********************************************************
@@ -363,9 +649,13 @@ class E104603TestFirmware
             if (($selection == "A") || ($selection == "a")) {
                 $this->_readPowerSupplyBoard();
             } else if (($selection == "B") || ($selection == "b")){
-                $this->_setPowerSupplyPort(self::ON);
+                $this->_readConfigData(self::DEVICE1_ID);
             } else if (($selection == "C") || ($selection == "c")){
+                $this->_setPowerSupplyPort(self::ON);
+            } else if (($selection == "D") || ($selection == "d")){
                 $this->_setPowerSupplyPort(self::OFF);
+            } else if (($selection == "E") || ($selection == "e")){
+                $this->_setPowerTablePowerSupply();
             } else {
                 $exitSStep = true;
                 $this->_system->out("Exit Single Step Power Supply Board");
@@ -469,12 +759,19 @@ class E104603TestFirmware
         $chan = 0;
         $snD1 = self::DEVICE1_ID;
         
+        if ($state == self::ON) {
+            $this->_system->out("SETTING POWER SUPPLY PORT: ON\n\r");
+        } else {
+            $this->_system->out("SETTING POWER SUPPLY PORT: OFF\n\r");
+        }
+        
         $this->_readControlChan($snD1, $chan);
         sleep(2);
         
         $this->_setControlChan($snD1, $chan, $state);
         sleep(2);
         $this->_setControlChan($snD1, $chan, $state);
+        sleep(2);
         
     }
     
@@ -499,9 +796,13 @@ class E104603TestFirmware
             if (($selection == "A") || ($selection == "a")) {
                 $this->_readBatteryBoard();
             } else if (($selection == "B") || ($selection == "b")){
-                $this->_setBatteryPort(self::ON);
+                $this->_readConfigData(self::DEVICE2_ID);
             } else if (($selection == "C") || ($selection == "c")){
+                $this->_setBatteryPort(self::ON);
+            } else if (($selection == "D") || ($selection == "d")){
                 $this->_setBatteryPort(self::OFF);
+            } else if (($selection == "E") || ($selection == "e")){
+                $this->_setPowerTableBattery();
             } else {
                 $exitSStep = true;
                 $this->_system->out("Exit Single Step Battery Board");
@@ -604,11 +905,18 @@ class E104603TestFirmware
         $chan = 0;
         $snD2 = self::DEVICE2_ID;
         
+        if ($state == self::ON) {
+            $this->_system->out("SETTING BATTERY PORT: ON\n\r");
+        } else {
+            $this->_system->out("SETTING BATTERY PORT: OFF\n\r");
+        }
+        
         $this->_readControlChan($snD2, $chan);
         sleep(2);
         $this->_setControlChan($snD2, $chan, $state);
         sleep(2);
         $this->_setControlChan($snD2, $chan, $state);
+        sleep(2);
         
     }
      
@@ -632,17 +940,21 @@ class E104603TestFirmware
             if (($selection == "A") || ($selection == "a")) {
                 $this->_readLoadBoard();
             } else if (($selection == "B") || ($selection == "b")){
-                $chan = 0; /* Port A */
-                $this->_setPortLoad($chan, self::ON);
+                $this->_readConfigData(self::DEVICE3_ID);
             } else if (($selection == "C") || ($selection == "c")){
                 $chan = 0; /* Port A */
-                $this->_setPortLoad($chan, self::OFF);
-            } else if (($selection == "D") || ($selection == "d")){
-                $chan = 1; /* Port B */
                 $this->_setPortLoad($chan, self::ON);
+            } else if (($selection == "D") || ($selection == "d")){
+                $chan = 0; /* Port A */
+                $this->_setPortLoad($chan, self::OFF);
             } else if (($selection == "E") || ($selection == "e")){
                 $chan = 1; /* Port B */
+                $this->_setPortLoad($chan, self::ON);
+            } else if (($selection == "F") || ($selection == "f")){
+                $chan = 1; /* Port B */
                 $this->_setPortLoad($chan, self::OFF);
+            } else if (($selection == "G") || ($selection == "g")){
+                $this->_setPowerTableNormalLoad();
             } else {
                 $exitSStep = true;
                 $this->_system->out("Exit Single Step Load Board");
@@ -758,6 +1070,13 @@ class E104603TestFirmware
     private function _setPortLoad($chan, $state)
     {
         $snD3 = self::DEVICE3_ID;
+        
+        if ($state == self::ON) {
+            $this->_system->out("SETTING LOAD PORT: ON\n\r");
+        } else {
+            $this->_system->out("SETTING LOAD PORT: OFF\n\r");
+        }
+        
         $this->_readControlChan($snD3, $chan);
         sleep(2);
         
@@ -1157,6 +1476,210 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
 
     }
 
+    
+    /**
+    ************************************************************
+    * Read Configuration Routine
+    * 
+    * This function reads the configuration bytes from the E2
+    * memory of the battery coach board whose serial number is 
+    * in the input parameter.
+    * 
+    *
+    */
+    private function _readConfigData($deviceID)
+    {
+        $idNum = $deviceID;
+        $cmdNum = self::READCONFIG_COMMAND;
+        $dataVal = "";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $length = strlen($ReplyData);
+
+        if ($length >= 62) {
+            $serialNum = substr($ReplyData, 0, 10);
+            $serialNum = ltrim($serialNum, "0");
+
+            $hwPartNum = substr($ReplyData,10, 10);
+            $hwPartNum = $this->_formatHardwarePartNumber($hwPartNum);
+
+            $fwPartNum = substr($ReplyData,20, 16);
+            $fwPartNum = $this->_formatFirmwarePartNumber($fwPartNum);
+
+            $spacers   = substr($ReplyData, 36, 8);
+            $signature = substr($ReplyData, 44, 6);
+            $userCal   = substr($ReplyData, 50, 12);
+            
+            $this->_system->out("Serial Number        = ".$serialNum);
+            $this->_system->out("Hardware Part Number = ".$hwPartNum);
+            $this->_system->out("Firmware Part Number = ".$fwPartNum);
+            $this->_system->out("Signature Bytes      = ".$signature);
+            $this->_system->out("");
+
+            $this->_formatUserCalBytes($userCal);
+        } else {
+            $this->_system->out("Not Enough Configuration Bytes to Contain User Calibration");
+            $this->_system->out("Reply Data:".$ReplyData);
+        }
+    
+        $choice = readline("\n\rHit Enter to Continue");
+    
+    
+    }
+    
+    /**
+    *************************************************************
+    * Format Hardware Part Number Routine
+    *
+    * This function formats the hardware part number string by
+    * placing dashes in the appropriate spots and changing the 
+    * hex ascii value at the end of the string to a letter.
+    *
+    * @param $hwNum hex string containing the hardware part number
+    *
+    * @return $hwStr  formatted hardware part number string
+    */
+    private function _formatHardwarePartNumber($hwNum)
+    {
+        $len = strlen($hwNum);
+        if ($len == 10 ) {
+            $hwStr = substr($hwNum, 0, 4);
+            $hwStr .= "-";
+            $hwStr .= substr($hwNum, 4, 2);
+            $hwStr .= "-";
+            $hwStr .= substr($hwNum, 6, 2);
+
+            $rev = substr($hwNum, 8,2);
+            $rev = "0x".$rev;
+            $revChar = chr($rev);
+
+            $hwStr.= "-". $revChar;
+        } else {
+            $hwStr = $hwNum;
+        }
+
+        return $hwStr;
+
+    }
+    
+    /**
+    *************************************************************
+    * Format Firmware Part Number Routine
+    *
+    * This function formats the firmware part number string by
+    * placing dashes in the appropriate spots, changing the 
+    * hex ascii value to a letter and placing decimal points 
+    * in for version value.
+    *
+    * @param $fwNum hex string containing the firmware part number
+    *
+    * @return $fwStr  formatted firmware part number string
+    */
+    private function _formatFirmwarePartNumber($fwNum)
+    {
+        $len = strlen($fwNum);
+        if ($len == 16) {
+            $fwStr = substr($fwNum, 0, 4);
+            $fwStr .= "-";
+            $fwStr .= substr($fwNum, 4, 2);
+            $fwStr .= "-";
+            $fwStr .= substr($fwNum, 6, 2);
+            $fwStr .= "-";
+
+            $rev = substr($fwNum, 8,2);
+            $rev = "0x".$rev;
+            $revChar = chr($rev);
+
+            $fwStr.= $revChar;
+            
+            $ver = substr($fwNum, 10, 2);
+            $intVer = hexdec($ver);
+            $fwStr .= " ".strval($intVer);
+            $fwStr .= ".";
+
+            $ver = substr($fwNum, 12, 2);
+            $intVer = hexdec($ver);
+            $fwStr .= strval($intVer);
+            $fwStr .= ".";
+
+            $ver = substr($fwNum, 14, 2);
+            $intVer = hexdec($ver);
+            $fwStr .= strval($intVer);
+        } else {
+            $fwStr = $fwNum;
+        }
+
+        return $fwStr;
+    }
+    
+     /**
+    *************************************************************
+    * Format User Calibration Bytes Routine
+    *
+    * This function separates the User Calibration bytes into
+    * the ADC offset, ADC gain, DAC offset and DAC gain values
+    * does range checking and displays them.
+    * 
+    * @param $usrCal  The string of user calibration bytes.
+    *
+    * @return void
+    */
+    private function _formatUserCalBytes($usrCal)
+    {
+
+        $length = strlen($usrCal);
+        if ($length == 12) {
+
+            $adcOffset = substr($usrCal, 2, 2);
+            $adcOffset .= substr($usrCal, 0, 2);
+            $adcOffset = "0x".$adcOffset;
+
+            $adcGain = substr($usrCal, 6,2);
+            $adcGain .= substr($usrCal, 4, 2);
+            $adcGain = "0x".$adcGain;
+
+            $dacOffset = "0x".substr($usrCal, 8, 2);
+            $dacGain = "0x".substr($usrCal, 10, 2);
+
+            if (($adcOffset < self::ADC_POFFSET_MAX) || 
+                ($adcOffset > self::ADC_NOFFSET_MAX)) {
+                $this->_system->out("ADC Offset Valid: ".$adcOffset);
+            } else {
+                $this->_system->out("*** ADC Offset Invalid: ", $adcOffset);
+            }
+
+            /* ADC_GAINCOR_MIN = "0x0400" */
+            /* ADC_GAINCOR_MAX = "0x0FFF" */
+            if (($adcGain >= self::ADC_GAINCOR_MIN) &&
+                ($adcGain <= self::ADC_GAINCOR_MAX)) { 
+                $this->_system->out("ADC Gain Valid  : ".$adcGain);
+            } else {
+                $this->_system->out("*** ADC Gain Invalid  : ". $adcGain);
+            }
+
+            if (($dacOffset <= self::DAC_NOFFSET_MAX) || 
+                (($dacOffset > self::DAC_POFFSET_MIN) && 
+                 ($dacOffset < self::DAC_POFFSET_MAX))) {
+                $this->_system->out("DAC Offset Valid: ".$dacOffset);
+            } else {
+                $this->_system->out("*** DAC Offset Invalid: ".$dacOffset);
+            }
+
+            if (($dacGain <= self::DAC_PGAINCOR_MAX) ||
+                (($dacGain > self::DAC_NGAINCOR_MIN) &&
+                 ($dacGain < self::DAC_NGAINCOR_MAX))) {
+                $this->_system->out("DAC Gain Valid  : ".$dacGain);
+            } else {
+                $this->_system->out("*** DAC Gain Invalid : ".$dacGain);
+            }
+        } else {
+            $this->_system->out("Not enough characters for proper formatting.");
+            $this->_system->out("User Cal Bytes: ".$usrCal);
+        }
+
+    }
+   
+    
     /**
     ************************************************************
     * Read Control Channel Routine
@@ -1180,7 +1703,7 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         }
 
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-        $this->_system->out("Port ".$chanNum." Control Channel Reply = ".$ReplyData);
+        //$this->_system->out("Port ".$chanNum." Control Channel Reply = ".$ReplyData);
     }
 
     /**
@@ -1217,7 +1740,7 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
                 break;
         }
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
-        $this->_system->out("Set Control Channel Reply = ".$ReplyData);
+        //$this->_system->out("Set Control Channel Reply = ".$ReplyData);
 
     }
    
