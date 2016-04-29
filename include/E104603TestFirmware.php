@@ -80,6 +80,7 @@ class E104603TestFirmware
     const DEVICE3_ID = 0x9000;
 
     const SET_POWERTABLE_COMMAND  = 0x45;
+    const READ_POWERTABLE_COMMAND = 0x46;
 
     const READSENSOR_DATA_COMMAND = 0x53;
     const READRAWSENSOR_COMMAND   = 0x54;
@@ -148,6 +149,7 @@ class E104603TestFirmware
                                 4 => "Turn on Load Port B",
                                 5 => "Turn off Load Port B",
                                 6 => "Write the Power Table",
+                                7 => "Verify Power Table",
                                 );
                                 
     public $display;
@@ -955,6 +957,8 @@ class E104603TestFirmware
                 $this->_setPortLoad($chan, self::OFF);
             } else if (($selection == "G") || ($selection == "g")){
                 $this->_setPowerTableNormalLoad();
+            } else if (($selection == "H") || ($selection == "h")){
+                $this->_verifyPowerTableNormalLoad();
             } else {
                 $exitSStep = true;
                 $this->_system->out("Exit Single Step Load Board");
@@ -1227,7 +1231,14 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
     /*                                                                           */
     /*****************************************************************************/
    
-
+    /**
+    ***********************************************************
+    * ADD a ReadPowerTable Routine
+    *
+    * This function tests the PACKET_READPOWERTABLE_COMMAND
+    * and verifies power table settings.
+    *
+    /
 
     /**
     ************************************************************
@@ -1255,12 +1266,16 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         if ($result == self::PASS) {
             $idNum = $decVal;
             $cmdNum = self::SET_POWERTABLE_COMMAND;
-
+            
+                    /*    A0000000
+                          4C6F616420310000000000000000000000000000000000
+                          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+                          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF  */
             $portData = "00";
-            $driverData ="A0000000";  /* Driver, Subdriver, Priority and mode */
-            $driverName = "4C6F616420310000000000000000000000000000000000";
-            $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
-            $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
+            $driverData ="A0000000";  /* Driver, Subdriver, Priority and mode 4 bytes */
+            $driverName = "4C6F616420310000000000000000000000000000000000";  /* 23 byte */
+            $fillData   = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
+            $fillData2  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
             $dataVal = $portData.$driverData.$driverName.
                         $fillData.$fillData2;
             $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
@@ -1298,6 +1313,56 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         return $result;
     }
 
+    /**
+    ************************************************************
+    * Verify Power Table Normal Load Routine
+    * 
+    * This function does a read power table from the test system
+    * load board and compares it to the required power table 
+    * setting.
+    *
+    */
+    private function _verifyPowerTableNormalLoad()
+    {
+    
+        $driveDataStr = "A0000000"; 
+        $driveNameStr = "4C6F616420310000000000000000000000000000000000";
+        
+        $idNum = self::DEVICE3_ID;
+        $cmdNum = self::READ_POWERTABLE_COMMAND;
+        $dataVal = "00";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $replyDataLen = strlen($ReplyData);
+        $this->_system->out("Reply Data Length:".$replyDataLen);
+        
+        if ($replyDataLen == 160) {
+        
+            $driverData = substr($ReplyData, 0, 8);
+            $driverName = substr($ReplyData, 8, 46);
+            
+            if ($driverData == $driveDataStr) {
+                if ($driverName == $driveNameStr) {
+                    $this->_system->out("Power Table Normal Verified!");
+                    $result = self::PASS;
+                } else {
+                    $this->_system->out("Driver Name Does Not Match");
+                    $result = self::FAIL;
+                }
+            } else {
+                $this->_system->out("Driver Data Does Not Match");
+                $result = self::FAIL;
+            }
+        } else {
+            $this->_system->out("Not enough data from pwer table read");
+            $result = self::FAIL;
+        }
+        
+        return $result;
+    
+    }
+    
+    
 
     
     
