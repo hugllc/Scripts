@@ -1244,7 +1244,7 @@ class E104603TroubleShoot extends E104603Test
         $this->display->displayHeader("Loading Application Firmware");
 
         $hugnetLoad = "../bin/./hugnet_load";
-        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.0-B61.gz";
+        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.1-B4.gz";
 
         $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
 
@@ -1295,7 +1295,7 @@ class E104603TroubleShoot extends E104603Test
         
         $length = strlen($ReplyData);
 
-        if ($length >= 62) {
+        if ($length >= 70) {
             $serialNum = substr($ReplyData, 0, 10);
             $serialNum = ltrim($serialNum, "0");
 
@@ -1307,7 +1307,7 @@ class E104603TroubleShoot extends E104603Test
 
             $spacers   = substr($ReplyData, 36, 8);
             $signature = substr($ReplyData, 44, 6);
-            $userCal   = substr($ReplyData, 50, 12);
+            $userCal   = substr($ReplyData, 50, 20);
             
             $this->_system->out("Serial Number        = ".$serialNum);
             $this->_system->out("Hardware Part Number = ".$hwPartNum);
@@ -1433,7 +1433,7 @@ class E104603TroubleShoot extends E104603Test
     {
 
         $length = strlen($usrCal);
-        if ($length == 12) {
+        if ($length == 20) {
 
             $adcOffset = substr($usrCal, 2, 2);
             $adcOffset .= substr($usrCal, 0, 2);
@@ -1445,6 +1445,9 @@ class E104603TroubleShoot extends E104603Test
 
             $dacOffset = "0x".substr($usrCal, 8, 2);
             $dacGain = "0x".substr($usrCal, 10, 2);
+
+            $curGain0 = "0x".substr($usrCal, 12, 4);
+            $curGain1 = "0x".substr($usrCal, 16, 4);
 
             if (($adcOffset < self::ADC_POFFSET_MAX) || 
                 ($adcOffset > self::ADC_NOFFSET_MAX)) {
@@ -1477,6 +1480,10 @@ class E104603TroubleShoot extends E104603Test
             } else {
                 $this->_system->out("*** DAC Gain Invalid : ".$dacGain);
             }
+
+            $this->_system->out("Current Gain Port 0 :".$curGain0);
+            $this->_system->out("Current Gain Port 1 :".$curGain1);
+
         } else {
             $this->_system->out("Not enough characters for proper formatting.");
             $this->_system->out("User Cal Bytes: ".$usrCal);
@@ -1798,11 +1805,132 @@ class E104603TroubleShoot extends E104603Test
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         $this->_system->out("Reply Data:".$ReplyData);
 
+        $portA_Cdata = substr($ReplyData, 2, 8);
+        $portA_Vdata = substr($ReplyData, 10, 8);
+        $portA_Tdata = substr($ReplyData, 18, 8);
+        /* Port A Charge                 26, 8 */
+        /* Port A Capacity               34, 8 */
+        /* Port A Raw Status             42, 8 */
+       
+        $portB_Cdata = substr($ReplyData, 50, 8);
+        $portB_Vdata = substr($ReplyData, 58, 8);
+        $portB_Tdata = substr($ReplyData, 66, 8);
+        /* Port B Charge                 74, 8 */
+        /* Port B Capacity               82, 8 */
+        /* Port B Raw Status             90, 8 */
+        
+        $bus_Cdata = substr($ReplyData, 98, 8);
+        $bus_Vdata = substr($ReplyData, 106, 8);
+        $bus_TAdata = substr($ReplyData, 114, 8);
+        $bus_TBdata = substr($ReplyData, 122, 8);
+        
+        $portA_Current = $this->_convertDataValue($portA_Cdata);
+        $portA_Volts = $this->_convertDataValue($portA_Vdata);
+        $portA_Temp = $this->_convertDataValue($portA_Tdata);
+        
+        $portB_Current = $this->_convertDataValue($portB_Cdata);
+        $portB_Volts = $this->_convertDataValue($portB_Vdata);
+        $portB_Temp = $this->_convertDataValue($portB_Tdata);
+        
+        $bus_Current = $this->_convertDataValue($bus_Cdata);
+        $bus_Volts = $this->_convertDataValue($bus_Vdata);
+        $busportA_Temp = $this->_convertDataValue($bus_TAdata);
+        $busportB_Temp = $this->_convertDataValue($bus_TBdata);
+        
+        $this->_system->out("");
+        $this->_system->out("");
+        $this->_system->out("**********************************");
+        $this->_system->out("PORT A Current:".$portA_Current." Amps");
+        $this->_system->out("PORT A Voltage:".$portA_Volts." Volts");
+        $this->_system->out("PORT A Temp   :".$portA_Temp." Degrees C");
+        $this->_system->out("");
+        
+        $this->_system->out("PORT B Current:".$portB_Current." Amps");
+        $this->_system->out("PORT B Voltage:".$portB_Volts." Volts");
+        $this->_system->out("PORT B Temp   :".$portB_Temp." Degrees C");
+        $this->_system->out("");
+
+        $this->_system->out("BUS    Current:".$bus_Current." Amps");
+        $this->_system->out("BUS    Voltage:".$bus_Volts." Volts");
+        $this->_system->out("BUS PA Temp   :".$busportA_Temp." Degrees C");
+        $this->_system->out("BUS PB Temp   :".$busportB_Temp." Degrees C");
+        $this->_system->out("");
+
+        $this->_system->out("");
 
         $choice = readline("\n\rHit Enter to Continue");
 
         $this->_system->out("Powering down UUT!");
         $this->_powerUUT(self::OFF);
+    }
+
+    /**
+    **********************************************************
+    * Convert Data Value Routine
+    *
+    * This function takes the reply string from the read 
+    * sensor data command and converts the hex data string
+    * into a floating point value.  It works for all sensor 
+    * data reads except the raw status.
+    *
+    */
+    private function _convertDataValue($dataString)
+    {
+
+        $portValue = 0.0;
+
+        $dataLen = strlen($dataString);
+        
+        if ($dataLen == 8) {
+            /* convert hex string to little endian */
+            for ($i = 0; $i < 4; $i++) {
+                $tempStr .= substr($dataString, ($datalen - 2) - (2*$i), 2);
+            }
+            
+            /* test for negative value */
+            $testhex = substr($tempStr, 0, 2);
+            $testdec = hexdec($testhex);
+            
+
+            if ($testdec > 127) {
+                /* if MSBit set then use twos complement conversion */
+                $pVal = $this->_twosComplement_to_negInt($tempStr);
+            } else {
+                /* convert hex string to decimal value */
+                $pVal = hexdec($tempStr);
+            }
+            /* convert from milli-Units to Units */
+            $portValue = $pVal / 1000;
+        }
+
+
+        return $portValue;
+    }
+
+    /**
+    ***************************************************
+    * Twos Complement to Negative Integer
+    *
+    * This function takes a 4 byte twos complement
+    * number and returns the negative integer values.
+    *
+    * @param $hexVal  input 4 byte hex string
+    *
+    * @return $retVal a signed integer number.
+    */
+    public function _twosComplement_to_negInt($hexVal)
+    {
+        $bits = 32;
+
+        $value = (hexdec($hexVal));
+        $topBit = pow(2, ($bits-1));
+        
+        
+        if (abs($value & $topBit) == $topBit) {
+            $value = -(pow(2, $bits) - $value);
+        }
+
+        return $value;
     }
 
 

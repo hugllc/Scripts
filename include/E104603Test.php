@@ -162,8 +162,8 @@ class E104603Test
     private $_DAC_GAIN;
     private $_P1_AOFFSET = 0;
     private $_P0_AOFFSET = 0;
-    private $_P1_AGAIN = 0.0532258;
-    private $_P0_AGAIN = 0.0532258;
+    private $_P1_CURGAIN = 0.045;  /* data sheet current gain */
+    private $_P0_CURGAIN = 0.045;  /* data sheet current gain */
     private $_ENDPT_SN;
     private $_FAIL_FLAG;
     private $_MICRO_SN;
@@ -1648,7 +1648,7 @@ class E104603Test
 
         $volts *= 2;
         $newVal = $volts - 1.65;
-        $current = $newVal / $this->_P1_AGAIN;  /* 0.0532258;  */ 
+        $current = $newVal / $this->_P1_CURGAIN;  /* 0.045 default value */ 
         $p1Amps = number_format($current, 2);
 
         $this->_system->out("Port 1 Current   = ".$p1Amps." amps");
@@ -1680,7 +1680,7 @@ class E104603Test
 
         $volts *= 2;
         $newVal = $volts - 1.65;
-        $current = $newVal / $this->_P0_AGAIN;  /* 0.0532258;  */ 
+        $current = $newVal / $this->_P0_CURGAIN;  /* 0.045 default value */ 
 
         $p2Amps = number_format($current, 2);
         $this->_system->out("Port 0 Current   = ".$p2Amps." amps");
@@ -2593,12 +2593,19 @@ class E104603Test
         $DACcal = $this->_DAC_OFFSET;
         $DACcal .= $this->_DAC_GAIN;
 
+        $port = 0;
+        $CURcal0 = $this->_currentGainFactor($port);
+        $port = 1;
+        $CURcal1 = $this->_currentGainFactor($port);
+
         $this->_system->out("SNdata   = ".$SNdata);
         $this->_system->out("HWPNdata = ".$HWPNdata);
         $this->_system->out("CALdata  = ".$CALdata);
         $this->_system->out("DACcal   = ".$DACcal);
+        $this->_system->out("CURGain0 = ".$CURcal0);
+        $this->_system->out("CURGain1 = ".$CURcal1);
         
-        $Sdata = $SNdata.$HWPNdata.$CALdata.$DACcal;
+        $Sdata = $SNdata.$HWPNdata.$CALdata.$DACcal.$CURcal0.$CURcal1;
 
         $SIGdata = pack("H*",$Sdata);
         $fp = fopen("104603test.usersig","wb");
@@ -2691,7 +2698,7 @@ class E104603Test
 
 
         $Avrdude = "sudo avrdude -px32e5 -c avrisp2 -P usb -e -B 10 -i 100 ";
-        $flash = "-U flash:w:104603boot.ihex ";  /* changed to .srec from .ihex */
+        $flash = "-U flash:w:104603boot.srec ";  /* changed to .srec from .ihex */
         $eeprm = "-U eeprom:w:104603boot.eep ";
         $fuse1 = "-U fuse1:w:".$FUSE1.":m ";
         $fuse2 = "-U fuse2:w:".$FUSE2.":m ";
@@ -2826,7 +2833,7 @@ class E104603Test
         $this->display->displayHeader("Loading Application Firmware");
 
         $hugnetLoad = "../bin/./hugnet_load";
-        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.0-B63.gz";
+        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.1-B4.gz";
 
         $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
 
@@ -3846,6 +3853,10 @@ class E104603Test
     *  m = ---------  =  ------------ = ------ = 0.0532258
     *       X2 - X1        31 - 0         31
     *
+    *  *** Note: This gain value would be true if the device
+    *            operated rail-to-rail, but it does not.  The 
+    *            data sheet gives the gain value of 0.045V/A.
+    * 
     *  To calculate the new slope or current gain, turn on 
     *  the load resistor and the +12V to the port.  The 
     *  voltage on the port divided by the load resistance 
@@ -3880,7 +3891,7 @@ class E104603Test
             $this->_system->out("Calculated Current Gain Ratio = ".$curGain);
             
             if ($curGain > 0.0) {
-                $this->_P1_AGAIN = $curGain;
+                $this->_P1_CURGAIN = $curGain;
             }
             
             $this->_setPort1(self::OFF);
@@ -3934,7 +3945,7 @@ class E104603Test
             $this->_system->out("Calculated Current Gain Ratio = ".$curGain);
             
             if ($curGain > 0.0) {
-                $this->_P0_AGAIN = $curGain;
+                $this->_P0_CURGAIN = $curGain;
             }
             
             $this->_setPort0(self::OFF);
@@ -4253,6 +4264,61 @@ class E104603Test
         $adcCounts = $rawVal - 1024;
         
         return $adcCounts;
+    }
+
+    /**
+    ***************************************************
+    * Current Gain Factor Routine
+    *
+    * This function uses the current gain value for the
+    * the given port to calculate a conversion
+    * multiplier for the current conversion routine.
+    * This multiplier is then stored in the user 
+    * signature memory for use by the application 
+    * firmware in calculating port current in millamps.
+    *
+    */
+    private function _currentGainFactor($portVal)
+    {
+
+        switch ($portVal) {
+            case 0: 
+                $gainVal = $this->_P0_CURGAIN;
+                break;
+            case 1:
+                $gainVal = $this->_P1_CURGAIN;
+                break;
+            default:
+                $gainVal = 0.045;
+                break;
+        }
+
+        $adcSteps = 1.65/pow(2,11);
+        $tempVal = (31 * $gainVal)/2;
+        $this->_system->out("31 x curGain / 2 =".$tempVal);
+
+        $numSteps = round(($tempVal/$adcSteps), 0);
+        $this->_system->out("ADC steps = ".$numSteps);
+
+        $gainFactor = round(((31000 * 64)/$numSteps), 0);
+        $this->_system->out("Current Gain Factor = ".$gainFactor);
+
+
+        $hexGainFactor = dechex($gainFactor);
+    
+        $len = strlen($hexGainFactor);
+        if ($len < 4) {
+            while ($len < 4) {
+                $hexGainFactor = "0".$hexGainFactor;
+                $len = strlen($hexGainFactor);
+            }
+        } else if ($len > 4) {
+            $hexGainFactor = substr($hexGainFactor, $len-4, 4);
+        }
+
+
+
+        return $hexGainFactor;
     }
 
     /**
