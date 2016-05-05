@@ -1244,7 +1244,7 @@ class E104603TroubleShoot extends E104603Test
         $this->display->displayHeader("Loading Application Firmware");
 
         $hugnetLoad = "../bin/./hugnet_load";
-        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.1-B4.gz";
+        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.1-B6.gz";
 
         $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
 
@@ -1801,6 +1801,8 @@ class E104603TroubleShoot extends E104603Test
         }
         $this->_system->out("");
 
+        $this->_system->out("Sleeping 2");
+        sleep(2);
 
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         $this->_system->out("Reply Data:".$ReplyData);

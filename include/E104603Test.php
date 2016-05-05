@@ -3852,10 +3852,11 @@ class E104603Test
     *       y2 - y1       3.3 - 1.65     1.65
     *  m = ---------  =  ------------ = ------ = 0.0532258
     *       X2 - X1        31 - 0         31
-    *
-    *  *** Note: This gain value would be true if the device
-    *            operated rail-to-rail, but it does not.  The 
-    *            data sheet gives the gain value of 0.045V/A.
+    *  ********************************************************
+    *  *** Note: This gain value would be true if the device  *
+    *            operated rail-to-rail, but it does not.  The *
+    *            data sheet gives the gain value of 0.045V/A. *
+    8  ********************************************************
     * 
     *  To calculate the new slope or current gain, turn on 
     *  the load resistor and the +12V to the port.  The 
@@ -4252,7 +4253,7 @@ class E104603Test
     private function _currentToADCcounts($offsetAmps)
     {
     
-        $newVal = $offsetAmps * 0.0532258;
+        $newVal = $offsetAmps * 0.045;
         $volts = $newVal + 1.65;
         $volts /=2;
         
@@ -4297,7 +4298,7 @@ class E104603Test
         $tempVal = (31 * $gainVal)/2;
         $this->_system->out("31 x curGain / 2 =".$tempVal);
 
-        $numSteps = round(($tempVal/$adcSteps), 0);
+        $numSteps = ($tempVal/$adcSteps);
         $this->_system->out("ADC steps = ".$numSteps);
 
         $gainFactor = round(((31000 * 64)/$numSteps), 0);
