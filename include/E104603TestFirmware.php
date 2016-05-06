@@ -131,6 +131,7 @@ class E104603TestFirmware
                                 2 => "Turn on Power Supply Port",
                                 3 => "Turn off Power Supply Port",
                                 4 => "Write the Power Table",
+                                5 => "Verify Power Table",
                                 );
 
     private $_batteryBdMenu = array(
@@ -139,6 +140,7 @@ class E104603TestFirmware
                                 2 => "Turn on Battery Port",
                                 3 => "Turn off Battery Port",
                                 4 => "Write the Power Table",
+                                5 => "Verify Power Table",
                                 );
    
     private $_loadBdMenu = array(
@@ -226,8 +228,6 @@ class E104603TestFirmware
             }
 
         } while ($exitTest == false);
-
-        $choice = readline("\n\rHit Enter to Continue: ");
 
     }
 
@@ -350,7 +350,7 @@ class E104603TestFirmware
 
         } while ($exitSingleStep == false);
 
-        $choice = readline("\n\rHit Enter to Continue: ");
+       // $choice = readline("\n\rHit Enter to Continue: ");
 
         
     }
@@ -505,6 +505,11 @@ class E104603TestFirmware
     * This function monitors the battery voltage while
     * it is under load until it is sufficiently discharged
     * enough to run the charge test.
+    * 
+    * @note: I need to add temperature monitoring of the 
+    *        battery board bus and the load ports to 
+    *        verify the temperature lookup tables and 
+    *        conversion routines.
     *
     */
     private function _watchBatteryForDischarge()
@@ -535,16 +540,30 @@ class E104603TestFirmware
             }
             print "\n\r";
             
-            $dataVal = "00";
+            $idNum = self::DEVICE2_ID;
+            $cmdNum = self::READSENSOR_DATA_COMMAND;
+            
+            $dataVal = "00";   /* Port A Current */
             $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
             $batAmps = $this->_convertDataValue($ReplyData);
             
-            $dataVal = "01";
+            $dataVal = "01";   /* Port A Voltage */
             $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
             $batVolts = $this->_convertDataValue($ReplyData);
             
-            $this->_system->out("Battery Current:".$batAmps);
-            $this->_system->out("Battery Voltage:".$batVolts);
+            $dataVal = "0E";
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $batBusTemp = $this->_convertDataValue($ReplyData);
+            
+            $idNum = self::DEVICE3_ID;
+            $dataVal = "02";   /* Port A Temperature */
+            $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+            $loadPortATemp = $this->_convertDataValue($ReplyData);
+            
+            $this->_system->out("Battery Current :".$batAmps);
+            $this->_system->out("Battery Voltage :".$batVolts);
+            $this->_system->out("Battery Bus Temp:".$batBusTemp);
+            $this->_system->out("Load Port A Temp:".$loadPortATemp);
             $this->_system->out("");
             $count++;
         }
@@ -590,7 +609,7 @@ class E104603TestFirmware
         
         while ((($batVolts < 13.4) and ($count < 10)) or (($batAmps > 0.40) and ($count < 10))) {
         
-            for ($i = 0; $i < 14; $i++) {
+            for ($i = 0; $i < 15; $i++) {
                 print "*";
                 sleep(1);
             }
@@ -658,6 +677,8 @@ class E104603TestFirmware
                 $this->_setPowerSupplyPort(self::OFF);
             } else if (($selection == "E") || ($selection == "e")){
                 $this->_setPowerTablePowerSupply();
+            } else if (($selection == "F") || ($selection == "f")){
+                $this->_verifyPowerTablePowerSupply();
             } else {
                 $exitSStep = true;
                 $this->_system->out("Exit Single Step Power Supply Board");
@@ -665,7 +686,6 @@ class E104603TestFirmware
 
         } while ($exitSStep == false);
 
-        $choice = readline("\n\rHit Enter to Continue: ");
     
     
     
@@ -805,6 +825,8 @@ class E104603TestFirmware
                 $this->_setBatteryPort(self::OFF);
             } else if (($selection == "E") || ($selection == "e")){
                 $this->_setPowerTableBattery();
+            } else if (($selection == "F") || ($selection == "f")){
+                $this->_verifyPowerTableBattery();
             } else {
                 $exitSStep = true;
                 $this->_system->out("Exit Single Step Battery Board");
@@ -812,7 +834,6 @@ class E104603TestFirmware
 
         } while ($exitSStep == false);
 
-        $choice = readline("\n\rHit Enter to Continue: ");
     
     }
     
@@ -966,8 +987,6 @@ class E104603TestFirmware
 
         } while ($exitSStep == false);
 
-        $choice = readline("\n\rHit Enter to Continue: ");
-    
     }
       
     /**
@@ -1324,7 +1343,9 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
     */
     private function _verifyPowerTableNormalLoad()
     {
-    
+        $this->_system->out("\n\r****************************************");
+        $this->_system->out("Verifying Normal Load Power Table");
+        $this->_system->out("");
         $driveDataStr = "A0000000"; 
         $driveNameStr = "4C6F616420310000000000000000000000000000000000";
         
@@ -1334,8 +1355,8 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         
         $replyDataLen = strlen($ReplyData);
-        $this->_system->out("Reply Data Length:".$replyDataLen);
-        
+        $this->_system->out("Reply Data Length: ".$replyDataLen." characters");
+        $this->_system->out("");
         if ($replyDataLen == 160) {
         
             $driverData = substr($ReplyData, 0, 8);
@@ -1357,7 +1378,8 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
             $this->_system->out("Not enough data from pwer table read");
             $result = self::FAIL;
         }
-        
+        $this->_system->out("");
+        $choice = readline("Hit Enter to Continue");
         return $result;
     
     }
@@ -1438,7 +1460,69 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         return $result;
     }
 
-
+    /**
+    ************************************************************
+    * Verify Power Table Battery Routine
+    * 
+    * This function does a read power table from the test system
+    * load board and compares it to the required power table 
+    * setting.
+    *
+    */
+    private function _verifyPowerTableBattery()
+    {
+        $this->_system->out("\n\r****************************************");
+        $this->_system->out("Verifying Battery Power Table");
+        $this->_system->out("");
+        
+        $driveDataStr = "10000000"; 
+        $driveNameStr = "506F727420410000000000000000000000000000000000";
+        $fillDataStr  = "100E0100B0360000EC2C0000E80300000100BC340000F82A000004";  /* 27 bytes */
+        $fillDataStr2 = "290000E8030000FC3A0000D4300000FFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
+        
+        $idNum = self::DEVICE2_ID;
+        $cmdNum = self::READ_POWERTABLE_COMMAND;
+        $dataVal = "00";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $replyDataLen = strlen($ReplyData);
+        $this->_system->out("Reply Data Length: ".$replyDataLen." characters");
+        $this->_system->out("");
+        if ($replyDataLen == 160) {
+        
+            $driverData = substr($ReplyData, 0, 8);
+            $driverName = substr($ReplyData, 8, 46);
+            $fillData = substr($ReplyData, 54, 54);
+            $fillData2 = substr($ReplyData, 108, 52);
+            
+            if ($driverData == $driveDataStr) {
+                if ($driverName == $driveNameStr) {
+                    if (($fillData == $fillDataStr) and ($fillData2 == $fillDataStr2)){
+                        $this->_system->out("Battery Power Table Verified!");
+                        $result = self::PASS;
+                    } else {
+                        $this->_system->out("Driver Data Does Not Match");
+                        $result = self::FAIL;
+                    }
+                } else {
+                    $this->_system->out("Driver Name Does Not Match");
+                    $result = self::FAIL;
+                }
+            } else {
+                $this->_system->out("Driver Data Does Not Match");
+                $result = self::FAIL;
+            }
+        } else {
+            $this->_system->out("Not enough data from pwer table read");
+            $result = self::FAIL;
+        }
+        $this->_system->out("");
+        $choice = readline("Hit Enter to Continue");
+        return $result;
+    
+    }
+    
+ 
     /**
     ************************************************************
     * Set Power Table Power Supply and EmptyPort Routine
@@ -1511,6 +1595,69 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         return $result;
     }
 
+    /**
+    ************************************************************
+    * Verify Power Table Power Supply Routine
+    * 
+    * This function does a read power table from the test system
+    * load board and compares it to the required power table 
+    * setting.
+    *
+    */
+    private function _verifyPowerTablePowerSupply()
+    {
+        $this->_system->out("\n\r****************************************");
+        $this->_system->out("Verifying Power Supply Power Table");
+        $this->_system->out("");
+        
+        $driveDataStr = "E0000000"; 
+        $driveNameStr = "506F727420410000000000000000000000000000000000";
+        $fillDataStr  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
+        $fillDataStr2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
+        
+        $idNum = self::DEVICE1_ID;
+        $cmdNum = self::READ_POWERTABLE_COMMAND;
+        $dataVal = "00";
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+        $replyDataLen = strlen($ReplyData);
+        $this->_system->out("Reply Data Length: ".$replyDataLen." characters");
+        $this->_system->out("");
+        if ($replyDataLen == 160) {
+        
+            $driverData = substr($ReplyData, 0, 8);
+            $driverName = substr($ReplyData, 8, 46);
+            $fillData = substr($ReplyData, 54, 54);
+            $fillData2 = substr($ReplyData, 108, 52);
+            
+            if ($driverData == $driveDataStr) {
+                if ($driverName == $driveNameStr) {
+                    if (($fillData == $fillDataStr) and ($fillData2 == $fillDataStr2)){
+                        $this->_system->out("Power Supply Power Table Verified!");
+                        $result = self::PASS;
+                    } else {
+                        $this->_system->out("Driver Data 2 Does Not Match");
+                        $result = self::FAIL;
+                    }
+                } else {
+                    $this->_system->out("Driver Name Does Not Match");
+                    $result = self::FAIL;
+                }
+            } else {
+                $this->_system->out("Driver Data 1 Does Not Match");
+                $result = self::FAIL;
+            }
+        } else {
+            $this->_system->out("Not enough data from pwer table read");
+            $result = self::FAIL;
+        }
+        $this->_system->out("");
+        $choice = readline("Hit Enter to Continue");
+        return $result;
+    
+    }
+    
+    
     /**
     ************************************************************
     * Erase Power Port E2 Routine
