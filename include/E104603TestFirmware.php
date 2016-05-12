@@ -139,8 +139,10 @@ class E104603TestFirmware
                                 1 => "Read the Config",
                                 2 => "Turn on Battery Port",
                                 3 => "Turn off Battery Port",
-                                4 => "Write the Power Table",
-                                5 => "Verify Power Table",
+                                4 => "Turn on Shorted Port",
+                                5 => "Turn off Shorted Port",
+                                6 => "Write the Power Table",
+                                7 => "Verify Power Table",
                                 );
    
     private $_loadBdMenu = array(
@@ -304,6 +306,7 @@ class E104603TestFirmware
            
            
            $this->_runBatteryChargeTest();
+           $this->_runErrorLogTest();
             
             
         } else {
@@ -427,6 +430,23 @@ class E104603TestFirmware
         $this->_system->out("Battery Charge Test Complete!");
     }
     
+    /**
+    ***********************************************************
+    * Error Log Test Routine
+    *
+    * This function tests the systems ability to log and 
+    * recover from an error condition.
+    *
+    *
+    */
+    private function _runErrorLogTest()
+    {
+        /* not done */
+
+
+    }
+
+
     /**
     ***********************************************************
     * Power Supply On bus
@@ -824,8 +844,12 @@ class E104603TestFirmware
             } else if (($selection == "D") || ($selection == "d")){
                 $this->_setBatteryPort(self::OFF);
             } else if (($selection == "E") || ($selection == "e")){
-                $this->_setPowerTableBattery();
+                $this->_setShortPort(self::ON);
             } else if (($selection == "F") || ($selection == "f")){
+                $this->_setShortPort(self::OFF);
+            } else if (($selection == "G") || ($selection == "g")){
+                $this->_setPowerTableBattery();
+            } else if (($selection == "H") || ($selection == "h")){
                 $this->_verifyPowerTableBattery();
             } else {
                 $exitSStep = true;
@@ -914,6 +938,7 @@ class E104603TestFirmware
         $choice = readline("Hit Enter to Continue.");
     
     }
+
     
     /** 
     *************************************************************
@@ -932,6 +957,36 @@ class E104603TestFirmware
             $this->_system->out("SETTING BATTERY PORT: ON\n\r");
         } else {
             $this->_system->out("SETTING BATTERY PORT: OFF\n\r");
+        }
+        
+        $this->_readControlChan($snD2, $chan);
+        sleep(2);
+        $this->_setControlChan($snD2, $chan, $state);
+        sleep(2);
+        $this->_setControlChan($snD2, $chan, $state);
+        sleep(2);
+        
+    }
+
+    /** 
+    *************************************************************
+    * Set Short Port Routine
+    *
+    * This function sets Port 1 which is shorted to ground, 
+    * on or off line based on the state passed in to it.
+    *
+    */
+    private function _setShortPort($state)
+    {
+        $chan = 1;
+        $snD2 = self::DEVICE2_ID;
+
+        $this->_system->out("The state = ".$state);
+        
+        if ($state == self::ON) {
+            $this->_system->out("SETTING SHORT ON PORT: ON\n\r");
+        } else {
+            $this->_system->out("SETTING SHORT ON PORT: OFF\n\r");
         }
         
         $this->_readControlChan($snD2, $chan);
@@ -1259,6 +1314,8 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
     *
     /
 
+
+
     /**
     ************************************************************
     * Set Power Table Normal Load Routine
@@ -1290,6 +1347,7 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
                           4C6F616420310000000000000000000000000000000000
                           FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
                           FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF  */
+
             $portData = "00";
             $driverData ="A0000000";  /* Driver, Subdriver, Priority and mode 4 bytes */
             $driverName = "4C6F616420310000000000000000000000000000000000";  /* 23 byte */
@@ -1385,9 +1443,6 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
     }
     
     
-
-    
-    
     /**
     ************************************************************
     * Set Power Table Battery and EmptyPort Routine
@@ -1431,7 +1486,7 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
                 $this->_system->out("Setting Power Table 0 - PASSED!");
                 
                 $portData = "01";
-                $driverData ="FF000001";  /* Driver, Subdriver, Priority and mode */
+                $driverData ="A0000000";  /* Driver, Subdriver, Priority and mode */
                 $driverName = "506F727420420000000000000000000000000000000000";
                 $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
                 $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
