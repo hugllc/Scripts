@@ -86,11 +86,13 @@ class E104603TestFirmware
     const READRAWSENSOR_COMMAND   = 0x54;
     const READSENSORS_COMMAND     = 0x55;
     
+    const SETCONFIG_COMMAND       = 0x5B;
     const READCONFIG_COMMAND      = 0x5c;
 
     const SETCONTROLCHAN_COMMAND  = 0x64;
     const READCONTROLCHAN_COMMAND = 0x65;
     
+    const READ_ERRORLOG_COMMAND   = 0x73;
     
     const ADC_POFFSET_MAX = "0x0200";
     const ADC_NOFFSET_MAX = "0x0E66";
@@ -372,11 +374,23 @@ class E104603TestFirmware
     * the ability of the firmware to current limit the power 
     * being delivered to a battery on a port.
     *
+    *  The ending state of the ports is as follows:
+    *      PowerSupply Port: ON
+    *      Battery Port    : OFF
+    *      Short   Port    : OFF 
+    *      Load 1  Port    : OFF 
+    *      Load 2  Port    : OFF 
+    * 
+    *
     */
     private function _runBatteryChargeTest()
     {
-        
-        $this->_system->out("Running Battery Charge Test");
+        $this->_system->out("");
+        $this->_system->out("***********************************");
+        $this->_system->out("*                                 *");
+        $this->_system->out("*   Running Battery Charge Test   *");
+        $this->_system->out("*                                 *");
+        $this->_system->out("***********************************");
         
         $powerSupplyStatus = $this->_powerSupplyOnBus();
         if (!$powerSupplyStatus) {
@@ -441,8 +455,55 @@ class E104603TestFirmware
     */
     private function _runErrorLogTest()
     {
-        /* not done */
+        $this->_system->out("");
+        $this->_system->out("******************************");
+        $this->_system->out("*                            *");
+        $this->_system->out("*   Running Error Log Test   *");
+        $this->_system->out("*                            *");
+        $this->_system->out("******************************\n\r");
+        
 
+        $this->_system->out("Turning on Shorted Port");
+        $this->_setShortPort(self::ON);
+        $this->_system->out("");
+       
+        /* lets wait for errors to be transmitted */
+        for ($i = 0; $i < 15; $i++) {
+            print "*";
+            sleep(1);
+        }
+        $this->_system->out("");
+        
+        
+        $this->_system->out("Resetting Battery Board!");
+        
+        $idNum = self::DEVICE2_ID;
+        $cmdNum = self::SETCONFIG_COMMAND;
+        $dataVal = "00";
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        $this->_system->out("Reply Data : ".$ReplyData);
+        $this->_system->out("");
+        
+        for ($i = 0; $i < 10; $i++) {
+            print "*";
+            sleep(1);
+        }
+        $this->_system->out("");
+        
+        $this->_system->out("Turning off Shorted Port");
+        $this->_setShortPort(self::OFF);
+        
+        $this->_system->out("Reading Error Log");
+        $idNum = self::DEVICE2_ID;
+        $cmdNum = self::READ_ERRORLOG_COMMAND;
+        $dataVal = "00";
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        $this->_system->out("Reply Data : ".$ReplyData);
+        
+        
 
     }
 
@@ -552,7 +613,7 @@ class E104603TestFirmware
         
         $count = 0;
         
-        while (($batVolts > 11.80) and ($count < 10)) {
+        while (($batVolts > 12.00) and ($count < 10)) {
         
             for ($i = 0; $i < 10; $i++) {
                 print "*";
@@ -589,7 +650,9 @@ class E104603TestFirmware
         }
         
         if ($count < 10) {
+            $this->_system->out("");
             $this->_system->out("Battery Discharged!");
+            $this->_system->out("");
         } else {
             $this->_system->out("Not enough time for discharge!");
             
@@ -627,9 +690,9 @@ class E104603TestFirmware
         
         $count = 0;
         
-        while ((($batVolts < 13.4) and ($count < 10)) or (($batAmps > 0.40) and ($count < 10))) {
+        while ((($batVolts < 13.4) and ($count < 10)) or (($batAmps > 0.55) and ($count < 10))) {
         
-            for ($i = 0; $i < 15; $i++) {
+            for ($i = 0; $i < 16; $i++) {
                 print "*";
                 sleep(1);
             }
@@ -650,7 +713,9 @@ class E104603TestFirmware
         }
         
         if ($count < 10) {
+            $this->_system->out("");
             $this->_system->out("Battery Charged!");
+            $this->_system->out("");
         } else {
             $this->_system->out("Not enough time for Charge!");
             
@@ -981,7 +1046,6 @@ class E104603TestFirmware
         $chan = 1;
         $snD2 = self::DEVICE2_ID;
 
-        $this->_system->out("The state = ".$state);
         
         if ($state == self::ON) {
             $this->_system->out("SETTING SHORT ON PORT: ON\n\r");
@@ -1496,8 +1560,8 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
                 $ReplyData = substr($ReplyData, 0, 14);
                 $this->_system->out("Port 1 Reply = ".$ReplyData);
                 
-                $testReply = substr($ReplyData, 0, 4);
-                if ($testReply == "FF00") {
+                $testReply = substr($ReplyData, 0, 8);
+                if ($testReply == "A0000000") {
                     $this->_system->out("Setting Power Table 1 - PASSED!");
                     $result = self::PASS;
                 } else {
