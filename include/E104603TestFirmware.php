@@ -132,8 +132,10 @@ class E104603TestFirmware
                                 1 => "Read the Config",
                                 2 => "Turn on Power Supply Port",
                                 3 => "Turn off Power Supply Port",
-                                4 => "Write the Power Table",
-                                5 => "Verify Power Table",
+                                4 => "Turn on Relay Port",
+                                5 => "Turn off Relay Port",
+                                6 => "Write the Power Table",
+                                7 => "Verify Power Table",
                                 );
 
     private $_batteryBdMenu = array(
@@ -444,6 +446,10 @@ class E104603TestFirmware
         $this->_system->out("Battery Charge Test Complete!");
     }
     
+    /* Error log data from 9002 when shorted port 1 */
+    /* 013B090002310000000000000000000000000000000000000000000000000
+       000000000000000000000000000000000000000000000000000000000000000000000  */
+
     /**
     ***********************************************************
     * Error Log Test Routine
@@ -466,35 +472,11 @@ class E104603TestFirmware
         $this->_system->out("Turning on Shorted Port");
         $this->_setShortPort(self::ON);
         $this->_system->out("");
-       
-        /* lets wait for errors to be transmitted */
-        for ($i = 0; $i < 15; $i++) {
-            print "*";
-            sleep(1);
-        }
-        $this->_system->out("");
-        
-        
-        $this->_system->out("Resetting Battery Board!");
-        
-        $idNum = self::DEVICE2_ID;
-        $cmdNum = self::SETCONFIG_COMMAND;
-        $dataVal = "00";
-        
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        $this->_system->out("Reply Data : ".$ReplyData);
-        $this->_system->out("");
-        
-        for ($i = 0; $i < 10; $i++) {
-            print "*";
-            sleep(1);
-        }
-        $this->_system->out("");
-        
-        $this->_system->out("Turning off Shorted Port");
-        $this->_setShortPort(self::OFF);
-        
-        $this->_system->out("Reading Error Log");
+
+        $this->_system->out("Closing relay to short Port 1 to GND!");
+        $this->_setRelayPort(self::ON);
+
+        $this->_system->out("Reading Error Log For 9002");
         $idNum = self::DEVICE2_ID;
         $cmdNum = self::READ_ERRORLOG_COMMAND;
         $dataVal = "00";
@@ -502,8 +484,22 @@ class E104603TestFirmware
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
         
         $this->_system->out("Reply Data : ".$ReplyData);
+
+
+        $this->_system->out("");
         
-        
+        $this->_system->out("Closing relay to short Port 1 to GND!");
+        $this->_setRelayPort(self::ON);
+        $this->_system->out("");
+
+        $this->_system->out("Turning off Shorted Port");
+        $this->_setShortPort(self::OFF);
+        $this->_system->out("");
+
+        $this->_system->out("Turning Power Supply Port On");
+        $this->_setPowerSupplyPort(self::ON);
+        $this->_system->out("");
+
 
     }
 
@@ -761,8 +757,12 @@ class E104603TestFirmware
             } else if (($selection == "D") || ($selection == "d")){
                 $this->_setPowerSupplyPort(self::OFF);
             } else if (($selection == "E") || ($selection == "e")){
-                $this->_setPowerTablePowerSupply();
+                $this->_setRelayPort(self::ON);
             } else if (($selection == "F") || ($selection == "f")){
+                $this->_setRelayPort(self::OFF);
+            } else if (($selection == "G") || ($selection == "g")){
+                $this->_setPowerTablePowerSupply();
+            } else if (($selection == "H") || ($selection == "h")){
                 $this->_verifyPowerTablePowerSupply();
             } else {
                 $exitSStep = true;
@@ -881,7 +881,36 @@ class E104603TestFirmware
         sleep(2);
         
     }
-    
+ 
+    /**
+    ************************************************************
+    * Set Relay Port Routine
+    * 
+    * This function sets the Relay Port 1 to on or off  
+    * line based on the state passed in to it.
+    *
+    */
+    private function _setRelayPort($state)
+    {
+        $chan = 1;
+        $snD1 = self::DEVICE1_ID;
+        
+        if ($state == self::ON) {
+            $this->_system->out("SETTING RELAY PORT: ON\n\r");
+        } else {
+            $this->_system->out("SETTING RELAY PORT: OFF\n\r");
+        }
+        
+        $this->_readControlChan($snD1, $chan);
+        sleep(2);
+        
+        $this->_setControlChan($snD1, $chan, $state);
+        sleep(2);
+        $this->_setControlChan($snD1, $chan, $state);
+        sleep(2);
+        
+    }
+   
     
     /**
     *************************************************************
@@ -1641,7 +1670,6 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
     
     }
     
- 
     /**
     ************************************************************
     * Set Power Table Power Supply and EmptyPort Routine
@@ -1685,7 +1713,7 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
                 $this->_system->out("Setting Power Table 0 - PASSED!");
                 
                 $portData = "01";
-                $driverData ="FF000001";  /* Driver, Subdriver, Priority and mode */
+                $driverData ="A0000000";  /* Driver, Subdriver, Priority and mode */
                 $driverName = "506F727420420000000000000000000000000000000000";
                 $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
                 $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
@@ -1695,8 +1723,8 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
                 $ReplyData = substr($ReplyData, 0, 14);
                 $this->_system->out("Port 1 Reply = ".$ReplyData);
                 
-                $testReply = substr($ReplyData, 0, 4);
-                if ($testReply == "FF00") {
+                $testReply = substr($ReplyData, 0, 8);
+                if ($testReply == "A0000000") {
                     $this->_system->out("Setting Power Table 1 - PASSED!");
                     $result = self::PASS;
                 } else {
