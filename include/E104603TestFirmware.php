@@ -82,6 +82,9 @@ class E104603TestFirmware
     const SET_POWERTABLE_COMMAND  = 0x45;
     const READ_POWERTABLE_COMMAND = 0x46;
 
+    const SET_RTC_COMMAND         = 0x50;
+    const READ_RTC_COMMAND        = 0x51;
+
     const READSENSOR_DATA_COMMAND = 0x53;
     const READRAWSENSOR_COMMAND   = 0x54;
     const READSENSORS_COMMAND     = 0x55;
@@ -147,6 +150,8 @@ class E104603TestFirmware
                                 5 => "Turn off Shorted Port",
                                 6 => "Write the Power Table",
                                 7 => "Verify Power Table",
+                                8 => "Set Real Time Clock",
+                                9 => "Read Real Time Clock",
                                 );
    
     private $_loadBdMenu = array(
@@ -309,7 +314,7 @@ class E104603TestFirmware
            }
            
            
-           $this->_runBatteryChargeTest();
+          // $this->_runBatteryChargeTest();
            $this->_runErrorLogTest();
             
             
@@ -445,7 +450,7 @@ class E104603TestFirmware
         
         $this->_system->out("Battery Charge Test Complete!");
     }
-    
+   
     /* Error log data from 9002 when shorted port 1 */
     /* 013B090002310000000000000000000000000000000000000000000000000
        000000000000000000000000000000000000000000000000000000000000000000000  */
@@ -475,6 +480,11 @@ class E104603TestFirmware
 
         $this->_system->out("Closing relay to short Port 1 to GND!");
         $this->_setRelayPort(self::ON);
+        $this->_system->out("");
+
+        $this->_system->out("Opening relay shorting Port 1 to GND!");
+        $this->_setRelayPort(self::OFF);
+        $this->_system->out("");
 
         $this->_system->out("Reading Error Log For 9002");
         $idNum = self::DEVICE2_ID;
@@ -483,24 +493,31 @@ class E104603TestFirmware
         
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
         
-        $this->_system->out("Reply Data : ".$ReplyData);
-
-
+        $this->_displayErrorLogData($ReplyData);;
         $this->_system->out("");
         
-        $this->_system->out("Closing relay to short Port 1 to GND!");
-        $this->_setRelayPort(self::ON);
-        $this->_system->out("");
 
         $this->_system->out("Turning off Shorted Port");
         $this->_setShortPort(self::OFF);
         $this->_system->out("");
 
+
         $this->_system->out("Turning Power Supply Port On");
         $this->_setPowerSupplyPort(self::ON);
         $this->_system->out("");
 
+        $errorNumber = substr($ReplyData, 8, 2);
+        $error = hexdec($errorNumber);
 
+        if ($error == 2) {
+            $this->_system->out("Error Log Test Passed!");
+            $result = true;
+        } else {
+            $this->_system->out("Error Log Test Failed!");
+            $result = false;
+        }
+
+        return $result;
     }
 
 
@@ -717,6 +734,91 @@ class E104603TestFirmware
             
         }
     
+    }
+
+    /**
+    ************************************************
+    * Set the Real Time Clock Routine
+    *
+    * This routine gets the current time and sets 
+    * the real time clocks in the Battery Coach 
+    * boards.
+    *
+    */
+    private function _setRTC($serNum)
+    {
+        $curTime = time();
+        $this->_system->out("Current  Time: ".$curTime);
+
+        $idNum = $serNum;
+        $cmdNum = self::SET_RTC_COMMAND;
+        
+        $hexdata = dechex($curTime);
+
+   
+        $this->_system->out("hex time value".$hexdata);
+
+        $dataVal = substr($hexdata, 6, 2);
+        $dataVal .= substr($hexdata, 4, 2);
+        $dataVal .= substr($hexdata, 2, 2);
+        $dataVal .= substr($hexdata, 0, 2);
+
+        $this->_system->out("Data Val: ".$dataVal);
+
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+
+        $this->_system->out("Reply Data: ",$ReplyData);
+
+        $choice = readline("Hit Enter to Continue");
+
+    }
+
+    /**
+    ***********************************************************
+    * Read RTC Routine
+    *
+    * This function reads the real time clock to check 
+    * its time setting.
+    *
+    */
+    private function _readRTC($serNum )
+    {
+        $idNum = $serNum;
+        $cmdNum = self::READ_RTC_COMMAND;
+
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->_system->out("Read RTC reply:".$ReplyData);
+
+        $timeLen = strlen($ReplyData);
+
+        if ($timeLen == 8) {
+
+            $hexTime  = substr($ReplyData, 6, 2);
+            $hexTime .= substr($ReplyData, 4, 2);
+            $hexTime .= substr($ReplyData, 2, 2);
+            $hexTime .= substr($ReplyData, 0. 2);
+        
+            $decTime = hexdec($hexTime);
+            $localTime = localtime($decTime);
+
+            $dateStr = ($localTime[tm_mon] + 1);
+            $dateStr .= "/".$localTime[tm_mday];
+            $dateStr .= "/".($localTime[tm_year] + 1900);
+
+            $timeStr = $localTime[tm_hour];
+            $timeStr .= ":".$localTime[tm_min];
+            $timeStr .= ":".$localTime[tm_sec];
+
+            $this->_system->out(" RTC ".$dateStr."  ".$timeStr);
+
+
+        } else {
+            $this->_system->out("Invalid Number of Bytes for Time!");
+        }
+
+        $choice = readline("Hit Enter to Continue.");
+
+
     }
     
     
@@ -945,6 +1047,10 @@ class E104603TestFirmware
                 $this->_setPowerTableBattery();
             } else if (($selection == "H") || ($selection == "h")){
                 $this->_verifyPowerTableBattery();
+            } else if (($selection == "I") || ($selection == "i")){
+                $this->_setRTC(self::DEVICE2_ID);
+            } else if (($selection == "J") || ($selection == "j")){
+                $this->_readRTC(self::DEVICE2_ID);
             } else {
                 $exitSStep = true;
                 $this->_system->out("Exit Single Step Battery Board");
@@ -2289,6 +2395,52 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         return $result;
     }
 
+
+    /**
+    **********************************************************
+    * Display Error Log Data Routine
+    *
+    * This routine takes the hex data string and displays
+    * the time and data stamp, the logged error and the 
+    * additional information data.
+    */
+    private function _displayErrorLogData($errorData)
+    {
+        $datalen = strlen($errorData);
+        $dateData = substr($errorData, 0, 8);
+
+        print "dateData = ".$dateData."\n\r";
+
+        $errorNum = substr($errorData, 8, 2);
+        $infoData = substr($errorData, 10, datalen-1);
+
+        $hexDate = substr($dateData, 6, 2);
+        $hexDate .= substr($dateData, 4, 2);
+        $hexDate .= substr($dateData, 2, 2);
+        $hexDate .= substr($dateData, 0, 2);
+
+        print "hexDate = ".$hexDate."\n\r";
+
+        $intDate = hexdec($hexDate);
+
+        print "intDate = ".$intDate."\n\r";
+
+        $localtime = localtime($intDate, true);
+        $year = $localtime[tm_year] + 1900;
+        $month = $localtime[tm_mon] + 1;
+        $mday = $localtime[tm_mday];
+
+        $hour = $localtime[tm_hour];
+        $min  = $localtime[tm_min];
+        $sec  = $localtime[tm_sec];
+
+        $timeStamp = $month."/".$mday."/".$year."  ".$hour.":".$min.":".$sec;
+
+        $this->_system->out("Timestamp: ".$timeStamp);
+
+        $this->_system->out("Error Number".$errorNum);
+
+    }
 
 
     /*****************************************************************************/
