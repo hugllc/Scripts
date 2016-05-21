@@ -1,0 +1,15 @@
+[Unit]
+Description=Job that runs the hugnet_watchdog daemon
+Documentation=man:hugnet_watchdog(1)
+Requires=mysql.service hugnet_router.service
+After=mysql.service hugnet_router.service
+
+[Service]
+Type=simple
+Restart=on-failure
+Environment=statedir=/var/run/hugnet
+ExecStartPre=/usr/bin/mkdir -p ${statedir}
+ExecStart=/sbin/getty -n -l /usr/bin/hugnet_watchdog 38400 tty12
+
+[Install]
+WantedBy=multi-user.target

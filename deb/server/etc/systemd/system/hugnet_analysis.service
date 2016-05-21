@@ -1,0 +1,15 @@
+[Unit]
+Description=Job that runs the hugnet_analysis daemon
+Documentation=man:hugnet_analysis(1)
+Requires=mysql.service hugnet_router.service
+After=mysql.service hugnet_router.service
+
+[Service]
+Type=simple
+Restart=on-failure
+Environment=statedir=/var/run/hugnet
+ExecStartPre=/usr/bin/mkdir -p ${statedir}
+ExecStart=/sbin/getty -n -l /usr/bin/hugnet_analysis 38400 tty11
+
+[Install]
+WantedBy=multi-user.target
