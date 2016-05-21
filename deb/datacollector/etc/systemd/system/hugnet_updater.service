@@ -1,6 +1,6 @@
 [Unit]
 Description=Job that runs the hugnet_updater daemon
-Documentation=man:hugnet_updater(1)
+#Documentation=man:hugnet_updater(1)
 Requires=mysql.service hugnet_router.service
 After=mysql.service hugnet_router.service
 
@@ -8,7 +8,7 @@ After=mysql.service hugnet_router.service
 Type=simple
 Restart=on-failure
 Environment=statedir=/var/run/hugnet
-ExecStartPre=/usr/bin/mkdir -p ${statedir}
+ExecStartPre=/bin/mkdir -p ${statedir}
 ExecStart=/sbin/getty -n -l /usr/bin/hugnet_updater 38400 tty10
 
 [Install]
