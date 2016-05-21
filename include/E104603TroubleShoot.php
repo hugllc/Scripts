@@ -118,10 +118,11 @@ class E104603TroubleShoot extends E104603Test
                                 1 => "Load Bootloader Firmware",
                                 2 => "Load Application Firmware",
                                 3 => "Read Calibration Values",
-                                4 => "Set Power Ports",
-                                5 => "Port 1",
-                                6 => "Port 2",
-                                7 => "Read Sensors",
+                                4 => "Set Real Time Clock",
+                                5 => "Set Power Ports",
+                                6 => "Port 1",
+                                7 => "Port 2",
+                                8 => "Read Sensors",
                                 );
                                 
     public $display;
@@ -1147,12 +1148,15 @@ class E104603TroubleShoot extends E104603Test
             } else if (($selection == "D") || ($selection == "d")){
                 $this->_trblshtUserCalibration();
             } else if (($selection == "E") || ($selection == "e")){
-                $this->_trblshtSetPowerTable();
+                $SNVal = hexdec($this->_ENDPT_SN);
+                $this->_setRTC($SNVal);
             } else if (($selection == "F") || ($selection == "f")){
-                $this->_trblshtAppPort1();
+                $this->_trblshtSetPowerTable();
             } else if (($selection == "G") || ($selection == "g")){
+                $this->_trblshtAppPort1();
+            } else if (($selection == "H") || ($selection == "h")){
                 $this->_trblshtAppPort2();
-            } else if (($selection == "H") || ($selection == 'h')){
+            } else if (($selection == "I") || ($selection == "i")){
                 $this->_trblshtSensors();
             } else {
                 $exitTest = true;
@@ -1244,17 +1248,24 @@ class E104603TroubleShoot extends E104603Test
         $this->display->displayHeader("Loading Application Firmware");
 
         $hugnetLoad = "../bin/./hugnet_load";
-        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.1-B6.gz";
+        $firmwarepath = $this->_getFirmwarePath("104603-00393801C");
 
-        $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
+        if ($firmwarepath !== "") {
 
-        system($Prog, $return);
+            $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
 
-        if ($return == 0) {
-            $choice = readline("\n\rApplication Loaded Hit Enter to Continue");
+            system($Prog, $return);
+
+            if ($return == 0) {
+                $choice = readline("\n\rApplication Loaded Hit Enter to Continue");
+            } else {
+                $choice = readline("\n\rApplication Load Failed Hit Enter to Continue");
+            } 
         } else {
-            $choice = readline("\n\rApplication Load Failed Hit Enter to Continue");
-        } 
+            $this->_system->out(" FAILED to acquire a valid firmware file name!");
+            $this->_system->out("");
+            $choice = readline(" Hit Enter to Continue.");
+        }
 
         $this->_system->out("Powering down UUT!");
         $this->_powerUUT(self::OFF);
@@ -1488,6 +1499,105 @@ class E104603TroubleShoot extends E104603Test
             $this->_system->out("Not enough characters for proper formatting.");
             $this->_system->out("User Cal Bytes: ".$usrCal);
         }
+
+    }
+
+
+    /**
+    ************************************************
+    * Set the Real Time Clock Routine
+    *
+    * This routine gets the current time and sets 
+    * the real time clocks in the Battery Coach 
+    * boards.
+    *
+    */
+    private function _setRTC($serNum)
+    {
+        $this->_system->out("\n\r  Powering up UUT!");
+        $this->_system->out("********************\n\r");
+        
+        $this->_powerUUT(self::ON);
+
+        for ($i = 0; $i < 5; $i++) {
+            print "*";
+            sleep(1);
+        }
+        $this->_system->out("");
+
+        $this->_system->out("*********************");
+        $this->_system->out("    Setting RTC     *");
+        $this->_system->out("*********************");
+        $curTime = time();
+        $this->_system->out("  Current  Time: ".$curTime);
+
+        $idNum = $serNum;
+        $cmdNum = self::SET_RTC_COMMAND;
+        
+        $hexdata = dechex($curTime);
+
+   
+        $this->_system->out("  Hex Time    : ".$hexdata);
+
+        $dataVal = substr($hexdata, 6, 2);
+        $dataVal .= substr($hexdata, 4, 2);
+        $dataVal .= substr($hexdata, 2, 2);
+        $dataVal .= substr($hexdata, 0, 2);
+
+        $this->_system->out("  Data Val    : ".$dataVal);
+        $this->_system->out("");
+
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+
+        sleep(2);
+
+        $this->_system->out("*********************");
+        $this->_system->out("    Reading RTC     *");
+        $this->_system->out("*********************");
+
+
+        $cmdNum = self::READ_RTC_COMMAND;
+        $dataVal = "";
+
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->_system->out("  Read RTC reply:".$ReplyData);
+
+        $timeLen = strlen($ReplyData);
+
+        if ($timeLen == 8) {
+
+            $hexTime  = substr($ReplyData, 6, 2);
+            $hexTime .= substr($ReplyData, 4, 2);
+            $hexTime .= substr($ReplyData, 2, 2);
+            $hexTime .= substr($ReplyData, 0, 2);
+        
+            $this->_system->out("  hexTime :".$hexTime);
+
+            $decTime = hexdec($hexTime);
+            $this->_system->out("  decTime :".$decTime);
+            
+            $localTime = localtime($decTime, true);
+
+            $dateStr = ($localTime[tm_mon] + 1);
+            $dateStr .= "/".$localTime[tm_mday];
+            $dateStr .= "/".($localTime[tm_year] + 1900);
+
+            $timeStr = $localTime[tm_hour];
+            $timeStr .= ":".$localTime[tm_min];
+            $timeStr .= ":".$localTime[tm_sec];
+
+            $this->_system->out("  RTC ".$dateStr."  ".$timeStr);
+
+
+        } else {
+            $this->_system->out("Invalid Number of Bytes for Time!");
+        }
+
+        $choice = readline("\n\rHit Enter to Continue");
+
+
+        $this->_system->out("Powering down UUT!");
+        $this->_powerUUT(self::OFF);
 
     }
 

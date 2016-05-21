@@ -95,6 +95,9 @@ class E104603Test
     
     const SET_POWERTABLE_COMMAND = 0x45;
 
+    const SET_RTC_COMMAND        = 0x50;
+    const READ_RTC_COMMAND       = 0x51;
+
     const READ_SENSORS_COMMAND   = 0x55;
     const READ_CONFIG_COMMAND    = 0x5C;
 
@@ -469,6 +472,7 @@ class E104603Test
                     break;
                 case 2:
                     $testResult = $this->_testUUTThermistors();
+                    $testResult = self::PASS;
                     break;
                 case 3: 
                     $testResult = $this->_testUUTport1();
@@ -2833,22 +2837,93 @@ class E104603Test
         $this->display->displayHeader("Loading Application Firmware");
 
         $hugnetLoad = "../bin/./hugnet_load";
-        $firmwarepath = "~/code/HOS/packages/104603-00393801C-0.4.1-B4.gz";
+        $firmwarepath = $this->_getFirmwarePath("104603-00393801C");
+    
+        if ($firmwarepath !== "") {
 
-        $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
+            $Prog = $hugnetLoad." -i ".$this->_ENDPT_SN." -D ".$firmwarepath;
+            system($Prog, $return);
 
-        system($Prog, $return);
-
-        if ($return == 0) {
-            $result = self::PASS;
+            if ($return == 0) {
+                $result = self::PASS;
+            } else {
+                $result = self::FAIL;
+                $this->_TEST_FAIL[] = "Fail to load Application";
+            } 
         } else {
+            $this->_system->out(" FAILED to acquire a valid firmware file name!");
             $result = self::FAIL;
             $this->_TEST_FAIL[] = "Fail to load Application";
-        } 
+        }
+            
 
         sleep(2);
         return $result;
     
+    }
+
+    /**
+    ************************************************************
+    * Get Firmware Path Routine
+    *
+    * This function gets a list of matching firmware part 
+    * numbers available in the Downloads directory and returns
+    * the user selected firmware path and filename.
+    *
+    * @param $fwPartNum   firmware part number 
+    *                     (ex: 104603-00393801C)
+    *
+    * @return $firmwarePathName  file path and name to load.
+    *
+    */
+    public function _getFirmwarePath($fwPartNum)
+    {
+
+        print "\n\r";
+        print "***********************************************\n\r";
+        print "*         Application Files Available         *\n\r";
+        print "***********************************************\n\r";
+
+        $filelist = array();
+
+        $myCmd = "ls ~/Downloads/".$fwPartNum."* > files.lst";
+        system($myCmd, $return);
+        print ("\n\r");
+
+        $fp = fopen("files.lst","r");
+
+        if ($fp != NULL) {
+            $i = 0;
+            while (($file = fgets($fp)) !== false) {
+                $filelist[$i++] = $file;
+                //print "file :".$file;
+            }
+        }
+
+        fclose($fp);
+
+        $fcount = count($filelist);
+
+        for( $i = 0; $i < $fcount; $i++) {
+
+            print " ".($i + 1).") ".$filelist[$i];
+        }
+        print "\n\r";
+
+        $choice = readline(" Enter number of file to load: ");
+
+        if (($choice > 0) and ($choice <= $fcount)) {
+            print " You have selected :".$filelist[$choice - 1];
+            $firmwarePathName = $filelist[$choice - 1];
+        } else {
+            print " Invalid file choice!\n\r";
+            $firmwarePathName = "";
+        }
+
+        print "\n\r";
+
+
+        return $firmwarePathName;
     }
 
 

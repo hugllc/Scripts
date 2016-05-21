@@ -82,6 +82,9 @@ class E104603TestFirmware
     const SET_POWERTABLE_COMMAND  = 0x45;
     const READ_POWERTABLE_COMMAND = 0x46;
 
+    const SET_RTC_COMMAND         = 0x50;
+    const READ_RTC_COMMAND        = 0x51;
+
     const READSENSOR_DATA_COMMAND = 0x53;
     const READRAWSENSOR_COMMAND   = 0x54;
     const READSENSORS_COMMAND     = 0x55;
@@ -132,8 +135,10 @@ class E104603TestFirmware
                                 1 => "Read the Config",
                                 2 => "Turn on Power Supply Port",
                                 3 => "Turn off Power Supply Port",
-                                4 => "Write the Power Table",
-                                5 => "Verify Power Table",
+                                4 => "Turn on Relay Port",
+                                5 => "Turn off Relay Port",
+                                6 => "Write the Power Table",
+                                7 => "Verify Power Table",
                                 );
 
     private $_batteryBdMenu = array(
@@ -145,6 +150,8 @@ class E104603TestFirmware
                                 5 => "Turn off Shorted Port",
                                 6 => "Write the Power Table",
                                 7 => "Verify Power Table",
+                                8 => "Set Real Time Clock",
+                                9 => "Read Real Time Clock",
                                 );
    
     private $_loadBdMenu = array(
@@ -158,6 +165,23 @@ class E104603TestFirmware
                                 7 => "Verify Power Table",
                                 );
                                 
+    private $_ErrorArray = array(
+                                0 => "NONE",
+                                1 => "CPU Error",
+                                2 => "Hardware Over Current",
+                                3 => "Unrecoverable Over Current",
+                                4 => "Hardware Over Power",
+                                5 => "Software Over Power",
+                                6 => "Bad Switch",
+                                7 => "Bad Current Sensor",
+                                8 => "Power Port Error",
+                                9 => "Power Flowing in the Wrong Direction",
+                               10 => "Multiple Port Errors",
+                               11 => "Bus Brownout",
+                               12 => "Waiting for Calibration",
+                               13 => "FET Over Heat",
+                               );
+                                    
     public $display;
     private $_firmwareVersion;
 
@@ -304,12 +328,25 @@ class E104603TestFirmware
                 $this->_setPowerSupplyPort(self::ON);
                 $chan = 0;
                 $this->_setPortLoad($chan, self::OFF); 
+                $chan = 1;
+                $this->_setPortLoad($chan, self::OFF);
            }
+          
+           $this->_setBatteryCoachRTC(self::DEVICE1_ID);
+           sleep(1);
+           $this->_setBatteryCoachRTC(self::DEVICE2_ID);
+           sleep(1);
+           $this->_setBatteryCoachRTC(self::DEVICE3_ID);
+           sleep(1);
            
+           $result1 = $this->_runBatteryChargeTest();
+           $result2 = $this->_runErrorLogTest();
            
-           $this->_runBatteryChargeTest();
-           $this->_runErrorLogTest();
-            
+           if (($result1 == self::PASS) and ($result2 == self::PASS)) {
+                $this->display->displayPassed();
+           } else {
+                $this->display->displayFailed();
+           }
             
         } else {
             $this->_system->out("Test boards failed communications. ");
@@ -318,7 +355,6 @@ class E104603TestFirmware
        
 
         $this->_system->out("");
-        $this->_system->out("*** Not Done ***");
 
         $choice = readline("\n\rHit Enter to Exit!");
         
@@ -402,14 +438,22 @@ class E104603TestFirmware
         
         $batteryStatus = $this->_batteryCharged();
         if ($batteryStatus) {
-            $this->_system->out("Battery Charged\n\r");
+            $this->_system->out(" Battery Charged\n\r");
         } else {
-            $this->_system->out("Battery Needs Charging\n\r");
+            $this->_system->out(" Battery Needs Charging\n\r");
+            $this->_setBatteryPort(self::ON);
+            /* monitor until charged */
+            $this->_watchBatteryForCharge();
+            $this->_setBatteryPort(self::OFF);
+            $batteryStatus = true;
         }
         
         /* if charged then lets discharge into loads */
         if ($batteryStatus) {
-            $this->_system->out("Preparing to discharge battery");
+            $this->_system->out("");
+            $this->_system->out("********************************");
+            $this->_system->out(" Preparing to discharge battery ");
+            $this->_system->out("");
             $this->_setBatteryPort(self::ON);
             sleep(2);
             
@@ -421,8 +465,10 @@ class E104603TestFirmware
             $chan = 1;
             $this->_setPortLoad($chan, self::ON);
             
-            $this->_system->out("*** DISCHARGING BATTERY ****\n\r");
-            $this->_watchBatteryForDischarge();
+            $this->_system->out("****************************");
+            $this->_system->out("*** DISCHARGING BATTERY ****");
+            $this->_system->out("****************************\n\r");
+            $result1 = $this->_watchBatteryForDischarge();
             
             $chan = 0;
             $this->_setPortLoad($chan, self::OFF);
@@ -436,14 +482,25 @@ class E104603TestFirmware
             sleep(2);
         }
         
-        $this->_system->out("** CHARGING Battery ***\n\r");
+        $this->_system->out("*************************");
+        $this->_system->out("*** CHARGING BATTERY ****");
+        $this->_system->out("*************************\n\r");
         /* monitor until charged */
-        $this->_watchBatteryForCharge();
+        $result2 = $this->_watchBatteryForCharge();
         $this->_setBatteryPort(self::OFF);
         
-        $this->_system->out("Battery Charge Test Complete!");
+        if (($result1 == self::PASS) and ($result2 == self::PASS)) {
+            $this->_system->out(" Battery Charge Test - PASSED!");
+            $result = self::PASS;
+        } else {
+            $this->_system->out(" Battery Charge TEst - FAILED!");
+            $result = self::FAIL;
+        }
+        
+        return $result;
     }
-    
+   
+
     /**
     ***********************************************************
     * Error Log Test Routine
@@ -451,6 +508,7 @@ class E104603TestFirmware
     * This function tests the systems ability to log and 
     * recover from an error condition.
     *
+    * @return $result   
     *
     */
     private function _runErrorLogTest()
@@ -463,48 +521,50 @@ class E104603TestFirmware
         $this->_system->out("******************************\n\r");
         
 
-        $this->_system->out("Turning on Shorted Port");
+        $this->_system->out(" Turning on Shorted Port");
         $this->_setShortPort(self::ON);
         $this->_system->out("");
-       
-        /* lets wait for errors to be transmitted */
-        for ($i = 0; $i < 15; $i++) {
-            print "*";
-            sleep(1);
-        }
+
+        $this->_system->out(" Closing relay to short Port 1 to GND!");
+        $this->_setRelayPort(self::ON);
         $this->_system->out("");
-        
-        
-        $this->_system->out("Resetting Battery Board!");
-        
-        $idNum = self::DEVICE2_ID;
-        $cmdNum = self::SETCONFIG_COMMAND;
-        $dataVal = "00";
-        
-        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
-        $this->_system->out("Reply Data : ".$ReplyData);
+
+        $this->_system->out(" Opening relay shorting Port 1 to GND!");
+        $this->_setRelayPort(self::OFF);
         $this->_system->out("");
-        
-        for ($i = 0; $i < 10; $i++) {
-            print "*";
-            sleep(1);
-        }
-        $this->_system->out("");
-        
-        $this->_system->out("Turning off Shorted Port");
-        $this->_setShortPort(self::OFF);
-        
-        $this->_system->out("Reading Error Log");
+
+        $this->_system->out(" Reading Error Log For 9002");
         $idNum = self::DEVICE2_ID;
         $cmdNum = self::READ_ERRORLOG_COMMAND;
         $dataVal = "00";
         
         $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
         
-        $this->_system->out("Reply Data : ".$ReplyData);
-        
+        $this->_displayErrorLogData($ReplyData);;
+        $this->_system->out("");
         
 
+        $this->_system->out(" Turning off Shorted Port");
+        $this->_setShortPort(self::OFF);
+        $this->_system->out("");
+
+
+        $this->_system->out(" Turning Power Supply Port On");
+        $this->_setPowerSupplyPort(self::ON);
+        $this->_system->out("");
+
+        $errorNumber = substr($ReplyData, 8, 2);
+        $error = hexdec($errorNumber);
+
+        if ($error == 2) {
+            $this->_system->out(" Error Log Test PASSED!");
+            $result = self::PASS;
+        } else {
+            $this->_system->out(" Error Log Test FAILED!");
+            $result = self::FAIL;
+        }
+
+        return $result;
     }
 
 
@@ -527,13 +587,13 @@ class E104603TestFirmware
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         
         $busVoltage = $this->_convertDataValue($ReplyData);
-        $this->_system->out("Bus Voltage: ".$busVoltage);
+        $this->_system->out(" Bus Voltage: ".$busVoltage);
         
         if ($busVoltage > 14.0) {
-            $this->_system->out("Power Supply feeding Bus\n\r");
+            $this->_system->out(" Power Supply feeding Bus\n\r");
             $supplyOnBus = true;
         } else {
-            $this->_system->out("Power Supply not on Bus\n\r");
+            $this->_system->out(" Power Supply not on Bus\n\r");
             $supplyOnBus = false;
         }
         
@@ -565,8 +625,8 @@ class E104603TestFirmware
         
         $batVoltage = $this->_convertDataValue($ReplyData);
         
-        $this->_system->out("Battery Current: ".$batCurrent);
-        $this->_system->out("Battery Voltage: ".$batVoltage);
+        $this->_system->out(" Battery Current: ".$batCurrent);
+        $this->_system->out(" Battery Voltage: ".$batVoltage);
         $this->_system->out("");
         
         if ($batVoltage > 13.0) {
@@ -607,13 +667,13 @@ class E104603TestFirmware
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         $batVolts = $this->_convertDataValue($ReplyData);
         
-        $this->_system->out("Battery Current:".$batAmps);
-        $this->_system->out("Battery Voltage:".$batVolts);
+        $this->_system->out(" Battery Current:".$batAmps);
+        $this->_system->out(" Battery Voltage:".$batVolts);
         $this->_system->out("");
         
         $count = 0;
         
-        while (($batVolts > 12.00) and ($count < 10)) {
+        while (($batVolts > 12.15) and ($count < 10)) {
         
             for ($i = 0; $i < 10; $i++) {
                 print "*";
@@ -641,23 +701,25 @@ class E104603TestFirmware
             $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
             $loadPortATemp = $this->_convertDataValue($ReplyData);
             
-            $this->_system->out("Battery Current :".$batAmps);
-            $this->_system->out("Battery Voltage :".$batVolts);
-            $this->_system->out("Battery Bus Temp:".$batBusTemp);
-            $this->_system->out("Load Port A Temp:".$loadPortATemp);
+            $this->_system->out(" Battery Current :".$batAmps);
+            $this->_system->out(" Battery Voltage :".$batVolts);
+            $this->_system->out(" Battery Bus Temp:".$batBusTemp);
+            $this->_system->out(" Load Port A Temp:".$loadPortATemp);
             $this->_system->out("");
             $count++;
         }
         
-        if ($count < 10) {
+        if ($count <= 10) {
             $this->_system->out("");
-            $this->_system->out("Battery Discharged!");
+            $this->_system->out(" Battery Discharged!");
             $this->_system->out("");
+            $result = self::PASS;
         } else {
-            $this->_system->out("Not enough time for discharge!");
-            
-            
+            $this->_system->out(" Not enough time for discharge!");
+            $result = self::FAIL;
         }
+        
+        return $result;
     
     }
     
@@ -684,15 +746,15 @@ class E104603TestFirmware
         
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         $batVolts = $this->_convertDataValue($ReplyData);
-        $this->_system->out("Battery Current:".$batAmps);
-        $this->_system->out("Battery Voltage:".$batVolts);
+        $this->_system->out(" Battery Current:".$batAmps);
+        $this->_system->out(" Battery Voltage:".$batVolts);
         $this->_system->out("");
         
         $count = 0;
         
-        while ((($batVolts < 13.4) and ($count < 10)) or (($batAmps > 0.55) and ($count < 10))) {
+        while ((($batVolts < 13.4) and ($count < 10)) or (($batAmps > 0.65) and ($count < 10))) {
         
-            for ($i = 0; $i < 16; $i++) {
+            for ($i = 0; $i < 22; $i++) {
                 print "*";
                 sleep(1);
             }
@@ -706,24 +768,26 @@ class E104603TestFirmware
             $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
             $batVolts = $this->_convertDataValue($ReplyData);
             
-            $this->_system->out("Battery Current:".$batAmps);
-            $this->_system->out("Battery Voltage:".$batVolts);
+            $this->_system->out(" Battery Current:".$batAmps);
+            $this->_system->out(" Battery Voltage:".$batVolts);
             $this->_system->out("");
             $count++;
         }
         
-        if ($count < 10) {
+        if ($count <= 10) {
             $this->_system->out("");
-            $this->_system->out("Battery Charged!");
+            $this->_system->out(" Battery Charged!");
             $this->_system->out("");
+            $result = self::PASS;
         } else {
-            $this->_system->out("Not enough time for Charge!");
-            
+            $this->_system->out(" Not enough time for Charge!");
+            $result = self::FAIL;
         }
-    
+
+        return $result;
     }
-    
-    
+
+   
     
     /*****************************************************************************/
     /*                                                                           */
@@ -761,8 +825,12 @@ class E104603TestFirmware
             } else if (($selection == "D") || ($selection == "d")){
                 $this->_setPowerSupplyPort(self::OFF);
             } else if (($selection == "E") || ($selection == "e")){
-                $this->_setPowerTablePowerSupply();
+                $this->_setRelayPort(self::ON);
             } else if (($selection == "F") || ($selection == "f")){
+                $this->_setRelayPort(self::OFF);
+            } else if (($selection == "G") || ($selection == "g")){
+                $this->_setPowerTablePowerSupply();
+            } else if (($selection == "H") || ($selection == "h")){
                 $this->_verifyPowerTablePowerSupply();
             } else {
                 $exitSStep = true;
@@ -867,9 +935,9 @@ class E104603TestFirmware
         $snD1 = self::DEVICE1_ID;
         
         if ($state == self::ON) {
-            $this->_system->out("SETTING POWER SUPPLY PORT: ON\n\r");
+            $this->_system->out(" SETTING POWER SUPPLY PORT: ON\n\r");
         } else {
-            $this->_system->out("SETTING POWER SUPPLY PORT: OFF\n\r");
+            $this->_system->out(" SETTING POWER SUPPLY PORT: OFF\n\r");
         }
         
         $this->_readControlChan($snD1, $chan);
@@ -881,7 +949,36 @@ class E104603TestFirmware
         sleep(2);
         
     }
-    
+ 
+    /**
+    ************************************************************
+    * Set Relay Port Routine
+    * 
+    * This function sets the Relay Port 1 to on or off  
+    * line based on the state passed in to it.
+    *
+    */
+    private function _setRelayPort($state)
+    {
+        $chan = 1;
+        $snD1 = self::DEVICE1_ID;
+        
+        if ($state == self::ON) {
+            $this->_system->out(" SETTING RELAY PORT: ON\n\r");
+        } else {
+            $this->_system->out(" SETTING RELAY PORT: OFF\n\r");
+        }
+        
+        $this->_readControlChan($snD1, $chan);
+        sleep(2);
+        
+        $this->_setControlChan($snD1, $chan, $state);
+        sleep(2);
+        $this->_setControlChan($snD1, $chan, $state);
+        sleep(2);
+        
+    }
+   
     
     /**
     *************************************************************
@@ -916,6 +1013,10 @@ class E104603TestFirmware
                 $this->_setPowerTableBattery();
             } else if (($selection == "H") || ($selection == "h")){
                 $this->_verifyPowerTableBattery();
+            } else if (($selection == "I") || ($selection == "i")){
+                $this->_singlestepSetRTC(self::DEVICE2_ID);
+            } else if (($selection == "J") || ($selection == "j")){
+                $this->_singlestepReadRTC(self::DEVICE2_ID);
             } else {
                 $exitSStep = true;
                 $this->_system->out("Exit Single Step Battery Board");
@@ -1019,9 +1120,9 @@ class E104603TestFirmware
         $snD2 = self::DEVICE2_ID;
         
         if ($state == self::ON) {
-            $this->_system->out("SETTING BATTERY PORT: ON\n\r");
+            $this->_system->out(" SETTING BATTERY PORT: ON\n\r");
         } else {
-            $this->_system->out("SETTING BATTERY PORT: OFF\n\r");
+            $this->_system->out(" SETTING BATTERY PORT: OFF\n\r");
         }
         
         $this->_readControlChan($snD2, $chan);
@@ -1048,9 +1149,9 @@ class E104603TestFirmware
 
         
         if ($state == self::ON) {
-            $this->_system->out("SETTING SHORT ON PORT: ON\n\r");
+            $this->_system->out(" SETTING SHORT ON PORT: ON\n\r");
         } else {
-            $this->_system->out("SETTING SHORT ON PORT: OFF\n\r");
+            $this->_system->out(" SETTING SHORT ON PORT: OFF\n\r");
         }
         
         $this->_readControlChan($snD2, $chan);
@@ -1214,9 +1315,9 @@ class E104603TestFirmware
         $snD3 = self::DEVICE3_ID;
         
         if ($state == self::ON) {
-            $this->_system->out("SETTING LOAD PORT: ON\n\r");
+            $this->_system->out(" SETTING LOAD PORT: ON\n\r");
         } else {
-            $this->_system->out("SETTING LOAD PORT: OFF\n\r");
+            $this->_system->out(" SETTING LOAD PORT: OFF\n\r");
         }
         
         $this->_readControlChan($snD3, $chan);
@@ -1300,14 +1401,14 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         $portA_Amps = $this->_convertDataValue($ReplyData);
 
-        $this->_system->out("Port A Current: ".$portA_Amps);
+        $this->_system->out(" Port A Current: ".$portA_Amps);
 
 
         $dataVal = "01"; /* get PORT A voltage */
         $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
         $portAVolts = $this->_convertDataValue($ReplyData);
 
-        $this->_system->out("Port A Volts: ".$portAVolts);
+        $this->_system->out(" Port A Volts: ".$portAVolts);
 
 
         $this->_system->out("\n\r");
@@ -1361,7 +1462,87 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
     
     }
 
+    /**
+    ************************************************
+    * Set the Real Time Clock Routine
+    *
+    * This routine gets the current time and sets 
+    * the real time clocks in the Battery Coach 
+    * boards.
+    *
+    */
+    private function _singlestepSetRTC($serNum)
+    {
+        $curTime = time();
+        
+        $stringCurTime = $this->_getTimeStr($curTime);
+        $this->_system->out(" Current  Time : ".$stringCurTime);
 
+        $idNum = $serNum;
+        $cmdNum = self::SET_RTC_COMMAND;
+        
+        $hexdata = dechex($curTime);
+
+   
+        $this->_system->out("Hex Time Value :".$hexdata);
+
+        $dataVal = substr($hexdata, 6, 2);
+        $dataVal .= substr($hexdata, 4, 2);
+        $dataVal .= substr($hexdata, 2, 2);
+        $dataVal .= substr($hexdata, 0, 2);
+
+        $this->_system->out(" Data Val     : ".$dataVal);
+
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+
+        $this->_system->out(" Reply Data   : ",$ReplyData);
+
+        $choice = readline("Hit Enter to Continue");
+
+    }
+
+    /**
+    ***********************************************************
+    * Read RTC Routine
+    *
+    * This function reads the real time clock to check 
+    * its time setting.
+    *
+    */
+    private function _singlestepReadRTC($serNum )
+    {
+        $idNum = $serNum;
+        $cmdNum = self::READ_RTC_COMMAND;
+
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        $this->_system->out("Read RTC reply:".$ReplyData);
+
+        $timeLen = strlen($ReplyData);
+
+        if ($timeLen == 8) {
+
+            $hexTime  = substr($ReplyData, 6, 2);
+            $hexTime .= substr($ReplyData, 4, 2);
+            $hexTime .= substr($ReplyData, 2, 2);
+            $hexTime .= substr($ReplyData, 0, 2);
+        
+            $decTime = hexdec($hexTime);
+            
+            $stringCurTime = $this->_getTimeStr($decTime);
+
+            $this->_system->out(" RTC ".$stringCurTime);
+
+
+        } else {
+            $this->_system->out("Invalid Number of Bytes for Time!");
+        }
+
+        $choice = readline("Hit Enter to Continue.");
+
+
+    }
+    
+ 
 
     /*****************************************************************************/
     /*                                                                           */
@@ -1641,7 +1822,6 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
     
     }
     
- 
     /**
     ************************************************************
     * Set Power Table Power Supply and EmptyPort Routine
@@ -1685,7 +1865,7 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
                 $this->_system->out("Setting Power Table 0 - PASSED!");
                 
                 $portData = "01";
-                $driverData ="FF000001";  /* Driver, Subdriver, Priority and mode */
+                $driverData ="A0000000";  /* Driver, Subdriver, Priority and mode */
                 $driverName = "506F727420420000000000000000000000000000000000";
                 $fillData  = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";  /* 27 bytes */
                 $fillData2 = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";    /* 26 bytes */
@@ -1695,8 +1875,8 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
                 $ReplyData = substr($ReplyData, 0, 14);
                 $this->_system->out("Port 1 Reply = ".$ReplyData);
                 
-                $testReply = substr($ReplyData, 0, 4);
-                if ($testReply == "FF00") {
+                $testReply = substr($ReplyData, 0, 8);
+                if ($testReply == "A0000000") {
                     $this->_system->out("Setting Power Table 1 - PASSED!");
                     $result = self::PASS;
                 } else {
@@ -2074,6 +2254,63 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         //$this->_system->out("Set Control Channel Reply = ".$ReplyData);
 
     }
+    
+    /**
+    *******************************************************
+    * Set the Real Time Clock Routine
+    *
+    * This function gets the current time and sets the 
+    * Real Time Clock in the Battery Coach Board.
+    *
+    * @param $serialNum
+    *
+    * @return void
+    */
+    private function _setBatteryCoachRTC($serialNum)
+    {
+    
+        $this->_system->out("***************************");
+        $this->_system->out("*     Setting Time        *");
+        $this->_system->out("***************************");
+        
+        $hexNum = dechex($serialNum);
+        $this->_system->out("  Serial Num   : ".$hexNum);
+        $curTime = time();
+        
+        $stringCurTime = $this->_getTimeStr($curTime);
+        
+        $this->_system->out("  Current Time : ".$stringCurTime);
+
+        $idNum = $serialNum;
+        $cmdNum = self::SET_RTC_COMMAND;
+        
+        $hexdata = dechex($curTime);
+        
+        $this->_system->out("  Hex Time     : ".$hexdata);
+   
+        $dataVal = substr($hexdata, 6, 2);
+        $dataVal .= substr($hexdata, 4, 2);
+        $dataVal .= substr($hexdata, 2, 2);
+        $dataVal .= substr($hexdata, 0, 2);
+
+        $this->_system->out("  Data Val     : ".$dataVal);
+        
+        $ReplyData = $this->_sendpacket($idNum, $cmdNum, $dataVal);
+        
+
+        $this->_system->out("  Reply Data   : ".$ReplyData);
+        $this->_system->out("");
+        
+        
+        if ($dataVal == $ReplyData) {
+            $result = self::PASS;
+        } else {
+            $result = self::FAIL;
+        }
+        
+        return $result;
+    
+    }
    
 
     /*****************************************************************************/
@@ -2262,12 +2499,98 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
     }
 
 
+    /**
+    **********************************************************
+    * Display Error Log Data Routine
+    *
+    * This routine takes the hex data string and displays
+    * the time and data stamp, the logged error and the 
+    * additional information data.
+    */
+    private function _displayErrorLogData($errorData)
+    {
+        $datalen = strlen($errorData);
+        $dateData = substr($errorData, 0, 8);
+
+        //print "dateData = ".$dateData."\n\r";
+
+        $errorNum = substr($errorData, 8, 2);
+        $infoData = substr($errorData, 10, datalen-1);
+
+        $hexDate = substr($dateData, 6, 2);
+        $hexDate .= substr($dateData, 4, 2);
+        $hexDate .= substr($dateData, 2, 2);
+        $hexDate .= substr($dateData, 0, 2);
+
+        //print "hexDate = ".$hexDate."\n\r";
+
+        $intDate = hexdec($hexDate);
+
+        //print "intDate = ".$intDate."\n\r";
+
+        $stringCurTime = $this->_getTimeStr($intDate);
+        
+        /* $localtime = localtime($intDate, true);
+        $year = $localtime[tm_year] + 1900;
+        $month = $localtime[tm_mon] + 1;
+        $mday = $localtime[tm_mday];
+
+        $hour = $localtime[tm_hour];
+        $min  = $localtime[tm_min];
+        $sec  = $localtime[tm_sec];
+
+        $timeStamp = $month."/".$mday."/".$year."  ".$hour.":".$min.":".$sec;*/
+
+        $this->_system->out("  Timestamp     : ".$stringCurTime);
+        
+        $errNum = hexdec($errorNum);
+        $this->_system->out("  Error Number  : ".$errNum);
+        
+        if (($errNum >= 0) and ($errNum <= 13)) {
+            $this->_system->out("  Error Logged  : ".$this->_ErrorArray[$errNum]);
+        } else {
+            $this->_system->out("  Error Invalid : ");
+        }
+
+    }
+
 
     /*****************************************************************************/
     /*                                                                           */
     /*               C O N V E R S I O N    R O U T I N E S                      */
     /*                                                                           */
     /*****************************************************************************/
+
+    /**
+    **********************************************************
+    * Convert Time Integer to String Routine
+    *
+    * This function takes the long integer returned from the 
+    * time string, converts it time_tm structure and then 
+    * returns a date and time string.
+    *
+    * @param $intTime  time integer seconds since epoch
+    *
+    * @return $timeStr date and time string 
+    *
+    */
+    private function _getTimeStr($intTime)
+    {
+    
+        $localtime = localtime($intTime, true);
+        $year = $localtime[tm_year] + 1900;
+        $month = $localtime[tm_mon] + 1;
+        $mday = $localtime[tm_mday];
+
+        $hour = $localtime[tm_hour];
+        $min  = $localtime[tm_min];
+        $sec  = $localtime[tm_sec];
+
+        $timeStr = $month."/".$mday."/".$year."  ".$hour.":".$min.":".$sec;
+    
+        return $timeStr;
+    }
+    
 
     /**
     **********************************************************
