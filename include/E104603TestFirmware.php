@@ -131,38 +131,45 @@ class E104603TestFirmware
                                 );
                                 
     private $_powerSupplyBdMenu = array(
-                                0 => "Read Data Values",
-                                1 => "Read the Config",
-                                2 => "Turn on Power Supply Port",
-                                3 => "Turn off Power Supply Port",
-                                4 => "Turn on Relay Port",
-                                5 => "Turn off Relay Port",
-                                6 => "Write the Power Table",
-                                7 => "Verify Power Table",
+                                0  => "Read Data Values",
+                                1  => "Read the Config",
+                                2  => "Turn on Power Supply Port",
+                                3  => "Turn off Power Supply Port",
+                                4  => "Turn on Relay Port",
+                                5  => "Turn off Relay Port",
+                                6  => "Write the Power Table",
+                                7  => "Verify Power Table",
+                                8  => "Set Real Time Clock",
+                                9  => "Read Real Time Clock",
+                                10 => "Read Error Log",
                                 );
 
     private $_batteryBdMenu = array(
-                                0 => "Read Data Values",
-                                1 => "Read the Config",
-                                2 => "Turn on Battery Port",
-                                3 => "Turn off Battery Port",
-                                4 => "Turn on Shorted Port",
-                                5 => "Turn off Shorted Port",
-                                6 => "Write the Power Table",
-                                7 => "Verify Power Table",
-                                8 => "Set Real Time Clock",
-                                9 => "Read Real Time Clock",
+                                0  => "Read Data Values",
+                                1  => "Read the Config",
+                                2  => "Turn on Battery Port",
+                                3  => "Turn off Battery Port",
+                                4  => "Turn on Shorted Port",
+                                5  => "Turn off Shorted Port",
+                                6  => "Write the Power Table",
+                                7  => "Verify Power Table",
+                                8  => "Set Real Time Clock",
+                                9  => "Read Real Time Clock",
+                                10 => "Read Error Log",
                                 );
    
     private $_loadBdMenu = array(
-                                0 => "Read Data Values",
-                                1 => "Read the Config",
-                                2 => "Turn on Load Port A",
-                                3 => "Turn off Load Port A",
-                                4 => "Turn on Load Port B",
-                                5 => "Turn off Load Port B",
-                                6 => "Write the Power Table",
-                                7 => "Verify Power Table",
+                                0  => "Read Data Values",
+                                1  => "Read the Config",
+                                2  => "Turn on Load Port A",
+                                3  => "Turn off Load Port A",
+                                4  => "Turn on Load Port B",
+                                5  => "Turn off Load Port B",
+                                6  => "Write the Power Table",
+                                7  => "Verify Power Table",
+                                8  => "Set Real Time Clock",
+                                9  => "Read Real Time Clock",
+                                10 => "Read Error Log",
                                 );
                                 
     private $_ErrorArray = array(
@@ -673,7 +680,7 @@ class E104603TestFirmware
         
         $count = 0;
         
-        while (($batVolts > 12.15) and ($count < 10)) {
+        while (($batVolts > 12.02) and ($count < 10)) {
         
             for ($i = 0; $i < 10; $i++) {
                 print "*";
@@ -752,7 +759,7 @@ class E104603TestFirmware
         
         $count = 0;
         
-        while ((($batVolts < 13.4) and ($count < 10)) or (($batAmps > 0.65) and ($count < 10))) {
+        while ((($batVolts < 13.4) and ($count < 10)) or (($batAmps > 0.60) and ($count < 10))) {
         
             for ($i = 0; $i < 22; $i++) {
                 print "*";
@@ -832,6 +839,12 @@ class E104603TestFirmware
                 $this->_setPowerTablePowerSupply();
             } else if (($selection == "H") || ($selection == "h")){
                 $this->_verifyPowerTablePowerSupply();
+            } else if (($selection == "I") || ($selection == "i")){
+                $this->_singlestepSetRTC(self::DEVICE1_ID);
+            } else if (($selection == "J") || ($selection == "j")){
+                $this->_singlestepReadRTC(self::DEVICE1_ID);
+            } else if (($selection == "K") || ($selection == "k")){
+                $this->_singleStepReadErrorLog(self::DEVICE1_ID);
             } else {
                 $exitSStep = true;
                 $this->_system->out("Exit Single Step Power Supply Board");
@@ -1017,6 +1030,8 @@ class E104603TestFirmware
                 $this->_singlestepSetRTC(self::DEVICE2_ID);
             } else if (($selection == "J") || ($selection == "j")){
                 $this->_singlestepReadRTC(self::DEVICE2_ID);
+            } else if (($selection == "K") || ($selection == "k")){
+                $this->_singleStepReadErrorLog(self::DEVICE2_ID);
             } else {
                 $exitSStep = true;
                 $this->_system->out("Exit Single Step Battery Board");
@@ -1200,6 +1215,12 @@ class E104603TestFirmware
                 $this->_setPowerTableNormalLoad();
             } else if (($selection == "H") || ($selection == "h")){
                 $this->_verifyPowerTableNormalLoad();
+            } else if (($selection == "I") || ($selection == "i")){
+                $this->_singlestepSetRTC(self::DEVICE3_ID);
+            } else if (($selection == "J") || ($selection == "j")){
+                $this->_singlestepReadRTC(self::DEVICE3_ID);
+            } else if (($selection == "K") || ($selection == "k")){
+                $this->_singleStepReadErrorLog(self::DEVICE3_ID);
             } else {
                 $exitSStep = true;
                 $this->_system->out("Exit Single Step Load Board");
@@ -1540,6 +1561,34 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         $choice = readline("Hit Enter to Continue.");
 
 
+    }
+
+    /**
+    ***********************************************************
+    * Single Step Read Error Log Routine
+    *
+    * This function sends a read error log command to the 
+    * Device ID passed in and then displays the error log 
+    * information.
+    *
+    * @param $serialNum
+    *
+    * @return void
+    */
+    private function _singleStepReadErrorLog($serialNum)
+    {
+        $this->_system->out("");
+        $this->_system->out("  Reading Error Log For ".dechex($serialNum));
+        $idNum = $serialNum;
+        $cmdNum = self::READ_ERRORLOG_COMMAND;
+        $dataVal = "00";
+        
+        $ReplyData = $this->_sendPacket($idNum, $cmdNum, $dataVal);
+        
+        $this->_displayErrorLogData($ReplyData);;
+        $this->_system->out("");
+
+        $choice = readline("Hit Enter to continue.");
     }
     
  
@@ -2551,6 +2600,8 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         } else {
             $this->_system->out("  Error Invalid : ");
         }
+
+        $this->_system->out("  Error Info    : ".$infoData);
 
     }
 
