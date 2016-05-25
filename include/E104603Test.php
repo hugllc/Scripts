@@ -593,7 +593,7 @@ class E104603Test
         $busTemp0 = $this->_readUUTBusTemp0();
         $this->_TEST_DATA["BusTemp0"] = $busTemp0;
 
-        if (($busTemp0 > 11.00) and ($busTemp0 < 26.00)) {
+        if (($busTemp0 > 11.00) and ($busTemp0 < 27.00)) {
             $resultT1 = self::PASS;
         } else {
             $resultT1 = self::FAIL;
@@ -603,7 +603,7 @@ class E104603Test
         $busTemp1 = $this->_readUUTBusTemp1();
         $this->_TEST_DATA["BusTemp1"] = $busTemp1;
 
-        if (($busTemp1 > 11.00) and ($busTemp1 < 26.00)) {
+        if (($busTemp1 > 11.00) and ($busTemp1 < 27.00)) {
             $resultT2 = self::PASS;
         } else {
             $resultT2 = self::FAIL;
@@ -613,7 +613,7 @@ class E104603Test
         $p1Temp = $this->_readUUTP1Temp();
         $this->_TEST_DATA["P1Temp"] = $p1Temp;
 
-        if (($p1Temp > 11.00) and ($p1Temp < 26.00)) {
+        if (($p1Temp > 11.00) and ($p1Temp < 27.00)) {
             $resultT3 = self::PASS;
         } else {
             $resultT3 = self::FAIL;
@@ -623,7 +623,7 @@ class E104603Test
         $p0Temp = $this->_readUUTP0Temp(); 
         $this->_TEST_DATA["P0Temp"] = $p0Temp;
 
-        if (($p0Temp > 11.00) and ($p0Temp < 26.00)) {
+        if (($p0Temp > 11.00) and ($p0Temp < 27.00)) {
             $resultT4 = self::PASS;
         } else {
             $resultT4 = self::FAIL;

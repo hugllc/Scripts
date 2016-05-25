@@ -761,7 +761,7 @@ class E104603TestFirmware
         
         while ((($batVolts < 13.4) and ($count < 10)) or (($batAmps > 0.60) and ($count < 10))) {
         
-            for ($i = 0; $i < 22; $i++) {
+            for ($i = 0; $i < 25; $i++) {
                 print "*";
                 sleep(1);
             }
@@ -2601,7 +2601,12 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
             $this->_system->out("  Error Invalid : ");
         }
 
-        $this->_system->out("  Error Info    : ".$infoData);
+        /* this is the port number in ascii hex string */
+        $portNumStr = substr($infoData,0,2);
+        $portNum = (int)$portNumStr;
+        $portNumm -= 30;
+
+        $this->_system->out("  Port Number   : ".$portNum);
 
     }
 
