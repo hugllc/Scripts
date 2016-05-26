@@ -2602,9 +2602,10 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
         }
 
         /* this is the port number in ascii hex string */
-        $portNumStr = substr($infoData,0,2);
-        $portNum = (int)$portNumStr;
-        $portNumm -= 30;
+        $portNumHexStr = substr($infoData,0,2);
+        
+        $portNumHex = $portNumHexStr - "30";
+        $portNum = hexdec($portNumHex);
 
         $this->_system->out("  Port Number   : ".$portNum);
 
