@@ -794,6 +794,49 @@ class E104603TestFirmware
         return $result;
     }
 
+    /**
+    ************************************************************
+    * Check Test System Boards Routine
+    * 
+    * This function pings the test system boards and returns 
+    * the results of the communications process.
+    *
+    * @return boolean $testResult
+    */
+    private function _checkTestBoards()
+    {
+    
+        $serNum1 = self::DEVICE1_ID;   /* Power Supply Board */
+        $serNum2 = self::DEVICE2_ID;   /* Battery Board      */
+        $serNum3 = self::DEVICE3_ID;   /* Load Board         */
+        
+        $result = $this->_pingEndpoint($serNum1);
+        if ($result == true) {
+            $this->_system->out("SN ".dechex($serNum1)." Board Responding!");
+            $result = $this->_pingEndpoint($serNum2);
+            if ($result == true) {
+                $this->_system->out("SN ".dechex($serNum2)." Board Responding!");
+                $result = $this->_pingEndpoint($serNum3);
+                if ($result == true) {
+                    $this->_system->out("SN ".dechex($serNum3)." Board Responding!");
+                    $testResult = self::PASS;
+                } else {
+                    $testResult = self::FAIL;
+                    $this->_system->out("SN ".dechex($serNum3)." Board Failed Ping!");
+                }
+            } else {
+                $testResult = self::FAIL;
+                $this->_system->out("SN ".dechex($serNum2)." Board Failed Ping!");
+            }
+        } else {
+            $testResult = self::FAIL;
+            $this->_system->out("SN ".dechex($serNum1)." Board Failed Ping!");
+        }
+        
+    
+        return $testResult;
+    
+    }
    
     
     /*****************************************************************************/
@@ -1439,49 +1482,6 @@ Data: 57  B8FFFFFF = FF FF FF B8 = -48h  = -72d/1000   = -0.072 Amps  Port A
     }
 
     
-    /**
-    ************************************************************
-    * Check Test System Boards Routine
-    * 
-    * This function pings the test system boards and returns 
-    * the results of the communications process.
-    *
-    * @return boolean $testResult
-    */
-    private function _checkTestBoards()
-    {
-    
-        $serNum1 = self::DEVICE1_ID;   /* Power Supply Board */
-        $serNum2 = self::DEVICE2_ID;   /* Battery Board      */
-        $serNum3 = self::DEVICE3_ID;   /* Load Board         */
-        
-        $result = $this->_pingEndpoint($serNum1);
-        if ($result == true) {
-            $this->_system->out("SN ".dechex($serNum1)." Board Responding!");
-            $result = $this->_pingEndpoint($serNum2);
-            if ($result == true) {
-                $this->_system->out("SN ".dechex($serNum2)." Board Responding!");
-                $result = $this->_pingEndpoint($serNum3);
-                if ($result == true) {
-                    $this->_system->out("SN ".dechex($serNum3)." Board Responding!");
-                    $testResult = self::PASS;
-                } else {
-                    $testResult = self::FAIL;
-                    $this->_system->out("SN ".dechex($serNum3)." Board Failed Ping!");
-                }
-            } else {
-                $testResult = self::FAIL;
-                $this->_system->out("SN ".dechex($serNum2)." Board Failed Ping!");
-            }
-        } else {
-            $testResult = self::FAIL;
-            $this->_system->out("SN ".dechex($serNum1)." Board Failed Ping!");
-        }
-        
-    
-        return $testResult;
-    
-    }
 
     /**
     ************************************************
