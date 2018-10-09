@@ -1,8 +1,8 @@
 [Unit]
 Description=Job that runs the hugnet_analysis daemon
 #Documentation=man:hugnet_analysis(1)
-Requires=mysql.service hugnet_router.service
-After=mysql.service hugnet_router.service
+Requires=mysql.service
+After=mysql.service
 
 [Service]
 Type=simple
