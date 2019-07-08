@@ -15,8 +15,8 @@ PW=`php -r '
 echo "Setting up Mysql (enter the mysql root password)"
 mysql -u root -p -vvv << EOF
 CREATE DATABASE IF NOT EXISTS HUGnet; 
-GRANT ALL on HUGnet.* to HUGnet IDENTIFIED BY '${PW}';
-SET PASSWORD FOR debian-sys-maint = PASSWORD('${DEBPW}');
+SET PASSWORD FOR 'HUGnet'@'localhost' = PASSWORD('${PW}');
+GRANT ALL on HUGnet.* to 'HUGnet'@'localhost' IDENTIFIED BY '${PW}';
 EOF
 
 
@@ -33,10 +33,12 @@ DEBPW=`sudo php -r '
     echo trim($var[1]);
 '`
 
-echo "Setting up Replication password (enter the mysql root password)"
-mysql -u root -p -vvv << EOF
-SET PASSWORD FOR 'debian-sys-maint'@'localhost' = PASSWORD('${DEBPW}');
+if [ "${DEBPW}x" != "x" ]; then
+    echo "Setting up Replication password (enter the mysql root password)"
+    mysql -u root -p -vvv << EOF
+    SET PASSWORD FOR 'debian-sys-maint'@'localhost' = PASSWORD('${DEBPW}');
 EOF
+fi
 
 
 
